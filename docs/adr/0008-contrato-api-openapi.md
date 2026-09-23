@@ -58,7 +58,9 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
   - errores en **RFC 9457** (`application/problem+json`) con un código de error propio estable;
   - paginación por cursor + filtros explícitos; nada de endpoints hechos a la medida de una
     pantalla;
-  - `Idempotency-Key` obligatorio en los POST que crean ventas o movimientos de inventario;
+  - `Idempotency-Key` obligatorio en los POST que crean ventas o movimientos de inventario
+    (sin clave → 400, misma clave con otro contenido → 422, original aún en proceso → 409; retención
+    configurable, 24 h por defecto; detalle en `openspec/specs/api/spec.md` API6);
   - autorización por rol (admin/asesor) exigida en el servidor, nunca solo en el cliente; el
     mecanismo de autenticación (tipo de token o sesión) se decide en la Fase 11, no aquí;
   - endpoints internos (webhook de Chatwoot, kill switch) etiquetados `internal` y excluidos del
@@ -89,3 +91,4 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
 - [`@scalar/nestjs-api-reference` — integración oficial de Scalar para NestJS](https://github.com/scalar/scalar/tree/main/integrations/nestjs)
 - [RFC 9457 — Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457)
 - [OpenAPI Specification 3.1.0](https://spec.openapis.org/oas/v3.1.0)
+- [draft-ietf-httpapi-idempotency-key-header-07 — códigos 400/422/409 y política de expiración (borrador expirado; referencia de práctica)](https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.html)

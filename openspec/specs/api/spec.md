@@ -13,7 +13,7 @@ esta spec define el comportamiento observable que cada fase con endpoints debe c
 
 El sistema MUST generar `openapi/openapi.json` a partir de los esquemas zod de cada endpoint
 (`nestjs-zod`); el documento commiteado en git MUST coincidir exactamente con el que el código
-genera en el momento del build. Nadie MUST editar `openapi/openapi.json` a mano.
+genera en el momento del build. `openapi/openapi.json` MUST NOT editarse a mano.
 
 Fase que lo implementa: 00 (pipeline y convenciones)
 
@@ -23,6 +23,16 @@ Fase que lo implementa: 00 (pipeline y convenciones)
 - Cuando CI regenera el documento a partir del código actual,
 - Entonces el documento generado es idéntico byte a byte al commiteado y el build pasa; si difieren,
   el build falla.
+
+La generación MUST ser determinista: orden de claves estable, formato fijo (indentación y fin de
+línea) y sin valores que dependan del momento o del entorno (fechas, rutas absolutas, hostnames,
+variables de entorno). Así el chequeo de deriva solo falla cuando cambió la API de verdad.
+
+#### Scenario: Generar dos veces sin cambios produce el mismo documento
+
+- Dado que el código no cambió,
+- Cuando el documento se genera dos veces, en máquinas o momentos distintos,
+- Entonces ambos resultados son idénticos byte a byte.
 
 ### Requirement: API2 — Versionado, idioma y nombres estables
 
@@ -84,7 +94,7 @@ Fase que lo implementa: 00 (convención), cada fase con endpoints
 ### Requirement: API5 — Paginación por cursor y filtros explícitos
 
 Todo endpoint que devuelve una colección MUST paginar por cursor (no por número de página) y MUST
-exponer sus filtros como parámetros explícitos y documentados. Ningún endpoint MUST diseñarse a la
+exponer sus filtros como parámetros explícitos y documentados. Un endpoint MUST NOT diseñarse a la
 medida de una pantalla concreta del cliente.
 
 Fase que lo implementa: 12-14 (endpoints de colección concretos)
@@ -97,9 +107,22 @@ Fase que lo implementa: 12-14 (endpoints de colección concretos)
 
 ### Requirement: API6 — Idempotencia en creación de ventas y movimientos de inventario
 
-Los endpoints POST que crean una venta o un movimiento de inventario MUST aceptar un header
+Los endpoints POST que crean una venta o un movimiento de inventario MUST exigir el header
 `Idempotency-Key`. Reintentar el mismo request con la misma clave de idempotencia MUST devolver el
-mismo resultado sin crear un segundo registro.
+mismo resultado sin crear un segundo registro. Los casos de error siguen la práctica del borrador
+IETF `draft-ietf-httpapi-idempotency-key-header-07` (expirado; se usa como referencia, no como
+estándar), respondiendo siempre en formato problem+json (API4):
+
+| Caso | Respuesta |
+|---|---|
+| Falta el header en un endpoint que lo exige | `400` |
+| Misma clave con un contenido distinto al del request original | `422` |
+| Misma clave mientras el request original todavía se procesa | `409` |
+
+La clave es única por usuario y endpoint. El servidor compara el contenido del request con una huella
+(hash del cuerpo normalizado) guardada junto a la clave. Las claves MUST conservarse por un tiempo
+configurable (por defecto 24 h) y la política de expiración MUST publicarse en la documentación de
+la API. Tras expirar, la misma clave cuenta como un request nuevo.
 
 Fase que lo implementa: 12 (inventario), 13 (ventas)
 
@@ -109,6 +132,24 @@ Fase que lo implementa: 12 (inventario), 13 (ventas)
   recibir la respuesta,
 - Cuando el cliente reintenta el mismo request con la misma clave,
 - Entonces el servidor devuelve el resultado de la venta ya creada y no crea una segunda.
+
+#### Scenario: Request sin clave de idempotencia rechazado
+
+- Dado un endpoint que crea movimientos de inventario,
+- Cuando llega un POST sin el header `Idempotency-Key`,
+- Entonces el servidor responde `400` en problem+json y no crea nada.
+
+#### Scenario: Clave reusada con otro contenido rechazada
+
+- Dado que una venta se creó con una clave de idempotencia,
+- Cuando llega otro POST con la misma clave pero con ítems distintos,
+- Entonces el servidor responde `422` en problem+json y no crea ni modifica ninguna venta.
+
+#### Scenario: Reintento mientras el original sigue en proceso
+
+- Dado que un POST con cierta clave todavía se está procesando,
+- Cuando llega un segundo POST con la misma clave,
+- Entonces el servidor responde `409` en problem+json y al final existe una sola venta.
 
 ### Requirement: API7 — Autorización por rol
 
@@ -123,8 +164,15 @@ Fase que lo implementa: 11
 
 - Dado un usuario autenticado con rol `asesor` que llama un endpoint reservado a `admin`,
 - Cuando hace el request,
-- Entonces el servidor lo rechaza con un error de autorización, sin depender de que el cliente no
+- Entonces el servidor lo rechaza con `403` en problem+json, sin depender de que el cliente no
   hubiera mostrado la opción.
+
+#### Scenario: Request sin autenticar rechazado
+
+- Dado un request a un endpoint protegido sin credenciales, o con credenciales inválidas o vencidas,
+- Cuando llega al servidor,
+- Entonces el servidor responde `401` en problem+json, con un código de error propio distinto del
+  de rol insuficiente (`403`), y no ejecuta la operación.
 
 ### Requirement: API8 — Endpoints internos fuera del documento público
 
@@ -142,8 +190,8 @@ Fase que lo implementa: 04 (webhook), 09 (kill switch)
 
 ### Requirement: API9 — Documentación interactiva no accesible públicamente en producción
 
-La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en producción; no
-MUST ser accesible sin protección a cualquiera que conozca la URL.
+La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en producción; MUST NOT
+ser accesible sin protección para cualquiera que conozca la URL.
 
 Fase que lo implementa: 00 (pipeline), 09 (endurecimiento en producción)
 
