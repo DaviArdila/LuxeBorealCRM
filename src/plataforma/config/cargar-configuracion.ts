@@ -16,6 +16,12 @@ import {
  * - `formato`: vino con un tipo o forma que no cumple el esquema (regex, coerción numérica fallida
  *   sobre un valor presente).
  * - `valor`: vino con el tipo correcto pero fuera del conjunto o rango permitido (enum, min/max).
+ *
+ * Nota: en `esquemaConfiguracion`, todo campo con `z.coerce.number()` tiene `.default(...)`, así
+ * que una clave ausente nunca produce `invalid_type` en un campo coercionado (el default la
+ * absorbe) — un `invalid_type` con `received` ausente solo puede venir de un campo `z.string()`
+ * requerido y realmente ausente (`process.env` nunca entrega otro tipo). Si en el futuro se agrega
+ * un campo coercionado sin default, esta distinción deja de ser válida y hay que revisarla.
  */
 function problemaDeIssue(issue: z.ZodIssue): ProblemaConfiguracion {
   switch (issue.code) {
@@ -47,7 +53,7 @@ export function cargarConfiguracion(
 
   if (!resultado.success) {
     const variables: VariableInvalida[] = resultado.error.issues.map((issue) => ({
-      nombre: String(issue.path[0]),
+      nombre: issue.path.length > 0 ? String(issue.path[0]) : '(raíz)',
       problema: problemaDeIssue(issue),
     }));
     throw new ConfiguracionInvalidaError(variables);

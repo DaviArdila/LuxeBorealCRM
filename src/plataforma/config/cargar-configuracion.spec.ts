@@ -106,6 +106,20 @@ describe('cargarConfiguracion', () => {
     }
   });
 
+  it('clasifica como "formato" un valor coercible que no es un número, no como "falta"', () => {
+    const fuenteInvalida = { ...fuenteValida, PORT: 'no-es-un-numero' };
+
+    expect.assertions(1);
+    try {
+      cargarConfiguracion(fuenteInvalida);
+    } catch (error) {
+      expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+        nombre: 'PORT',
+        problema: 'formato',
+      });
+    }
+  });
+
   it('reporta todas las variables inválidas a la vez, no solo la primera', () => {
     const fuenteInvalida = { ...fuenteValida, NODE_ENV: 'staging', PORT: 'no-es-un-numero' };
 

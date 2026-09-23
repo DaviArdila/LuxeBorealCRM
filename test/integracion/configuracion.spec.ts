@@ -27,7 +27,7 @@ describe('ConfiguracionModule (integración)', () => {
 
     await expect(
       Test.createTestingModule({ imports: [ConfiguracionModule] }).compile(),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/DATABASE_URL/);
   });
 
   it('el módulo raíz compila cuando la configuración es válida', async () => {
