@@ -8,13 +8,14 @@ context: |
   Redis + BullMQ, AI SDK + @openrouter/ai-sdk-provider detrás de LlmPort, zod,
   nestjs-pino, Vitest (ESM) + Supertest + Testcontainers, Docker Compose / Dokploy, Chatwoot
   Community como plataforma de canales. Un solo negocio (ADR-0006). Estado: planeación,
-  sin código todavía — el scaffold real se crea en la Fase 00.
+  sin código todavía — el scaffold real se crea en la Fase 00a.
 
 # strict_tdd es la puerta de Gentle-AI y MUST quedar en false mientras no exista un runner real
 # (no hay package.json). apply.tdd es la convención del proyecto: TDD estricto desde la primera
-# línea de código. No se contradicen: antes de la Fase 00 no hay código que probar.
-# La Fase 00 MUST terminar con `npm test` corriendo y strict_tdd en true (criterio de salida en
-# docs/fases/README.md); a partir de ahí ambos valen lo mismo y manda strict_tdd.
+# línea de código. No se contradicen: antes de la Fase 00a no hay código que probar.
+# La Fase 00a MUST terminar con `npm test` corriendo (runner Vitest confirmado); la Fase 00b MUST
+# terminar con strict_tdd en true (criterio de salida en docs/fases/README.md); a partir de ahí
+# ambos valen lo mismo y manda strict_tdd.
 strict_tdd: false
 
 rules:
@@ -109,13 +110,13 @@ rules:
         Rama por fase (fase-NN-<nombre>), nunca directo en main.
     tdd: true # RED → GREEN → REFACTOR estricto por tarea, observado, no asumido.
     test_command: "npm test" # PLANEADO — no existe package.json todavía; se confirma
-                              # y ajusta en la Fase 00 (esqueleto NestJS con Vitest).
+                              # y ajusta en la Fase 00a (esqueleto NestJS con Vitest).
 
   verify:
-    test_command: "npm test" # PLANEADO — confirmar en Fase 00.
+    test_command: "npm test" # PLANEADO — confirmar en Fase 00a.
     build_command: "npm run verify" # PLANEADO — lint + typecheck + tests + fronteras
-                                     # (dependency-cruiser); confirmar en Fase 00.
-    coverage_threshold: 0 # sin umbral hasta que exista runner real; revisar en Fase 00.
+                                     # (dependency-cruiser); confirmar en Fase 00a.
+    coverage_threshold: 0 # sin umbral hasta que exista runner real; revisar en Fase 00a.
     checklist:
       - >-
         Checklist de cierre §12 de la skill luxeboreal-arquitectura (9 puntos:

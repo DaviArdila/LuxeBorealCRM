@@ -15,7 +15,7 @@ El sistema MUST generar `openapi/openapi.json` a partir de los esquemas zod de c
 (`nestjs-zod`); el documento commiteado en git MUST coincidir exactamente con el que el código
 genera en el momento del build. `openapi/openapi.json` MUST NOT editarse a mano.
 
-Fase que lo implementa: 00 (pipeline y convenciones)
+Fase que lo implementa: 00b (pipeline y convenciones)
 
 #### Scenario: El contrato generado coincide con el commiteado
 
@@ -41,7 +41,7 @@ español (`/api/v1/ventas`, no `/api/v1/sales` ni `/api/v1/venta`). Cada operaci
 `operationId` estable que no cambia entre despliegues salvo que la operación cambie de forma
 incompatible.
 
-Fase que lo implementa: 00 (convención), 11-14 (recursos concretos)
+Fase que lo implementa: 00b (convención), 11-14 (recursos concretos)
 
 #### Scenario: Ruta con prefijo y nombre de recurso en español
 
@@ -62,7 +62,7 @@ formato UUID, fechas en ISO 8601 en UTC, y valores de dinero como enteros en pes
 (nunca decimales ni `Float`), coherente con la regla de dinero de la skill `luxeboreal-arquitectura`
 §5.
 
-Fase que lo implementa: 00 (convención), 12-13 (payloads de inventario y ventas)
+Fase que lo implementa: 00b (convención), 12-13 (payloads de inventario y ventas)
 
 #### Scenario: Dinero como entero, nunca decimal
 
@@ -82,7 +82,7 @@ Toda respuesta de error MUST usar el formato `application/problem+json` de RFC 9
 un código de error propio estable (distinto del `status` HTTP) que el cliente pueda usar para
 distinguir el tipo de error sin parsear el mensaje.
 
-Fase que lo implementa: 00 (convención), cada fase con endpoints
+Fase que lo implementa: 00b (convención), cada fase con endpoints
 
 #### Scenario: Error de validación en formato problem+json
 
@@ -193,7 +193,7 @@ Fase que lo implementa: 04 (webhook), 09 (kill switch)
 La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en producción; MUST NOT
 ser accesible sin protección para cualquiera que conozca la URL.
 
-Fase que lo implementa: 00 (pipeline), 09 (endurecimiento en producción)
+Fase que lo implementa: 00b (pipeline), 09 (endurecimiento en producción)
 
 #### Scenario: /docs protegido en producción
 
@@ -207,7 +207,7 @@ CI MUST lintear el contrato generado con Spectral y MUST comparar el contrato de
 `main` con oasdiff; un cambio incompatible (breaking change) sin versión nueva (`/api/v2`) MUST
 hacer fallar el build.
 
-Fase que lo implementa: 00 (pipeline), cada fase con endpoints
+Fase que lo implementa: 00b (pipeline), cada fase con endpoints
 
 #### Scenario: Cambio incompatible sin nueva versión bloquea el build
 

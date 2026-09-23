@@ -96,7 +96,7 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 - **Herramientas**: índice de skills en `.atl/skill-registry.md` (se regenera con la skill
   `skill-registry` tras cambios de skills); CodeGraph: indexar `../ChatLuxeCRM` para apoyar la
   escritura de specs de migración (quién llama a la máquina de estados, a `enviarMensaje`), y este
-  repo una vez la Fase 00 cree código; Engram con claves de tema `luxeboreal/adr/<nnnn>` y
+  repo una vez la Fase 00a cree código; Engram con claves de tema `luxeboreal/adr/<nnnn>` y
   `luxeboreal/fase-<nn>` como espejo de recuperación — los documentos del repo siguen siendo la
   fuente de verdad.
 
@@ -123,7 +123,7 @@ repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta 
 
 ## Comandos
 
-Se completan en la Fase 00. Previstos: `npm run start:dev`, `npm run verify` (lint + typecheck +
+Se completan en la Fase 00a. Previstos: `npm run start:dev`, `npm run verify` (lint + typecheck +
 tests + fronteras), `npm test` (Vitest), `npm run test:e2e`, `npm run evals`.
 
 ## Reglas críticas

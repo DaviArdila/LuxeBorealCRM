@@ -38,24 +38,25 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 ## Mapa
 
 ```
-00 Fundaciones ─▶ 01 Persistencia ─▶ 02 Catálogo ─▶ 03 Importador
-                                         │
-                       04 Canal Chatwoot ◀┘
-                              │
-                       05 Conversaciones ─▶ 06 Pasarela LLM ─▶ 07 Agente ─▶ 08 Leads y handoff
+00a Esqueleto ─▶ 00b CI y contrato ─▶ 01 Persistencia ─▶ 02 Catálogo ─▶ 03 Importador
+                                                                             │
+                                           04 Canal Chatwoot ◀┘
+                                                  │
+                                           05 Conversaciones ─▶ 06 Pasarela LLM ─▶ 07 Agente ─▶ 08 Leads y handoff
+                                                                                                        │
+                                                                              09 Operación ◀────────────┘
                                                                                     │
-                                                          09 Operación ◀────────────┘
-                                                                │
-                                                          10 Corte (cutover)  ◀── aquí el prototipo se apaga
-                                                                │
-                                   11 Usuarios/Auth ─▶ 12 Inventario ─▶ 13 Ventas y envíos ─▶ 14 API del back office
+                                                                              10 Corte (cutover)  ◀── aquí el prototipo se apaga
+                                                                                    │
+                                                       11 Usuarios/Auth ─▶ 12 Inventario ─▶ 13 Ventas y envíos ─▶ 14 API del back office
 ```
 
 ## Fases
 
 | # | Fase | Objetivo (una frase) | Sale con… (verificación) | Estado |
 |---|---|---|---|---|
-| 00 | Fundaciones | Esqueleto NestJS con config validada, logs, reloj, health, lint, tests (Jest), Docker de desarrollo y el pipeline de contrato de API, en el repo propio ya iniciado | `npm run verify` en verde; `npm test` corre y `openspec/config.yaml` pasa a `strict_tdd: true`; `GET /health` responde con Postgres y Redis arriba y aparece en el contrato OpenAPI; pipeline de API arriba (ADR-0008): `nestjs-zod` + `@nestjs/swagger` generan `openapi/openapi.json`, Scalar sirve `/docs` protegido fuera de desarrollo; CI (GitHub Actions, o hook git local mientras el repo no esté en GitHub) en verde: lint, typecheck, `dependency-cruiser`, Jest integración (Testcontainers), `gitleaks`, `npm audit`, commitlint, drift de `openapi/openapi.json` + Spectral + oasdiff | idea |
+| 00a | Esqueleto y verificación local | Esqueleto NestJS 12 con config validada (Zod), reloj inyectable, logger con redacción, `compartido/`, fronteras (dependency-cruiser), Vitest (ESM), health con Terminus (Postgres + Redis vía `schema.prisma` mínimo, sin modelos) y Docker Compose de desarrollo, en el repo propio ya iniciado | `npm run verify` en verde en local (lint, typecheck, fronteras, tests); `npm test` corre con Vitest; `GET /health` responde con Postgres y Redis arriba; primera tarea deja registrada la verificación de compatibilidad de dependencias clave con NestJS 12 (ADR-0001 enmienda) | spec en revisión |
+| 00b | CI y contrato de API | Hook pre-push local (lint, typecheck, tests unitarios, commitlint, gitleaks) + workflow de GitHub Actions completo listo (activo al subir el repo), y el pipeline de contrato de API (ADR-0008): `nestjs-zod` + `@nestjs/swagger` generan `openapi/openapi.json`, Scalar sirve `/docs` protegido fuera de desarrollo, `GET /health` entra al contrato OpenAPI, CHANGELOG con `git-cliff`. Depende de 00a | CI en verde local (pre-push) con el workflow de Actions escrito; `openspec/config.yaml` pasa a `strict_tdd: true`; CI completo en verde: lint, typecheck, `dependency-cruiser`, tests de integración (Testcontainers), `gitleaks`, `npm audit`, commitlint, drift de `openapi/openapi.json` + Spectral + oasdiff | idea |
 | 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | idea |
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | idea |
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | idea |
@@ -76,7 +77,8 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > catálogo se carga con la hoja de Sheets + importador (Fase 03). La primera pantalla podría ser una
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
 
-> Ninguna fase tiene todavía su change de OpenSpec (todas en `idea`). En cuanto una fase pase a
+> La Fase 00a ya tiene su change de OpenSpec: `openspec/changes/fase-00a-esqueleto/` (exploración
+> hecha; cubre también lo que será 00b). Las demás fases siguen en `idea`. En cuanto una fase pase a
 > `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
 > (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
 

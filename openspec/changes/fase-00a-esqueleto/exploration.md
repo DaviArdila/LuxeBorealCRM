@@ -1,5 +1,9 @@
 # Exploration: Fase 00 — Fundaciones (LuxeBorealCRM)
 
+> Esta exploración se hizo antes de decidir partir la Fase 00 (P19, 2026-09-23) y cubre tanto 00a
+> (esqueleto y verificación local) como 00b (CI y contrato de API); la proposal de 00b la referencia
+> en vez de repetirla.
+
 - Fecha: 2026-09-23 · Fase SDD: explore · Espejo: Engram `luxeborealcrm` / `sdd/fase-00-fundaciones/explore`
 - Verificación del orquestador (fuentes primarias, 2026-09-23): `@nestjs/core` dist-tags
   `latest = 12.1.0`, `legacy = 11.2.6` (https://registry.npmjs.org/@nestjs/core); `nest new` ofrece
