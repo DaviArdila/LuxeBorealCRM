@@ -18,7 +18,7 @@ El prototipo usa `cuid()` guardado como `text` en casi todas las tablas y el tel
 ## Decisión
 
 - **UUID v7**, tipo `uuid` de Postgres (`@db.Uuid`), generado por Prisma (`@default(uuid(7))`); si
-  la versión de Prisma fijada en la Fase 00 no lo soporta, se genera en la aplicación.
+  la versión de Prisma fijada en la Fase 00a (`schema.prisma` mínimo) no lo soporta, se genera en la aplicación.
 - **Excepciones con llave natural**: `departamento.id` y `ciudad.id` (códigos DANE),
   `parametro.clave`.
 - **Consecutivo legible aparte** donde una persona lo dice en voz alta: `venta.numero`.

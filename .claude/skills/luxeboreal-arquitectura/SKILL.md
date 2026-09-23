@@ -10,7 +10,7 @@ vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/
 y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
 una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
-> Estado: borrador 0.1 — se ajusta al cerrar la Fase 00 con lo que el scaffold real haya fijado.
+> Estado: borrador 0.1 — se ajusta al cerrar las Fases 00a y 00b con lo que el scaffold real haya fijado.
 
 ## 1. Estructura
 
@@ -152,7 +152,7 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 - Los DTO viven en `interfaz/` del módulo dueño, junto a los controllers que los usan.
 - Nadie escribe ni edita `openapi/openapi.json` a mano; se genera.
 - Si un commit agrega o cambia un endpoint, **el mismo commit** actualiza
-  `openapi/openapi.json` (pipeline y CI en la Fase 00: regeneración, Scalar en `/docs`, Spectral,
+  `openapi/openapi.json` (pipeline y CI en la Fase 00b: regeneración, Scalar en `/docs`, Spectral,
   oasdiff).
 
 ## 11. Documentación
@@ -163,8 +163,8 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
   nunca en `dominio/`, `infraestructura/` ni tipos internos.
 - Runbooks de operación (qué hacer si algo falla en producción) van en `docs/operacion/`, desde la
   Fase 09.
-- `CHANGELOG.md` se genera desde Conventional Commits; la herramienta concreta se elige en la
-  Fase 00.
+- `CHANGELOG.md` se genera desde Conventional Commits; la herramienta es **git-cliff**
+  (decidido 2026-09-23; se configura en la Fase 00b).
 
 ## 12. Checklist de cierre (no se reporta "listo" sin esto)
 

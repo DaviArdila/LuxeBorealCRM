@@ -9,7 +9,7 @@ El proyecto expone una API para un cliente de back office independiente (`SPEC.m
 solo está mencionada, no especificada: `docs/analisis/02-investigacion.md:52` cita
 `@nestjs/swagger` y la Fase 14 habla de un "contrato OpenAPI estable", sin convenciones de
 versionado, errores, paginación ni auth, sin ADR, y con la documentación arrancando en la Fase 14
-aunque hay endpoints desde la Fase 00 (`/health`), la 04 (webhook de Chatwoot), la 09 (admin/kill
+aunque hay endpoints desde la Fase 00a (`/health`), la 04 (webhook de Chatwoot), la 09 (admin/kill
 switch) y la 11 (auth).
 
 Hay además un conflicto latente de fuente de verdad: el stack usa **zod** para validar
@@ -49,7 +49,7 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
 - **Contrato versionado en git**: `openapi/openapi.json` se genera y se commitea. CI regenera el
   documento y falla si difiere del commiteado (ningún cambio de API pasa sin verse en el diff del
   PR), lint con **Spectral** y detección de cambios incompatibles con **oasdiff** contra `main`
-  (herramientas candidatas a confirmar y fijar en la Fase 00).
+  (herramientas candidatas a confirmar y fijar en la Fase 00b).
 - **Convenciones** (detalladas con escenarios en `openspec/specs/api/spec.md`, resumen aquí):
   - prefijo `/api/v1`; recursos en plural y en español (`/api/v1/ventas`); `operationId` estable por
     operación (el cliente generado de la Fase 14 usa esos nombres);
@@ -65,7 +65,7 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
     mecanismo de autenticación (tipo de token o sesión) se decide en la Fase 11, no aquí;
   - endpoints internos (webhook de Chatwoot, kill switch) etiquetados `internal` y excluidos del
     documento público.
-- **Empieza en la Fase 00, no en la 14**: la Fase 00 deja el pipeline (generación, snapshot, Scalar,
+- **Empieza en la Fase 00b, no en la 14**: la Fase 00b deja el pipeline (generación, snapshot, Scalar,
   CI); cada fase que agrega o cambia un endpoint actualiza `openapi/openapi.json` en el mismo commit.
   La Fase 14 pasa a estabilizar la API v1 y probar un cliente generado, no a documentarla por primera
   vez.
@@ -75,15 +75,15 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
 - Un solo lugar cambia cuando cambia un endpoint: el esquema zod. Elimina la desincronización entre
   validación y documentación.
 - CI gana una responsabilidad nueva: regenerar y comparar el contrato, correr Spectral y oasdiff. Si
-  esas herramientas fallan o no se fijan bien en la Fase 00, el pipeline bloquea PRs sin motivo real;
-  su configuración exacta (reglas de Spectral, umbral de oasdiff) se confirma al cerrar la Fase 00.
+  esas herramientas fallan o no se fijan bien en la Fase 00b, el pipeline bloquea PRs sin motivo real;
+  su configuración exacta (reglas de Spectral, umbral de oasdiff) se confirma al cerrar la Fase 00b.
 - El cliente de back office (Fase 14) puede generarse desde `openapi.json` en vez de escribirse a
   mano contra la API (`docs/analisis/06-cliente-back-office.md`).
 - Prohibido: escribir o editar `openapi/openapi.json` a mano; documentar un endpoint con
   `@ApiProperty` en vez del esquema zod; exponer un endpoint `internal` en el documento público;
   Scalar accesible sin protección en producción.
 - Pendiente de otra decisión: el mecanismo de autenticación/autorización concreto (Fase 11) y los
-  valores exactos de configuración de Spectral/oasdiff (Fase 00).
+  valores exactos de configuración de Spectral/oasdiff (Fase 00b).
 
 ## Fuentes
 
