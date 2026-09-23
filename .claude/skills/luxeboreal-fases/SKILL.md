@@ -11,8 +11,8 @@ para una fase de este proyecto — el mecanismo genérico del ciclo SDD (comando
 gatekeeper de modo de ejecución) está en `.claude/skills/_shared/sdd-orchestrator-workflow.md`; no
 se repite aquí.
 
-Preflight de esta migración: **pace interactivo**, **artefactos híbridos** (OpenSpec en el repo +
-Engram como espejo de recuperación, proyecto `luxeborealcrm`), **estrategia de PR `ask-on-risk`**.
+Preflight de esta migración (actualizado 2026-09-23): **pace automático**, **artefactos híbridos** (OpenSpec en el repo +
+Engram como espejo de recuperación, proyecto `luxeborealcrm`), **estrategia de PR `auto-chain`** (cadena `stacked-to-main`).
 
 ## 1. Qué produce cada fase del ciclo SDD
 
@@ -49,9 +49,9 @@ En este orden:
 
 Con ese material, `sdd-propose` llena la proposal siguiendo `openspec/config.yaml` §proposal (tabla
 "Qué se migra del prototipo" con el criterio de la sección 2 de esta skill, alcance explícito, plan
-de rollback, preguntas bloqueantes). Con ritmo interactivo, tras cada fase SDD se
-presenta al usuario un resumen corto (objetivo, qué migra y qué no, preguntas) y él decide si se
-sigue. La puerta que **siempre** aplica, sin excepciones: `sdd-apply` no arranca hasta que el
+de rollback, preguntas bloqueantes). Con ritmo automático, las fases de planeación corren seguidas y
+solo se detienen ante una decisión de producto o un fallo; con ritmo interactivo, tras cada fase se
+presenta un resumen corto y el usuario decide si se sigue. La puerta que **siempre** aplica, sin excepciones: `sdd-apply` no arranca hasta que el
 usuario aprueba los cuatro artefactos (proposal, specs, design, tasks); solo el usuario pasa el
 change a `aprobada` (`docs/fases/README.md`).
 
@@ -82,7 +82,7 @@ Preguntas, en orden:
 - TDD estricto por tarea: RED observado (test que falla) primero, después GREEN, después REFACTOR.
 - Cada tarea de `tasks.md` se marca `[x]` al terminar con su test, y cierra con un commit de unidad
   de trabajo (comportamiento + test + doc juntos, Conventional Commits); el hash queda anotado en la
-  propia tarea. Slices de PR ~400 líneas por la estrategia `ask-on-risk` (skills `work-unit-commits`,
+  propia tarea. Slices de PR ~400 líneas por la estrategia `auto-chain` (skills `work-unit-commits`,
   `chained-pr`).
 - Una desviación de la spec se anota en el `design.md`/`tasks.md` del change (no solo en el chat)
   antes de seguir; si cambia un criterio de aceptación, se avisa al usuario.

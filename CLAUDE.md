@@ -77,10 +77,11 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 - **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/`, recorrido con el
   ciclo `sdd-new/sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify →
   sdd-archive` (skill `luxeboreal-fases`; detalle de artefactos en
-  `.claude/skills/_shared/sdd-orchestrator-workflow.md`). Preflight de esta migración: pace
-  **interactivo**, artefactos **híbridos** (OpenSpec en el repo + Engram, proyecto
+  `.claude/skills/_shared/sdd-orchestrator-workflow.md`). Preflight de esta migración (actualizado 2026-09-23): pace
+  **automático**, artefactos **híbridos** (OpenSpec en el repo + Engram, proyecto
   `luxeborealcrm` — correr las sesiones desde la raíz del repo; si la detección automática de
-  proyecto falla, pasarlo explícito), estrategia de PR **`ask-on-risk`**. Equivalencia de estados
+  proyecto falla, pasarlo explícito), estrategia de PR **`auto-chain`** con
+  cadena `stacked-to-main`. Equivalencia de estados
   de `docs/fases/README.md`: `spec en revisión` ≈ propose+spec+design+tasks; `aprobada` ≈ el usuario
   las aprueba; `en curso` ≈ apply (cada tarea de `tasks.md` cierra con un commit de unidad de
   trabajo); `cerrada` ≈ verify+archive (fusiona los delta specs en `openspec/specs/`).
