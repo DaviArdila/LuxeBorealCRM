@@ -529,7 +529,7 @@ sobre los fixtures con violación.
   | Límite de rollback | Revertir `.dependency-cruiser.cjs`, los bloques T7 de `eslint.config.js`, `package.json`/`package-lock.json` (dependency-cruiser), `tsconfig.json` y `vitest.config.ts` (exclusión/inclusión de fixtures), `test/fronteras/**` y esta evidencia T7; mantener intactos T1-T6. |
 - Presupuesto de revisión: 769 líneas de autoría en el diff final frente al padre (adiciones + eliminaciones; se excluye `package-lock.json` generado). Las diez reglas y sus fixtures/pruebas forman el T7 asignado; reducirlo quitaría cobertura o cambiaría el límite PR5. Se recomienda `size:exception` antes de PR5; no se crea PR ni se hace push.
 
-**commit:** `<pendiente>` — `test(fronteras): verificar reglas de dependency-cruiser y eslint`
+**commit:** `92b9211` — `test(fronteras): verificar reglas de dependency-cruiser y eslint`
 
 ---
 
