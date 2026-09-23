@@ -90,7 +90,7 @@ Preguntas, en orden:
 
 ## 6. Cerrar la fase (`sdd-verify → sdd-archive`)
 
-1. Checklist de cierre de la skill `luxeboreal-arquitectura` (§10: `npm run verify` en verde, e2e si
+1. Checklist de cierre de la skill `luxeboreal-arquitectura` (§12: `npm run verify` en verde, e2e si
    aplica, cada escenario con su test, `MODELO_DATOS.md` al día si cambió el esquema, ADR si hubo decisión,
    `docs/migracion/inventario.md` y `docs/fases/README.md` actualizados, sin `Date.now`/`process.env`
    fuera de sitio, un commit por unidad de trabajo).

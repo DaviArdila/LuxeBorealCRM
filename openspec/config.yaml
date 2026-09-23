@@ -118,10 +118,11 @@ rules:
     coverage_threshold: 0 # sin umbral hasta que exista runner real; revisar en Fase 00.
     checklist:
       - >-
-        Checklist de cierre §10 de la skill luxeboreal-arquitectura (10 puntos:
+        Checklist de cierre §12 de la skill luxeboreal-arquitectura (9 puntos:
         verify en verde, e2e si aplica, cada escenario con su test, MODELO_DATOS.md al día,
         ADR si hubo decisión, inventario.md y fases/README.md actualizados, sin
-        Date.now/process.env fuera de sitio, un commit por unidad de trabajo).
+        Date.now/process.env fuera de sitio, un commit por unidad de trabajo, contrato
+        OpenAPI regenerado si cambió un endpoint).
       - >-
         verify-report.md MUST registrar el registro de cierre de la fase: resultado de
         cada escenario, salida de npm run verify, commits y PRs de la fase, resultado
