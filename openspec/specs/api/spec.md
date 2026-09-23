@@ -1,0 +1,169 @@
+# API — Specification
+
+## Purpose
+
+Gobierna el contrato de la API pública del back office: cómo se genera, cómo se versiona, qué
+convenciones sigue cada endpoint y qué queda fuera del documento público. La decisión de fondo
+(OpenAPI 3.1 code-first con `nestjs-zod` + Scalar) está en `docs/adr/0008-contrato-api-openapi.md`;
+esta spec define el comportamiento observable que cada fase con endpoints debe cumplir.
+
+## Requirements
+
+### Requirement: API1 — Contrato OpenAPI generado desde el código
+
+El sistema MUST generar `openapi/openapi.json` a partir de los esquemas zod de cada endpoint
+(`nestjs-zod`); el documento commiteado en git MUST coincidir exactamente con el que el código
+genera en el momento del build. Nadie MUST editar `openapi/openapi.json` a mano.
+
+Fase que lo implementa: 00 (pipeline y convenciones)
+
+#### Scenario: El contrato generado coincide con el commiteado
+
+- Dado que el repositorio tiene un `openapi/openapi.json` commiteado,
+- Cuando CI regenera el documento a partir del código actual,
+- Entonces el documento generado es idéntico byte a byte al commiteado y el build pasa; si difieren,
+  el build falla.
+
+### Requirement: API2 — Versionado, idioma y nombres estables
+
+Toda ruta pública MUST empezar con el prefijo `/api/v1`. Los recursos MUST nombrarse en plural y en
+español (`/api/v1/ventas`, no `/api/v1/sales` ni `/api/v1/venta`). Cada operación MUST tener un
+`operationId` estable que no cambia entre despliegues salvo que la operación cambie de forma
+incompatible.
+
+Fase que lo implementa: 00 (convención), 11-14 (recursos concretos)
+
+#### Scenario: Ruta con prefijo y nombre de recurso en español
+
+- Dado un endpoint que expone ventas del negocio,
+- Cuando se publica en el contrato,
+- Entonces su ruta es `/api/v1/ventas` (prefijo de versión + recurso en plural español).
+
+#### Scenario: operationId estable entre despliegues
+
+- Dado un endpoint ya publicado con un `operationId`,
+- Cuando se despliega una nueva versión del servicio sin cambiar el contrato de esa operación,
+- Entonces el `operationId` en el documento generado es el mismo que en el despliegue anterior.
+
+### Requirement: API3 — Convenciones JSON
+
+Los cuerpos JSON de request y response MUST usar camelCase para las claves, identificadores en
+formato UUID, fechas en ISO 8601 en UTC, y valores de dinero como enteros en pesos colombianos
+(nunca decimales ni `Float`), coherente con la regla de dinero de la skill `luxeboreal-arquitectura`
+§5.
+
+Fase que lo implementa: 00 (convención), 12-13 (payloads de inventario y ventas)
+
+#### Scenario: Dinero como entero, nunca decimal
+
+- Dado un endpoint que devuelve el precio de una venta,
+- Cuando construye el cuerpo de la respuesta,
+- Entonces el precio es un entero en pesos colombianos, sin parte decimal ni tipo `Float`.
+
+#### Scenario: Fecha en ISO 8601 UTC
+
+- Dado un endpoint que devuelve una marca de tiempo (creación, actualización),
+- Cuando construye el cuerpo de la respuesta,
+- Entonces la fecha está en formato ISO 8601 con zona UTC.
+
+### Requirement: API4 — Errores en formato RFC 9457
+
+Toda respuesta de error MUST usar el formato `application/problem+json` de RFC 9457 y MUST incluir
+un código de error propio estable (distinto del `status` HTTP) que el cliente pueda usar para
+distinguir el tipo de error sin parsear el mensaje.
+
+Fase que lo implementa: 00 (convención), cada fase con endpoints
+
+#### Scenario: Error de validación en formato problem+json
+
+- Dado que un request llega con un payload inválido,
+- Cuando el servidor rechaza el request,
+- Entonces responde con `Content-Type: application/problem+json` y un cuerpo que incluye un código
+  de error propio estable, además del `status` HTTP.
+
+### Requirement: API5 — Paginación por cursor y filtros explícitos
+
+Todo endpoint que devuelve una colección MUST paginar por cursor (no por número de página) y MUST
+exponer sus filtros como parámetros explícitos y documentados. Ningún endpoint MUST diseñarse a la
+medida de una pantalla concreta del cliente.
+
+Fase que lo implementa: 12-14 (endpoints de colección concretos)
+
+#### Scenario: Colección paginada por cursor
+
+- Dado un endpoint que lista movimientos de inventario,
+- Cuando el cliente pide una página siguiente,
+- Entonces lo hace con un cursor devuelto por la respuesta anterior, no con un número de página.
+
+### Requirement: API6 — Idempotencia en creación de ventas y movimientos de inventario
+
+Los endpoints POST que crean una venta o un movimiento de inventario MUST aceptar un header
+`Idempotency-Key`. Reintentar el mismo request con la misma clave de idempotencia MUST devolver el
+mismo resultado sin crear un segundo registro.
+
+Fase que lo implementa: 12 (inventario), 13 (ventas)
+
+#### Scenario: Reintento con la misma clave no duplica la venta
+
+- Dado que un cliente crea una venta con un `Idempotency-Key` y la conexión se corta antes de
+  recibir la respuesta,
+- Cuando el cliente reintenta el mismo request con la misma clave,
+- Entonces el servidor devuelve el resultado de la venta ya creada y no crea una segunda.
+
+### Requirement: API7 — Autorización por rol
+
+Cada endpoint MUST verificar en el servidor el rol del usuario autenticado (admin/asesor) antes de
+ejecutar la operación; el cliente MUST NOT ser el único lugar que decide si una acción está
+permitida. El mecanismo de autenticación (tipo de token o sesión) se decide en la Fase 11; esta
+spec solo exige que la verificación de rol ocurra en el servidor, no fija cómo se autentica.
+
+Fase que lo implementa: 11
+
+#### Scenario: Rol insuficiente rechazado en el servidor
+
+- Dado un usuario autenticado con rol `asesor` que llama un endpoint reservado a `admin`,
+- Cuando hace el request,
+- Entonces el servidor lo rechaza con un error de autorización, sin depender de que el cliente no
+  hubiera mostrado la opción.
+
+### Requirement: API8 — Endpoints internos fuera del documento público
+
+Los endpoints internos (webhook de Chatwoot, kill switch de administración) MUST etiquetarse
+`internal` y MUST excluirse del documento OpenAPI público servido en `/docs` y del
+`openapi/openapi.json` distribuido al cliente de back office.
+
+Fase que lo implementa: 04 (webhook), 09 (kill switch)
+
+#### Scenario: Webhook interno no aparece en el documento público
+
+- Dado que el módulo de canales expone el webhook de Chatwoot,
+- Cuando se genera el documento OpenAPI público,
+- Entonces ese endpoint no aparece en él, aunque el endpoint siga funcionando.
+
+### Requirement: API9 — Documentación interactiva no accesible públicamente en producción
+
+La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en producción; no
+MUST ser accesible sin protección a cualquiera que conozca la URL.
+
+Fase que lo implementa: 00 (pipeline), 09 (endurecimiento en producción)
+
+#### Scenario: /docs protegido en producción
+
+- Dado el servicio desplegado en producción,
+- Cuando alguien sin sesión autenticada visita `/docs`,
+- Entonces no puede ver la documentación interactiva (queda detrás de autenticación o desactivada).
+
+### Requirement: API10 — Detección de cambios incompatibles en CI
+
+CI MUST lintear el contrato generado con Spectral y MUST comparar el contrato de la rama contra
+`main` con oasdiff; un cambio incompatible (breaking change) sin versión nueva (`/api/v2`) MUST
+hacer fallar el build.
+
+Fase que lo implementa: 00 (pipeline), cada fase con endpoints
+
+#### Scenario: Cambio incompatible sin nueva versión bloquea el build
+
+- Dado un PR que quita un campo de la respuesta de un endpoint ya publicado en `/api/v1`,
+- Cuando CI compara el contrato de la rama contra `main` con oasdiff,
+- Entonces detecta el cambio como incompatible y el build falla, salvo que el cambio se publique
+  como `/api/v2`.
