@@ -5,8 +5,8 @@
   resolver las contradicciones detectadas en el análisis.
 - Origen: análisis aprobado por el usuario el 2026-09-22
   (`~/.claude/plans/analiza-luxeborealcrm-y-chatluxecrm-vast-cat.md`).
-- Alcance autorizado: solo documentación de este repo. Sin código. Sin commits (pendiente de
-  autorización del usuario).
+- Alcance autorizado: solo documentación de este repo. Sin código. Commits autorizados el 2026-09-23
+  (foto en `main` + rama `chore/adopt-openspec`; el merge lo hace el usuario).
 - TDD: no aplica (cambios de documentación); verificación por relectura estructural y grep.
 
 ## Tareas
@@ -17,7 +17,14 @@
 - [x] T4 — `PREGUNTAS_ABIERTAS.md`: P15 (R14 vs payload del inbox), P16 (aceptar ADR pendientes). Ruta: delegado
 - [x] T5 — `.gitignore` con `.atl/` + `.atl/skill-registry.md`. Ruta: delegado
 - [x] T6 — `SPEC.md` R14 + `MODELO_DATOS.md` §7 según la respuesta a P15 (payload redactado). Ruta: inline
-- [ ] T7 — Commit inicial. Bloqueada: autorización del usuario
+- [x] T7 — Commit inicial en `main`. Ruta: inline
+- [x] T8 — Engram: memorias reubicadas al proyecto `luxeborealcrm`. Ruta: inline
+- [x] T9 — CodeGraph indexado en `../ChatLuxeCRM`. Ruta: inline
+- [x] T10 — `sdd-init` en modo hybrid (`openspec/config.yaml`). Ruta: subagente sdd-init
+- [x] T11 — ADR 0001/0003/0004/0005/0007 aceptados; 0004 con ajuste P15. Ruta: inline
+- [ ] T12 — R1-R16 → `openspec/specs/<dominio>/`; SPEC.md como índice. Ruta: delegado (writer)
+- [ ] T13 — Fases sobre el ciclo `sdd-*`; retirar `_plantilla.md`; skill y CLAUDE.md. Ruta: delegado (writer)
+- [x] T14 — Preguntas: P12 y P16 resueltas, P13 y P14 con camino acordado. Ruta: inline
 
 ## Progreso y evidencia
 
@@ -37,3 +44,13 @@
   skills del proyecto, referencia de `ChatLuxeCRM` y skills de usuario, fecha 2026-09-22).
 - T6: P15 resuelta por el usuario (payload redactado). `SPEC.md` R14, `MODELO_DATOS.md` §5 (`lead.resumen`) y §7
   (`evento_entrante.payload`), `docs/PREGUNTAS_ABIERTAS.md` (P15 movida a Resueltas).
+- T7: `f3fcbc6 docs: add initial planning documents` en `main`; rama `chore/adopt-openspec`.
+- T8: `rescue-ownership` no aplica a memorias con dueño; se recrearon como #3 y #4 en
+  `luxeborealcrm` y las originales #1 y #2 quedaron con borrado suave (reversible).
+- T9: `gentle-ai codegraph init` → 148 archivos TS; `codegraph status` "Index is up to date";
+  `.codegraph/` ignorado por su propio `.gitignore`.
+- T10: `4a80e33 chore(sdd): initialize openspec in hybrid mode`. `strict_tdd: false` hasta que la
+  Fase 00 cree el runner (regla de Gentle-AI: sin runner real no se activa). Preflight SDD:
+  interactive / hybrid / ask-on-risk.
+- T11: `1865c12 docs(adr): accept pending ADRs 0001 0003 0004 0005 0007`.
+- T14: `docs/PREGUNTAS_ABIERTAS.md` (decisiones D10-D12 del 2026-09-23).
