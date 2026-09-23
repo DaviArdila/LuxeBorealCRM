@@ -409,11 +409,10 @@ pasan; ningún `console.*` en `src/plataforma/observabilidad/` (se verifica por 
   objeto serializado incluye `headers`; pino aplica `redact` **después** de `serializers` sobre el
   valor ya serializado (`node_modules/pino/lib/tools.js`, función `_asJson`). El cuerpo
   (`req.body`) sigue sin registrarse.
-- Commit: `<pendiente>` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
-  (hash real registrado en un commit `docs` inmediatamente posterior, mismo patrón que T5, para no
-  usar `git commit --amend` sobre un commit ya creado).
+- Commit: `2214f0c` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14` (488
+  líneas, `package-lock.json` incluido).
 
-**commit:** `<pendiente>` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
+**commit:** `2214f0c` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
 
 ---
 
