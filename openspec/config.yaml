@@ -1,12 +1,12 @@
 schema: spec-driven
 
 context: |
-  LuxeBorealCRM: reescritura NestJS 11 (monolito modular, hexagonal por módulo:
+  LuxeBorealCRM: reescritura NestJS 12 (monolito modular, hexagonal por módulo:
   dominio/aplicacion/puertos/infraestructura/interfaz, fronteras verificadas con
   dependency-cruiser) del prototipo ../ChatLuxeCRM (bot WhatsApp + Chatwoot) más CRM.
-  Stack planeado: Node LTS + TypeScript estricto, NestJS 11, Prisma + PostgreSQL 16,
+  Stack planeado: Node LTS + TypeScript estricto, NestJS 12, Prisma + PostgreSQL 16,
   Redis + BullMQ, AI SDK + @openrouter/ai-sdk-provider detrás de LlmPort, zod,
-  nestjs-pino, Jest + Supertest + Testcontainers, Docker Compose / Dokploy, Chatwoot
+  nestjs-pino, Vitest (ESM) + Supertest + Testcontainers, Docker Compose / Dokploy, Chatwoot
   Community como plataforma de canales. Un solo negocio (ADR-0006). Estado: planeación,
   sin código todavía — el scaffold real se crea en la Fase 00.
 
@@ -109,7 +109,7 @@ rules:
         Rama por fase (fase-NN-<nombre>), nunca directo en main.
     tdd: true # RED → GREEN → REFACTOR estricto por tarea, observado, no asumido.
     test_command: "npm test" # PLANEADO — no existe package.json todavía; se confirma
-                              # y ajusta en la Fase 00 (esqueleto NestJS con Jest).
+                              # y ajusta en la Fase 00 (esqueleto NestJS con Vitest).
 
   verify:
     test_command: "npm test" # PLANEADO — confirmar en Fase 00.

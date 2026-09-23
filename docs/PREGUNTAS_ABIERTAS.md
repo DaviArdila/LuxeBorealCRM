@@ -24,9 +24,11 @@ reflejada.
 | P7 | ¿Migrar datos del prototipo? | No. Arranque limpio; solo se toma la estructura de la base | `MODELO_DATOS.md`, `docs/migracion/inventario.md` |
 | P8 | ¿Cuándo el back office? | Después del corte (fases 11-14 tras la 10); mientras tanto catálogo por Sheets + importador | `docs/fases/README.md` |
 | P9 | ¿Observabilidad en producción? | Mínimo viable: logs JSON a stdout con rotación (Dokploy), Sentry gratis para errores, Uptime Kuma, tabla `uso_llm`. Langfuse después si hace falta | `docs/fases/README.md` (Fase 09), `MODELO_DATOS.md` §7 |
-| P10 | ¿Vitest o Jest? | Jest (estándar de NestJS) + Supertest | `CLAUDE.md`, skill `luxeboreal-arquitectura` |
+| P10 | ¿Vitest o Jest? | **Vitest + ESM (2026-09-23; reemplaza Jest: el CLI de NestJS usa ESM + Vitest por defecto)** + Supertest para e2e | `CLAUDE.md`, skill `luxeboreal-arquitectura` |
 | P11 | ¿Repo git propio? | Sí, independiente; local por ahora, luego GitHub | `git init` hecho el 2026-09-22 |
 | P15 | ¿Se guarda el texto de los mensajes en `evento_entrante.payload`? | No: payload **redactado** (ids, tipo, metadatos; sin texto). Al reprocesar, el contenido se relee de la API de Chatwoot. `lead.resumen` sin datos personales | `openspec/specs/privacidad/spec.md` (R14), `MODELO_DATOS.md` §5 y §7, ADR-0004 |
 | P12 | Aviso de leads calientes: ¿Telegram, notificaciones de Chatwoot o ambos? | **Ambos** (2026-09-23): Chatwoot notifica al asignar; Telegram lleva el resumen del lead. Se revisa tras unas semanas de uso real y se retira Telegram si sobra | Fase 08; `openspec/specs/leads/spec.md` (R11) |
 | P16 | ¿Se aceptan los ADR 0001, 0003, 0004, 0005 y 0007? | **Aceptados** (2026-09-23); el 0004 con el ajuste de P15 (evento redactado) | `docs/adr/` |
 | — | ¿Tipo de llave primaria? | UUID (el usuario lo prefería); recomendación v7 nativo | ADR-0007 |
+| P18 | ¿NestJS 11 o 12? | **NestJS 12** (2026-09-23), con verificación de compatibilidad de dependencias clave en la primera tarea de la Fase 00a y fallback a NestJS 11 si alguna falla | ADR-0001 (enmienda) |
+| P19 | ¿Partir la Fase 00? | **Sí** (2026-09-23): 00a (esqueleto y verificación local) y 00b (CI y contrato de API); 00b depende de 00a | `docs/fases/README.md` |

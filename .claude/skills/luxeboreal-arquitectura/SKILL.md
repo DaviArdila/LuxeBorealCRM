@@ -111,17 +111,18 @@ modulos/<m>/
 
 | Nivel | Qué | Dónde | Infra |
 |---|---|---|---|
-| Unitario (Jest) | `dominio/` y `compartido/`, casos de uso con puertos falsos | junto al archivo, `*.spec.ts` | ninguna |
-| Integración (Jest) | repositorios, máquina de estados, colas, controladores | `test/integracion/` | Postgres + Redis reales, base aislada por worker |
-| E2E (Jest + Supertest) | flujo completo por HTTP con canal y LLM falsos | `test/e2e/` | stack completo |
+| Unitario (Vitest) | `dominio/` y `compartido/`, casos de uso con puertos falsos | junto al archivo, `*.spec.ts` | ninguna |
+| Integración (Vitest) | repositorios, máquina de estados, colas, controladores | `test/integracion/` | Postgres + Redis reales, base aislada por worker |
+| E2E (Vitest + Supertest) | flujo completo por HTTP con canal y LLM falsos | `test/e2e/` | stack completo |
 | Evals | conversaciones de referencia contra LLM simulado (siempre) o real (bajo demanda) | `test/evals/` | según modo |
 
 - Cada escenario de las specs tiene al menos un test nombrado `<R#> — <título del escenario>`
   (ej. `R13 — Respuesta agrupada en el mínimo de mensajes`); así verify comprueba la cobertura por
   nombre.
 - Los tests del prototipo se **reescriben** en el nivel correcto, no se copian.
-- Reloj fijado con un `ClockFalso` inyectado; nada de `jest.useFakeTimers` sobre lógica de negocio.
-- Jest es el runner estándar de NestJS (`@nestjs/testing` + `Test.createTestingModule`).
+- Reloj fijado con un `ClockFalso` inyectado; nada de `vi.useFakeTimers` sobre lógica de negocio.
+- Vitest es el runner (ESM, decisión 2026-09-23; reemplaza Jest — `CLAUDE.md`, ADR-0001 enmienda);
+  `@nestjs/testing` + `Test.createTestingModule` sigue aplicando igual.
 
 ## 8. Nombres e idioma
 

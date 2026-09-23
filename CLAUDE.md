@@ -85,7 +85,7 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
   de `docs/fases/README.md`: `spec en revisión` ≈ propose+spec+design+tasks; `aprobada` ≈ el usuario
   las aprueba; `en curso` ≈ apply (cada tarea de `tasks.md` cierra con un commit de unidad de
   trabajo); `cerrada` ≈ verify+archive (fusiona los delta specs en `openspec/specs/`).
-- **TDD estricto**: por tarea, RED observado → GREEN → REFACTOR; runner Jest (`npm test`),
+- **TDD estricto**: por tarea, RED observado → GREEN → REFACTOR; runner Vitest (ESM, `npm test`),
   registrado en la spec de cada fase.
 - **Entrega**: presupuesto de ~400 líneas cambiadas por PR (skills `work-unit-commits`,
   `chained-pr`); estrategia de cadena por defecto `stacked-to-main`; cada spec de fase declara sus
@@ -102,14 +102,15 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 
 ## Stack (ADR-0001, ADR-0002)
 
-- Node.js LTS + TypeScript estricto, **NestJS 11**. Un solo negocio (ADR-0006).
+- Node.js LTS + TypeScript estricto, **NestJS 12** (ADR-0001, enmienda 2026-09-23). Un solo negocio
+  (ADR-0006).
 - **Prisma** sobre **PostgreSQL 16** (mismo servidor que Chatwoot, base y rol propios — ADR-001 del
   prototipo). Llaves UUID v7 (ADR-0007). Diseño en `MODELO_DATOS.md`.
 - **Redis** + **BullMQ** (`@nestjs/bullmq`) para colas, debounce, locks, dedupe y cachés.
 - **AI SDK** (`ai`) + `@openrouter/ai-sdk-provider` detrás de un puerto propio `LlmPort`; modelo
   principal **GPT-5.6 Luna** vía OpenRouter con modelos de respaldo.
 - `zod` para validar configuración y payloads; `sharp` para imágenes; `nestjs-pino` para logs.
-- **Jest** (estándar de NestJS) + Supertest; Postgres y Redis reales en integración.
+- **Vitest** (ESM, decisión 2026-09-23) + Supertest para e2e; Postgres y Redis reales en integración.
 - Observabilidad inicial: logs JSON a stdout, Sentry (plan gratis), Uptime Kuma, tabla `uso_llm`.
 - Docker Compose para desarrollo; Dokploy en el VPS para producción. **Chatwoot** como plataforma de
   canales, historial y bandeja humana (ADR-0005): lo que ya hace no se construye.
@@ -123,7 +124,7 @@ repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta 
 ## Comandos
 
 Se completan en la Fase 00. Previstos: `npm run start:dev`, `npm run verify` (lint + typecheck +
-tests + fronteras), `npm test` (Jest), `npm run test:e2e`, `npm run evals`.
+tests + fronteras), `npm test` (Vitest), `npm run test:e2e`, `npm run evals`.
 
 ## Reglas críticas
 
