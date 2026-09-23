@@ -8,8 +8,8 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 
 - [x] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
 - [x] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
-- [ ] T3 — `plataforma/config`: configuración validada con Zod (código verificado en `2aa152d` y
-      `.env.example` agregado; pendiente registrar el commit de cierre — ver evidencia debajo)
+- [x] T3 — `plataforma/config`: configuración validada con Zod (código verificado en `2aa152d` y
+      plantilla `.env.example` completada en `b2bd6d0` — ver evidencia debajo)
 - [x] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
 - [x] T5 — `compartido/`: `dinero`, `texto`, `numero`
 - [x] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
@@ -236,10 +236,14 @@ aceptar tráfico, sin variables `MOCK_*` (PLT1, D8).
   | Runtime harness | `npm run test:integracion -- configuracion` — exit 0; 1 suite y 2 tests pasaron. `Test.createTestingModule` comprueba el rechazo de configuración inválida y la compilación con valores válidos; no requiere servicios externos. |
   | Límite de rollback | Revertir `.env.example` y esta evidencia/checklist de T3 en `openspec/changes/fase-00a-esqueleto/tasks.md`; no tocar los archivos T7 preexistentes. |
 
-  Commit de cierre de la plantilla: pendiente de crear y registrar abajo.
+  Commit de cierre de la plantilla: `b2bd6d0` — `docs(plataforma/config): documentar variables de
+  entorno de desarrollo`.
 
-**commit:** `2aa152d` — `feat(plataforma/config): validar configuración con Zod al arrancar`
-(implementación Zod; plantilla `.env.example` agregada, commit de cierre pendiente de registrar)
+**Commits de T3**:
+- `2aa152d` — `feat(plataforma/config): validar configuración con Zod al arrancar` (implementación
+  Zod).
+- `b2bd6d0` — `docs(plataforma/config): documentar variables de entorno de desarrollo` (plantilla
+  `.env.example` y evidencia de cierre).
 
 ---
 
