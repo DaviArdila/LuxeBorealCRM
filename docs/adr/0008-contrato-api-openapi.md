@@ -1,4 +1,5 @@
-# 0008. Contrato de API: OpenAPI 3.1 code-first con nestjs-zod y Scalar
+# 0008. Contrato de API: OpenAPI 3.1 code-first con Scalar (nestjs-zod originalmente; enmendado a
+validación nativa de NestJS 12 el 2026-09-23, ver "Enmienda" abajo)
 
 - Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-23
