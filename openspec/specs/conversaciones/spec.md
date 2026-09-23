@@ -109,12 +109,22 @@ Fase que lo implementa: 05
 
 ### Requirement: R13 — Límites de costo por conversación
 
-El sistema MUST aplicar, donde el canal cobra por mensaje saliente, un mínimo configurable de
-mensajes por respuesta (una foto cuenta como un mensaje; collage por defecto), un tope configurable
-de turnos por conversación, un rate limit configurable por contacto, y un techo de gasto mensual
-configurable.
+Donde el canal cobra por mensaje saliente, el sistema MUST agrupar cada respuesta en el **menor
+número posible** de mensajes salientes (una ficha = un mensaje de texto; una foto cuenta como un
+mensaje; collage por defecto). Además MUST aplicar un tope configurable de turnos por conversación
+y un rate limit configurable por contacto, y MUST registrar el costo estimado de cada llamada al LLM
+en `uso_llm` para controlar el techo de gasto mensual (techo del negocio: 20 USD/mes entre VPS, LLM
+y Meta). El techo se hace cumplir también con un límite de gasto configurado en la consola del
+proveedor de LLM (operación, Fase 09). El comportamiento del bot al alcanzar el techo desde el
+código está pendiente de decisión (P17).
 
 Fase que lo implementa: 05, 06, 07
+
+#### Scenario: Respuesta agrupada en el mínimo de mensajes
+
+- Dado que la conversación es por un canal donde el mensaje saliente cuesta,
+- Cuando el bot responde con la ficha de un producto,
+- Entonces la ficha sale como **un solo** mensaje de texto, no fragmentada en varios.
 
 #### Scenario: Fotos agrupadas en collage por defecto
 
@@ -135,3 +145,10 @@ Fase que lo implementa: 05, 06, 07
 - Cuando se supera ese límite,
 - Entonces se aplica el freno correspondiente (los valores concretos de los límites son
   configurables, no constantes en el código).
+
+#### Scenario: Costo de cada llamada al LLM registrado
+
+- Dado que el agente hace una llamada al LLM durante un turno,
+- Cuando la llamada termina (con éxito o con error),
+- Entonces queda una fila en `uso_llm` con proveedor, modelo, tokens de entrada, salida y caché,
+  costo estimado en USD, latencia y resultado, que permite sumar el gasto del mes.

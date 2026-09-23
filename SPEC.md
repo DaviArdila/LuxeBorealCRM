@@ -85,7 +85,7 @@ la spec de cada dominio).
 | R10 | Fuera de horario el bot sigue atendiendo y captura datos del cliente antes de avisar del lead | `openspec/specs/leads/spec.md` |
 | R11 | Notificación de lead a Telegram: máximo 1 por contacto cada 24 h, con reintento hasta entregarse | `openspec/specs/leads/spec.md` |
 | R12 | Mensajes no textuales: audio pide texto, imagen pide descripción, ubicación alimenta la cotización, resto se ignora | `openspec/specs/agente/spec.md` |
-| R13 | Costos: mínimo de mensajes por respuesta, tope de turnos, rate limit por contacto, techo mensual de gasto | `openspec/specs/conversaciones/spec.md` |
+| R13 | Costos: el menor número posible de mensajes salientes por respuesta, tope de turnos, rate limit por contacto, techo mensual de gasto | `openspec/specs/conversaciones/spec.md` |
 | R14 | Datos personales: aviso al cliente; nunca en logs contenido de mensajes, números completos, cédula ni correo; inbox redactado | `openspec/specs/privacidad/spec.md` |
 | R15 | Horario, textos al cliente y parámetros del negocio son datos editables, nunca constantes en el código | `openspec/specs/configuracion-negocio/spec.md` |
 | R16 | Kill switch global y por contacto, protegido por token | `openspec/specs/admin/spec.md` |
