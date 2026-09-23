@@ -6,7 +6,7 @@ Review requerida: **RDD** (00a no es una de las fases 04, 05, 06, 10; no se requ
 
 Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test de la tarea en verde y su commit anotado.
 
-- [ ] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
+- [x] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
 - [ ] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
 - [ ] T3 — `plataforma/config`: configuración validada con Zod
 - [ ] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
@@ -106,11 +106,16 @@ fase hasta que el usuario confirme Node 24 activo (`node -v`).
 
 **Hecho cuando**:
 - La tabla de D15 en `design.md` tiene versión exacta, resultado de `peerDependencies`, resultado de
-  instalación y resultado de humo para cada fila (o `n/a` donde corresponde), sin celdas vacías.
+  instalación y resultado de humo para cada fila (o `n/a` donde corresponde), sin celdas vacías. ✅
 - Node 24 confirmado activo en la máquina de desarrollo (o la fase queda bloqueada hasta que lo
-  esté).
-- Si hubo fallback: ADR-0001 tiene su enmienda y el resto de las tareas de este documento se leen
-  con NestJS 11 en vez de 12 donde aplique.
+  esté). ✅
+- **Confirmado: NestJS 12, sin fallback.** `nestjs-zod@5.5.0` excluye `@nestjs/common@^12` de su
+  rango de `peerDependencies` (FAIL puntual, D15), pero el usuario decidió (2026-09-23) no retroceder
+  el monolito a NestJS 11 por una dependencia que 00a no instala: se descarta `nestjs-zod` por
+  completo y se usa el soporte nativo de Standard Schema de NestJS 12
+  (`StandardSchemaValidationPipe` + conversión nativa de `@nestjs/swagger`) para el pipeline OpenAPI
+  de 00b. Detalle en las enmiendas de `docs/adr/0001-monolito-modular-nestjs.md` y
+  `docs/adr/0008-contrato-api-openapi.md`. T2-T10 proceden con NestJS 12.
 
 **commit:** `<pendiente>` — `docs(00a): registrar verificación de compatibilidad con NestJS 12`
 
