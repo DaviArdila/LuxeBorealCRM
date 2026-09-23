@@ -4,8 +4,9 @@
 > `docs/adr/` y el avance a `docs/fases/README.md`. El detalle de cada fase vive en su propia spec
 > (`docs/fases/FASE-NN-*.md`); este documento tiene lo que es cierto para **todas** las fases.
 >
-> Estado: **borrador 0.2 (2026-09-22)** — incorpora las respuestas P1-P11 de
-> `docs/PREGUNTAS_ABIERTAS.md`. Nada de este documento está aprobado hasta que el usuario lo diga.
+> Estado: **borrador 0.3 (2026-09-23)** — incorpora las respuestas P1-P11 de
+> `docs/PREGUNTAS_ABIERTAS.md`, la adopción de OpenSpec y la aceptación de los ADR pendientes. Nada
+> de este documento está aprobado hasta que el usuario lo diga.
 
 ## 1. Qué es
 
@@ -65,27 +66,28 @@ reglas de código.
 
 ## 4. Reglas de negocio invariantes
 
-Heredadas del prototipo y **no negociables**. Su detalle completo está hoy en
-`../ChatLuxeCRM/SPEC.md` (§ indicado) y se trae a la spec de la fase que las implementa.
+Heredadas del prototipo y **no negociables**. La regla vigente y sus escenarios viven en la spec;
+aquí solo el índice. Su detalle histórico completo está en `../ChatLuxeCRM/SPEC.md` (§ indicado en
+la spec de cada dominio).
 
-| # | Regla | Origen | Fase |
-|---|---|---|---|
-| R1 | El LLM solo accede a datos por las herramientas definidas (hoy 6: `buscar_producto`, `obtener_ficha`, `cotizar_envio`, `enviar_fotos`, `marcar_lead_caliente`, `guardar_datos_contacto`). Nunca consultas libres | §3.1 | 07 |
-| R2 | El LLM nunca calcula dinero: precios, envíos y recargos llegan formateados desde el backend y se citan tal cual. El envío se cita **siempre como rango aproximado** (el precio real lo confirma la transportadora al despachar) y el recargo contraentrega como porcentaje que paga el cliente. Hay cobertura salvo en la lista de zonas excluidas (`MODELO_DATOS.md` §4) | §3.2 | 02, 07 |
-| R3 | Todo evento entrante se valida (firma sobre el body crudo) antes de cualquier lógica; firma inválida → 401 sin registrar el payload | §1.2 | 04 |
-| R4 | Cada mensaje entrante se procesa una sola vez y cada mensaje saliente se envía una sola vez, aunque haya reintentos | §3.4 | 04 |
-| R5 | Toda salida al cliente pasa por un único punto que relee el estado de la conversación justo antes de cada mensaje y aborta si el bot ya no tiene el control | §4.2 | 04, 05 |
-| R6 | Máquina de estados `bot` / `handoff_pendiente` / `humano` / `pausado`. El LLM nunca devuelve una conversación a `bot` | §4.1 | 05 |
-| R7 | El control humano es un préstamo: todo estado que silencia al bot vence (`handoff_pendiente` sin recoger, `humano` sin actividad del asesor) o se libera al resolver en la bandeja. El peor resultado posible es un cliente que escribe y nadie responde | §4.1, ADR-008 del prototipo | 05 |
-| R8 | Tres capas contra la sobreescritura bot/humano: debounce, cancelación en el eco humano, guardia en el envío; más lock por conversación | §4.2 | 05 |
-| R9 | Lead caliente = el LLM propone y una escala determinista confirma (≥1 señal fuerte o ≥2 débiles). "Pide hablar con una persona" deriva sin pasar por el LLM. Sin cobertura de envío no hay lead | §5 | 08 |
-| R10 | Fuera del horario de atención el bot sigue atendiendo, captura los datos del cliente antes de avisar del lead y no aparca la conversación | §4.5 | 08 |
-| R11 | Notificación de lead al grupo de Telegram: máximo 1 por contacto cada 24 h, después de confirmar el cambio de estado, con reintento hasta entregarse | §4.6-4.7 | 08 |
-| R12 | Mensajes no textuales: audio → pide texto (segundo audio → humano); imagen → pide descripción; ubicación → alimenta la cotización; resto → se ignora sin costo | §3.5 | 07 |
-| R13 | Costos: mínimo de mensajes salientes por respuesta donde el canal cobra por mensaje (una foto es un mensaje; collage por defecto); tope de turnos por conversación; rate limit por contacto; techo mensual de gasto | §7 | 05, 06, 07 |
-| R14 | Datos personales: aviso de asistente automatizado en el primer mensaje; nunca en logs contenido de mensajes, números completos, cédula ni correo. El contenido de los mensajes **no se persiste** en nuestra base (vive en Chatwoot): el inbox guarda el evento **redactado** (ids, tipo, metadatos) y al reprocesar se relee el contenido de la API de Chatwoot; `lead.resumen` no incluye datos personales | §8 | todas |
-| R15 | Horario, textos al cliente y parámetros del negocio son datos editables, nunca constantes en el código | §3.2 | 01, 02 |
-| R16 | Kill switch global y por contacto, protegido por token | §4.8 | 09 |
+| # | Regla (una línea) | Spec |
+|---|---|---|
+| R1 | El LLM solo accede a datos por las 6 herramientas definidas; nunca consultas libres | `openspec/specs/agente/spec.md` |
+| R2 | El LLM nunca calcula dinero: precios, envíos y recargos llegan formateados; el envío se cita siempre como rango aproximado | `openspec/specs/agente/spec.md` |
+| R3 | Todo evento entrante se valida por firma sobre el body crudo antes de cualquier lógica | `openspec/specs/canales/spec.md` |
+| R4 | Cada mensaje entrante se procesa una sola vez y cada saliente se envía una sola vez | `openspec/specs/canales/spec.md` |
+| R5 | Toda salida al cliente pasa por un único punto que relee el estado antes de cada mensaje | `openspec/specs/conversaciones/spec.md` |
+| R6 | Máquina de estados `bot`/`handoff_pendiente`/`humano`/`pausado`; el LLM nunca devuelve la conversación a `bot` | `openspec/specs/conversaciones/spec.md` |
+| R7 | El control humano es un préstamo: todo estado que silencia al bot vence o se libera al resolver | `openspec/specs/conversaciones/spec.md` |
+| R8 | Tres capas contra la sobreescritura bot/humano, más un lock por conversación | `openspec/specs/conversaciones/spec.md` |
+| R9 | Lead caliente = el LLM propone y una escala determinista confirma; "pide hablar con una persona" deriva sin pasar por el LLM | `openspec/specs/leads/spec.md` |
+| R10 | Fuera de horario el bot sigue atendiendo y captura datos del cliente antes de avisar del lead | `openspec/specs/leads/spec.md` |
+| R11 | Notificación de lead a Telegram: máximo 1 por contacto cada 24 h, con reintento hasta entregarse | `openspec/specs/leads/spec.md` |
+| R12 | Mensajes no textuales: audio pide texto, imagen pide descripción, ubicación alimenta la cotización, resto se ignora | `openspec/specs/agente/spec.md` |
+| R13 | Costos: mínimo de mensajes por respuesta, tope de turnos, rate limit por contacto, techo mensual de gasto | `openspec/specs/conversaciones/spec.md` |
+| R14 | Datos personales: aviso al cliente; nunca en logs contenido de mensajes, números completos, cédula ni correo; inbox redactado | `openspec/specs/privacidad/spec.md` |
+| R15 | Horario, textos al cliente y parámetros del negocio son datos editables, nunca constantes en el código | `openspec/specs/configuracion-negocio/spec.md` |
+| R16 | Kill switch global y por contacto, protegido por token | `openspec/specs/admin/spec.md` |
 
 ## 5. Atributos de calidad
 
@@ -116,9 +118,13 @@ Heredadas del prototipo y **no negociables**. Su detalle completo está hoy en
 | `SPEC.md` | Qué es y reglas invariantes (este archivo) |
 | `CLAUDE.md` | Cómo se trabaja día a día en el repo |
 | `MODELO_DATOS.md` | Modelo de datos (borrador v1; se aprueba al escribir la Fase 01) |
-| `docs/fases/` | Hoja de ruta, estado y una spec por fase |
+| `docs/fases/` | Hoja de ruta y estado de cada fase; el detalle de cada fase vive en su change |
 | `docs/adr/` | Decisiones técnicas con alternativas |
 | `docs/analisis/` | Análisis del prototipo, investigación y revisión del esquema |
 | `docs/migracion/inventario.md` | Qué se migra, cómo y en qué fase |
 | `docs/PREGUNTAS_ABIERTAS.md` | Decisiones del usuario: abiertas y resueltas |
 | `.claude/skills/` | Convenciones de código y de fases para el agente |
+| `openspec/specs/` | Reglas vigentes por dominio (fuente de verdad del comportamiento actual) |
+| `openspec/changes/` | Una carpeta por fase en curso; archivadas en `archive/` al cerrar |
+| `openspec/config.yaml` | Configuración del ciclo SDD del proyecto |
+| `odd/tasks/` | Tareas ODD fuera del ciclo de fases (mantenimiento, mejoras puntuales) |
