@@ -13,7 +13,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
       sandbox de esta sesión — ver nota de evidencia debajo)
 - [x] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
 - [x] T5 — `compartido/`: `dinero`, `texto`, `numero`
-- [ ] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
+- [x] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
 - [ ] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
 - [ ] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
 - [ ] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
@@ -386,7 +386,34 @@ D9).
 **Hecho cuando**: `PLT3 — Los logs se emiten en JSON estructurado` y `R14 — Redacción en logs`
 pasan; ningún `console.*` en `src/plataforma/observabilidad/` (se verifica por herramienta en T7).
 
-**commit:** `<pendiente>` — `feat(plataforma/observabilidad): logger nestjs-pino con redacción R14`
+**Evidencia (2026-09-23, sdd-apply)**:
+- Dependencias: `nestjs-pino@^5.2.0` (peer `@nestjs/core: ^11.0.8 || ^12.0.2`, compatible con
+  NestJS 12 confirmado en T1) y `pino@^10.3.1` instaladas con `npm install nestjs-pino pino` sin
+  `--legacy-peer-deps` ni `--force`: `added 17 packages`, `found 0 vulnerabilities`, sin
+  `ERESOLVE`.
+- RED observado: `npm test -- observabilidad` sobre `crear-opciones-logger.spec.ts` →
+  `Cannot find module './crear-opciones-logger.js'` (1 suite fallida, 0 tests) — la función no
+  existía todavía.
+- GREEN: `npm test -- observabilidad` → `Test Files 1 passed (1)`, `Tests 2 passed (2)`. `npm test`
+  (suite unitaria completa) → `Test Files 8 passed (8)`, `Tests 25 passed (25)`. `npm run
+  test:integracion` (sin cambios de esta tarea, confirmado que sigue en verde) → `Test Files 1
+  passed (1)`, `Tests 2 passed (2)`. `npm run typecheck` → exit 0. `npm run lint` → exit 0.
+- `R14 — Redacción en logs` cubre, sobre un logger `pino` real montado en un stream en memoria (sin
+  proceso HTTP): contenido de mensaje (`mensaje`), teléfono (`telefono`, verificado exactamente
+  `***4567` vía `enmascarar` de `compartido/numero`), cédula (`cedula`), correo (`correo`), token
+  (`token`) y el caso HTTP `req.headers.authorization`. `msg` nunca lleva datos personales
+  interpolados (verificado literal: `linea.msg === 'nuevo mensaje entrante'`).
+- Decisión de diseño acotada (D9 no lo detalla): `serializers.req` conserva `headers` además de
+  `id`/`method`/`url` sin query string, porque las rutas HTTP de `RUTAS_REDACCION`
+  (`req.headers.authorization`, `req.headers.cookie`, etc.) solo tienen algo que redactar si el
+  objeto serializado incluye `headers`; pino aplica `redact` **después** de `serializers` sobre el
+  valor ya serializado (`node_modules/pino/lib/tools.js`, función `_asJson`). El cuerpo
+  (`req.body`) sigue sin registrarse.
+- Commit: `<pendiente>` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
+  (hash real registrado en un commit `docs` inmediatamente posterior, mismo patrón que T5, para no
+  usar `git commit --amend` sobre un commit ya creado).
+
+**commit:** `<pendiente>` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
 
 ---
 
