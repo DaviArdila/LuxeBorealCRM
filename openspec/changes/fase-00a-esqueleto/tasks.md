@@ -344,9 +344,10 @@ dependencias externas.
   archivos de producción de `src/compartido/**` (`dinero.ts`, `index.ts` × 3, `numero.ts`,
   `texto.ts`) tiene una sola línea `import`; solo los `.spec.ts` importan, y únicamente su propio
   módulo hermano.
-- Commit: `<pendiente>` — 166 líneas de autoría (9 archivos nuevos, sin `package-lock.json`).
+- Commit: `d2aa48a` — `feat(compartido): portar dinero, texto y numero como funciones puras` (166
+  líneas de autoría, 9 archivos nuevos, sin `package-lock.json`).
 
-**commit:** `<pendiente>` — `feat(compartido): portar dinero, texto y numero como funciones puras`
+**commit:** `d2aa48a` — `feat(compartido): portar dinero, texto y numero como funciones puras`
 
 ---
 
