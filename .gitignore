@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+
+# Worktrees de otra herramienta (Kilo)
+.kilo/
+
+# Índice de skills regenerable (skill skill-registry); no es fuente de verdad
+.atl/
