@@ -22,8 +22,8 @@
 - [x] T9 — CodeGraph indexado en `../ChatLuxeCRM`. Ruta: inline
 - [x] T10 — `sdd-init` en modo hybrid (`openspec/config.yaml`). Ruta: subagente sdd-init
 - [x] T11 — ADR 0001/0003/0004/0005/0007 aceptados; 0004 con ajuste P15. Ruta: inline
-- [ ] T12 — R1-R16 → `openspec/specs/<dominio>/`; SPEC.md como índice. Ruta: delegado (writer)
-- [ ] T13 — Fases sobre el ciclo `sdd-*`; retirar `_plantilla.md`; skill y CLAUDE.md. Ruta: delegado (writer)
+- [x] T12 — R1-R16 → `openspec/specs/<dominio>/`; SPEC.md como índice. Ruta: delegado (writer)
+- [x] T13 — Fases sobre el ciclo `sdd-*`; retirar `_plantilla.md`; skill y CLAUDE.md. Ruta: delegado (writer)
 - [x] T14 — Preguntas: P12 y P16 resueltas, P13 y P14 con camino acordado. Ruta: inline
 
 ## Progreso y evidencia
@@ -54,3 +54,9 @@
   interactive / hybrid / ask-on-risk.
 - T11: `1865c12 docs(adr): accept pending ADRs 0001 0003 0004 0005 0007`.
 - T14: `docs/PREGUNTAS_ABIERTAS.md` (decisiones D10-D12 del 2026-09-23).
+- T12: `28c5829 docs(spec): move invariants to openspec specs` — 7 specs por dominio; cada R1-R16
+  aparece en exactamente una spec (verificado con grep).
+- T13: `00e9a52 docs(process): adopt sdd cycle for phases` — `_plantilla.md` retirada; su registro de
+  cierre pasó a `openspec/config.yaml` en `0466785` (que además corrigió YAML inválido de sdd-init).
+- Siguiente paso: el usuario revisa la rama `chore/adopt-openspec` (aprueba SPEC 0.3 e inventario) y
+  hace el merge; luego `sdd-new fase-00-fundaciones`.
