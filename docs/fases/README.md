@@ -55,7 +55,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 
 | # | Fase | Objetivo (una frase) | Sale con… (verificación) | Estado |
 |---|---|---|---|---|
-| 00 | Fundaciones | Esqueleto NestJS con config validada, logs, reloj, health, lint, tests (Jest) y Docker de desarrollo, en el repo propio ya iniciado | `npm run verify` en verde; `npm test` corre y `openspec/config.yaml` pasa a `strict_tdd: true`; `GET /health` responde con Postgres y Redis arriba; CI (GitHub Actions, o hook git local mientras el repo no esté en GitHub) en verde: lint, typecheck, `dependency-cruiser`, Jest integración (Testcontainers), `gitleaks`, `npm audit`, commitlint | idea |
+| 00 | Fundaciones | Esqueleto NestJS con config validada, logs, reloj, health, lint, tests (Jest), Docker de desarrollo y el pipeline de contrato de API, en el repo propio ya iniciado | `npm run verify` en verde; `npm test` corre y `openspec/config.yaml` pasa a `strict_tdd: true`; `GET /health` responde con Postgres y Redis arriba y aparece en el contrato OpenAPI; pipeline de API arriba (ADR-0008): `nestjs-zod` + `@nestjs/swagger` generan `openapi/openapi.json`, Scalar sirve `/docs` protegido fuera de desarrollo; CI (GitHub Actions, o hook git local mientras el repo no esté en GitHub) en verde: lint, typecheck, `dependency-cruiser`, Jest integración (Testcontainers), `gitleaks`, `npm audit`, commitlint, drift de `openapi/openapi.json` + Spectral + oasdiff | idea |
 | 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | idea |
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | idea |
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | idea |
@@ -69,7 +69,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 11 | Usuarios y autenticación | Usuarios, roles (admin/asesor), login para el back office | Endpoints protegidos por rol con tests | idea |
 | 12 | Inventario | Ledger de movimientos con `stock` como caché en la misma transacción | Conciliación ledger = stock en tests | idea |
 | 13 | Ventas y envíos | Ciclos de estado de venta y envío con sus efectos sobre el inventario (MODELO_DATOS §6) | Cada transición genera los movimientos correctos | idea |
-| 14 | API del back office | Contrato OpenAPI estable para el cliente (Next.js u otro) | Cliente generado desde OpenAPI compila y consume la API | idea |
+| 14 | API del back office | Estabilizar la API v1 y probar un cliente generado | Un cliente generado desde `openapi.json` compila y consume la API; ningún cambio incompatible sale sin pasar a `/api/v2` | idea |
 | — | Posterior | Canales adicionales, RAG, analítica, campañas | Se priorizan después del corte | — |
 
 > **Decidido (P8, 2026-09-22):** las fases 11-14 van **después del corte**. Mientras tanto el

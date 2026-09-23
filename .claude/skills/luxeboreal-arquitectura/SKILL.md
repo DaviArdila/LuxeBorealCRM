@@ -140,7 +140,32 @@ modulos/<m>/
   correo, tokens. Nunca `console.log`.
 - Secretos solo por variables de entorno; `.env.example` documenta cada variable.
 
-## 10. Checklist de cierre (no se reporta "listo" sin esto)
+## 10. API
+
+Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
+`openspec/specs/api/spec.md`; aquí solo las reglas que tocan al escribir código.
+
+- El esquema **zod** de cada endpoint (`nestjs-zod`, `createZodDto`) es la **única fuente**: valida
+  el payload y genera el fragmento OpenAPI a la vez. Nunca se documenta un endpoint con
+  `@ApiProperty` por separado.
+- Los DTO viven en `interfaz/` del módulo dueño, junto a los controllers que los usan.
+- Nadie escribe ni edita `openapi/openapi.json` a mano; se genera.
+- Si un commit agrega o cambia un endpoint, **el mismo commit** actualiza
+  `openapi/openapi.json` (pipeline y CI en la Fase 00: regeneración, Scalar en `/docs`, Spectral,
+  oasdiff).
+
+## 11. Documentación
+
+- Toda documentación humana (README, runbooks, guías, ADR) sigue la skill `cognitive-doc-design`:
+  resumen primero, una idea por sección, tablas para comparar, ejemplos ejecutables.
+- **TSDoc** solo en lo que cada módulo **exporta** (casos de uso y puertos en `<m>.module.ts`);
+  nunca en `dominio/`, `infraestructura/` ni tipos internos.
+- Runbooks de operación (qué hacer si algo falla en producción) van en `docs/operacion/`, desde la
+  Fase 09.
+- `CHANGELOG.md` se genera desde Conventional Commits; la herramienta concreta se elige en la
+  Fase 00.
+
+## 12. Checklist de cierre (no se reporta "listo" sin esto)
 
 1. `npm run verify` en verde (lint, typecheck, fronteras, tests unitarios e integración).
 2. `npm run test:e2e` si se tocó un flujo, Docker, esquema o `main.ts`.
@@ -152,3 +177,5 @@ modulos/<m>/
 7. Sin `Date.now()`, sin `process.env` fuera de config, sin imports cruzados a rutas internas.
 8. Un commit por unidad de trabajo (Conventional Commits, sin atribución de IA), en rama de fase,
    nunca en `main`; push, PR y merge los decide el usuario. Nunca `.env` ni secretos.
+9. Si cambió un endpoint: `openapi/openapi.json` regenerado y commiteado en el mismo commit,
+   Spectral y oasdiff en verde (§10).

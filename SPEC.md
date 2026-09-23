@@ -19,7 +19,8 @@ que vende por Marketplace y WhatsApp. Un solo servicio (monolito modular en Nest
 2. **Cede** la conversación a un asesor humano (en Chatwoot) cuando hay un lead caliente o el
    cliente lo pide, y la **recupera** cuando el asesor termina o no aparece.
 3. **Registra** contactos, leads y (a partir de la Fase 11) inventario, ventas y envíos.
-4. **Expone** una API para un cliente de back office independiente.
+4. **Expone** una API para un cliente de back office independiente (contrato en
+   `docs/adr/0008-contrato-api-openapi.md`).
 
 Es la reescritura del prototipo `ChatLuxeCRM` (funcional con WhatsApp real desde 2026-09-17) con una
 arquitectura que pueda crecer. El prototipo es la **referencia de comportamiento**: ante una duda
@@ -121,7 +122,9 @@ la spec de cada dominio).
 | `MODELO_DATOS.md` | Modelo de datos (borrador v1; se aprueba al escribir la Fase 01) |
 | `docs/fases/` | Hoja de ruta y estado de cada fase; el detalle de cada fase vive en su change |
 | `docs/adr/` | Decisiones técnicas con alternativas |
+| `openapi/openapi.json` | Contrato de la API, generado desde el código (desde la Fase 00) |
 | `docs/analisis/` | Análisis del prototipo, investigación y revisión del esquema |
+| `docs/analisis/06-cliente-back-office.md` | Recomendación de tecnología para el cliente futuro de back office (no se construye) |
 | `docs/migracion/inventario.md` | Qué se migra, cómo y en qué fase |
 | `docs/PREGUNTAS_ABIERTAS.md` | Decisiones del usuario: abiertas y resueltas |
 | `.claude/skills/` | Convenciones de código y de fases para el agente |

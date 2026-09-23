@@ -27,6 +27,24 @@ traspaso a humano en Chatwoot, leads, catálogo), más el CRM de inventario y ve
 7. Si el trabajo no es una fase (mantenimiento, mejoras puntuales): `odd/tasks/<nombre>.md` —
    tareas ODD fuera del ciclo de fases.
 
+## Mapa de documentación
+
+Qué pregunta responde cada documento:
+
+| Qué | Dónde |
+|---|---|
+| Visión, qué es el proyecto, reglas invariantes | `SPEC.md` |
+| Reglas de negocio vigentes por dominio | `openspec/specs/` |
+| Por qué se decidió algo | `docs/adr/` |
+| Contrato de la API y su documentación interactiva | `openapi/openapi.json` + Scalar en `/docs` |
+| Qué hacer si algo falla en producción | `docs/operacion/` (desde la Fase 09) |
+| Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
+| Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
+| Investigación y evidencia detrás de una decisión | `docs/analisis/` |
+
+Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue la skill
+`cognitive-doc-design`.
+
 ## Cómo se trabaja
 
 - **Nada se implementa sin una spec de fase aprobada por el usuario.** Si una tarea no está en la

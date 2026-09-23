@@ -30,6 +30,9 @@ rules:
     - >-
       Citar reglas invariantes por id (R1-R16, SPEC.md §4) y ADRs por número
       (docs/adr/000N-*.md) al justificar una decisión.
+    - >-
+      La documentación humana (README, runbooks, guías, ADR) sigue la skill
+      cognitive-doc-design: resumen primero, una idea por sección, tablas para comparar.
 
   proposal:
     - >-
@@ -75,6 +78,9 @@ rules:
     - >-
       Una decisión nueva con alternativas reales genera un ADR nuevo en docs/adr/ con
       estado "propuesta" hasta que el usuario lo acepte.
+    - >-
+      Si la fase agrega o cambia endpoints, listarlos con método, ruta, esquema de
+      request/response y códigos de error (openspec/specs/api/spec.md, ADR-0008).
 
   tasks:
     - >-
@@ -123,6 +129,10 @@ rules:
         desviaciones respecto a la spec y por qué, ADR creados, filas de
         docs/migracion/inventario.md migradas y "qué aprendimos que cambia las fases
         siguientes".
+      - >-
+        Si la fase agregó o cambió endpoints: verificación de drift de
+        openapi/openapi.json contra el generado, Spectral y oasdiff en verde
+        (openspec/specs/api/spec.md).
 
   archive:
     - >-
