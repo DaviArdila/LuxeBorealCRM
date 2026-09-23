@@ -411,6 +411,13 @@ pasan; ningún `console.*` en `src/plataforma/observabilidad/` (se verifica por 
   (`req.body`) sigue sin registrarse.
 - Commit: `2214f0c` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14` (488
   líneas, `package-lock.json` incluido).
+- **Pendiente señalado por review RDD (no corregido a propósito, requiere decisión del usuario)**:
+  `message` está en `CLAVES_CONTENIDO_MENSAJE` (tabla D9) para redactar contenido de chat, pero esa
+  misma clave aparece en cualquier objeto de error serializado (`err.message`) — hoy se redactaría
+  también el mensaje de diagnóstico de un error, no solo el contenido de un mensaje de chat. No se
+  cambió la tabla D9 aprobada sin discutirlo primero. Falta decidir antes de que T9 conecte logging
+  de errores real: (a) aceptar la pérdida de diagnóstico, (b) usar `serializers.err =
+  pino.stdSerializers.err` y excluir `err.*` de la redacción por `message`, o (c) otra alternativa.
 
 **commit:** `2214f0c` — `feat(plataforma/observabilidad): logger nestjs-pino con redaccion R14`
 
