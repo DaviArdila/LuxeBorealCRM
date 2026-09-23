@@ -12,7 +12,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
       verde, commit `2aa152d`; **pendiente únicamente `.env.example`**, bloqueado por permisos del
       sandbox de esta sesión — ver nota de evidencia debajo)
 - [x] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
-- [ ] T5 — `compartido/`: `dinero`, `texto`, `numero`
+- [x] T5 — `compartido/`: `dinero`, `texto`, `numero`
 - [ ] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
 - [ ] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
 - [ ] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
@@ -274,9 +274,10 @@ hace fallar.)
 - Se agregó `test/fakes/**/*.spec.ts` al `include` del proyecto `unit` de `vitest.config.ts` (no
   existía ningún proyecto que cubriera `test/fakes/`; `ClockFalso` es un doble puro sin
   infraestructura, igual que el resto de `unit`).
-- Commit: `<pendiente>` — ver abajo.
+- Commit: `fcb182b` — `feat(plataforma/reloj): agregar Clock inyectable y ClockFalso para tests`
+  (157 líneas de autoría).
 
-**commit:** `<pendiente>` — `feat(plataforma/reloj): exponer Clock inyectable con token CLOCK`
+**commit:** `fcb182b` — `feat(plataforma/reloj): agregar Clock inyectable y ClockFalso para tests`
 
 ---
 
@@ -325,6 +326,25 @@ hace fallar.)
 
 **Hecho cuando**: los 11 escenarios de `CMP1`, `CMP2` y `CMP3` pasan; `compartido/` no tiene
 dependencias externas.
+
+**Evidencia (2026-09-23, sdd-apply)**:
+- RED observado: `npm test -- compartido` → `Cannot find module './dinero.js'`,
+  `Cannot find module './numero.js'`, `Cannot find module './texto.js'` (3 suites falladas, 0
+  tests) — las tres funciones aún no existían.
+- GREEN: `npm test -- compartido` → `Test Files 3 passed (3)`, `Tests 11 passed (11)`. `npm test`
+  (suite unitaria completa) → `Test Files 7 passed (7)`, `Tests 23 passed (23)`. `npm run
+  test:integracion` (sin cambios de esta tarea, confirmado que sigue en verde) → `Test Files 1
+  passed (1)`, `Tests 2 passed (2)`. `npm run typecheck` → exit 0. `npm run lint` → exit 0.
+- Lectura de referencia (solo lectura, sin modificar): `../ChatLuxeCRM/src/lib/dinero.ts`,
+  `texto.ts`, `numero.ts`, `../ChatLuxeCRM/tests/lib/texto.test.ts`,
+  `../ChatLuxeCRM/tests/tools/formateoDinero.test.ts` — comportamiento portado sin cambios;
+  `enmascarar` ya normalizaba internamente antes de recortar en el prototipo (CMP2) y ya conservaba
+  los dígitos de números de 4 caracteres o menos.
+- Regla `compartido-puro` (D11, verificación manual — la herramienta llega en T7): ninguno de los 6
+  archivos de producción de `src/compartido/**` (`dinero.ts`, `index.ts` × 3, `numero.ts`,
+  `texto.ts`) tiene una sola línea `import`; solo los `.spec.ts` importan, y únicamente su propio
+  módulo hermano.
+- Commit: `<pendiente>` — 166 líneas de autoría (9 archivos nuevos, sin `package-lock.json`).
 
 **commit:** `<pendiente>` — `feat(compartido): portar dinero, texto y numero como funciones puras`
 
