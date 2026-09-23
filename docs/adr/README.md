@@ -13,7 +13,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0005](0005-chatwoot-plataforma-de-canales.md) | Chatwoot como plataforma de canales, historial y bandeja | aceptada | 2026-09-22 |
 | [0006](0006-un-solo-negocio.md) | Un solo negocio (sin multiempresa) | aceptada | 2026-09-22 |
 | [0007](0007-llaves-primarias-uuid-v7.md) | Llaves primarias UUID v7 nativas | aceptada | 2026-09-22 |
-| [0008](0008-contrato-api-openapi.md) | Contrato de API: OpenAPI 3.1 code-first con nestjs-zod y Scalar | propuesta | 2026-09-23 |
+| [0008](0008-contrato-api-openapi.md) | Contrato de API: OpenAPI 3.1 code-first con nestjs-zod y Scalar | aceptada | 2026-09-23 |
 
 ## Plantilla
 

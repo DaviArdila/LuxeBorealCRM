@@ -5,9 +5,9 @@
 > OpenSpec (`openspec/changes/fase-NN-<nombre>/`); este documento tiene lo que es cierto para
 > **todas** las fases.
 >
-> Estado: **borrador 0.3 (2026-09-23)** — incorpora las respuestas P1-P11 de
-> `docs/PREGUNTAS_ABIERTAS.md`, la adopción de OpenSpec y la aceptación de los ADR pendientes. Nada
-> de este documento está aprobado hasta que el usuario lo diga.
+> Estado: **0.3 aprobada por el usuario (2026-09-23)** — incorpora las respuestas P1-P16 de
+> `docs/PREGUNTAS_ABIERTAS.md`, la adopción de OpenSpec, los ADR 0001-0008 aceptados y el contrato
+> de API. Todo cambio posterior entra por un change de OpenSpec o un ADR.
 
 ## 1. Qué es
 
