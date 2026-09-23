@@ -1,0 +1,45 @@
+{
+  "name": "luxeborealcrm",
+  "version": "0.0.1",
+  "description": "CRM con atención automatizada por WhatsApp (agente LLM + Chatwoot + leads + inventario y ventas), monolito modular en NestJS.",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "prisma:generar": "prisma generate",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "fronteras": "depcruise src --config .dependency-cruiser.cjs",
+    "test": "vitest run --project unit",
+    "test:integracion": "vitest run --project integracion",
+    "test:e2e": "vitest run --project e2e",
+    "test:cobertura": "vitest run --project unit --project integracion --coverage",
+    "verify": "npm run prisma:generar && npm run lint && npm run typecheck && npm run fronteras && vitest run --project unit --project integracion"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.0",
+    "@nestjs/core": "^12.1.0",
+    "@nestjs/platform-express": "^12.1.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.5",
+    "@nestjs/testing": "^12.1.0",
+    "@swc/core": "^1.16.2",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
+    "eslint": "^10.11.0",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.70.1",
+    "unplugin-swc": "^2.0.0",
+    "vitest": "^5.0.1"
+  }
+}

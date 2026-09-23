@@ -5,6 +5,8 @@ coverage/
 .env.*
 !.env.example
 *.log
+src/plataforma/prisma/generado/
+*.tsbuildinfo
 
 # Worktrees de otra herramienta (Kilo)
 .kilo/

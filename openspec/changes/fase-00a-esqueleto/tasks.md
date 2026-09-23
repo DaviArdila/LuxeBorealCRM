@@ -7,7 +7,7 @@ Review requerida: **RDD** (00a no es una de las fases 04, 05, 06, 10; no se requ
 Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test de la tarea en verde y su commit anotado.
 
 - [x] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
-- [ ] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
+- [x] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
 - [ ] T3 — `plataforma/config`: configuración validada con Zod
 - [ ] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
 - [ ] T5 — `compartido/`: `dinero`, `texto`, `numero`
