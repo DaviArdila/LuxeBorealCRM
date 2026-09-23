@@ -49,9 +49,11 @@ En este orden:
 
 Con ese material, `sdd-propose` llena la proposal siguiendo `openspec/config.yaml` §proposal (tabla
 "Qué se migra del prototipo" con el criterio de la sección 2 de esta skill, alcance explícito, plan
-de rollback, preguntas bloqueantes). Presentar al usuario un resumen corto (objetivo, qué migra y
-qué no, preguntas) y esperar su aprobación antes de pasar a specs/design/tasks si la decisión es
-sensible; solo el usuario pasa el change a `aprobada`.
+de rollback, preguntas bloqueantes). Con ritmo interactivo, tras cada fase SDD se
+presenta al usuario un resumen corto (objetivo, qué migra y qué no, preguntas) y él decide si se
+sigue. La puerta que **siempre** aplica, sin excepciones: `sdd-apply` no arranca hasta que el
+usuario aprueba los cuatro artefactos (proposal, specs, design, tasks); solo el usuario pasa el
+change a `aprobada` (`docs/fases/README.md`).
 
 ## 3. ¿Se migra o no? (criterio por pieza)
 
@@ -89,7 +91,7 @@ Preguntas, en orden:
 ## 6. Cerrar la fase (`sdd-verify → sdd-archive`)
 
 1. Checklist de cierre de la skill `luxeboreal-arquitectura` (§10: `npm run verify` en verde, e2e si
-   aplica, cada CA con su test, `MODELO_DATOS.md` al día si cambió el esquema, ADR si hubo decisión,
+   aplica, cada escenario con su test, `MODELO_DATOS.md` al día si cambió el esquema, ADR si hubo decisión,
    `docs/migracion/inventario.md` y `docs/fases/README.md` actualizados, sin `Date.now`/`process.env`
    fuera de sitio, un commit por unidad de trabajo).
 2. Si la spec declara "Review requerida: RDD + judgment-day" (fases 04, 05, 06, 10): correr la

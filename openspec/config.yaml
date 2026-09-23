@@ -10,8 +10,12 @@ context: |
   Community como plataforma de canales. Un solo negocio (ADR-0006). Estado: planeación,
   sin código todavía — el scaffold real se crea en la Fase 00.
 
-strict_tdd: false # sin package.json/runner todavía; ver testing-capabilities. Convención
-                   # del proyecto (CLAUDE.md) es TDD estricto por tarea una vez exista código.
+# strict_tdd es la puerta de Gentle-AI y MUST quedar en false mientras no exista un runner real
+# (no hay package.json). apply.tdd es la convención del proyecto: TDD estricto desde la primera
+# línea de código. No se contradicen: antes de la Fase 00 no hay código que probar.
+# La Fase 00 MUST terminar con `npm test` corriendo y strict_tdd en true (criterio de salida en
+# docs/fases/README.md); a partir de ahí ambos valen lo mismo y manda strict_tdd.
+strict_tdd: false
 
 rules:
   general:
@@ -50,8 +54,10 @@ rules:
       Criterios de aceptación observables desde fuera del módulo (contrato, no
       implementación interna).
     - >-
-      Cada criterio de aceptación se convierte en al menos un test nombrado según él
-      (ej. "CA-3: ...").
+      Cada escenario es un criterio de aceptación y se convierte en al menos un test
+      nombrado "<R# o id del requisito> — <título del escenario>" (ej. "R13 — Respuesta
+      agrupada en el mínimo de mensajes"). Los títulos de escenario MUST ser únicos dentro
+      de su spec para que verify pueda comprobar la cobertura buscando el nombre.
 
   design:
     - >-
@@ -107,12 +113,12 @@ rules:
     checklist:
       - >-
         Checklist de cierre §10 de la skill luxeboreal-arquitectura (10 puntos:
-        verify en verde, e2e si aplica, cada CA con test, MODELO_DATOS.md al día,
+        verify en verde, e2e si aplica, cada escenario con su test, MODELO_DATOS.md al día,
         ADR si hubo decisión, inventario.md y fases/README.md actualizados, sin
         Date.now/process.env fuera de sitio, un commit por unidad de trabajo).
       - >-
         verify-report.md MUST registrar el registro de cierre de la fase: resultado de
-        cada escenario/CA, salida de npm run verify, commits y PRs de la fase, resultado
+        cada escenario, salida de npm run verify, commits y PRs de la fase, resultado
         de la review (RDD y, en fases 04/05/06/10, veredicto de judgment-day),
         desviaciones respecto a la spec y por qué, ADR creados, filas de
         docs/migracion/inventario.md migradas y "qué aprendimos que cambia las fases

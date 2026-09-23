@@ -116,7 +116,9 @@ modulos/<m>/
 | E2E (Jest + Supertest) | flujo completo por HTTP con canal y LLM falsos | `test/e2e/` | stack completo |
 | Evals | conversaciones de referencia contra LLM simulado (siempre) o real (bajo demanda) | `test/evals/` | según modo |
 
-- Cada criterio de aceptación de la spec de fase tiene al menos un test que lo nombra (`CA-3: …`).
+- Cada escenario de las specs tiene al menos un test nombrado `<R#> — <título del escenario>`
+  (ej. `R13 — Respuesta agrupada en el mínimo de mensajes`); así verify comprueba la cobertura por
+  nombre.
 - Los tests del prototipo se **reescriben** en el nivel correcto, no se copian.
 - Reloj fijado con un `ClockFalso` inyectado; nada de `jest.useFakeTimers` sobre lógica de negocio.
 - Jest es el runner estándar de NestJS (`@nestjs/testing` + `Test.createTestingModule`).
@@ -129,7 +131,7 @@ modulos/<m>/
 - Archivos en kebab-case (`maquina-estados.ts`); clases en PascalCase; booleanos como pregunta
   (`estaDentroDeHorario`).
 - Claves de Redis con prefijo de módulo: `conv:<id>:buffer`, `catalogo:version`.
-- Comentarios solo para el porqué no evidente, con referencia (`R7`, `ADR-0003`, `FASE-05 CA-2`).
+- Comentarios solo para el porqué no evidente, con referencia (`R7`, `ADR-0003`, `R7 — <escenario>`).
 
 ## 9. Seguridad y PII
 
