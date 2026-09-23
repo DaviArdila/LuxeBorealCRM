@@ -2,6 +2,21 @@
 
 Review requerida: **RDD** (00a no es una de las fases 04, 05, 06, 10; no se requiere judgment-day).
 
+## Checklist
+
+Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test de la tarea en verde y su commit anotado.
+
+- [ ] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
+- [ ] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
+- [ ] T3 — `plataforma/config`: configuración validada con Zod
+- [ ] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
+- [ ] T5 — `compartido/`: `dinero`, `texto`, `numero`
+- [ ] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
+- [ ] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
+- [ ] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
+- [ ] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
+- [ ] T10 — Cierre: `npm run verify` en verde + documentación
+
 ## Review Workload Forecast
 
 | Field | Value |
