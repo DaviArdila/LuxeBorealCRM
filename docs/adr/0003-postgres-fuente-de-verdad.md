@@ -1,6 +1,6 @@
 # 0003. Postgres como fuente de verdad del estado de conversación
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-22
 
 ## Contexto

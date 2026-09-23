@@ -1,6 +1,6 @@
 # 0007. Llaves primarias UUID v7 nativas
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-22
 
 ## Contexto

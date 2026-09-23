@@ -1,6 +1,6 @@
 # 0005. Chatwoot como plataforma de canales, historial y bandeja: delegar antes de construir
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-22
 
 ## Contexto

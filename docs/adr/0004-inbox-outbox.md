@@ -1,6 +1,6 @@
 # 0004. Inbox de eventos entrantes y outbox de efectos externos
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-22
 
 ## Contexto
@@ -20,8 +20,10 @@ reintento.
 
 ## Decisión
 
-**Inbox:** el controlador valida la firma, inserta el evento crudo en `evento_entrante`
-(`UNIQUE(origen, id_externo)`; un duplicado se ignora) y responde 200. Un procesador BullMQ lo
+**Inbox:** el controlador valida la firma, inserta el evento **redactado** en `evento_entrante`
+(ids, tipo de evento y metadatos; nunca el texto del mensaje, adjuntos ni datos personales — R14,
+P15) con `UNIQUE(origen, id_externo)` (un duplicado se ignora) y responde 200. Al reprocesar, el
+contenido se relee de la API de Chatwoot. Un procesador BullMQ lo
 consume con reintentos y marca `procesado_en`/`error`. **Outbox:** todo efecto externo que no se
 puede perder (Telegram, status en Chatwoot, avisos) se inserta en `outbox` dentro de la misma
 transacción que el cambio de negocio que lo provoca; un publicador lo envía con reintento y backoff.

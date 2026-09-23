@@ -1,6 +1,6 @@
 # 0001. Monolito modular en NestJS con fronteras verificadas
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-23)
 - Fecha: 2026-09-22
 
 ## Contexto

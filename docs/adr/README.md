@@ -6,13 +6,13 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 
 | # | Decisión | Estado | Fecha |
 |---|---|---|---|
-| [0001](0001-monolito-modular-nestjs.md) | Monolito modular en NestJS con fronteras verificadas | propuesta | 2026-09-22 |
+| [0001](0001-monolito-modular-nestjs.md) | Monolito modular en NestJS con fronteras verificadas | aceptada | 2026-09-22 |
 | [0002](0002-pasarela-llm.md) | Pasarela de LLM: puerto propio + AI SDK sobre OpenRouter, GPT-5.6 Luna | aceptada | 2026-09-22 |
-| [0003](0003-postgres-fuente-de-verdad.md) | Postgres como fuente de verdad del estado de conversación | propuesta | 2026-09-22 |
-| [0004](0004-inbox-outbox.md) | Inbox de eventos entrantes y outbox de efectos externos | propuesta | 2026-09-22 |
-| [0005](0005-chatwoot-plataforma-de-canales.md) | Chatwoot como plataforma de canales, historial y bandeja | propuesta | 2026-09-22 |
+| [0003](0003-postgres-fuente-de-verdad.md) | Postgres como fuente de verdad del estado de conversación | aceptada | 2026-09-22 |
+| [0004](0004-inbox-outbox.md) | Inbox de eventos entrantes y outbox de efectos externos | aceptada | 2026-09-22 |
+| [0005](0005-chatwoot-plataforma-de-canales.md) | Chatwoot como plataforma de canales, historial y bandeja | aceptada | 2026-09-22 |
 | [0006](0006-un-solo-negocio.md) | Un solo negocio (sin multiempresa) | aceptada | 2026-09-22 |
-| [0007](0007-llaves-primarias-uuid-v7.md) | Llaves primarias UUID v7 nativas | propuesta | 2026-09-22 |
+| [0007](0007-llaves-primarias-uuid-v7.md) | Llaves primarias UUID v7 nativas | aceptada | 2026-09-22 |
 
 ## Plantilla
 
