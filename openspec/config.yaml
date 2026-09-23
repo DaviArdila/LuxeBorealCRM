@@ -1,0 +1,93 @@
+schema: spec-driven
+
+context: |
+  LuxeBorealCRM: reescritura NestJS 11 (monolito modular, hexagonal por módulo:
+  dominio/aplicacion/puertos/infraestructura/interfaz, fronteras verificadas con
+  dependency-cruiser) del prototipo ../ChatLuxeCRM (bot WhatsApp + Chatwoot) más CRM.
+  Stack planeado: Node LTS + TypeScript estricto, NestJS 11, Prisma + PostgreSQL 16,
+  Redis + BullMQ, AI SDK + @openrouter/ai-sdk-provider detrás de LlmPort, zod,
+  nestjs-pino, Jest + Supertest + Testcontainers, Docker Compose / Dokploy, Chatwoot
+  Community como plataforma de canales. Un solo negocio (ADR-0006). Estado: planeación,
+  sin código todavía — el scaffold real se crea en la Fase 00.
+
+strict_tdd: false # sin package.json/runner todavía; ver testing-capabilities. Convención
+                   # del proyecto (CLAUDE.md) es TDD estricto por tarea una vez exista código.
+
+rules:
+  general:
+    - Todo el contenido de los artefactos (proposal, specs, design, tasks) va en español;
+      solo los encabezados estructurales que parsean las skills quedan en inglés
+      (## ADDED Requirements, ## MODIFIED Requirements, ## REMOVED Requirements,
+      ## RENAMED Requirements).
+    - Palabras clave RFC 2119 (MUST, SHALL, SHOULD, MAY) en inglés mayúsculas dentro del
+      texto en español.
+    - Citar reglas invariantes por id (R1-R16, SPEC.md §4) y ADRs por número
+      (docs/adr/000N-*.md) al justificar una decisión.
+
+  proposal:
+    - Cada change corresponde a exactamente una fase de la hoja de ruta:
+      fase-NN-<nombre> (docs/fases/README.md).
+    - Incluir tabla "Qué se migra del prototipo" con columnas conservar/rediseñar/
+      descartar/delegar/posponer y motivo citando antipatrón (A#) o ADR.
+    - Declarar el scope explícitamente: qué queda fuera y en qué fase futura se retoma.
+    - Incluir plan de rollback para cambios riesgosos.
+    - Listar preguntas abiertas bloqueantes desde docs/PREGUNTAS_ABIERTAS.md; nunca
+      inventar respuestas — si una decisión depende de una pregunta sin resolver, la
+      proposal se detiene ahí y se pregunta al usuario.
+
+  specs:
+    - Escenarios en formato Dado/Cuando/Entonces.
+    - Criterios de aceptación observables desde fuera del módulo (contrato, no
+      implementación interna).
+    - Cada criterio de aceptación se convierte en al menos un test nombrado según él
+      (ej. "CA-3: ...").
+
+  design:
+    - Listar módulos tocados y sus dependencias (import solo de lo exportado por cada
+      módulo, nunca rutas internas).
+    - Documentar puertos y adaptadores nuevos o modificados (interfaz + token).
+    - Si hay cambio de esquema, diseñarlo primero en MODELO_DATOS.md antes que en
+      prisma/schema.prisma.
+    - Documentar eventos de dominio nuevos (nombre en pasado) y configuración nueva.
+    - Referenciar los ADRs relevantes (docs/adr/).
+    - Una decisión nueva con alternativas reales genera un ADR nuevo en docs/adr/ con
+      estado "propuesta" hasta que el usuario lo acepte.
+
+  tasks:
+    - Máximo 10 tareas por change; si se necesitan más, partir la fase en dos
+      (docs/fases/README.md regla 1).
+    - Cada tarea termina con su propio test (RED → GREEN → REFACTOR).
+    - Declarar slices de PR de ~400 líneas cambiadas por unidad de trabajo.
+    - Declarar explícitamente "Review requerida: RDD" o "Review requerida: RDD +
+      judgment-day"; judgment-day es obligatorio para el cierre de las fases 04, 05,
+      06 y 10 (docs/fases/README.md regla 6).
+
+  apply:
+    guidelines:
+      - Seguir las convenciones de la skill luxeboreal-arquitectura: nada de
+        Date.now()/new Date() fuera de plataforma/reloj, nada de process.env fuera de
+        plataforma/config, prohibidos los flags MOCK_* en código de producción (usar
+        DI y fakes en test/fakes/).
+      - Un commit por unidad de trabajo (comportamiento + tests + docs juntos),
+        Conventional Commits, sin atribución de IA ni líneas Co-Authored-By.
+      - Rama por fase (fase-NN-<nombre>), nunca directo en main.
+    tdd: true # RED → GREEN → REFACTOR estricto por tarea, observado, no asumido.
+    test_command: "npm test" # PLANEADO — no existe package.json todavía; se confirma
+                              # y ajusta en la Fase 00 (esqueleto NestJS con Jest).
+
+  verify:
+    test_command: "npm test" # PLANEADO — confirmar en Fase 00.
+    build_command: "npm run verify" # PLANEADO — lint + typecheck + tests + fronteras
+                                     # (dependency-cruiser); confirmar en Fase 00.
+    coverage_threshold: 0 # sin umbral hasta que exista runner real; revisar en Fase 00.
+    checklist:
+      - Checklist de cierre §10 de la skill luxeboreal-arquitectura (10 puntos:
+        verify en verde, e2e si aplica, cada CA con test, MODELO_DATOS.md al día,
+        ADR si hubo decisión, inventario.md y fases/README.md actualizados, sin
+        Date.now/process.env fuera de sitio, un commit por unidad de trabajo).
+
+  archive:
+    - Advertir antes de archivar deltas destructivos (REMOVED Requirements) sin
+      confirmación explícita.
+    - Al archivar, actualizar el estado de la fase en docs/fases/README.md y las filas
+      correspondientes en docs/migracion/inventario.md.
