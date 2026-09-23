@@ -1,8 +1,9 @@
 # SPEC — LuxeBorealCRM
 
 > Fuente de verdad del **qué**. Describe solo lo vigente: la historia de decisiones va a
-> `docs/adr/` y el avance a `docs/fases/README.md`. El detalle de cada fase vive en su propia spec
-> (`docs/fases/FASE-NN-*.md`); este documento tiene lo que es cierto para **todas** las fases.
+> `docs/adr/` y el avance a `docs/fases/README.md`. El detalle de cada fase vive en su change de
+> OpenSpec (`openspec/changes/fase-NN-<nombre>/`); este documento tiene lo que es cierto para
+> **todas** las fases.
 >
 > Estado: **borrador 0.3 (2026-09-23)** — incorpora las respuestas P1-P11 de
 > `docs/PREGUNTAS_ABIERTAS.md`, la adopción de OpenSpec y la aceptación de los ADR pendientes. Nada

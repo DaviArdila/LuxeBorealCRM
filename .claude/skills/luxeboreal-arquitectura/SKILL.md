@@ -5,9 +5,10 @@ description: Convenciones de código de LuxeBorealCRM (NestJS monolito modular) 
 
 # LuxeBorealCRM — cómo se escribe el código
 
-Documentos que mandan: `SPEC.md` (qué y reglas R1-R16) → spec de la fase en curso → `docs/adr/`.
-Esta skill traduce los principios a reglas concretas. Si una regla de aquí choca con un ADR
-aceptado, gana el ADR y se corrige esta skill.
+Documentos que mandan: `SPEC.md` (qué e índice de reglas R1-R16) → `openspec/specs/` (comportamiento
+vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/` (specs delta, diseño
+y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
+una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
 > Estado: borrador 0.1 — se ajusta al cerrar la Fase 00 con lo que el scaffold real haya fijado.
 
@@ -141,7 +142,8 @@ modulos/<m>/
 
 1. `npm run verify` en verde (lint, typecheck, fronteras, tests unitarios e integración).
 2. `npm run test:e2e` si se tocó un flujo, Docker, esquema o `main.ts`.
-3. Cada CA de la spec de la fase tiene su test y pasa.
+3. Cada escenario de las specs delta del change (`openspec/changes/fase-NN-<nombre>/specs/`) tiene
+   su test y pasa.
 4. Si cambió el esquema: `MODELO_DATOS.md` actualizado + migración + semillas corren.
 5. Si hubo decisión con alternativas: ADR escrito e indexado.
 6. `docs/migracion/inventario.md` y `docs/fases/README.md` actualizados.

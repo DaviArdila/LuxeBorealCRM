@@ -16,13 +16,15 @@ traspaso a humano en Chatwoot, leads, catálogo), más el CRM de inventario y ve
 
 ## Orden de lectura
 
-1. `SPEC.md` — qué es, principios, reglas invariantes (R1-R16).
+1. `SPEC.md` — qué es, principios, índice de reglas invariantes (R1-R16).
 2. `docs/fases/README.md` — hoja de ruta y fase actual.
-3. La spec de la fase en curso (`docs/fases/FASE-NN-*.md`).
-4. `docs/adr/` — por qué las cosas son como son.
-5. Si hace falta contexto del prototipo: `docs/analisis/01-analisis-chatluxecrm.md` y
+3. El change activo de la fase en curso, `openspec/changes/fase-NN-<nombre>/` (proposal, specs,
+   design, tasks).
+4. `openspec/specs/` — las specs de los dominios que toca la fase (comportamiento vigente).
+5. `docs/adr/` — por qué las cosas son como son.
+6. Si hace falta contexto del prototipo: `docs/analisis/01-analisis-chatluxecrm.md` y
    `docs/migracion/inventario.md` antes de abrir `../ChatLuxeCRM`.
-6. Si el trabajo no es una fase (mantenimiento, mejoras puntuales): `odd/tasks/<nombre>.md` —
+7. Si el trabajo no es una fase (mantenimiento, mejoras puntuales): `odd/tasks/<nombre>.md` —
    tareas ODD fuera del ciclo de fases.
 
 ## Cómo se trabaja
@@ -54,10 +56,16 @@ traspaso a humano en Chatwoot, leads, catálogo), más el CRM de inventario y ve
 - **Idioma**: la convención del proyecto es español para nombres de dominio y documentación; los
   sufijos técnicos de NestJS van en inglés (skill `luxeboreal-arquitectura` §8). Los
   agentes/subagentes no cambian los artefactos a inglés.
-- **Fase = unidad de SDD/ODD**: no hay un `openspec/` paralelo. Equivalencia de estados:
-  `spec en revisión` ≈ propose+spec; `aprobada` ≈ design+tasks aprobados por el usuario; `en curso`
-  ≈ apply (cada tarea de la fase es una tarea ODD que cierra con un commit de unidad de trabajo);
-  `cerrada` ≈ verify+archive (Registro de cierre).
+- **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/`, recorrido con el
+  ciclo `sdd-new/sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify →
+  sdd-archive` (skill `luxeboreal-fases`; detalle de artefactos en
+  `.claude/skills/_shared/sdd-orchestrator-workflow.md`). Preflight de esta migración: pace
+  **interactivo**, artefactos **híbridos** (OpenSpec en el repo + Engram, proyecto
+  `luxeborealcrm` — correr las sesiones desde la raíz del repo; si la detección automática de
+  proyecto falla, pasarlo explícito), estrategia de PR **`ask-on-risk`**. Equivalencia de estados
+  de `docs/fases/README.md`: `spec en revisión` ≈ propose+spec+design+tasks; `aprobada` ≈ el usuario
+  las aprueba; `en curso` ≈ apply (cada tarea de `tasks.md` cierra con un commit de unidad de
+  trabajo); `cerrada` ≈ verify+archive (fusiona los delta specs en `openspec/specs/`).
 - **TDD estricto**: por tarea, RED observado → GREEN → REFACTOR; runner Jest (`npm test`),
   registrado en la spec de cada fase.
 - **Entrega**: presupuesto de ~400 líneas cambiadas por PR (skills `work-unit-commits`,

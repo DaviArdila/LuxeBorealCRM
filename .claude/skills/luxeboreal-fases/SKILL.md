@@ -1,39 +1,59 @@
 ---
 name: luxeboreal-fases
-description: Método para planear, escribir, ejecutar y cerrar las fases de LuxeBorealCRM (migración de ChatLuxeCRM a NestJS) — cómo escribir una spec de fase desde la plantilla, cómo decidir qué migra del prototipo y qué no, cómo dimensionar una fase, cómo redactar criterios de aceptación y cómo cerrarla. Úsala cuando el usuario pida planear una fase, escribir o revisar un spec de fase, arrancar o cerrar una fase, o decidir si algo del prototipo se migra.
+description: Método para planear, escribir, ejecutar y cerrar las fases de LuxeBorealCRM (migración de ChatLuxeCRM a NestJS) con el ciclo SDD de Gentle-AI sobre OpenSpec — qué agente sdd-* produce cada artefacto de una fase, cómo reunir el material antes de proponerla, cómo decidir qué migra del prototipo y qué no, cómo dimensionarla y cómo cerrarla. Úsala cuando el usuario pida planear una fase, arrancar o continuar el ciclo SDD de una fase, revisar sus specs/tasks, cerrarla, o decidir si algo del prototipo se migra.
 ---
 
 # Fases de LuxeBorealCRM
 
-La hoja de ruta y el estado están en `docs/fases/README.md`; la plantilla en
-`docs/fases/_plantilla.md`. Esta skill dice **cómo** usarlas.
+La hoja de ruta y el estado están en `docs/fases/README.md`; el detalle de cada fase vive en su
+change de OpenSpec, `openspec/changes/fase-NN-<nombre>/`. Esta skill dice **cómo** usar ese ciclo
+para una fase de este proyecto — el mecanismo genérico del ciclo SDD (comandos, artefactos,
+gatekeeper de modo de ejecución) está en `.claude/skills/_shared/sdd-orchestrator-workflow.md`; no
+se repite aquí.
 
-## 1. Escribir la spec de una fase
+Preflight de esta migración: **pace interactivo**, **artefactos híbridos** (OpenSpec en el repo +
+Engram como espejo de recuperación, proyecto `luxeborealcrm`), **estrategia de PR `ask-on-risk`**.
 
-1. Confirmar que la fase anterior está `cerrada` y leer su "Registro de cierre" (lo aprendido puede
-   cambiar esta fase).
-2. Copiar `_plantilla.md` a `FASE-NN-<nombre-kebab>.md`, estado `spec en revisión`.
-3. Reunir el material, en este orden:
-   - fila de la fase en `docs/fases/README.md` (objetivo y verificación de salida);
-   - filas de `docs/migracion/inventario.md` con esa fase;
-   - reglas R# de `SPEC.md` §4 que aplican, y su sección en `../ChatLuxeCRM/SPEC.md`;
-   - código **y tests** del prototipo de esas filas (los tests dicen el comportamiento real);
-   - antipatrones de `docs/analisis/01-analisis-chatluxecrm.md` que afectan a esas piezas;
-   - preguntas de `docs/PREGUNTAS_ABIERTAS.md` que bloquean la fase.
-4. Llenar la plantilla. Criterios para cada sección:
-   - **Alcance**: lo que no entra se nombra con la fase donde sí entra.
-   - **Qué se migra**: por cada pieza, una decisión y un motivo (§2 de esta skill).
-   - **Criterios de aceptación**: Dado/Cuando/Entonces, observables desde afuera del módulo, uno
-     por comportamiento. Nada de "el código está limpio" — eso es el checklist de cierre.
-   - **Tareas**: ≤ 10, cada una termina con un test. Si salen más, proponer partir la fase.
-   - **Entrega (slices de PR)**: cada PR ≤ ~400 líneas cambiadas; qué tareas contiene cada uno.
-   - **Review requerida**: `RDD` por defecto; `RDD + judgment-day` si la fase es 04, 05, 06 o 10.
-5. Si una pregunta abierta bloquea la fase, **no se inventa la respuesta**: se deja en §9 de la spec
-   y se le pregunta al usuario.
-6. Presentar al usuario un resumen corto (objetivo, qué migra y qué no, CA, preguntas) y esperar la
-   aprobación. Solo el usuario pasa la spec a `aprobada`.
+## 1. Qué produce cada fase del ciclo SDD
 
-## 2. ¿Se migra o no? (criterio por pieza)
+| Fase SDD | Agente | Artefacto en `openspec/changes/fase-NN-<nombre>/` |
+|---|---|---|
+| Explorar + proponer | `sdd-new` / `sdd-propose` | `exploration.md` (opcional), `proposal.md` |
+| Especificar | `sdd-spec` | `specs/<dominio>/spec.md` (delta sobre `openspec/specs/<dominio>/spec.md`) |
+| Diseñar | `sdd-design` | `design.md` |
+| Desglosar tareas | `sdd-tasks` | `tasks.md` |
+| Implementar | `sdd-apply` | actualiza `tasks.md` (marca `[x]`, hash de commit) + código |
+| Verificar | `sdd-verify` | `verify-report.md` |
+| Archivar | `sdd-archive` | mueve el change a `archive/YYYY-MM-DD-fase-NN-<nombre>/`, fusiona los delta specs en `openspec/specs/<dominio>/spec.md` |
+
+Reglas de contenido por artefacto (máximo de tareas, formato de escenarios, slices de PR, checklist
+de verificación, etc.) están en `openspec/config.yaml` §`rules`; no se duplican aquí.
+
+## 2. Reunir el material antes de proponer (`sdd-new`/`sdd-propose`)
+
+En este orden:
+
+1. Confirmar que la fase anterior está `cerrada` (tabla de `docs/fases/README.md`) y leer su
+   `verify-report.md` archivado — lo aprendido puede cambiar esta fase.
+2. Fila de la fase en `docs/fases/README.md` (objetivo y verificación de salida).
+3. Filas de `docs/migracion/inventario.md` con esa fase.
+4. Reglas R# que aplican, ya en `openspec/specs/<dominio>/spec.md` (índice en `SPEC.md` §4).
+5. Código **y tests** del prototipo de esas filas — los tests dicen el comportamiento real. El
+   prototipo `../ChatLuxeCRM` tiene CodeGraph indexado: para encontrar quién llama a la máquina de
+   estados, a `enviarMensaje()`, o el flujo de una herramienta del agente, usar primero
+   `codegraph_explore` con `projectPath: "../ChatLuxeCRM"` antes de leer archivos a mano.
+6. Antipatrones de `docs/analisis/01-analisis-chatluxecrm.md` que afectan a esas piezas.
+7. Preguntas de `docs/PREGUNTAS_ABIERTAS.md` que bloquean la fase — si una bloquea, **no se inventa
+   la respuesta**: se deja como pregunta abierta en la proposal y se le pregunta al usuario antes de
+   seguir.
+
+Con ese material, `sdd-propose` llena la proposal siguiendo `openspec/config.yaml` §proposal (tabla
+"Qué se migra del prototipo" con el criterio de la sección 2 de esta skill, alcance explícito, plan
+de rollback, preguntas bloqueantes). Presentar al usuario un resumen corto (objetivo, qué migra y
+qué no, preguntas) y esperar su aprobación antes de pasar a specs/design/tasks si la decisión es
+sensible; solo el usuario pasa el change a `aprobada`.
+
+## 3. ¿Se migra o no? (criterio por pieza)
 
 Preguntas, en orden:
 
@@ -45,32 +65,41 @@ Preguntas, en orden:
 4. **¿Es lógica pura y probada?** → **conservar** (portar con cambios de forma mínimos).
 5. **¿Aporta algo antes del corte (Fase 10)?** Si no → **posponer**, a qué fase.
 
-## 3. Tamaño de una fase
+## 4. Tamaño de una fase
 
-- Señales de fase demasiado grande: más de ~10 tareas, más de 2 módulos nuevos, CA que dependen
-  de otros CA de la misma fase para poder probarse, o una verificación de salida que necesita
-  "y además…".
+- Señales de fase demasiado grande: más de ~10 tareas (límite duro de `openspec/config.yaml`), más
+  de 2 módulos nuevos, criterios de aceptación que dependen de otros de la misma fase para poder
+  probarse, o una verificación de salida que necesita "y además…".
 - Cómo partir: por capa vertical que se pueda probar sola (primero la entrada con un procesador
   que solo registra; después el procesamiento), nunca por capa técnica horizontal sin prueba.
 
-## 4. Durante la fase
+## 5. Durante la fase (`sdd-apply`)
 
-- Estado `en curso` en la spec y en `docs/fases/README.md`.
-- Se trabaja en la rama de la fase (`fase-NN-<nombre>`), nunca directo en `main`.
-- Por tarea: RED primero (test que falla), después GREEN, después REFACTOR.
-- Marcar tareas `[x]` al terminar cada una con su test, y cerrar con un commit de unidad de
-  trabajo; anotar su hash en la tarea.
-- Una desviación de la spec se anota en la spec (no en el chat) antes de seguir; si cambia un CA,
-  se avisa al usuario.
-- Decisión con alternativas → ADR `propuesta`.
+- Estado `en curso` en `docs/fases/README.md` (equivalencia completa en ese archivo).
+- Rama de la fase, `fase-NN-<nombre>`, nunca directo en `main`.
+- TDD estricto por tarea: RED observado (test que falla) primero, después GREEN, después REFACTOR.
+- Cada tarea de `tasks.md` se marca `[x]` al terminar con su test, y cierra con un commit de unidad
+  de trabajo (comportamiento + test + doc juntos, Conventional Commits); el hash queda anotado en la
+  propia tarea. Slices de PR ~400 líneas por la estrategia `ask-on-risk` (skills `work-unit-commits`,
+  `chained-pr`).
+- Una desviación de la spec se anota en el `design.md`/`tasks.md` del change (no solo en el chat)
+  antes de seguir; si cambia un criterio de aceptación, se avisa al usuario.
+- Decisión con alternativas → ADR `propuesta` en `docs/adr/`.
 
-## 5. Cerrar la fase
+## 6. Cerrar la fase (`sdd-verify → sdd-archive`)
 
-1. Checklist de cierre de la skill `luxeboreal-arquitectura`.
+1. Checklist de cierre de la skill `luxeboreal-arquitectura` (§10: `npm run verify` en verde, e2e si
+   aplica, cada CA con su test, `MODELO_DATOS.md` al día si cambió el esquema, ADR si hubo decisión,
+   `docs/migracion/inventario.md` y `docs/fases/README.md` actualizados, sin `Date.now`/`process.env`
+   fuera de sitio, un commit por unidad de trabajo).
 2. Si la spec declara "Review requerida: RDD + judgment-day" (fases 04, 05, 06, 10): correr la
    skill `judgment-day` sobre el rango de commits de la fase antes de cerrar.
-3. Llenar "Registro de cierre" de la spec: CA con resultado, salida de `npm run verify`,
-   commits/PRs de la fase, resultado de review (RDD / veredicto de judgment-day si aplicaba),
-   desviaciones, ADR, filas migradas, y **qué aprendimos que cambia las fases siguientes**.
-4. Actualizar `docs/fases/README.md` (estado `cerrada`) y `docs/migracion/inventario.md`.
+3. `sdd-verify` escribe `verify-report.md` con, además de lo que ya pide `openspec/config.yaml`
+   §verify: el resultado de cada criterio de aceptación, los commits/PRs de la fase, el resultado de
+   la review (RDD y, si aplicó, el veredicto de `judgment-day`), las desviaciones respecto a la spec
+   y por qué, los ADR creados, y una sección explícita **"Qué aprendimos que cambia las fases
+   siguientes"** — este último punto es obligatorio incluso si la respuesta es "nada".
+4. `sdd-archive` mueve el change a `archive/` (fusiona los delta specs en `openspec/specs/`) y
+   actualiza `docs/fases/README.md` (estado `cerrada`, nota con la ruta del change archivado) y las
+   filas correspondientes de `docs/migracion/inventario.md`.
 5. Si lo aprendido afecta a fases futuras, proponer el ajuste de la tabla de fases al usuario.

@@ -1,20 +1,37 @@
 # Hoja de ruta por fases
 
-Este archivo es el **único lugar** donde vive el estado del proyecto. Cada fase tiene su spec en
-`FASE-NN-<nombre>.md`, creada a partir de `_plantilla.md` **cuando le toca**, no antes: la spec de
-una fase se escribe con lo que se aprendió en la anterior.
+Este archivo es el **único lugar** donde vive el estado del proyecto y su tabla de fases. Cada fase
+es un **change de OpenSpec** en `openspec/changes/fase-NN-<nombre>/`, producido por el ciclo
+`sdd-new`/`sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify → sdd-archive`
+(skill `luxeboreal-fases`), creado **cuando le toca**, no antes: el change de una fase se escribe con
+lo que se aprendió en la anterior (su `verify-report.md` archivado).
+
+El ciclo de estados histórico de este archivo (`idea → spec en revisión → aprobada → en curso →
+cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así sobre el ciclo SDD:
+
+| Estado | Equivale a |
+|---|---|
+| `idea` | el change aún no existe |
+| `spec en revisión` | `proposal.md` + `specs/` (delta) + `design.md` + `tasks.md` redactados (sdd-propose → sdd-spec → sdd-design → sdd-tasks) |
+| `aprobada` | el usuario aprobó proposal + specs + design + tasks |
+| `en curso` | `sdd-apply` en marcha; cada tarea de `tasks.md` cierra con su commit de unidad de trabajo |
+| `cerrada` | `sdd-verify` + `sdd-archive` completos: el `verify-report.md` queda archivado y los delta specs se fusionaron en `openspec/specs/` |
 
 ## Reglas de las fases
 
-1. **Corta**: una fase se implementa en 1-3 sesiones de trabajo. Si la spec pasa de ~10 tareas, se
-   parte en dos.
+1. **Corta**: una fase se implementa en 1-3 sesiones de trabajo. Si `tasks.md` pasa de ~10 tareas
+   (límite de `openspec/config.yaml`), se parte en dos.
 2. **Termina en algo que se puede probar**: un comando, un endpoint o un flujo verificable, con sus
    tests en verde. Nunca "infraestructura a medias".
 3. **Solo depende de fases cerradas.** Nada de adelantar trabajo de una fase futura.
-4. **Declara qué migra**: cada fase lista las filas de `docs/migracion/inventario.md` que cierra y
-   los tests del prototipo que reemplaza.
-5. **Ciclo de estados**: `idea → spec en revisión → aprobada → en curso → cerrada`. Solo el usuario
-   pasa una spec a `aprobada`. Una fase `cerrada` tiene su sección "Registro de cierre" llena.
+4. **Declara qué migra**: la `proposal.md` de cada fase incluye la tabla "Qué se migra del
+   prototipo" (conservar/rediseñar/descartar/delegar/posponer, `openspec/config.yaml` §proposal) y
+   lista los tests del prototipo que la fase reemplaza; al cerrar, esas filas se marcan migradas en
+   `docs/migracion/inventario.md`.
+5. **Ciclo de estados**: `idea → spec en revisión → aprobada → en curso → cerrada` (tabla de
+   equivalencia arriba). Solo el usuario pasa un change a `aprobada`. Una fase `cerrada` tiene su
+   `openspec/changes/archive/YYYY-MM-DD-fase-NN-<nombre>/verify-report.md` lleno con lo que pedía el
+   antiguo "Registro de cierre" (§ "Cerrar la fase" de la skill `luxeboreal-fases`).
 6. **Review**: las fases 04, 05, 06 y 10 cierran solo después de `judgment-day` (revisión ciega
    doble), además del RDD por commit.
 
@@ -59,6 +76,10 @@ una fase se escribe con lo que se aprendió en la anterior.
 > catálogo se carga con la hoja de Sheets + importador (Fase 03). La primera pantalla podría ser una
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
 
+> Ninguna fase tiene todavía su change de OpenSpec (todas en `idea`). En cuanto una fase pase a
+> `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
+> (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
+
 ## Prerrequisitos externos
 
 Las fases 09 y 10 están bloqueadas por, fuera de este repo: VPS + Dokploy con dominio fijo, token
@@ -67,9 +88,17 @@ cargados. Detalle en `../ChatLuxeCRM/REQUISITOS_PENDIENTES.md`.
 
 ## Cómo se trabaja una fase
 
-1. **Escribir la spec** (`FASE-NN-*.md` desde `_plantilla.md`): objetivo, alcance, qué migra, criterios
-   de aceptación, diseño, tareas. Se usa la skill `luxeboreal-fases`.
-2. **Revisión del usuario** → estado `aprobada`. Si surge una decisión con alternativas, ADR.
-3. **Implementar** tarea por tarea; cada tarea deja su test.
-4. **Cerrar**: checklist de la skill `luxeboreal-arquitectura`, llenar "Registro de cierre",
-   actualizar esta tabla y `docs/migracion/inventario.md`.
+1. **Explorar y proponer** (`sdd-new`/`sdd-propose`): crea `openspec/changes/fase-NN-<nombre>/` y su
+   `proposal.md` — objetivo, alcance, qué migra del prototipo, plan de rollback, preguntas
+   bloqueantes. Se usa la skill `luxeboreal-fases`.
+2. **Especificar y diseñar** (`sdd-spec → sdd-design → sdd-tasks`): delta specs por dominio
+   (Dado/Cuando/Entonces), diseño de módulos/puertos/eventos, y el checklist de tareas (`tasks.md`,
+   ≤10, slices de PR ~400 líneas, "Review requerida").
+3. **Revisión del usuario** → estado `aprobada` (solo el usuario la marca). Si surge una decisión
+   con alternativas, ADR `propuesta`.
+4. **Implementar** (`sdd-apply`) tarea por tarea, en la rama `fase-NN-<nombre>`; cada tarea deja su
+   test (RED → GREEN → REFACTOR) y su commit de unidad de trabajo, registrado en `tasks.md`.
+5. **Cerrar** (`sdd-verify → sdd-archive`): checklist de la skill `luxeboreal-arquitectura`,
+   `judgment-day` si la fase es 04/05/06/10, `verify-report.md` con lo que aprendimos, archivar el
+   change (fusiona los delta specs en `openspec/specs/`) y actualizar esta tabla y
+   `docs/migracion/inventario.md`.
