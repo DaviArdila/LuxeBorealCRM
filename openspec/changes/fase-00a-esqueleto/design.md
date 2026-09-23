@@ -372,20 +372,36 @@ se configura igual en ESM + Vitest (a mano si `nest new` de la 11 genera CommonJ
 se registra en la tabla de abajo y en la enmienda de ADR-0001. Un hallazgo solo informativo (p. ej.
 nestjs/swagger#3672 con zod v4 y fechas) se anota para la proposal de 00b sin disparar el fallback.
 
-**Registro de compatibilidad** (lo completa la tarea 1; versiones exactas):
+**Registro de compatibilidad** (completado en tarea 1, 2026-09-23; fuente: `npm view <paquete>@latest
+version peerDependencies engines --json` contra el registro público de npm, más instalación real en
+`%TEMP%\...\scratchpad\fase00a-compat-check`, fuera del repo, sin `--legacy-peer-deps`, `--force` ni
+`overrides`):
 
 | Paquete | Versión | `peerDependencies` de Nest | Instalación | Humo | Resultado |
 |---|---|---|---|---|---|
-| `@nestjs/core` / `common` / `platform-express` / `testing` | | — | | | |
-| `@nestjs/terminus` | | | | | |
-| `nestjs-pino` | | | | | |
-| `nestjs-zod` (00b) | | | | n/a | |
-| `@nestjs/swagger` (00b) | | | | n/a | |
-| `@scalar/nestjs-api-reference` (00b) | | | | n/a | |
-| `@nestjs/bullmq` (05) | | | | n/a | |
-| `prisma` / `@prisma/client` / `@prisma/adapter-pg` | | n/a | | | |
-| `vitest` / `unplugin-swc` | | n/a | | | |
-| Node (`engines` de `@nestjs/core`) | | n/a | n/a | n/a | |
+| `@nestjs/core` / `common` / `platform-express` / `testing` | `12.1.0` (las cuatro) | `@nestjs/core` requiere `common`/`platform-express` `^12.0.0`; `testing` requiere `core`/`common`/`platform-express` `^12.0.0` — todas se resuelven entre sí en 12.x | OK — `npm install` real sin `ERESOLVE`, sin flags de escape | OK — `require()` de las cuatro resuelve y expone `NestFactory`/`Module`/`ExpressAdapter`/`Test` (humo de arranque completo diferido a T9/e2e) | PASS |
+| `@nestjs/terminus` | `12.1.0` | `@nestjs/core`/`common` `^11.0.0 \|\| ^12.0.0` → incluye `^12` | OK — instalado junto al resto sin conflicto | OK — `require()` expone `TerminusModule` (indicadores reales se prueban en T9) | PASS |
+| `nestjs-pino` | `5.2.0` | `@nestjs/core`/`common` `^11.0.8 \|\| ^12.0.2` → `12.1.0` satisface `^12.0.2` | OK — instalado junto al resto sin conflicto | OK — `require()` expone `LoggerModule` (redacción real se prueba en T6) | PASS |
+| `nestjs-zod` (00b, descartado) | `5.5.0` (única versión estable publicada, sin release más nueva) | `@nestjs/common` **`^10.0.0 \|\| ^11.0.0`** — **excluye `^12`** | n/a — no se instala en 00a (`npm view` únicamente) | n/a | **FAIL → no bloqueante**: cumple el criterio de falla de D15 punto 4, pero el usuario decidió (2026-09-23) descartar `nestjs-zod` en vez de retroceder a NestJS 11; 00b usa el soporte nativo de Standard Schema de NestJS 12 (`StandardSchemaValidationPipe` + conversión nativa de `@nestjs/swagger`) — ver enmiendas de `docs/adr/0001-monolito-modular-nestjs.md` y `docs/adr/0008-contrato-api-openapi.md` |
+| `@nestjs/swagger` (00b) | `12.0.2` | `@nestjs/core`/`common` `^12.0.0` → nativo de Nest 12 | n/a — no se instala en 00a | n/a | PASS (informativo para 00b) |
+| `@scalar/nestjs-api-reference` (00b) | `1.2.21` | sin `peerDependencies` — sin acoplamiento a la versión de Nest (solo depende de `@scalar/client-side-rendering`) | n/a — no se instala en 00a | n/a | PASS (informativo para 00b) |
+| `@nestjs/bullmq` (05) | `12.0.0` | `@nestjs/core`/`common` `^10.0.0 \|\| ^11.0.0 \|\| ^12.0.0` → incluye `^12` | n/a — no se instala en 00a | n/a | PASS (informativo para 05) |
+| `prisma` / `@prisma/client` / `@prisma/adapter-pg` | `7.10.0` (las tres) — **nota**: el dist-tag `latest` de solo el paquete `prisma` (CLI) apunta a `8.0.0-rc.15` (prerelease); se fijó `7.10.0` (dist-tag `prev` de `prisma`, igual a `latest` de `@prisma/client`) para mantener consistencia con Prisma 7 (D6, D15 nota del orquestador) y no instalar un release candidate | n/a — Prisma no depende de la versión de Nest | OK — `npm install` real sin `ERESOLVE`; `@prisma/adapter-pg` resuelve (`require()` expone `PrismaPg`); `@prisma/client` no se pudo requerir sin `prisma generate` (esperado — no hay `schema.prisma` hasta T8, no es una falla de compatibilidad) | PASS (con la nota de versión fijada arriba) |
+| `vitest` / `unplugin-swc` | `5.0.1` / `2.0.0` | n/a — sin acoplamiento a Nest | OK — `npm install` real sin `ERESOLVE`; `unplugin-swc` trae `@swc/core@1.16.2` como peer resuelto | OK — `npx vitest --version` → `vitest/5.0.1 win32-x64 node-v24.19.0` | PASS |
+| Node (`engines` de `@nestjs/core`) | `24.19.0` instalado (`node -v`) | n/a | n/a | OK — `@nestjs/core@12.1.0` exige `>= 20`; `@nestjs/terminus@12.1.0` exige `^20.19.0 \|\| ^22.12.0 \|\| >=24.0.0`; `nestjs-pino@5.2.0` exige `>=22.12.0`; `prisma@7.10.0` exige `^20.19 \|\| ^22.12 \|\| >=24.0`; `vitest@5.0.1` exige `^22.12.0 \|\| ^24.0.0 \|\| >=26.0.0` — `24.19.0` satisface los cinco | PASS |
+
+**Resultado de la tarea 1**: **RESUELTO, sin fallback** — `nestjs-zod@5.5.0` (única versión publicada)
+excluye `@nestjs/common@^12` de su rango de `peerDependencies`, lo que cumplía literalmente el
+criterio de falla de D15 punto 4. El resto de paquetes de 00a (`@nestjs/core`/`common`/
+`platform-express`/`testing`/`terminus`, `nestjs-pino`, Prisma 7, Vitest/`unplugin-swc`) resuelven y
+se instalan limpio contra NestJS 12 y Node 24.19.0. El usuario decidió (2026-09-23) no ejecutar el
+fallback a NestJS 11: `nestjs-zod` es exclusivamente una dependencia de 00b (00a nunca la instala) y
+NestJS 12 confirma soporte **nativo** de Standard Schema (`StandardSchemaValidationPipe` sobre
+`@Body()`/`@Query()`/`@Param()`/`@RawBody()`, con `@nestjs/swagger` convirtiendo los mismos esquemas
+Zod a OpenAPI vía su extensión `~standard.jsonSchema`, Zod ≥4.2 — instalado 4.6.5). `nestjs-zod` queda
+descartado por completo del proyecto, no solo diferido a 00b. Detalle en las enmiendas de
+`docs/adr/0001-monolito-modular-nestjs.md` y `docs/adr/0008-contrato-api-openapi.md`. **Las tareas
+T2-T10 de este documento proceden bajo NestJS 12, sin fallback.**
 
 ## Data Flow
 

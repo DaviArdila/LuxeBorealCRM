@@ -146,9 +146,11 @@ modulos/<m>/
 Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 `openspec/specs/api/spec.md`; aquí solo las reglas que tocan al escribir código.
 
-- El esquema **zod** de cada endpoint (`nestjs-zod`, `createZodDto`) es la **única fuente**: valida
-  el payload y genera el fragmento OpenAPI a la vez. Nunca se documenta un endpoint con
-  `@ApiProperty` por separado.
+- El esquema **zod** de cada endpoint es la **única fuente**: se pasa con la opción `schema` a
+  `@Body()`/`@Query()`/`@Param()`/`@RawBody()` (`StandardSchemaValidationPipe`, soporte nativo de
+  NestJS 12 — enmienda 2026-09-23 de ADR-0008; sin paquete de terceros como `nestjs-zod`), y
+  `@nestjs/swagger` genera el fragmento OpenAPI desde ese mismo esquema. Nunca se documenta un
+  endpoint con `@ApiProperty` por separado.
 - Los DTO viven en `interfaz/` del módulo dueño, junto a los controllers que los usan.
 - Nadie escribe ni edita `openapi/openapi.json` a mano; se genera.
 - Si un commit agrega o cambia un endpoint, **el mismo commit** actualiza

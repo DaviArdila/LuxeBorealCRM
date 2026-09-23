@@ -85,7 +85,7 @@ con Vitest y `GET /health` respondiendo con Postgres y Redis arriba (fila 00a de
 |---|---|---|
 | Hook pre-push local (lint, typecheck, tests, commitlint, gitleaks) | 00b | P19 |
 | Workflow de GitHub Actions | 00b | P19 |
-| Pipeline OpenAPI: `nestjs-zod` + `@nestjs/swagger` + Scalar en `/docs` + Spectral + oasdiff + drift de `openapi/openapi.json` (API1, API9, API10) | 00b | ADR-0008; `GET /health` entra al contrato en 00b |
+| Pipeline OpenAPI: soporte nativo de Standard Schema de NestJS 12 (`StandardSchemaValidationPipe` + `@nestjs/swagger`) + Scalar en `/docs` + Spectral + oasdiff + drift de `openapi/openapi.json` (API1, API9, API10) | 00b | ADR-0008 (enmienda 2026-09-23, descarta `nestjs-zod`); `GET /health` entra al contrato en 00b |
 | Errores RFC 9457 y convenciones JSON (API3, API4) | 00b | `openspec/specs/api/spec.md` |
 | CHANGELOG con `git-cliff` | 00b | skill `luxeboreal-arquitectura` §11 |
 | Pasar `strict_tdd` a `true` en `openspec/config.yaml` | 00b | criterio de salida de 00b |

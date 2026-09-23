@@ -487,10 +487,11 @@ mismo que dispara `enableShutdownHooks()` ante una señal real.
 ### Diferido a 00b
 
 - `API8 — GET /health no aparece en el documento público`: se verifica en 00b, cuando exista el
-  pipeline OpenAPI (`nestjs-zod` + `@nestjs/swagger` + Scalar) y `openapi/openapi.json`. En 00a no
-  hay documento público que comprobar (proposal, Out of Scope; design, "API8 en 00a"). 00a solo cubre
-  la ruta sin versión (`API2`, arriba) y deja la intención de etiquetar `/health` como `internal`
-  registrada en la spec delta de `api`.
+  pipeline OpenAPI (soporte nativo de Standard Schema de NestJS 12 + `@nestjs/swagger` + Scalar,
+  ADR-0008 enmienda 2026-09-23) y `openapi/openapi.json`. En 00a no hay documento público que
+  comprobar (proposal, Out of Scope; design, "API8 en 00a"). 00a solo cubre la ruta sin versión
+  (`API2`, arriba) y deja la intención de etiquetar `/health` como `internal` registrada en la spec
+  delta de `api`.
 - `API2 — Ruta con prefijo y nombre de recurso en español` y `API2 — operationId estable entre
   despliegues`: escenarios previos de API2 que la delta conserva completos. En 00a no existe ninguna
   ruta de negocio bajo `/api/v1` ni documento OpenAPI con `operationId`; se verifican en 00b

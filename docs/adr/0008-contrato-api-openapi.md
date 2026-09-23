@@ -36,13 +36,14 @@ tendría dos definiciones que se pueden desincronizar: la que valida y la que do
 
 ## Decisión
 
-**OpenAPI 3.1, code-first, con `nestjs-zod` como única fuente de validación y documentación por
-endpoint**, y Scalar como interfaz de lectura del contrato.
+**OpenAPI 3.1, code-first, con los esquemas zod de cada endpoint como única fuente de validación y
+documentación** (mecanismo enmendado el 2026-09-23: soporte nativo de NestJS 12 en vez de
+`nestjs-zod`, ver "Enmienda" abajo), y Scalar como interfaz de lectura del contrato.
 
-- **Una sola fuente por endpoint**: el esquema zod se envuelve con `createZodDto` (`nestjs-zod`,
-  compatible con zod ^3.25 o ^4) y genera a la vez el DTO que Nest valida y el fragmento OpenAPI que
-  documenta; `cleanupOpenApiDoc` limpia el documento generado antes de publicarlo. Nadie escribe el
-  YAML/JSON de OpenAPI a mano.
+- **Una sola fuente por endpoint**: el esquema zod se pasa como `schema` a `@Body()`/`@Query()`/
+  `@Param()`/`@RawBody()` (mecanismo nativo de NestJS 12, ver "Enmienda" abajo); el mismo esquema
+  valida el payload y `@nestjs/swagger` genera a la vez el fragmento OpenAPI que documenta. Nadie
+  escribe el YAML/JSON de OpenAPI a mano.
 - **Interfaz**: Scalar en `/docs` (`@scalar/nestjs-api-reference`, integración oficial para NestJS),
   más legible que Swagger UI sobre el mismo documento. En producción queda detrás de autenticación o
   desactivada; el JSON público nunca expone los endpoints marcados `internal`.
@@ -85,9 +86,29 @@ endpoint**, y Scalar como interfaz de lectura del contrato.
 - Pendiente de otra decisión: el mecanismo de autenticación/autorización concreto (Fase 11) y los
   valores exactos de configuración de Spectral/oasdiff (Fase 00b).
 
+## Enmienda (2026-09-23)
+
+- **Cambio**: se descarta `nestjs-zod` (`createZodDto`, `cleanupOpenApiDoc`) como mecanismo. En su
+  lugar, el pipeline de 00b usa el soporte **nativo** de Standard Schema de NestJS 12:
+  `app.useGlobalPipes(new StandardSchemaValidationPipe())` a nivel global, y el esquema zod de cada
+  endpoint se pasa directo con la opción `schema` de `@Body()`/`@Query()`/`@Param()`. `@nestjs/swagger`
+  convierte esos mismos esquemas a OpenAPI de forma nativa, sin configuración adicional, porque Zod
+  ≥4.2 implementa la extensión `~standard.jsonSchema` (la versión instalada es 4.6.5).
+- **Motivo**: la tarea 1 de `openspec/changes/fase-00a-esqueleto/` (D15 de `design.md`) encontró que
+  `nestjs-zod@5.5.0` (única versión estable publicada al 2026-09-23) excluye `@nestjs/common@^12` de
+  su rango de `peerDependencies`. En vez de retroceder el monolito a NestJS 11 (ADR-0001) por una
+  dependencia de solo 00b, el usuario decidió eliminarla y usar el mecanismo nativo de NestJS 12, que
+  cubre el mismo requisito (una sola fuente zod para validar y documentar) sin paquete de terceros.
+- **Qué no cambia**: la decisión de fondo (una sola fuente zod por endpoint, Scalar como interfaz de
+  lectura, contrato versionado en git, convenciones API1-API10 de `openspec/specs/api/spec.md`) sigue
+  igual; solo cambia el mecanismo (el "cómo"), no el comportamiento observable.
+- Decisión del usuario, 2026-09-23. Estado de este ADR sigue `aceptada`; esta sección se agrega sin
+  borrar el razonamiento original de la Decisión.
+
 ## Fuentes
 
-- [nestjs-zod — `createZodDto`, `cleanupOpenApiDoc`, compatibilidad zod ^3.25/^4](https://github.com/BenLorantfy/nestjs-zod)
+- [NestJS — Techniques: Validation (Standard Schema, `StandardSchemaValidationPipe`)](https://docs.nestjs.com/techniques/validation)
+- [NestJS 12.0.0 — release notes](https://github.com/nestjs/nest/releases/tag/v12.0.0)
 - [`@scalar/nestjs-api-reference` — integración oficial de Scalar para NestJS](https://github.com/scalar/scalar/tree/main/integrations/nestjs)
 - [RFC 9457 — Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457)
 - [OpenAPI Specification 3.1.0](https://spec.openapis.org/oas/v3.1.0)

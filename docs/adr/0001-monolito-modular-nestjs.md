@@ -50,3 +50,39 @@ dependencias. Los módulos se comunican por casos de uso exportados (consultas) 
   alguna falla, se retrocede a NestJS 11 y se registra el motivo en el change de la fase.
 - Decisión del usuario, 2026-09-23. Estado de este ADR sigue `aceptada`; esta sección se agrega sin
   borrar el razonamiento original de la Decisión.
+
+### Verificación de tarea 1 (2026-09-23) — hallazgo resuelto
+
+La tarea 1 de `openspec/changes/fase-00a-esqueleto/` ejecutó la verificación condicionada arriba
+(detalle completo, versiones exactas y evidencia por paquete en la tabla "Registro de compatibilidad"
+de `design.md`, D15). Resultado:
+
+- `@nestjs/core`/`common`/`platform-express`/`testing` (`12.1.0`), `@nestjs/terminus` (`12.1.0`),
+  `nestjs-pino` (`5.2.0`), `@nestjs/swagger` (`12.0.2`), `@nestjs/bullmq` (`12.0.0`) y
+  `@scalar/nestjs-api-reference` (`1.2.21`) resuelven contra NestJS 12 sin excluir `^12` en su rango
+  de `peerDependencies`. Instalación real (`npm install`, sin `--legacy-peer-deps`/`--force`/
+  `overrides`) de los paquetes que integra 00a terminó sin `ERESOLVE`. Node 24.19.0 (instalado en la
+  máquina de desarrollo) cumple los `engines` de las cinco dependencias que los declaran.
+- `nestjs-zod@5.5.0` (única versión estable publicada al 2026-09-23) declara
+  `peerDependencies.@nestjs/common: "^10.0.0 || ^11.0.0"` — **excluye `^12`**. Esto cumplía
+  literalmente el criterio de falla de D15 ("el rango de `peerDependencies` excluye `^12`") para una
+  de las dependencias nombradas como "clave" arriba.
+
+**Por qué esto no disparó el fallback a NestJS 11**: `nestjs-zod` es exclusivamente una dependencia de
+la Fase 00b (pipeline OpenAPI) — 00a nunca la instala. Retroceder **todo** el monolito a NestJS 11
+(afectando T2-T10 de 00a, ya diseñadas sobre NestJS 12) por una dependencia que 00a ni siquiera usa era
+una decisión con alternativas reales, reservada al usuario (`CLAUDE.md`, "Cómo se trabaja").
+
+**Decisión del usuario (2026-09-23)**: no se ejecuta el fallback a NestJS 11 y se descarta `nestjs-zod`
+por completo (no solo se difiere a 00b). NestJS 12 confirma soporte **nativo** de Standard Schema:
+`StandardSchemaValidationPipe` acepta esquemas Zod directamente en `@Body()`/`@Query()`/`@Param()`/
+`@RawBody()` sin ningún paquete de terceros, y `@nestjs/swagger` (también 12.x) convierte esos mismos
+esquemas Zod a OpenAPI cuando Zod implementa la extensión `~standard.jsonSchema` (Zod ≥4.2; la versión
+instalada es 4.6.5). Fuentes: <https://docs.nestjs.com/techniques/validation>,
+<https://github.com/nestjs/nest/releases/tag/v12.0.0> y la documentación de OpenAPI de NestJS sobre
+Standard Schema. El resto de "dependencias clave" (`@nestjs/core`/`common`/`platform-express`/
+`testing`/`terminus`, `nestjs-pino`, `@nestjs/swagger`, `@scalar/nestjs-api-reference`,
+`@nestjs/bullmq`) ya habían resuelto limpio contra `^12` (fila anterior). Detalle del mecanismo nativo
+y su alcance en el contrato de API: enmienda 2026-09-23 de `docs/adr/0008-contrato-api-openapi.md`.
+
+**Estado**: resuelto. T2-T10 de la Fase 00a proceden bajo NestJS 12, sin fallback a NestJS 11.

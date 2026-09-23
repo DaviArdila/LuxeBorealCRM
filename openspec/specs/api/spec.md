@@ -4,15 +4,17 @@
 
 Gobierna el contrato de la API pública del back office: cómo se genera, cómo se versiona, qué
 convenciones sigue cada endpoint y qué queda fuera del documento público. La decisión de fondo
-(OpenAPI 3.1 code-first con `nestjs-zod` + Scalar) está en `docs/adr/0008-contrato-api-openapi.md`;
-esta spec define el comportamiento observable que cada fase con endpoints debe cumplir.
+(OpenAPI 3.1 code-first con el soporte nativo de Standard Schema de NestJS 12 + Scalar; enmienda
+2026-09-23) está en `docs/adr/0008-contrato-api-openapi.md`; esta spec define el comportamiento
+observable que cada fase con endpoints debe cumplir.
 
 ## Requirements
 
 ### Requirement: API1 — Contrato OpenAPI generado desde el código
 
-El sistema MUST generar `openapi/openapi.json` a partir de los esquemas zod de cada endpoint
-(`nestjs-zod`); el documento commiteado en git MUST coincidir exactamente con el que el código
+El sistema MUST generar `openapi/openapi.json` a partir de los esquemas zod de cada endpoint, usando
+el soporte nativo de Standard Schema de NestJS 12 (`StandardSchemaValidationPipe` + conversión nativa
+de `@nestjs/swagger`); el documento commiteado en git MUST coincidir exactamente con el que el código
 genera en el momento del build. `openapi/openapi.json` MUST NOT editarse a mano.
 
 Fase que lo implementa: 00b (pipeline y convenciones)
