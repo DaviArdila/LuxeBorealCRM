@@ -8,9 +8,8 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 
 - [x] T1 — Verificación de compatibilidad con NestJS 12 (sin código de producción)
 - [x] T2 — Esqueleto NestJS 12 (ESM) + runner Vitest
-- [ ] T3 — `plataforma/config`: configuración validada con Zod (código completo y verificado en
-      verde, commit `2aa152d`; **pendiente únicamente `.env.example`**, bloqueado por permisos del
-      sandbox de esta sesión — ver nota de evidencia debajo)
+- [ ] T3 — `plataforma/config`: configuración validada con Zod (código verificado en `2aa152d` y
+      `.env.example` agregado; pendiente registrar el commit de cierre — ver evidencia debajo)
 - [x] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
 - [x] T5 — `compartido/`: `dinero`, `texto`, `numero`
 - [x] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
@@ -199,7 +198,7 @@ aceptar tráfico, sin variables `MOCK_*` (PLT1, D8).
   integración). ✅
 - Ningún archivo fuera de `plataforma/config` lee `process.env` (se verifica por herramienta en T7;
   aquí basta con no introducir ninguna lectura fuera de este módulo). ✅
-- `.env.example` documenta las seis variables de la app. ❌ **pendiente** — ver nota abajo.
+- `.env.example` documenta las seis variables de la app. ✅ — ver evidencia de cierre abajo.
 
 **Evidencia (2026-09-23, sdd-apply)**:
 - RED observado: `npm test -- plataforma/config` sobre `cargar-configuracion.spec.ts` →
@@ -212,17 +211,35 @@ aceptar tráfico, sin variables `MOCK_*` (PLT1, D8).
   de Zod — una clave ausente no trae campo `received`, una presente con tipo/forma inválida sí).
 - Commit: `2aa152d` — `feat(plataforma/config): validar configuración con Zod al arrancar` (331
   líneas de autoría sin `package-lock.json`).
-- **Bloqueo**: no se pudo crear `.env.example`. El sandbox de esta sesión deniega toda escritura a
+- **Bloqueo original (resuelto)**: en la sesión inicial no se pudo crear `.env.example`. El sandbox
+  de esa sesión denegó toda escritura a
   rutas `.env*` en el repo — `Write` a `.env.example` respondió "File is in a directory that is
   denied by your permission settings"; `Bash` con `printf > .env.example` y con `cp <staging>
   .env.example` fueron denegados antes de ejecutarse. El contenido completo (seis variables de la
   app + sección de Compose) quedó preparado en el scratchpad de la sesión y en el reporte de
-  `sdd-apply` para que el usuario lo cree manualmente o conceda permiso de escritura sobre `.env*`
-  para un siguiente intento. T3 queda `[ ]` (no `[x]`) hasta que `.env.example` exista, porque su
-  propio "Hecho cuando" lo exige.
+  `sdd-apply`; el permiso de escritura fue concedido para este seguimiento.
+- Resolución del pendiente: `.env.example` documenta las seis variables de la aplicación (`NODE_ENV`,
+  `PORT`, `LOG_LEVEL`, `DATABASE_URL`, `REDIS_URL` y `HEALTH_TIMEOUT_MS`) con valores de desarrollo
+  local alineados con `design.md` D8 y la tabla "Configuración nueva". La sección de variables de
+  Docker Compose se incorpora en T8, como indica esta tarea.
+- RED → GREEN → REFACTOR: el ciclo RED/GREEN original de la implementación Zod permanece registrado
+  arriba. Este seguimiento no modificó código ni pruebas, por lo que no generó un RED nuevo; se
+  reejecutaron las pruebas enfocadas después de agregar el ejemplo. No se requirió refactor de código.
+- Verificación actual (2026-09-23): `npm test -- plataforma/config plataforma/reloj` → exit 0,
+  `Test Files 2 passed (2)`, `Tests 9 passed (9)`; `npm run test:integracion -- configuracion` → exit
+  0, `Test Files 1 passed (1)`, `Tests 2 passed (2)`.
+- **Work Unit Evidence**:
+
+  | Evidencia | Resultado |
+  |---|---|
+  | Prueba enfocada | `npm test -- plataforma/config plataforma/reloj` — exit 0; 2 suites y 9 tests pasaron. |
+  | Runtime harness | `npm run test:integracion -- configuracion` — exit 0; 1 suite y 2 tests pasaron. `Test.createTestingModule` comprueba el rechazo de configuración inválida y la compilación con valores válidos; no requiere servicios externos. |
+  | Límite de rollback | Revertir `.env.example` y esta evidencia/checklist de T3 en `openspec/changes/fase-00a-esqueleto/tasks.md`; no tocar los archivos T7 preexistentes. |
+
+  Commit de cierre de la plantilla: pendiente de crear y registrar abajo.
 
 **commit:** `2aa152d` — `feat(plataforma/config): validar configuración con Zod al arrancar`
-(`.env.example` pendiente, ver Evidencia)
+(implementación Zod; plantilla `.env.example` agregada, commit de cierre pendiente de registrar)
 
 ---
 
