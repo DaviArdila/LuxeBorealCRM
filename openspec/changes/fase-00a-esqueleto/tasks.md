@@ -13,7 +13,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 - [x] T4 — `plataforma/reloj`: `Clock` inyectable + `ClockFalso`
 - [x] T5 — `compartido/`: `dinero`, `texto`, `numero`
 - [x] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
-- [ ] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
+- [x] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
 - [ ] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
 - [ ] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
 - [ ] T10 — Cierre: `npm run verify` en verde + documentación
@@ -488,6 +488,46 @@ lint que hacen fallar `npm run verify` de PLT1/PLT2.
 **Hecho cuando**: los 4 escenarios de arriba pasan; `npm run fronteras` y `npm run lint` corren
 limpios sobre `src/` real (compartido, config, reloj, observabilidad ya escritos en T3-T6) y fallan
 sobre los fixtures con violación.
+
+**Evidencia (2026-09-23, sdd-apply)**:
+- Modo: Gentle AI `strict_tdd: false` → Standard; se siguió el RED → GREEN → REFACTOR de la tarea
+  porque `rules.apply.tdd: true`. El worktree ya contenía un candidato T7 sin evidencia RED; se
+  registran abajo las regresiones añadidas y sus resultados observados, sin atribuir el ciclo inicial.
+- Estado inicial del candidato: `npm test -- fronteras` → exit 0; 2 archivos y 19 tests pasaron.
+- RED: tras agregar pruebas para imports internos entre submódulos de `plataforma/` y `console.*` en
+  JavaScript, `npm test -- fronteras` → exit 1; 2 archivos fallaron, 2 tests fallaron y 25 pasaron
+  (27 total). La regla 6 permitía el primer import y `no-console` no alcanzaba archivos `.js`.
+- RED adicional: el fixture de un test `*.spec.ts` que importa Vitest mostró que la regla 9 también
+  bloqueaba tests colocados junto al código en `src/`. Esa corrida reveló, además, que Vitest
+  descubría fixtures `.spec.ts` como tests y que el primer lint con información de tipos podía
+  exceder el timeout bajo carga paralela; se excluyeron los fixtures y se redujo trabajo repetido del
+  arnés.
+- GREEN: `npm test -- fronteras` → exit 0; 2 archivos, 28 tests pasaron (14.96 s). `npm run
+  fronteras` → exit 0; sin violaciones, 36 módulos y 43 dependencias analizados. `npm run lint` →
+  exit 0.
+- REFACTOR: se cachea una sola ejecución de `cruise` por suite; `ESLint` se reutiliza. El matcher de
+  la regla 6 usa una alternación segura (dependency-cruiser rechazó la primera expresión con grupo
+  opcional como `unsafe regular expression`). La regla 9 excluye `*.spec.ts` de su origen porque los
+  tests unitarios de esta fase viven en `src/`; `doNotFollow: node_modules` limita el análisis al
+  código propio. ESLint desactiva reglas con tipos para archivos `.cjs`/`.mjs` sin servicio de tipos.
+- Aclaraciones a D11: la regla 6 prohíbe imports internos entre submódulos de `plataforma/` y desde
+  otros archivos de `src/`, pero permite archivos del mismo submódulo y el `index.ts` público. Esto
+  corrige el alcance literal del patrón previo, que excluía todos los orígenes dentro de
+  `plataforma/`, en contradicción con la regla de diseño de no importar rutas internas ajenas. La
+  regla 9 distingue producción de tests colocados en `src/`, como exige la estrategia unitaria del
+  diseño.
+- Hallazgos corregidos durante la verificación: `npm run fronteras` inicialmente recorría
+  `node_modules` y reportaba 30 violaciones de terceros, además de imports de devDependencies desde
+  specs colocadas en `src/`; `npm run lint` inicialmente aplicaba `await-thenable` al `.cjs` sin
+  información de tipos. Los resultados finales anteriores confirman las correcciones.
+- **Work Unit Evidence**:
+
+  | Evidencia | Resultado |
+  |---|---|
+  | Prueba enfocada | `npm test -- fronteras` — exit 0; 2 archivos y 28 tests pasaron. |
+  | Arnés estático | `npm run fronteras` — exit 0; 36 módulos/43 dependencias, sin violaciones. `npm run lint` — exit 0. N/A para runtime de aplicación: T7 solo cambia reglas estáticas y no introduce un proceso o integración en tiempo de ejecución. |
+  | Límite de rollback | Revertir `.dependency-cruiser.cjs`, los bloques T7 de `eslint.config.js`, `package.json`/`package-lock.json` (dependency-cruiser), `tsconfig.json` y `vitest.config.ts` (exclusión/inclusión de fixtures), `test/fronteras/**` y esta evidencia T7; mantener intactos T1-T6. |
+- Presupuesto de revisión: 769 líneas de autoría en el diff final frente al padre (adiciones + eliminaciones; se excluye `package-lock.json` generado). Las diez reglas y sus fixtures/pruebas forman el T7 asignado; reducirlo quitaría cobertura o cambiaría el límite PR5. Se recomienda `size:exception` antes de PR5; no se crea PR ni se hace push.
 
 **commit:** `<pendiente>` — `test(fronteras): verificar reglas de dependency-cruiser y eslint`
 

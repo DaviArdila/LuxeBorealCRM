@@ -14,7 +14,8 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['src/**/*.spec.ts', 'test/fakes/**/*.spec.ts'],
+          include: ['src/**/*.spec.ts', 'test/fakes/**/*.spec.ts', 'test/fronteras/**/*.spec.ts'],
+          exclude: ['test/fronteras/fixtures/**'],
         },
       },
       {

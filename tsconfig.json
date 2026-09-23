@@ -19,5 +19,11 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": ["vitest/globals", "node"]
-  }
+  },
+  "exclude": [
+    "dist",
+    "coverage",
+    "node_modules",
+    "test/fronteras/fixtures"
+  ]
 }
