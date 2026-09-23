@@ -24,6 +24,7 @@
 - [x] T11 — ADR 0001/0003/0004/0005/0007 aceptados; 0004 con ajuste P15. Ruta: inline
 - [x] T12 — R1-R16 → `openspec/specs/<dominio>/`; SPEC.md como índice. Ruta: delegado (writer)
 - [x] T13 — Fases sobre el ciclo `sdd-*`; retirar `_plantilla.md`; skill y CLAUDE.md. Ruta: delegado (writer)
+- [x] T15 — Corregir las 4 observaciones de la review RDD (R13, TDD, nombres de tests, puerta de aprobación). Ruta: inline
 - [x] T14 — Preguntas: P12 y P16 resueltas, P13 y P14 con camino acordado. Ruta: inline
 
 ## Progreso y evidencia
@@ -60,3 +61,9 @@
   cierre pasó a `openspec/config.yaml` en `0466785` (que además corrigió YAML inválido de sdd-init).
 - Siguiente paso: el usuario revisa la rama `chore/adopt-openspec` (aprueba SPEC 0.3 e inventario) y
   hace el merge; luego `sdd-new fase-00-fundaciones`.
+- Review RDD de la rama (`f3fcbc6..499536a`, riesgo medio, 1072 líneas): consentida por el usuario,
+  lente reliability, **aprobada** y reconocida (lineage `review-bcab448765146ebc`, authority burned).
+- T15: `671e904 docs(spec): fix R13 cost rule and cover spending ceiling` (R13 decía "mínimo" =
+  sentido invertido; escenarios nuevos; P17 abierta para el techo de gasto) y
+  `4d0b28a docs(process): align tdd gate, scenario test naming and approval gate`. Assess
+  `--base-ref 499536a --committed-only`: medium, `under_budget` → pendiente en el siguiente tramo.
