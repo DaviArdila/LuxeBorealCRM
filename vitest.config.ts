@@ -33,6 +33,10 @@ export default defineConfig({
         test: {
           name: 'e2e',
           include: ['test/e2e/**/*.e2e-spec.ts'],
+          // Testcontainers (D1, extendido a e2e en T9): el arranque completo de la app
+          // (test/e2e/aplicacion.e2e-spec.ts) necesita Postgres 16 + Redis 7 reales, igual que el
+          // proyecto `integracion`.
+          globalSetup: ['test/soporte/contenedores.global-setup.ts'],
         },
       },
     ],
