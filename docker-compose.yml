@@ -1,0 +1,42 @@
+# Compose de desarrollo manual (D1, D5 de openspec/changes/fase-00a-esqueleto/design.md). Los
+# tests (unitarios, integración, e2e) NO usan este archivo: levantan Postgres/Redis con
+# Testcontainers desde test/soporte/contenedores.global-setup.ts, en local y en CI (00b), con
+# puertos efímeros que no chocan con nada. Este Compose es solo para `npm run start:dev` manual.
+name: luxeborealcrm
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${LUXE_PG_USUARIO:-luxe}
+      POSTGRES_PASSWORD: ${LUXE_PG_CLAVE:-luxe}
+      POSTGRES_DB: ${LUXE_PG_BASE:-luxeboreal}
+    ports:
+      - '${LUXE_PG_PUERTO_HOST:-5435}:5432'
+    volumes:
+      - luxeborealcrm_postgres_datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${LUXE_PG_USUARIO:-luxe} -d ${LUXE_PG_BASE:-luxeboreal}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '${LUXE_REDIS_PUERTO_HOST:-6380}:6379'
+    volumes:
+      - luxeborealcrm_redis_datos:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  luxeborealcrm_postgres_datos:
+    name: luxeborealcrm_postgres_datos
+  luxeborealcrm_redis_datos:
+    name: luxeborealcrm_redis_datos

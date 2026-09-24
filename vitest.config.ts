@@ -23,6 +23,9 @@ export default defineConfig({
         test: {
           name: 'integracion',
           include: ['test/integracion/**/*.spec.ts'],
+          // Testcontainers (D1 de openspec/changes/fase-00a-esqueleto/design.md): levanta
+          // Postgres 16 + Redis 7 reales una sola vez por corrida de este proyecto.
+          globalSetup: ['test/soporte/contenedores.global-setup.ts'],
         },
       },
       {

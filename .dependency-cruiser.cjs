@@ -38,11 +38,14 @@ module.exports = {
       name: 'prisma-solo-en-infraestructura',
       comment:
         '@prisma/client, @prisma/adapter-pg y el cliente generado solo se importan desde ' +
-        'plataforma/prisma o infraestructura/ de cada módulo (skill §2). Antes de que T8 instale ' +
-        'Prisma, dependency-cruiser no puede resolver estos paquetes y reporta `to.path` como el ' +
-        'specifier tal cual (`@prisma/client`); una vez instalados, `to.path` pasa a ser la ruta ' +
-        'resuelta dentro de node_modules — de ahí las dos formas de cada patrón (revisar en T8 con ' +
-        'el paquete real instalado que la forma resuelta sigue coincidiendo).',
+        'plataforma/prisma o infraestructura/ de cada módulo (skill §2). Con el paquete real ' +
+        'instalado (T8), `to.path` es la ruta resuelta dentro de node_modules; el prefijo depende ' +
+        'de `baseDir` — "node_modules/@prisma/client/..." cuando `baseDir` es la raíz del repo ' +
+        '(`npm run fronteras`), pero "../../../node_modules/@prisma/client/..." cuando `baseDir` ' +
+        'es `test/fronteras/fixtures/` (dependency-cruiser.spec.ts, `baseDir` más profundo que el ' +
+        'repo real), de ahí que el patrón no ancle `node_modules` al inicio de la cadena. Los ' +
+        'patrones del specifier bare (`^@prisma/client$`) cubren el caso sin el paquete instalado ' +
+        '(no aplica ya en 00a, pero no daña dejarlos).',
       severity: 'error',
       from: {
         pathNot: ['^src/plataforma/prisma/', '^src/modulos/[^/]+/infraestructura/'],
@@ -51,8 +54,8 @@ module.exports = {
         path: [
           '^@prisma/client$',
           '^@prisma/adapter-pg$',
-          '^node_modules/@prisma/client(/|$)',
-          '^node_modules/@prisma/adapter-pg(/|$)',
+          '(^|/)node_modules/@prisma/client(/|$)',
+          '(^|/)node_modules/@prisma/adapter-pg(/|$)',
           '^src/plataforma/prisma/generado/',
         ],
       },
@@ -114,9 +117,14 @@ module.exports = {
     },
   ],
   options: {
-    // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros.
+    // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros
+    // ni del cliente Prisma generado (T8): `doNotFollow` deja de recorrer más allá de
+    // `generado/`, así que sus propios imports internos nunca se convierten en aristas "desde
+    // generado/" (design.md, "el directorio generado/ queda excluido de dependency-cruiser como
+    // origen"); la arista *hacia* `generado/` sigue existiendo y la sigue verificando la regla
+    // `prisma-solo-en-infraestructura`.
     doNotFollow: {
-      path: 'node_modules',
+      path: 'node_modules|^src/plataforma/prisma/generado/',
     },
     tsConfig: {
       fileName: 'tsconfig.json',

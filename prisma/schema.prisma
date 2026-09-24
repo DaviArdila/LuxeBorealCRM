@@ -1,0 +1,13 @@
+// Esquema mínimo de 00a (D6 de openspec/changes/fase-00a-esqueleto/design.md): solo `generator` y
+// `datasource`, sin modelos. El diseño de datos v1 es de la Fase 01 (MODELO_DATOS.md); este
+// archivo únicamente permite generar un `PrismaClient` capaz de `$queryRaw` para el health check
+// (T9) y este smoke de `SELECT 1` (T8). La URL de conexión NO va aquí con Prisma 7: vive en
+// `prisma.config.ts` (raíz).
+generator client {
+  provider = "prisma-client"
+  output   = "../src/plataforma/prisma/generado"
+}
+
+datasource db {
+  provider = "postgresql"
+}
