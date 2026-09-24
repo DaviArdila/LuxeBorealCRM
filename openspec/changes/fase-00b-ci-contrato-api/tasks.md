@@ -251,6 +251,15 @@ subdirectorio, resolución de raíz desde ruta con espacios, rango vacío de `co
   repositorio bare local temporal: el hook corrió, bloqueó el push exactamente en `commits`, e
   imprimió el mensaje de bloqueo esperado; `git push --no-verify` contra el mismo repositorio
   completó al instante sin ejecutar el hook.
+
+  **Decisión del usuario (2026-09-24)**: fijar `LUXE_COMMITS_DESDE` al último commit de la Fase 00a
+  (`f3fd4d3`, "fix(openspec): corregir referencias y conteos tras el archivado de 00a" — el commit
+  inmediatamente anterior al primer commit de esta fase, `403693e`). Quien empuje desde esta rama
+  antes de que se fusione a `main` MUST exportar `LUXE_COMMITS_DESDE=f3fd4d3` en su shell (no se
+  persiste en `.env`: `verificar-commits.ts` lee `process.env` directamente y no hay carga de
+  `.env` en los scripts de `scripts/cli.ts`, D12). Con esa variable fijada, `commits` solo analiza
+  los commits de la Fase 00b en adelante; el rango vuelve a `merge-base(main, HEAD)` automáticamente
+  en cuanto la rama se fusione, sin que nadie tenga que desfijar nada.
 - Excepciones reales registradas en `auditoria-excepciones.json` (D14): `npm audit` sobre este
   repositorio, hoy, reporta 5 hallazgos `high` (`deepmerge-ts`, `lodash`, `mysql2`,
   `@prisma/config`, `prisma`), todos transitivos de la CLI de Prisma vía su soporte de MySQL (que
@@ -270,6 +279,12 @@ por script (26 tests nuevos, incluidos los tres casos de la matriz de amenazas),
 al presupuesto (prohibido explícitamente por el protocolo). T1 es una sola tarea/commit indivisible
 por convención de este `tasks.md`; se recomienda `size:exception` para este PR1 de la cadena
 `stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T2.
+
+**Decisión del usuario (2026-09-24)**: `size:exception` aceptado para PR1 (T1). El exceso viene de
+cobertura de tests real y completa, no de alcance innecesario; no se reescribe el commit ya creado
+ni se parte en varios. Los PR2-PR7 restantes siguen su estimación normal (~1760 líneas combinadas);
+si alguno se desvía de forma similar, se vuelve a preguntar en ese momento, no se asume la misma
+excepción por adelantado.
 
 **commit:** `77f78a4935c9740620909c4792dc79a8c6f836c7` — `feat(ci): agregar hooks locales, commitlint, gitleaks y auditoria de dependencias`
 
