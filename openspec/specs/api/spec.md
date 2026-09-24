@@ -48,7 +48,8 @@ forma incompatible.
 Fase que lo implementa: 00a (excepción de `/health`), 00b (convención), 11-14 (recursos concretos)
 
 (Previously: no existía excepción al prefijo `/api/v1`; se agrega `GET /health` como única ruta
-pública sin versión, decidido en 00a — Q1 de `openspec/changes/fase-00a-esqueleto/proposal.md`.)
+pública sin versión, decidido en 00a — Q1 de
+`openspec/changes/archive/2026-09-23-fase-00a-esqueleto/proposal.md`.)
 
 #### Scenario: Ruta con prefijo y nombre de recurso en español
 
@@ -65,9 +66,10 @@ pública sin versión, decidido en 00a — Q1 de `openspec/changes/fase-00a-esqu
 #### Scenario: `GET /health` es la única ruta pública sin el prefijo de versión
 
 - Dado el endpoint de salud del servicio,
-- Cuando se expone o se documenta,
-- Entonces su ruta es `/health`, sin el prefijo `/api/v1`, y es la única ruta pública del sistema
-  que se documenta como excepción explícita a la regla de versionado.
+- Cuando se expone,
+- Entonces su ruta es `/health`, sin el prefijo `/api/v1`, y es la única ruta del sistema que
+  queda registrada en esta spec como excepción explícita a la regla de versionado — esto es
+  independiente de si aparece o no en el documento OpenAPI público, que decide API8.
 
 ### Requirement: API3 — Convenciones JSON
 
@@ -217,6 +219,7 @@ el health check.)
   distribuido al cliente de back office,
 - Entonces `GET /health` no aparece en ninguno de los dos, aunque el endpoint siga respondiendo
   normalmente.
+
 ### Requirement: API9 — Documentación interactiva no accesible públicamente en producción
 
 La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en producción; MUST NOT

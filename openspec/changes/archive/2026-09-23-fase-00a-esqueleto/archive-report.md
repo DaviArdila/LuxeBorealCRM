@@ -73,10 +73,10 @@ Per `verify-report.md`:
 | PLT1-PLT7 (Plataforma) | 14 + 2 tool-based | 16 | 0 | ✓ All pass |
 | CMP1-CMP3 (Compartido) | 11 | 11 | 0 | ✓ All pass |
 | API1, API3-API7, API9-API10 (API, unchanged) | (pre-existing) | (unchanged) | (N/A) | ✓ Preserved |
-| API2 (API, modified — health exception) | 3 | 2 | 1 (00b pipeline) | ✓ 2 pass in 00a; 1 deferred to 00b per spec |
+| API2 (API, modified — health exception) | 3 | 1 | 2 (00b/00b+) | ✓ 1 passes in 00a (health exception); 2 deferred (no business routes/operationId yet) |
 | API8 (API, modified — internal endpoints) | 2 | 0 | 2 (04, 00b) | ✓ Deferred as documented in spec |
 
-**Total Scenarios**: 30+ scenarios defined; 28 passing in 00a per scope; 3 explicitly deferred to later phases (00b, 04) as declared in proposal/design.
+**Total Scenarios**: 30+ scenarios defined; 28 passing in 00a per scope; 4 explicitly deferred to later phases (00b, 04) as declared in proposal/design.
 
 ### Test Verification Results
 
@@ -141,7 +141,7 @@ No Read/Write model path used for any archive operation (as per Mechanical Copy 
 
 ### Deferred Scenarios (By Design)
 
-The following 5 scenarios are deferred to later phases as explicitly documented in the respective delta specs:
+The following 4 scenarios are deferred to later phases as explicitly documented in the respective delta specs:
 
 | Scenario | Reason | Target Phase |
 |----------|--------|--------------|
