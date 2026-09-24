@@ -92,9 +92,11 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
     // (no rechaza `close()`, `node_modules/@nestjs/core/hooks/on-app-shutdown.hook.js`) — así que
     // la señal real de este bug es un error logueado en cada apagado, no un `close()` que falla.
     const errorEspiado = vi.spyOn(Logger, 'error').mockImplementation(() => undefined);
-    await modulo.close();
-
-    expect(errorEspiado).not.toHaveBeenCalled();
-    errorEspiado.mockRestore();
+    try {
+      await modulo.close();
+      expect(errorEspiado).not.toHaveBeenCalled();
+    } finally {
+      errorEspiado.mockRestore();
+    }
   });
 });
