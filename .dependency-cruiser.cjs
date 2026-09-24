@@ -38,13 +38,23 @@ module.exports = {
       name: 'prisma-solo-en-infraestructura',
       comment:
         '@prisma/client, @prisma/adapter-pg y el cliente generado solo se importan desde ' +
-        'plataforma/prisma o infraestructura/ de cada módulo (skill §2).',
+        'plataforma/prisma o infraestructura/ de cada módulo (skill §2). Antes de que T8 instale ' +
+        'Prisma, dependency-cruiser no puede resolver estos paquetes y reporta `to.path` como el ' +
+        'specifier tal cual (`@prisma/client`); una vez instalados, `to.path` pasa a ser la ruta ' +
+        'resuelta dentro de node_modules — de ahí las dos formas de cada patrón (revisar en T8 con ' +
+        'el paquete real instalado que la forma resuelta sigue coincidiendo).',
       severity: 'error',
       from: {
         pathNot: ['^src/plataforma/prisma/', '^src/modulos/[^/]+/infraestructura/'],
       },
       to: {
-        path: ['^@prisma/client$', '^@prisma/adapter-pg$', '^src/plataforma/prisma/generado/'],
+        path: [
+          '^@prisma/client$',
+          '^@prisma/adapter-pg$',
+          '^node_modules/@prisma/client(/|$)',
+          '^node_modules/@prisma/adapter-pg(/|$)',
+          '^src/plataforma/prisma/generado/',
+        ],
       },
     },
     {

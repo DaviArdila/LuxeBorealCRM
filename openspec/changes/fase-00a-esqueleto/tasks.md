@@ -538,6 +538,13 @@ sobre los fixtures con violación.
 **Objetivo**: infraestructura para que T9 pueda probar health e integración contra Postgres/Redis
 reales, sin chocar puertos con el prototipo (D1, D5, D6, D12).
 
+**Pendiente de T7 (review RDD)**: al instalar `@prisma/client` aquí, correr `npm run fronteras`
+sobre un import real de `@prisma/client` fuera de `plataforma/prisma`/`infraestructura/` y confirmar
+que la regla `prisma-solo-en-infraestructura` lo sigue atrapando — el patrón se amplió en
+`.dependency-cruiser.cjs` para cubrir tanto el specifier bare (estado actual, sin paquete instalado)
+como la ruta resuelta bajo `node_modules/@prisma/*` (estado real una vez instalado), pero esa segunda
+forma no se pudo probar en T7 porque el paquete todavía no existía.
+
 **Archivos/áreas**:
 - `docker-compose.yml` (Create) — `name: luxeborealcrm`, `postgres:16-alpine` y `redis:7-alpine` con
   `healthcheck`, puertos `${LUXE_PG_PUERTO_HOST:-5435}:5432` / `${LUXE_REDIS_PUERTO_HOST:-6380}:6379`
