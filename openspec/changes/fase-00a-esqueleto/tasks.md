@@ -714,7 +714,7 @@ genera cliente sin modelos o `$queryRaw` no funciona, este task se detiene y se 
   previsto para PR6 en el "Review Workload Forecast" de arriba; no se recomienda `size:exception`
   para este slice.
 
-**commit:** `<pendiente>` — `feat(plataforma): compose de desarrollo, prisma minimo y cliente redis`
+**commit:** `8c93a13` — `feat(plataforma): compose de desarrollo, prisma minimo y cliente redis`
 
 ---
 
