@@ -15,6 +15,8 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0007](0007-llaves-primarias-uuid-v7.md) | Llaves primarias UUID v7 nativas | aceptada | 2026-09-22 |
 | [0008](0008-contrato-api-openapi.md) | Contrato de API: OpenAPI 3.1 code-first con Scalar | aceptada | 2026-09-23 |
 | [0009](0009-testcontainers-infraestructura-de-pruebas.md) | Testcontainers como infraestructura única de pruebas | aceptada | 2026-09-23 |
+| [0010](0010-documento-openapi-publico-e-interno.md) | Documento OpenAPI público e interno | propuesta | 2026-09-24 |
+| [0011](0011-codigos-de-error-rfc9457.md) | Códigos de error estables y forma del cuerpo RFC 9457 | propuesta | 2026-09-24 |
 
 ## Plantilla
 

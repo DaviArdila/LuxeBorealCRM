@@ -13,3 +13,6 @@ src/plataforma/prisma/generado/
 
 # Índice de skills regenerable (skill skill-registry); no es fuente de verdad
 .atl/
+
+# Índice de CodeGraph, regenerable localmente; no es fuente de verdad
+.codegraph/
