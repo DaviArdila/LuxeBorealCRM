@@ -85,7 +85,7 @@ Fase que lo implementa: 00a
 - Entonces la línea emitida es un objeto JSON con campos estructurados (nivel, mensaje, metadatos),
   nunca texto libre de `console.*`.
 
-#### Scenario: Un log que incluiría datos personales sale redactado
+#### Scenario: R14 — Redacción en logs
 
 - Dado un log que, sin redacción, incluiría contenido de un mensaje, un número de teléfono completo,
   una cédula, un correo o un token,
