@@ -22,7 +22,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 verde y su commit anotado.
 
 - [x] T1 — Puerta local: hooks, `commitlint`, `gitleaks`, `npm audit`, `herramientas.ts` (S1)
-- [ ] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
+- [x] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
 - [ ] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
 - [ ] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
 - [ ] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
@@ -361,6 +361,75 @@ recibido.
   fallback `problema: "formato"` aplicado).
 - El fixture **no** se importa desde ningún archivo de `src/` (verificable a simple vista; la regla
   de fronteras que lo hace estructuralmente imposible, `src-no-importa-test`, ya existe desde 00a).
+
+**Checkpoint (b) resuelto (máquina real, 2026-09-24):** leyendo el código real de zod v4
+(`node_modules/zod/v4/core/util.js#finalizeIssue`) en vez de solo probarlo en caliente: los issues
+que entrega `schema['~standard'].validate(value)` (el método que usa el
+`StandardSchemaValidationPipe` nativo) sí traen `code` (`invalid_type`, `too_small`, etc.), pero
+**nunca** el valor recibido (`input`) — zod solo lo adjunta cuando el contexto de validación pide
+`reportInput`, algo que `validate(value)` de Standard Schema nunca solicita (su firma no acepta
+ese segundo argumento). Sin embargo, `code` por sí solo no permite distinguir `falta` (la clave no
+vino) de `formato` (vino con el tipo equivocado) sin ese valor, así que se aplicó el fallback que
+el propio checkpoint anticipó: `problema: "formato"` para **todos** los campos, de forma uniforme
+(clasificar parcialmente por código daría una falsa impresión de precisión que no existe para
+`invalid_type`). La regla que no se relaja — nunca repetir el valor recibido — quedó verificada con
+un test que envía un issue con un campo `input` espurio y confirma que `fabricaErrorValidacion` no
+lo copia (`fabrica-error-validacion.spec.ts`) y con el e2e de contrato
+(`test/contrato/errores.spec.ts`, `not.toContain('no-es-un-numero')`).
+
+**Desviación registrada (no anticipada por `design.md`/este archivo):** en vez de dejar
+`new StandardSchemaValidationPipe()` con su `exceptionFactory` por defecto (que aplana cada issue
+a una cadena `"campo: mensaje"` y pierde la estructura, D5 lo describía sin este detalle), se le
+pasó un `exceptionFactory` propio (`fabricaErrorValidacion`, D5) que construye directamente un
+`ErrorDeAplicacion('validacion-fallida', ...)`. Sigue siendo el pipe nativo sin fork
+(`exceptionFactory` es su propio punto de extensión documentado en
+`@nestjs/common/pipes/standard-schema-validation.pipe.d.ts`); la alternativa (parsear las cadenas
+`"campo: mensaje"` del `BadRequestException` por defecto) era más frágil y perdía el `code`. Esto
+también agrega un import nuevo de `plataforma/errores` en `configurar-aplicacion.ts` que la tabla
+de módulos de `design.md` no listaba explícitamente para T2 (solo lo lista para T4, vía
+`plataforma/documentacion`); no viola ninguna regla de fronteras (dirección permitida
+`main → configurar-aplicacion → plataforma/*`) y evita reimplementar el aplanado de mensajes.
+
+**Desviación registrada (secuenciación con T4):** `FiltroProblemJson` está `@Catch()` (captura
+todo), pero para cualquier `HttpException` que **no** sea un `ErrorDeAplicacion` propio (p. ej. la
+`ServiceUnavailableException` que lanza Terminus en `GET /health`, PLT4), delega por composición
+en un `BaseExceptionFilter` construido perezosamente (nunca en el constructor: `HttpAdapterHost.
+httpAdapter` no queda listo hasta que Nest crea la aplicación HTTP, y
+`Test.createTestingModule().compile()` instancia los providers **antes** de ese punto — se detectó
+así, con `npm run test:e2e` fallando en `/ejemplos` con 500 en vez de 404 hasta corregirlo).
+`design.md` D6 asigna la exención explícita de `/health` a T4 (`FiltroSaludOperativo`, filtro de
+controlador con precedencia sobre el global); esta tarea (T2) todavía no la implementa, pero el
+work unit table de este archivo exige que `npm run test:e2e` de 00a siga en verde **ya en T2**
+("los casos de 00a siguen en verde; no hay caso nuevo de e2e todavía, se agrega en T4"). Sin la
+delegación por tipo, el filtro global habría reformateado la respuesta 503 de Terminus a
+`problem+json` y roto los tests de 00a antes de que T4 exista. La delegación por tipo (no por ruta)
+no contradice la alternativa que D6 descarta ("lista de rutas exentas dentro del filtro global"):
+no compara ninguna cadena de URL, y queda superada sin conflicto en cuanto T4 agregue el filtro de
+controlador (que Nest prioriza automáticamente sobre el global). Verificado con
+`npm run test:e2e` completo (7/7 en verde) y con `npm run test:integracion` (9/9 en verde).
+
+**Desviación registrada (dependencia adelantada de T3):** `tasks.md` pide etiquetar
+`obtenerEjemploInterno` con `internal` y declarar los cuatro `operationId` del fixture *ya en esta
+tarea* (para que T3 los consuma sin volver a tocar el archivo, y para el escenario "operationId
+estable" de API2). Eso exige `@nestjs/swagger` (`@ApiTags`, `@ApiOperation`), que `design.md` lista
+como dependencia de la fase completa sin asignarla a una tarea concreta; se instaló ahora
+(`^12.0.2`, misma versión verificada en 00a) en vez de esperar a T3. Es inerte hasta que T3 monte
+`SwaggerModule.createDocument` de verdad; el test de "operationId estable" de esta tarea genera un
+documento mínimo con `SwaggerModule.createDocument` dos veces solo para comparar, sin escribir
+ningún archivo (eso también es T3).
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD):** el diff real de esta tarea es
+**657 líneas de autoría** (`git diff --cached --numstat`, excluyendo `package-lock.json`), frente a
+la estimación de ~380 de `design.md`/este archivo (~1.7×, proporción similar a la de T1). La
+diferencia es honesta: cinco archivos nuevos en `src/plataforma/errores/` con su cobertura
+RED→GREEN completa (catálogo, `ErrorDeAplicacion`, `construirProblema`, la fábrica de errores de
+validación con su propio checkpoint, el filtro global con la delegación explicada arriba), más el
+fixture completo de `test/contrato/` (controlador, esquemas zod, módulo, helper compartido) y dos
+archivos de test HTTP con Supertest (`errores.spec.ts`, `convenciones.spec.ts`, 8 escenarios en
+total). No se recortaron tests, comentarios ni documentación para acercarse al presupuesto
+(prohibido explícitamente por el protocolo). Se recomienda `size:exception` para este PR2 de la
+cadena `stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T3 — el propio
+`tasks.md` advierte que no se asume la misma excepción de T1 por adelantado.
 
 **commit:** `<pendiente>` — `feat(plataforma/errores): agregar filtro RFC 9457 y pipe de validacion nativo`
 
