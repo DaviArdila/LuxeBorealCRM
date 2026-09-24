@@ -1,5 +1,6 @@
+import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../src/plataforma/config/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { PrismaModule, PrismaService } from '../../src/plataforma/prisma/index.js';
@@ -60,12 +61,40 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
     const cliente = modulo.get<ClienteRedis>(REDIS_CLIENTE);
     // `lazyConnect: true` + `enableOfflineQueue: false` (D12): sin cola offline, el primer
     // comando emitido mientras el socket todavía se está conectando se rechaza en vez de
-    // esperar. `connect()` es idempotente (resuelve de inmediato si ya está conectado o
-    // conectando) — así es como el indicador de salud de T9 MUST abrir la conexión antes de su
-    // primer PING real.
+    // esperar. `connect()` NO es idempotente — rechaza con "Redis is already
+    // connecting/connected" si el estado ya es `connecting`/`connect`/`ready` (verificado en
+    // `node_modules/ioredis/built/Redis.js`, `_connect()`) — así que el indicador de salud de T9
+    // MUST comprobar `cliente.status` antes de llamar `connect()` en cada chequeo, no llamarlo
+    // sin condición.
     await cliente.connect();
     const respuesta = await cliente.ping();
 
     expect(respuesta).toBe('PONG');
+  });
+
+  it('el cierre del módulo no lanza cuando el cliente Redis nunca se conectó', async () => {
+    const configuracionDePrueba: Configuracion = {
+      NODE_ENV: 'test',
+      PORT: 3000,
+      LOG_LEVEL: 'silent',
+      DATABASE_URL: urlPostgresDePrueba(),
+      REDIS_URL: urlRedisDePrueba(),
+      HEALTH_TIMEOUT_MS: 1500,
+    };
+
+    const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
+      .overrideProvider(CONFIGURACION)
+      .useValue(configuracionDePrueba)
+      .compile();
+
+    // Nunca se llama cliente.connect() ni ningún comando: el estado sigue siendo `wait`. Nest
+    // atrapa cualquier excepción de `onApplicationShutdown` y solo la loguea con `Logger.error`
+    // (no rechaza `close()`, `node_modules/@nestjs/core/hooks/on-app-shutdown.hook.js`) — así que
+    // la señal real de este bug es un error logueado en cada apagado, no un `close()` que falla.
+    const errorEspiado = vi.spyOn(Logger, 'error').mockImplementation(() => undefined);
+    await modulo.close();
+
+    expect(errorEspiado).not.toHaveBeenCalled();
+    errorEspiado.mockRestore();
   });
 });

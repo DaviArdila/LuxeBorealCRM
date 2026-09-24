@@ -11,14 +11,22 @@ export type ClienteRedis = Redis;
 
 /**
  * Provider real (con ciclo de vida de Nest) que construye el cliente Redis y cierra la conexión
- * en el apagado. `lazyConnect: true`: construir esta clase no conecta (A1); la primera operación
- * (`PING`, indicador de salud en T9) dispara la conexión. `enableOfflineQueue: false` y
- * `maxRetriesPerRequest: 1`: sin cola offline, un Redis caído falla en milisegundos en vez de
- * colgar el health check.
+ * en el apagado. `lazyConnect: true`: construir esta clase no conecta (A1) — a diferencia de lo
+ * que podría sugerir el nombre, la conexión NO se abre sola con el primer comando: quien use este
+ * cliente (el indicador de salud de T9) MUST llamar `cliente.connect()` explícitamente antes de
+ * su primer `PING`/comando en cada uso, y comprobar `cliente.status` antes de repetir esa llamada
+ * — `connect()` no es idempotente, rechaza con "Redis is already connecting/connected" si el
+ * estado ya es `connecting`/`connect`/`ready` (`node_modules/ioredis/built/Redis.js`,
+ * `_connect()`). `enableOfflineQueue: false` y `maxRetriesPerRequest: 1`: sin cola offline, un
+ * Redis caído falla en milisegundos en vez de colgar el health check.
  *
- * El cierre en {@link onApplicationShutdown} (`cliente.quit()`) queda implementado aquí (T8); T9
- * solo necesita llamar `app.enableShutdownHooks()` para que Nest lo dispare — no vuelve a tocar
- * este archivo.
+ * El cierre en {@link onApplicationShutdown} queda implementado aquí (T8); T9 solo necesita
+ * llamar `app.enableShutdownHooks()` para que Nest lo dispare — no vuelve a tocar este archivo.
+ * Solo se llama `quit()` (cierre ordenado, espera respuestas pendientes) cuando el cliente está
+ * `ready`; en cualquier otro estado salvo `end` se usa `disconnect()` (cierre inmediato,
+ * síncrono, nunca rechaza) — `quit()` con `enableOfflineQueue: false` rechaza si el socket no es
+ * escribible todavía (cliente nunca conectado o Redis caído), lo que Nest atraparía y solo
+ * logueraría como error en cada apagado sin necesidad real.
  */
 @Injectable()
 class ProveedorClienteRedis implements OnApplicationShutdown {
@@ -33,8 +41,10 @@ class ProveedorClienteRedis implements OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
-    if (this.cliente.status !== 'end') {
+    if (this.cliente.status === 'ready') {
       await this.cliente.quit();
+    } else if (this.cliente.status !== 'end') {
+      this.cliente.disconnect();
     }
   }
 }
