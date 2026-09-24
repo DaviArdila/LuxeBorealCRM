@@ -1,0 +1,269 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "contact": {},
+    "description": "Contrato HTTP generado desde los controladores de la aplicación.",
+    "title": "LuxeBorealCRM API",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Operaciones internas no destinadas al cliente de back office.",
+      "name": "internal"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "SaludController_comprobar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {},
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "enum": [
+                        "ok",
+                        "degraded"
+                      ],
+                      "example": "ok",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is successful"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "details": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        },
+                        "redis": {
+                          "message": "Could not connect",
+                          "responseTime": 3005,
+                          "status": "down"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "error": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "redis": {
+                          "message": "Could not connect",
+                          "responseTime": 3005,
+                          "status": "down"
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "info": {
+                      "additionalProperties": {
+                        "additionalProperties": true,
+                        "properties": {
+                          "responseTime": {
+                            "description": "Time the health indicator took to respond, in ms",
+                            "type": "number"
+                          },
+                          "status": {
+                            "enum": [
+                              "up",
+                              "degraded",
+                              "down"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "example": {
+                        "database": {
+                          "responseTime": 12,
+                          "status": "up"
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "status": {
+                      "enum": [
+                        "error",
+                        "shutting_down"
+                      ],
+                      "example": "error",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Health Check is not successful"
+          }
+        },
+        "tags": [
+          "Salud"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}

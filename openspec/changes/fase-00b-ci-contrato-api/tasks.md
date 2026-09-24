@@ -23,7 +23,7 @@ verde y su commit anotado.
 
 - [x] T1 — Puerta local: hooks, `commitlint`, `gitleaks`, `npm audit`, `herramientas.ts` (S1)
 - [x] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
-- [ ] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
+- [x] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
 - [ ] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
 - [ ] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
 - [ ] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
@@ -428,8 +428,12 @@ fixture completo de `test/contrato/` (controlador, esquemas zod, módulo, helper
 archivos de test HTTP con Supertest (`errores.spec.ts`, `convenciones.spec.ts`, 8 escenarios en
 total). No se recortaron tests, comentarios ni documentación para acercarse al presupuesto
 (prohibido explícitamente por el protocolo). Se recomienda `size:exception` para este PR2 de la
-cadena `stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T3 — el propio
-`tasks.md` advierte que no se asume la misma excepción de T1 por adelantado.
+cadena `stacked-to-main`.
+
+**Decisión del usuario (2026-09-24)**: `size:exception` aceptado exclusivamente para PR2/T2 (657
+líneas de autoría) y mantener intacto el commit `0290b5ec9172f62b7bca5df2210ee4e612272cdf`. Esta
+excepción no se extiende a T3–T7; cada slice posterior debe respetar el presupuesto o reportar su
+propio riesgo, sin asumir autorización.
 
 **commit:** `0290b5ec9172f62b7bca5df2210ee4e612272cdf` — `feat(plataforma/errores): agregar filtro RFC 9457 y pipe de validacion nativo`
 
@@ -456,6 +460,8 @@ regla de fronteras 11, y `contrato:deriva` dentro de `verify` (PLT7 pasa a seis 
 - `scripts/verificar-deriva-contrato.ts` (Create) — regenera en memoria (nunca escribe), compara
   byte a byte con los dos archivos commiteados; distingue explícitamente "solo fin de línea" de una
   diferencia real (D2).
+- `scripts/cli.ts` (Modify) — despacha los dos comandos del contrato desde el punto de entrada único
+  observado en T1 para `vite-node`.
 - `.gitattributes` (Modify) — reglas explícitas de fin de línea para `openapi/*.json` (D2, D9).
 - `openapi/openapi.json`, `openapi/openapi.interno.json` (Create, generados) — ver la nota de
   secuenciación al inicio de este archivo: en este punto de la fase, `/health` todavía **no** está
@@ -465,15 +471,23 @@ regla de fronteras 11, y `contrato:deriva` dentro de `verify` (PLT7 pasa a seis 
 - `.dependency-cruiser.cjs` (Modify) — regla 11 `scripts-solo-barriles-de-plataforma`: `scripts/`
   solo puede importar el `index.ts` de un submódulo de `plataforma/`.
 - `test/fronteras/` (Modify) — fixture y caso de la regla 11.
+- `test/contrato/documentacion.spec.ts` (Create) — checkpoint del prefijo global, filtro y generación
+  repetida sobre `AppModule + ContratoFixtureModule`.
+- `test/contrato/fixture/contrato-fixture.controller.ts` y `test/contrato/soporte.ts` (Modify) — el
+  controlador usa la ruta relativa `ejemplos`; el prefijo global se configura solo en el harness de
+  test para no duplicar `/api/v1`.
 
-**Checkpoint `[sin verificar]` de esta tarea** (design.md D2):
+**Checkpoint (a) resuelto (máquina real, 2026-09-24; design.md D2):**
 
-**(a) `SwaggerModule.createDocument` y el prefijo global**: antes de commitear el primer documento,
-comprobar contra `@nestjs/swagger@12` si el documento generado incluye el prefijo global en `paths`
-por defecto o si hace falta pasar `ignoreGlobalPrefix: false` explícitamente (el default esperado
-es que **sí** lo incluya). Verificar que las rutas del fixture aparecen como `/api/v1/ejemplos...`
-en el documento generado. Si el prefijo no aparece, agregarlo explícitamente en
-`CONFIGURACION_DOCUMENTO` y registrar la desviación aquí.
+`npm list @nestjs/swagger --depth=0` confirmó `@nestjs/swagger@12.0.2`. El test
+`API1 — SwaggerModule incluye el prefijo global en el documento` configuró `api/v1` en la app de
+fixture y observó que `SwaggerModule.createDocument` incluye ese prefijo por defecto: la ruta sale
+como `/api/v1/ejemplos`, no `/api/v1/api/v1/ejemplos`. Por ello el controlador fixture dejó de
+repetir el prefijo en `@Controller('ejemplos')` y `construirDocumentoInterno` fija
+`ignoreGlobalPrefix: false` explícitamente, aunque el default de 12.0.2 ya sea `false`, para hacer
+estable la intención del contrato. T3 no agrega `setGlobalPrefix` a producción; eso sigue asignado a
+T4. El documento generado desde `AppModule` aún contiene `/health` en el público, como exige la
+secuenciación transitoria de T3.
 
 **Escenarios cubiertos** (`specs/api/spec.md` delta, `specs/plataforma/spec.md` delta):
 - `API1 — El contrato generado coincide con el commiteado`
@@ -506,6 +520,40 @@ en el documento generado. Si el prefijo no aparece, agregarlo explícitamente en
 8. REFACTOR: confirmar que generar dos veces en el mismo proceso produce cadenas idénticas (test
    barato de API1, sin escribir a disco dos veces).
 
+**Evidencia TDD observada (T3 exige el ciclo aunque `strict_tdd` global sigue en `false`):**
+
+| Parte | RED observado antes del código | GREEN observado | REFACTOR observado |
+|---|---|---|---|
+| Filtro, orden y serialización | `npm test -- filtrar-documento-publico.spec.ts`, `... ordenar-documento.spec.ts` y `... serializar-documento.spec.ts`: cada comando salió 1 porque el módulo productivo aún no existía. | `npm test -- documentacion fronteras`: los tres specs pasaron como parte de 13 archivos y 68 tests. | La serialización mantiene LF y dos espacios; ordenar repetidamente produce la misma cadena y no muta el documento fuente. |
+| Prefijo global | `npm test -- documentacion.spec.ts` salió 1: la ruta esperada faltaba mientras el fixture codificaba `api/v1` y se le aplicó el prefijo global. | El test pasa con la ruta fixture relativa y el prefijo configurado antes de `app.init()`. | El test verifica tanto el default de Swagger como `construirDocumentoInterno` con `ignoreGlobalPrefix: false`. |
+| Deriva y composición | `npm test -- verificar-deriva-contrato.spec.ts` salió 1 porque el checker aún no existía; `npm test -- contrato-scripts.spec.ts` salió 1 con 3 expectativas fallidas; la prueba de frontera salió 1 con 17/18 pasando porque faltaba la regla 11. | `npm test -- documentacion fronteras`: 13 archivos, 68 tests, exit 0; `npm run fronteras` verificó 86 módulos y 157 dependencias sin violaciones. | Una edición temporal de `openapi/openapi.json` fue detectada por el checker sin que este escribiera o reparara el archivo; la regeneración lo restauró. |
+
+**Desviaciones de implementación registradas:**
+
+- La nota de T1 confirma que `vite-node` no expone la ruta objetivo en `process.argv[1]`; por eso los
+  módulos `scripts/generar-contrato.ts` y `scripts/verificar-deriva-contrato.ts` exportan funciones
+  puras respecto al CLI, y `scripts/cli.ts` despacha los comandos. `package.json` invoca ese punto de
+  entrada único en lugar de ejecutar directamente cada archivo nuevo.
+- El fixture de T2 pasó de `@Controller('api/v1/ejemplos')` a `@Controller('ejemplos')`; el prefijo
+  global se configura solo en `test/contrato/soporte.ts`. Es un cambio del harness necesario para
+  probar el comportamiento real de Swagger sin duplicar la versión. `src/configurar-aplicacion.ts`
+  queda intacto en T3.
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- documentacion fronteras` — exit 0; 13 archivos de test, 68 tests pasaron. La salida incluye un stderr no bloqueante `EALLOWSCRIPTS`/`DEP0190` del test preexistente de T1 que ejecuta `npm audit --json`; Vitest y npm terminaron en 0. |
+| Runtime harness command/scenario and exact result | `npm run contrato:generar && npm run contrato:deriva` (invocado por `cmd.exe` para conservar `&&` en Windows) — exit 0; ambos documentos coinciden byte a byte. Dos generaciones consecutivas conservaron los blob ids: público `52a5c337752d365f010adbebb452a079163f458a`, interno `3318732e09398b63a30da3994f2fc6fdf28bf3e0`. Con `info.version` cambiado temporalmente a `0.0.2`, `npm run contrato:deriva` salió 1 y señaló la línea 7; el hash de ese archivo no cambió durante la comprobación. `npm run verify` también salió 1 en `contrato:deriva`; `npm run contrato:generar` restauró el documento y la siguiente deriva salió 0. |
+| Full verify | `npm run verify` — exit 0; lint, typecheck, fronteras, deriva y Vitest pasaron; 28 archivos y 119 tests, 29.35 s (menos de 3 minutos). Los logs del test de salud incluyen los fallos simulados a `127.0.0.1:65533`; las pruebas pasan. |
+| Rollback boundary | Revertir `.dependency-cruiser.cjs`, `.gitattributes`, `package.json`, `scripts/cli.ts`, `scripts/generar-contrato.ts`, `scripts/verificar-deriva-contrato.ts`, `src/plataforma/documentacion/**`, `test/contrato/documentacion.spec.ts`, los cambios de `test/contrato/fixture/contrato-fixture.controller.ts` y `test/contrato/soporte.ts`, los tres cambios/fixtures de `test/fronteras/`, ambos `openapi/*.json` y esta sección T3 de `tasks.md` devuelve el estado anterior a T3 sin retirar los cambios de T1/T2. |
+
+**Nota de presupuesto de revisión (Section E, PR3):** el conteo final es `850` líneas de
+autoría (adiciones + eliminaciones; excluye `openapi/*.json` y `package-lock.json`), frente a ~400
+estimadas: `450` sobre el presupuesto. No hay un corte cohesivo adicional dentro de T3:
+separar los transformadores, el generador/checker o su gate dejaría incompleta la misma unidad de
+contrato. No se infiere `size:exception` para T3 ni se abre PR; el commit local no cambia ese límite.
+
 **Hecho cuando**:
 - Los siete escenarios listados pasan.
 - El checkpoint (a) queda resuelto y registrado.
@@ -514,7 +562,12 @@ en el documento generado. Si el prefijo no aparece, agregarlo explícitamente en
   nota de secuenciación).
 - `npm run verify` sigue completándose en menos de 3 minutos con Postgres/Redis arriba.
 
-**commit:** `<pendiente>` — `feat(plataforma/documentacion): generar el contrato OpenAPI de forma determinista`
+**Resultado observado:** todos los criterios anteriores pasan. Los dos documentos se generaron desde
+`AppModule` real (sin el fixture de test); `/health` aparece tanto en el documento interno como en el
+público de T3, deliberadamente. T4 regenerará ambos al etiquetar `/health` como `internal`.
+
+**commit:** el SHA se registra en el commit de seguimiento de este artefacto; el commit de unidad usa
+`feat(plataforma/documentacion): generar el contrato OpenAPI de forma determinista`.
 
 ---
 

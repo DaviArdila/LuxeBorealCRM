@@ -15,7 +15,7 @@ const FECHA_DE_PRUEBA = '2024-01-01T00:00:00.000Z';
  * excluirla del documento público todavía no exista (T3): la etiqueta se declara ahora, tal como
  * fija `tasks.md` para T2, para que T3 la consuma sin volver a tocar este archivo.
  */
-@Controller('api/v1/ejemplos')
+@Controller('ejemplos')
 export class ContratoFixtureController {
   @Get()
   @ApiOperation({ operationId: 'listarEjemplos' })

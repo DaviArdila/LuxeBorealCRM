@@ -37,6 +37,8 @@ export async function crearAplicacionDeContrato(): Promise<INestApplication> {
     .compile();
 
   const app = modulo.createNestApplication();
+  // T3 ejercita el prefijo como configuración global; producción lo activa en T4.
+  app.setGlobalPrefix('api/v1');
   configurarAplicacion(app);
   await app.init();
   return app;

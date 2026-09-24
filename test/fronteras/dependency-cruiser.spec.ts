@@ -6,7 +6,7 @@ import configImportado from '../../.dependency-cruiser.cjs';
 
 /**
  * PLT6 — "Un import prohibido hace fallar npm run verify" / "Un import permitido no afecta la
- * verificación de fronteras". Cada caso de este archivo prueba una de las 10 reglas de D11
+ * verificación de fronteras". Cada caso de este archivo prueba las reglas de D11
  * (`openspec/changes/fase-00a-esqueleto/design.md`) con la API `cruise` sobre un árbol de
  * fixtures que reproduce la forma de `src/` (`test/fronteras/fixtures/src/...`), reutilizando el
  * mismo `ruleSet` de `.dependency-cruiser.cjs` que corre `npm run fronteras` en verde sobre el
@@ -53,7 +53,7 @@ async function ejecutarCruiseFixtures(): Promise<Violacion[]> {
     outputType: 'json' as const,
     ruleSet: { forbidden: config.forbidden },
   };
-  const resultado = await cruise(['src'], opciones);
+  const resultado = await cruise(['src', 'scripts'], opciones);
   const salida = JSON.parse(resultado.output as string) as {
     summary: { violations: Violacion[] };
   };
@@ -238,5 +238,29 @@ describe('fronteras — dependency-cruiser (D11)', () => {
     const violaciones = await violacionesDeFixtures();
 
     expect(tieneViolacion(violaciones, 'sin-irresolubles', 'src/irresoluble.ts')).toBe(true);
+  });
+
+  it('regla 11 — scripts-solo-barriles-de-plataforma: importar una ruta interna viola la regla', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'scripts-solo-barriles-de-plataforma',
+        'scripts/consumidor-plataforma-interna.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 11 — scripts-solo-barriles-de-plataforma: importar el index.ts público está permitido', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'scripts-solo-barriles-de-plataforma',
+        'scripts/consumidor-plataforma-publica.ts',
+      ),
+    ).toBe(false);
   });
 });

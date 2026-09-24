@@ -2,10 +2,13 @@ import { auditarDependencias, type ResultadoAuditoria } from './auditar-dependen
 import { buscarSecretosEnArbol, buscarSecretosEnHistorial } from './buscar-secretos.js';
 import type { ResultadoBusquedaSecretos } from './buscar-secretos.js';
 import { verificarCommits, type ResultadoVerificacionCommits } from './verificar-commits.js';
+import { generarContrato, type ResultadoContrato } from './generar-contrato.js';
+import { verificarDerivaContrato } from './verificar-deriva-contrato.js';
 
 /**
  * Único punto de entrada de línea de comandos para los scripts de esta fase (`package.json`:
- * `secretos`, `secretos:historial`, `commits`, `auditoria`). `scripts/buscar-secretos.ts`,
+ * `secretos`, `secretos:historial`, `commits`, `auditoria`, `contrato:generar`, `contrato:deriva`).
+ * `scripts/buscar-secretos.ts`,
  * `verificar-commits.ts` y `auditar-dependencias.ts` exportan **solo** funciones — sin código de
  * nivel superior que se ejecute al importarlas — porque bajo `vite-node` (D12) el patrón habitual
  * `import.meta.url === file://${process.argv[1]}` para detectar "soy el entrypoint" no funciona:
@@ -17,7 +20,11 @@ import { verificarCommits, type ResultadoVerificacionCommits } from './verificar
  * CLI en este único archivo — que ningún test importa — evita ambos problemas sin depender de una
  * variable de entorno (que además no sería portable entre `cmd.exe` y `bash`, D12).
  */
-type Resultado = ResultadoBusquedaSecretos | ResultadoVerificacionCommits | ResultadoAuditoria;
+type Resultado =
+  | ResultadoBusquedaSecretos
+  | ResultadoVerificacionCommits
+  | ResultadoAuditoria
+  | ResultadoContrato;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -43,9 +50,16 @@ async function main(): Promise<void> {
     case 'auditoria':
       imprimirResultado(await auditarDependencias());
       return;
+    case 'contrato:generar':
+      imprimirResultado(await generarContrato());
+      return;
+    case 'contrato:deriva':
+      imprimirResultado(await verificarDerivaContrato());
+      return;
     default:
       process.stderr.write(
-        `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, auditoria.\n`,
+        `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
+          'auditoria, contrato:generar, contrato:deriva.\n',
       );
       process.exitCode = 1;
   }

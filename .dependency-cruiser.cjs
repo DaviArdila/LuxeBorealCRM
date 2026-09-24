@@ -115,6 +115,17 @@ module.exports = {
       from: {},
       to: { couldNotResolve: true },
     },
+    {
+      name: 'scripts-solo-barriles-de-plataforma',
+      comment:
+        'scripts/ solo importa la API pública de cada submódulo de plataforma (D12 de 00b).',
+      severity: 'error',
+      from: { path: '^scripts/' },
+      to: {
+        path: '^src/plataforma/[^/]+/',
+        pathNot: '^src/plataforma/[^/]+/index\\.ts$',
+      },
+    },
   ],
   options: {
     // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros
