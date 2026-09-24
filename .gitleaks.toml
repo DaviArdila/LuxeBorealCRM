@@ -1,0 +1,19 @@
+title = "gitleaks — LuxeBorealCRM"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Rutas generadas, de dependencias, o con falsos positivos confirmados y documentados"
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+  '''coverage/''',
+  '''(^|/)\.git/''',
+  '''src/plataforma/prisma/generado/''',
+  # Falso positivo confirmado (CI3 — "Un falso positivo se resuelve con allowlist versionada",
+  # revisado el 2026-09-24): este archivo contiene bloques "-----BEGIN RSA PRIVATE KEY-----" de
+  # mentira, a propósito, para ejercitar la regla `private-key` de gitleaks contra el propio script
+  # `scripts/buscar-secretos.ts`. No es una clave real.
+  '''test/fronteras/buscar-secretos\.spec\.ts''',
+]

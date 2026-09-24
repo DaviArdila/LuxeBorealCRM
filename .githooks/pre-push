@@ -1,0 +1,14 @@
+#!/bin/sh
+# CI1 (D8, D9 de openspec/changes/fase-00b-ci-contrato-api/design.md): puerta local antes de
+# empujar. Corre exactamente el subconjunto rápido de `npm run ci` (`ci:hook`, D8: "ci:hook es un
+# prefijo literal de ci") — lint, typecheck, tests unitarios, secretos y commitlint. Nunca corre
+# tests de integración ni e2e (se quedan en CI). Se salta explícitamente con
+# `git push --no-verify`, y ese salto queda visible en la terminal porque este hook nunca corre.
+echo "pre-push: corriendo lint, typecheck, tests unitarios, secretos y commitlint (npm run ci:hook)..."
+npm run ci:hook
+codigo=$?
+if [ "$codigo" -ne 0 ]; then
+  echo "pre-push: FALLÓ npm run ci:hook (código $codigo). Push bloqueado."
+  echo "pre-push: usa 'git push --no-verify' para saltarte esta puerta de forma explícita."
+fi
+exit "$codigo"

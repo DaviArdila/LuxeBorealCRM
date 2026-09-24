@@ -1,0 +1,37 @@
+[
+  {
+    "id": "1145093",
+    "paquete": "deepmerge-ts",
+    "motivo": "DeepmergeTS <8.0.0 (GHSA-ggr8-5vv4-36mx, agotamiento de pila al fusionar grafos recursivos): dependencia transitiva de @prisma/config. El único fix disponible exige bajar prisma a 6.19.3 (cambio de major, fuera de alcance de la Fase 00b). El proyecto solo usa PostgreSQL (@prisma/adapter-pg); esta ruta de código no se ejercita en producción.",
+    "fecha": "2026-09-24",
+    "revisar_antes_de": "2026-12-24"
+  },
+  {
+    "id": "1115806",
+    "paquete": "lodash",
+    "motivo": "lodash <=4.17.23 (GHSA-r5fr-rjxr-66jc, inyección de código vía _.template; más GHSA de prototype pollution en _.unset/_.omit): dependencia transitiva de Prisma CLI. El único fix disponible exige bajar prisma a 6.19.3 (cambio de major, fuera de alcance de la Fase 00b). No se invoca _.template ni _.unset/_.omit sobre datos externos en este proyecto.",
+    "fecha": "2026-09-24",
+    "revisar_antes_de": "2026-12-24"
+  },
+  {
+    "id": "1153173",
+    "paquete": "mysql2",
+    "motivo": "mysql2 <3.22.0/<algo posterior (GHSA-3f6p-5ww8-9rcr, downgrade del plugin de auth; GHSA de zlib inflate sin límite): dependencia transitiva del driver MySQL de Prisma, que este proyecto no usa (solo PostgreSQL, @prisma/adapter-pg, ADR-0001). El único fix disponible exige bajar prisma a 6.19.3 (cambio de major, fuera de alcance de la Fase 00b).",
+    "fecha": "2026-09-24",
+    "revisar_antes_de": "2026-12-24"
+  },
+  {
+    "id": "npm-audit:@prisma/config",
+    "paquete": "@prisma/config",
+    "motivo": "Severidad heredada únicamente de deepmerge-ts (sin aviso propio). Mismo origen y mismo remedio que la excepción de deepmerge-ts: bajar prisma a 6.19.3 (major, fuera de alcance de 00b).",
+    "fecha": "2026-09-24",
+    "revisar_antes_de": "2026-12-24"
+  },
+  {
+    "id": "npm-audit:prisma",
+    "paquete": "prisma",
+    "motivo": "Severidad heredada de @prisma/config y mysql2 (sin aviso propio). Mismo origen y mismo remedio: bajar a prisma 6.19.3 (major, fuera de alcance de 00b). Revisar cuando Prisma publique un parche en la serie 7.x o el proyecto decida migrar de mayor.",
+    "fecha": "2026-09-24",
+    "revisar_antes_de": "2026-12-24"
+  }
+]

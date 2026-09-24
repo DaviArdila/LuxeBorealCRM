@@ -21,7 +21,7 @@ real cabe completo sin comprimir trabajo. No se propone partir la fase.
 Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test de la tarea en
 verde y su commit anotado.
 
-- [ ] T1 — Puerta local: hooks, `commitlint`, `gitleaks`, `npm audit`, `herramientas.ts` (S1)
+- [x] T1 — Puerta local: hooks, `commitlint`, `gitleaks`, `npm audit`, `herramientas.ts` (S1)
 - [ ] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
 - [ ] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
 - [ ] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
@@ -205,6 +205,71 @@ subdirectorio, resolución de raíz desde ruta con espacios, rango vacío de `co
   máquina de desarrollo real; el tiempo medido queda anotado aquí. Si se pasa del presupuesto, sacar
   `secretos` del hook (D10) antes que cualquier otra comprobación, y registrar el cambio.
 - `git push --no-verify` completa sin correr el hook y lo dice en la terminal.
+
+**Checkpoints resueltos en esta tarea (máquina real, 2026-09-24):**
+
+- **(d) `vite-node`**: estable. `vite-node --config vitest.config.ts <script>.ts` ejecuta sin
+  problema un script con decoradores TypeScript **cuando el archivo vive dentro de la raíz del
+  repositorio** (`unplugin-swc` resuelve su configuración relativa a la raíz; un archivo fuera del
+  repo, probado primero en `/tmp`, falla con `Syntax Error`). No hizo falta el fallback a
+  `nest build` + `dist/`. Desviación descubierta y resuelta en el mismo checkpoint: bajo `vite-node`
+  el patrón `import.meta.url === file://${process.argv[1]}` para detectar "soy el entrypoint de
+  CLI" **no funciona** — `vite-node` reemplaza `process.argv[1]` por la ruta de su propio
+  `cli.mjs` y nunca expone la ruta del script objetivo en `argv`. Se resolvió sacando todo
+  disparo de CLI a un único archivo nuevo, `scripts/cli.ts` (que ningún test importa), dejando
+  `buscar-secretos.ts`, `verificar-commits.ts` y `auditar-dependencias.ts` como librerías puras sin
+  código de nivel superior. Documentado también en el encabezado de `scripts/cli.ts`.
+- **(e) Docker + rutas de Windows con espacios**: funciona **sin conversión**. `docker run -v
+  "<raíz>:/repo"` con la salida literal de `git rev-parse --show-toplevel`
+  (`C:/Users/ASUS/Desktop/Project Dani/LuxeBorealCRM`, con espacio y sin comillas adicionales
+  porque `spawn` recibe un array) monta correctamente vía `spawn` con array de argumentos; no hizo
+  falta convertir a `/c/...`. Hallazgo adicional no anticipado por el diseño: montar la **raíz
+  completa** del repositorio (con `node_modules/` instalado) para el escaneo de `gitleaks --arbol`
+  tardó **56-65 s** solo por el costo de la virtualización de archivos de Docker Desktop en Windows
+  sobre miles de archivos de `node_modules/` — sobrepasando el presupuesto de 60 s del hook por sí
+  solo. Se resolvió sin tocar `ejecutarHerramienta` (que sigue montando un único origen genérico,
+  D10 sin cambios): `buscar-secretos.ts` construye un directorio temporal con
+  `git ls-files --cached --others --exclude-standard` (respeta `.gitignore` automáticamente, sin
+  enumerar `node_modules/`/`dist/`/`coverage/` a mano) y monta **ese** directorio en vez de la
+  raíz completa. Con esta mitigación, `secretos --arbol` real contra este repositorio tarda
+  **~3.5 s**.
+- **Tiempo real del hook completo** (`npm run ci:hook` = lint + typecheck + test unitario +
+  secretos + commits, máquina real, Docker arriba): **~20-21 s**, dentro del presupuesto de 60 s.
+  No hizo falta sacar `secretos` del hook.
+- **Hallazgo no anticipado, fuera del alcance de esta tarea para corregir**: `commits`
+  (rango `merge-base(main, HEAD)..HEAD`) reporta **7 de 56** commits inválidos en la rama real
+  `fase-00b-ci-contrato-api` — todos por la regla por defecto de `@commitlint/config-conventional`
+  `body-max-line-length`/`footer-max-line-length` (100 caracteres), en commits de la Fase 00a
+  escritos **antes** de que existiera esta herramienta. `npm run ci:hook` real contra esta rama
+  falla hoy en el paso `commits` por esta deuda histórica, no por ningún commit nuevo de esta
+  tarea. No se reescribió el historial (`git rebase`/`commit --amend` en 56 commits ya
+  compartidos es destructivo y fuera de lo que esta tarea debe decidir unilateralmente). Queda
+  registrado para que el usuario decida: fijar `LUXE_COMMITS_DESDE` al último commit de 00a para
+  los pushes de esta rama (D8 ya contempla esta variable exactamente para "rebasar"), o aceptar
+  que el hook solo queda limpio una vez que esta rama se fusione a `main` y las ramas futuras
+  arranquen sin la deuda. Verificado con un `git push` real (sin `--no-verify`) contra un
+  repositorio bare local temporal: el hook corrió, bloqueó el push exactamente en `commits`, e
+  imprimió el mensaje de bloqueo esperado; `git push --no-verify` contra el mismo repositorio
+  completó al instante sin ejecutar el hook.
+- Excepciones reales registradas en `auditoria-excepciones.json` (D14): `npm audit` sobre este
+  repositorio, hoy, reporta 5 hallazgos `high` (`deepmerge-ts`, `lodash`, `mysql2`,
+  `@prisma/config`, `prisma`), todos transitivos de la CLI de Prisma vía su soporte de MySQL (que
+  este proyecto no usa; ADR-0001 fija PostgreSQL) o de `deepmerge-ts`. El único fix disponible en
+  los cinco casos exige bajar `prisma` de `7.10.0` a `6.19.3` (cambio de major), fuera de alcance
+  de esta tarea. Documentado con motivo, fecha y `revisar_antes_de: 2026-12-24` en cada entrada;
+  `npm run auditoria` real queda en verde con la fecha de hoy.
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD)**: el diff real de esta tarea es
+**~1231 líneas de autoría** (`git diff --cached --numstat`, excluyendo `package-lock.json`),
+frente a la estimación de ~350 de `design.md`/este archivo. La diferencia es honesta, no
+compresión pendiente: cinco scripts nuevos (`herramientas.ts`, `buscar-secretos.ts`,
+`verificar-commits.ts`, `auditar-dependencias.ts`, `cli.ts`) con su cobertura RED→GREEN completa
+por script (26 tests nuevos, incluidos los tres casos de la matriz de amenazas), más
+`commitlint.config.js`, dos hooks, `.gitattributes`, `.gitleaks.toml` y
+`auditoria-excepciones.json`. No se recortaron tests, comentarios ni documentación para acercarse
+al presupuesto (prohibido explícitamente por el protocolo). T1 es una sola tarea/commit indivisible
+por convención de este `tasks.md`; se recomienda `size:exception` para este PR1 de la cadena
+`stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T2.
 
 **commit:** `<pendiente>` — `feat(ci): agregar hooks locales, commitlint, gitleaks y auditoria de dependencias`
 

@@ -1,0 +1,5 @@
+#!/bin/sh
+# CI2 (D13 de openspec/changes/fase-00b-ci-contrato-api/design.md): valida el mensaje de commit
+# con commitlint (Conventional Commits + regla propia sin-atribucion-ia) en el momento en que se
+# escribe, no diez commits después. Instalado vía D9 (core.hooksPath), nunca copiado a mano.
+npx --no-install commitlint --edit "$1"

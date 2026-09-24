@@ -1,0 +1,159 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { resolverRangoDeCommits, verificarCommits } from '../../scripts/verificar-commits.js';
+
+const raizDelProyecto = path.join(import.meta.dirname, '..', '..');
+
+/**
+ * `scripts/verificar-commits.ts` (CI2, D8, D13). Matriz de amenazas de `tasks.md`: "Estado del
+ * índice" (un rango vacío MUST terminar en verde sin analizar nada) y "Estado del push"
+ * (`LUXE_COMMITS_DESDE` fija el rango explícitamente al rebasar). Se ejercita contra repositorios
+ * git aislados y reales en directorios temporales.
+ */
+async function crearRepositorioDePrueba(): Promise<string> {
+  const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-commits-prueba-'));
+  execFileSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: raiz });
+  execFileSync('git', ['config', 'user.email', 'prueba@luxeboreal.test'], { cwd: raiz });
+  execFileSync('git', ['config', 'user.name', 'Prueba'], { cwd: raiz });
+  return raiz;
+}
+
+function commitear(raiz: string, mensaje: string): string {
+  execFileSync('git', ['commit', '--allow-empty', '--quiet', '-m', mensaje], { cwd: raiz });
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: raiz, encoding: 'utf8' }).trim();
+}
+
+describe('scripts/verificar-commits — resolverRangoDeCommits', () => {
+  it('un rango vacío (main == HEAD) devuelve una lista vacía', () => {
+    const raiz_ = crearRepositorioDePrueba();
+    return raiz_.then(async (raiz) => {
+      try {
+        commitear(raiz, 'chore: inicial');
+
+        const rango = resolverRangoDeCommits(raiz);
+
+        expect(rango).toEqual([]);
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    });
+  });
+
+  it('LUXE_COMMITS_DESDE fijado a un SHA conocido produce el rango esperado', async () => {
+    const raiz = await crearRepositorioDePrueba();
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    try {
+      const c1 = commitear(raiz, 'chore: inicial');
+      const c2 = commitear(raiz, 'feat(x): segundo commit');
+      const c3 = commitear(raiz, 'fix(y): tercer commit');
+      process.env.LUXE_COMMITS_DESDE = c1;
+
+      const rango = resolverRangoDeCommits(raiz);
+
+      expect(new Set(rango)).toEqual(new Set([c2, c3]));
+      expect(rango).not.toContain(c1);
+    } finally {
+      if (previo === undefined) {
+        delete process.env.LUXE_COMMITS_DESDE;
+      } else {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('scripts/verificar-commits — verificarCommits', () => {
+  it('rango vacío: termina en verde y lo dice explícitamente en la salida', async () => {
+    const raiz = await crearRepositorioDePrueba();
+    try {
+      commitear(raiz, 'chore: inicial');
+
+      const resultado = await verificarCommits(raiz);
+
+      expect(resultado.limpio).toBe(true);
+      expect(resultado.mensaje.toLowerCase()).toContain('vacío');
+    } finally {
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+
+  it('un mensaje sin tipo convencional en el rango se reporta como inválido', async () => {
+    const raiz = await crearRepositorioDePrueba();
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    try {
+      const c1 = commitear(raiz, 'chore: inicial');
+      commitear(raiz, 'arreglo cosas');
+      process.env.LUXE_COMMITS_DESDE = c1;
+
+      const resultado = await verificarCommits(raiz, { directorioConfiguracion: raizDelProyecto });
+
+      expect(resultado.limpio).toBe(false);
+    } finally {
+      if (previo === undefined) {
+        delete process.env.LUXE_COMMITS_DESDE;
+      } else {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+
+  it('un commit con atribución de IA en el rango se reporta como inválido', async () => {
+    const raiz = await crearRepositorioDePrueba();
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    try {
+      const c1 = commitear(raiz, 'chore: inicial');
+      await writeFile(path.join(raiz, 'x.txt'), 'x', 'utf8');
+      execFileSync('git', ['add', 'x.txt'], { cwd: raiz });
+      execFileSync(
+        'git',
+        [
+          'commit',
+          '--quiet',
+          '-m',
+          'feat(x): algo',
+          '-m',
+          'Co-Authored-By: Un Asistente <asistente@ejemplo.com>',
+        ],
+        { cwd: raiz },
+      );
+      process.env.LUXE_COMMITS_DESDE = c1;
+
+      const resultado = await verificarCommits(raiz, { directorioConfiguracion: raizDelProyecto });
+
+      expect(resultado.limpio).toBe(false);
+      expect(resultado.mensaje).toContain('atribuci');
+    } finally {
+      if (previo === undefined) {
+        delete process.env.LUXE_COMMITS_DESDE;
+      } else {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+
+  it('todos los commits válidos del rango terminan en verde', async () => {
+    const raiz = await crearRepositorioDePrueba();
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    try {
+      const c1 = commitear(raiz, 'chore: inicial');
+      commitear(raiz, 'feat(x): algo válido');
+      process.env.LUXE_COMMITS_DESDE = c1;
+
+      const resultado = await verificarCommits(raiz, { directorioConfiguracion: raizDelProyecto });
+
+      expect(resultado.limpio).toBe(true);
+    } finally {
+      if (previo === undefined) {
+        delete process.env.LUXE_COMMITS_DESDE;
+      } else {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+});

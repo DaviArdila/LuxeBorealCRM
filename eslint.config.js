@@ -66,7 +66,7 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommendedTypeChecked,
   {
-    files: ['src/**/*.ts', 'test/**/*.ts'],
+    files: ['src/**/*.ts', 'test/**/*.ts', 'scripts/**/*.ts'],
     languageOptions: {
       parserOptions: {
         projectService: true,

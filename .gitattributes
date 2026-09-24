@@ -1,0 +1,8 @@
+# Fin de línea: LF en todo el repositorio (D2, D9 de
+# openspec/changes/fase-00b-ci-contrato-api/design.md). Sin esto, git ejecuta los hooks de
+# .githooks/ con el `sh` de Git for Windows, que falla con "bad interpreter" si el archivo tiene
+# CRLF; y la generación determinista del contrato OpenAPI (T3) depende de que el fin de línea sea
+# siempre el mismo en cualquier máquina.
+* text=auto eol=lf
+
+.githooks/* text eol=lf
