@@ -271,7 +271,7 @@ al presupuesto (prohibido explícitamente por el protocolo). T1 es una sola tare
 por convención de este `tasks.md`; se recomienda `size:exception` para este PR1 de la cadena
 `stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T2.
 
-**commit:** `<pendiente>` — `feat(ci): agregar hooks locales, commitlint, gitleaks y auditoria de dependencias`
+**commit:** `77f78a4935c9740620909c4792dc79a8c6f836c7` — `feat(ci): agregar hooks locales, commitlint, gitleaks y auditoria de dependencias`
 
 ---
 
