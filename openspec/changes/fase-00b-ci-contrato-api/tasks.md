@@ -566,7 +566,7 @@ contrato. No se infiere `size:exception` para T3 ni se abre PR; el commit local 
 `AppModule` real (sin el fixture de test); `/health` aparece tanto en el documento interno como en el
 público de T3, deliberadamente. T4 regenerará ambos al etiquetar `/health` como `internal`.
 
-**commit:** el SHA se registra en el commit de seguimiento de este artefacto; el commit de unidad usa
+**commit:** `da2da40a1837274cd9f72c4ca3066c24fca0354b` —
 `feat(plataforma/documentacion): generar el contrato OpenAPI de forma determinista`.
 
 ---
