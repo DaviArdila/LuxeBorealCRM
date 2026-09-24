@@ -21,16 +21,23 @@ src/
 ├── plataforma/                 transversal técnico (no negocio)
 │   ├── config/                 ConfigModule + esquema Zod por grupo; única lectura de process.env
 │   ├── reloj/                  Clock (token CLOCK) + implementación de sistema
+│   ├── observabilidad/         logger, trazas
 │   ├── prisma/                 PrismaService (conexión y ciclo de vida)
 │   ├── redis/                  cliente Redis inyectable
-│   ├── outbox/                 tabla outbox + publicador
-│   └── observabilidad/         logger, trazas
+│   ├── salud/                  GET /health con @nestjs/terminus (indicadores postgres/redis, D4/D13)
+│   └── outbox/                 tabla outbox + publicador
 ├── compartido/                 funciones puras sin dependencias: dinero, texto, número
 └── modulos/
     ├── catalogo/  horario/  canales/  conversaciones/  llm/  agente/
     ├── leads/  notificaciones/  contactos/  admin/
     └── usuarios/  inventario/  ventas/            (fases 11+)
 ```
+
+Cada submódulo de `plataforma/` (`config/`, `reloj/`, `observabilidad/`, `prisma/`, `redis/`,
+`salud/`) expone su API pública en un `index.ts` (barril): nadie importa rutas internas de otro
+submódulo, solo lo que su `index.ts` exporta (regla de fronteras 6, `dependency-cruiser`,
+`sin-rutas-internas-de-plataforma`, confirmada en la Fase 00a). El mismo patrón de barril aplica a
+`modulos/<m>/index.ts` (regla 5) y a `compartido/<x>/index.ts`.
 
 Dentro de un módulo (solo las carpetas que hagan falta):
 
@@ -53,7 +60,22 @@ modulos/<m>/
   de Prisma no salen de `infraestructura/`: el repositorio devuelve tipos de dominio.
 - Sin ciclos entre módulos. Si A necesita reaccionar a algo de B y B a algo de A, uno de los dos
   sentidos es un **evento**.
-- Herramienta: `dependency-cruiser` (o `eslint-plugin-boundaries`) con las reglas anteriores.
+- **Herramienta elegida: `dependency-cruiser`** (`.dependency-cruiser.cjs`, decisión del usuario,
+  fijada en la Fase 00a). Diez reglas, todas `severity: 'error'`, cada una con un test de fixture
+  que la viola (`test/fronteras/dependency-cruiser.spec.ts`):
+
+  | # | Regla | Qué prohíbe |
+  |---|---|---|
+  | 1 | `sin-ciclos` | cualquier ciclo de imports |
+  | 2 | `compartido-puro` | `compartido/` importando cualquier otra cosa (ni `src/`, ni npm) |
+  | 3 | `dominio-aislado` | `modulos/<m>/dominio/` importando fuera de sí mismo y `compartido/` |
+  | 4 | `prisma-solo-en-infraestructura` | `@prisma/client`/cliente generado fuera de `plataforma/prisma` e `infraestructura/` de cada módulo |
+  | 5 | `sin-rutas-internas-de-modulo` | importar una ruta interna de otro `modulos/<m>/` (solo su `index.ts`) |
+  | 6 | `sin-rutas-internas-de-plataforma` | importar una ruta interna de otro submódulo de `plataforma/` (solo su `index.ts`) |
+  | 7 | `plataforma-no-conoce-modulos` | `plataforma/` importando de `modulos/` |
+  | 8 | `src-no-importa-test` | `src/` importando de `test/` |
+  | 9 | `src-sin-dev-dependencies` | `src/` importando una `devDependency` |
+  | 10 | `sin-irresolubles` | imports que no resuelven a ningún módulo real |
 
 ## 3. Inyección de dependencias
 
@@ -123,6 +145,13 @@ modulos/<m>/
 - Reloj fijado con un `ClockFalso` inyectado; nada de `vi.useFakeTimers` sobre lógica de negocio.
 - Vitest es el runner (ESM, decisión 2026-09-23; reemplaza Jest — `CLAUDE.md`, ADR-0001 enmienda);
   `@nestjs/testing` + `Test.createTestingModule` sigue aplicando igual.
+- **Proyectos de Vitest** (`vitest.config.ts`, fijados en la Fase 00a): `unit` (`npm test`, junto al
+  código y `test/fronteras/`, sin infraestructura), `integracion` (`npm run test:integracion`,
+  `test/integracion/`) y `e2e` (`npm run test:e2e`, `test/e2e/`). Los proyectos `integracion` y `e2e`
+  levantan Postgres 16 y Redis 7 reales con **Testcontainers** desde un `globalSetup`
+  (`test/soporte/contenedores.global-setup.ts`, ADR-0009): un solo mecanismo de infraestructura de
+  pruebas, idéntico en local y en CI (00b); Docker Compose queda solo para desarrollo manual
+  (`npm run start:dev`).
 
 ## 8. Nombres e idioma
 

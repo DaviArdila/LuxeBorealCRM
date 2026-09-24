@@ -16,7 +16,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 - [x] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
 - [x] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
 - [x] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
-- [ ] T10 — Cierre: `npm run verify` en verde + documentación
+- [x] T10 — Cierre: `npm run verify` en verde + documentación
 
 ## Review Workload Forecast
 
@@ -915,7 +915,7 @@ mismo que dispara `enableShutdownHooks()` ante una señal real.
 | 2 | `npm run test:e2e` si se tocó `main.ts`/Docker | Sí se tocan ambos (T2, T8, T9) — verificado en T9 |
 | 3 | Cada escenario de las specs delta tiene su test y pasa | Cubierto por T3-T9; `API8` diferido a 00b (ver T9) |
 | 4 | `MODELO_DATOS.md` actualizado si cambió el esquema | N/A — sin modelos en 00a (`prisma/schema.prisma` solo `generator`+`datasource`) |
-| 5 | ADR si hubo decisión con alternativas | ADR-0001 enmendado solo si hubo fallback (T1); ADR-0009 solo si el usuario lo acepta |
+| 5 | ADR si hubo decisión con alternativas | ADR-0001 ya enmendado en T1 (fallback evaluado, descartado); **ADR-0009 aceptado explícitamente por el usuario al cierre (2026-09-23)** — `docs/adr/0009-testcontainers-infraestructura-de-pruebas.md`, `Estado: aceptada`, indexado en `docs/adr/README.md` |
 | 6 | `docs/migracion/inventario.md` y `docs/fases/README.md` actualizados | Este task |
 | 7 | Sin `Date.now()`/`process.env` fuera de sitio, sin imports cruzados | Verificado por herramienta en T7, reconfirmado por `npm run verify` |
 | 8 | Un commit por unidad de trabajo, en rama de fase, nunca en `main` | T1-T10, cada uno con su commit de unidad de trabajo en `fase-00a-esqueleto` |
@@ -923,6 +923,54 @@ mismo que dispara `enableShutdownHooks()` ante una señal real.
 
 **Hecho cuando**: la tabla de arriba no tiene ninguna fila pendiente sin justificación, `npm run
 verify` y `npm run test:e2e` están en verde, y los 5 archivos de documentación listados están
-actualizados.
+actualizados. ✅
 
-**commit:** `<pendiente>` — `docs(00a): cerrar fase con comandos, skill y documentación actualizada`
+**Evidencia (2026-09-23, sdd-apply)**:
+- GREEN observado (primer escenario de `PLT7`): `npm run verify` real, con Docker Desktop activo y
+  Postgres 16/Redis 7 levantados por Testcontainers → **exit 0** en **23.69 s** (muy por debajo del
+  límite de 3 min de `SPEC.md` §5): `prisma:generar` genera el cliente sin error; `lint` y
+  `typecheck` sin salida (limpios); `fronteras` → `no dependency violations found (52 modules, 86
+  dependencies cruised)`; `vitest run --project unit --project integracion` → `Test Files 13 passed
+  (13)`, `Tests 62 passed (62)`. Los `[Nest] ERROR` de `IndicadorPostgres`/`IndicadorRedis` que
+  aparecen en la salida son los casos "down" esperados de `test/integracion/salud.spec.ts` (T9), no
+  un fallo.
+- RED observado (segundo escenario de `PLT7`): se copió temporalmente el fixture de T7
+  `test/fronteras/fixtures/src/consumidor-dev-dependency.ts` (D11 regla 9,
+  `src-sin-dev-dependencies`) a `src/verificacion-temporal-fronteras.ts`; `npm run verify` → **exit
+  1**, se detuvo en el paso `fronteras` (los pasos previos ya habían pasado; los tests no llegaron a
+  correr por el encadenado `&&`): `error src-sin-dev-dependencies:
+  src/verificacion-temporal-fronteras.ts → node_modules/vitest/dist/index.js`, `1 dependency
+  violations`. El archivo temporal se borró de inmediato (`rm
+  src/verificacion-temporal-fronteras.ts`); `git status --short` quedó limpio, sin rastro en el
+  árbol de trabajo ni en ningún commit.
+- GREEN de reverificación: `npm run verify` → **exit 0** de nuevo, `Test Files 13 passed (13)`,
+  `Tests 62 passed (62)`, **24.99 s**.
+- ADR-0009 (Testcontainers como infraestructura única de pruebas): el usuario aceptó explícitamente
+  (2026-09-23) el borrador propuesto en `design.md`. Se creó
+  `docs/adr/0009-testcontainers-infraestructura-de-pruebas.md` con `Estado: aceptada`, fecha
+  2026-09-23, y se indexó en `docs/adr/README.md`.
+- Documentación de cierre actualizada: `openspec/config.yaml` (comandos confirmados sin
+  "PLANEADO"; comentario de `coverage_threshold` según D2; `strict_tdd` sin cambios, `false`);
+  `CLAUDE.md` (sección "Comandos" con la tabla real de scripts de `package.json`);
+  `.claude/skills/luxeboreal-arquitectura/SKILL.md` (§1 agrega `salud/` y nota de `index.ts` como
+  barril público por submódulo; §2 fija `dependency-cruiser` con las 10 reglas de D11; §7 documenta
+  los 3 proyectos de Vitest y Testcontainers vía `globalSetup`); `docs/fases/README.md` (fila `00a`
+  → `cerrada`); `docs/migracion/inventario.md` (fila de `compartido` marcada **Migrado** con
+  referencia a T5/commit `d2aa48a`; fila de Chatwoot corregida de `00, 04` a `04`, N1).
+  `openspec/changes/fase-00a-esqueleto/verify-report.md` creado con el registro de cierre completo
+  (resultado por escenario de las tres specs delta, salida de `npm run verify`, commits de T1-T10,
+  resultado de las revisiones RDD, desviaciones, ADRs creados, filas de inventario migradas y
+  aprendizajes para fases siguientes).
+- **Work Unit Evidence**:
+
+  | Evidencia | Resultado |
+  |---|---|
+  | Prueba enfocada | `npm run verify` completo — exit 0; `Test Files 13 passed (13)`, `Tests 62 passed (62)`; 23.69 s (primera corrida) y 24.99 s (reverificación tras el RED), ambas muy por debajo del límite de 3 min. |
+  | Runtime harness | `npm run verify` real con Docker Desktop activo y Postgres 16/Redis 7 levantados por Testcontainers (T8/T9) — es el mismo arnés de runtime que verifica `PLT7`; más el RED del segundo escenario descrito arriba (violación temporal reutilizando el fixture de T7, detectada y revertida de inmediato). |
+  | Límite de rollback | Revertir solo `openspec/config.yaml`, `CLAUDE.md`, `.claude/skills/luxeboreal-arquitectura/SKILL.md`, `docs/fases/README.md`, `docs/migracion/inventario.md`, `docs/adr/0009-testcontainers-infraestructura-de-pruebas.md`, `docs/adr/README.md`, `openspec/changes/fase-00a-esqueleto/verify-report.md` y esta evidencia/checklist de T10 en `tasks.md`; no toca código de producción ni tests — T1-T9 quedan intactos. |
+- Presupuesto de revisión: T10 es puramente documentación de cierre (no toca `src/`, `test/` ni
+  configuración de herramientas); no aplica el presupuesto de ~400 líneas de código de autoría de
+  la misma manera que en PR1-PR7. No se recomienda `size:exception`.
+
+**commit:** hash de este mismo commit de cierre — no puede autoreferenciarse dentro de su propio
+mensaje; ver el resultado de `sdd-apply` reportado al orquestador o `git log -1 --oneline` — `docs(00a): cerrar fase con comandos, skill y documentacion actualizada`

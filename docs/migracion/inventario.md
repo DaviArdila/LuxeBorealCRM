@@ -19,7 +19,7 @@ Leyenda de decisión:
 | `config/env.ts` | Rediseñar | `plataforma/config` (ConfigModule + Zod) | 00 | A1: validar una vez, inyectar |
 | `lib/logger.ts` | Rediseñar | `nestjs-pino` con redacción | 00 | |
 | `lib/tiempo.ts` | Conservar | `plataforma/reloj` (`Clock` inyectable) | 00 | B8; se elimina el reloj global mutable |
-| `lib/dinero.ts`, `lib/texto.ts`, `lib/numero.ts` | Conservar | `compartido/` | 00 | Funciones puras con sus tests |
+| `lib/dinero.ts`, `lib/texto.ts`, `lib/numero.ts` | Conservar | `compartido/` | 00 | **Migrado** — `src/compartido/dinero/`, `src/compartido/texto/`, `src/compartido/numero/` (Fase 00a, T5, commit `d2aa48a`); funciones puras con tests reescritos |
 | `health/` | Rediseñar | `@nestjs/terminus` | 00 | |
 | `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | La regla "solo la capa de datos toca Prisma" se conserva, pero por módulo |
 | `envios/calculo.ts` | Conservar | `catalogo/dominio/envio` | 02 | B12, puro |
@@ -46,7 +46,7 @@ Leyenda de decisión:
 | `meta/indicadorEscribiendo.ts` | Conservar | `canales/whatsapp-meta` | 08 | Única llamada directa a Meta |
 | `admin/` (kill switch) | Conservar | `admin/` con guard de token | 09 | |
 | `scripts/backup.sh`, `restore.sh` | Conservar | `ops/` | 09 | Probado |
-| `scripts/chatwoot-*.sh`, `infra/chatwoot/` | Conservar | `infra/` | 00, 04 | Entorno local |
+| `scripts/chatwoot-*.sh`, `infra/chatwoot/` | Conservar | `infra/` | 04 | Entorno local; movido de 00a a 04 al cerrar 00a (N1 de `proposal.md`: 00a no integra canales) |
 | `panel/` (ya retirado, ADR-006) | Descartar | — | — | El back office es cliente aparte |
 | `queue/refrescoMediaQueue.ts` (stub, ya obsoleto) | Descartar | — | — | Chatwoot sube los medios |
 | `.kilo/worktrees/`, `data/sqlite/`, `db.sql` | Descartar | — | — | Restos |

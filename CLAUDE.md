@@ -123,8 +123,23 @@ repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta 
 
 ## Comandos
 
-Se completan en la Fase 00a. Previstos: `npm run start:dev`, `npm run verify` (lint + typecheck +
-tests + fronteras), `npm test` (Vitest), `npm run test:e2e`, `npm run evals`.
+Confirmados en la Fase 00a (`package.json`):
+
+| Comando | Qué hace |
+|---|---|
+| `npm run start:dev` | Levanta la aplicación en modo desarrollo (`nest start --watch`) |
+| `npm run build` | Compila a `dist/` con `tsc` (`nest build`) |
+| `npm run prisma:generar` | Genera el cliente Prisma en `src/plataforma/prisma/generado/` (también corre en `postinstall`) |
+| `npm run lint` | ESLint (flat config) sobre todo el repo |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run fronteras` | `dependency-cruiser` sobre `src/` con las reglas de fronteras |
+| `npm test` | Vitest, proyecto `unit` (sin infraestructura) |
+| `npm run test:integracion` | Vitest, proyecto `integracion` (Postgres + Redis reales vía Testcontainers) |
+| `npm run test:e2e` | Vitest, proyecto `e2e` (arranque completo con Supertest) |
+| `npm run test:cobertura` | Vitest con cobertura sobre `unit` + `integracion` (solo reporta; sin umbral en 00a, D2) |
+| `npm run verify` | Puerta única: `prisma:generar` → `lint` → `typecheck` → `fronteras` → tests unitarios e integración, en menos de 3 minutos con Postgres/Redis ya arriba |
+
+`npm run evals` llega en la Fase 07, cuando exista el agente.
 
 ## Reglas críticas
 
