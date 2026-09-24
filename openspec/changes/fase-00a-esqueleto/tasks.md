@@ -15,7 +15,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 - [x] T6 — `plataforma/observabilidad`: logger `nestjs-pino` con redacción (R14)
 - [x] T7 — Fronteras (`dependency-cruiser`) + reglas ESLint (flat config)
 - [x] T8 — Compose de desarrollo + Testcontainers + Prisma mínimo + cliente Redis
-- [ ] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
+- [x] T9 — `plataforma/salud` (Terminus) + apagado ordenado + arranque completo (e2e)
 - [ ] T10 — Cierre: `npm run verify` en verde + documentación
 
 ## Review Workload Forecast
@@ -790,7 +790,82 @@ mismo que dispara `enableShutdownHooks()` ante una señal real.
 - `API8 — Webhook interno no aparece en el documento público`: escenario previo de API8; el webhook
   de Chatwoot nace en la Fase 04 y se verifica ahí, con el pipeline de 00b ya disponible.
 
-**commit:** `<pendiente>` — `feat(plataforma/salud): health check de postgres y redis con apagado ordenado`
+**Evidencia (2026-09-23, sdd-apply)**:
+- Dependencias instaladas: `@nestjs/terminus@12.1.0` (dependency, `peerDependencies` de `@nestjs/core`/`common`
+  `^11.0.0 || ^12.0.0`, compatible con 12.1.0 ya instalado); `supertest@7.3.0` + `@types/supertest@7.2.1`
+  (devDependencies) para el e2e — instalados con `npm install`/`npm install -D` sin `--legacy-peer-deps`
+  ni `--force`, sin `ERESOLVE`.
+- `HealthIndicatorService` (D13, API real de `@nestjs/terminus@12.1.0`): se inspeccionó el código
+  compilado (`node_modules/@nestjs/terminus/dist/health-indicator/health-indicator.service.js`) antes de
+  implementar. `check(clave).attempt(fn)` existe y automatiza up/down, **pero** en caso de fallo agrega
+  `{ message: error.message }` al resultado — exactamente lo que D13 prohíbe ("sin el mensaje de la
+  excepción original"). Los dos indicadores usan `check(clave).up()/down()` manualmente (try/catch propio),
+  como pide D13 literalmente, y nunca `.attempt()`.
+- `con-timeout.ts` (`Promise.race` con `setTimeout`): implementa el timeout de `HEALTH_TIMEOUT_MS` sin usar
+  `Date.now()`/`new Date()` — `setTimeout` mide una duración, no lee "la hora actual", así que no cae bajo
+  la restricción de `plataforma/reloj` (PLT2). Se aplicó el mismo razonamiento en los tests
+  (`performance.now()` en vez de `Date.now()` para medir cuánto tardó el indicador "down": los tests
+  también están sujetos a la regla de lint "Reloj" fuera de `plataforma/reloj/**`, confirmado leyendo
+  `eslint.config.js` — `test/**` solo exceptúa la regla en `plataforma/reloj/**`, no en `test/**` en
+  general).
+- `IndicadorRedis.conectarYPing()` sigue exactamente el patrón documentado en `redis.module.ts` (T8) y en
+  `test/integracion/infraestructura.spec.ts`: solo llama `cliente.connect()` si `status` es `wait`, `close`
+  o `end` (nunca sin condición), porque `connect()` no es idempotente con `lazyConnect: true` +
+  `enableOfflineQueue: false`.
+- RED observado (`npm run test:integracion -- salud`, antes de crear `src/plataforma/salud/`): `Error:
+  Cannot find module '../../src/plataforma/salud/index.js' imported from
+  .../test/integracion/salud.spec.ts` (1 suite fallida, 0 tests). RED observado
+  (`npm run test:e2e -- aplicacion`, antes de crear `src/configurar-aplicacion.ts`): `Error: Cannot find
+  module '../../src/configurar-aplicacion.js' imported from .../test/e2e/aplicacion.e2e-spec.ts` (1 suite
+  fallida, 0 tests).
+- GREEN incremental, dos hallazgos corregidos durante el ciclo (documentados porque cambian cómo se
+  escriben tests e2e de apagado en fases futuras):
+  1. **`app.close()` no espera a que `Test.createTestingModule(...).createNestApplication()` esté
+     escuchando** si solo se llamó `app.init()`: el test "una solicitud en curso" colgaba (timeout de
+     5000 ms) porque Supertest es perezoso (`request(...).get(...)` no envía nada hasta `.end()`/await) y
+     la carrera entre construir la solicitud y cerrar el servidor sin un puerto real escuchando dejaba la
+     conexión sin aceptar. Se cambió a `app.listen(0)` (puerto efímero) y a disparar la solicitud con
+     `.end(callback)` explícito, esperando el evento `'connection'` del servidor antes de llamar
+     `app.close()` — así la solicitud está realmente en curso (TCP aceptado) cuando empieza el apagado.
+  2. **Terminus marca sus propios health checks con `status: 'shutting_down'` (503) en cuanto arranca el
+     apagado** (`@nestjs/terminus`, `HealthCheckExecutorService.beforeApplicationShutdown` — confirmado
+     leyendo `node_modules/@nestjs/terminus/dist/health-check/health-check-executor.service.js`): es una
+     protección propia de Terminus para que un balanceador deje de enrutar tráfico nuevo durante el
+     apagado, que se dispara en `callBeforeShutdownHook`, **antes** de que `dispose()` cierre el servidor
+     HTTP (confirmado leyendo `node_modules/@nestjs/core/nest-application-context.js`,
+     `runShutdownSequence`). El test "una solicitud en curso" inicialmente esperaba `200`, pero una
+     solicitud aceptada justo cuando arranca el apagado puede legítimamente recibir `503
+     shutting_down` — el punto de PLT5 es que la conexión no se corta a la mitad, no un código fijo. El
+     test ahora acepta ambos desenlaces (`200 ok` / `503 shutting_down`) y sigue comprobando que el
+     cuerpo trae ambas dependencias `up`.
+  3. (Ajuste menor, sin RED nuevo) `prisma.$queryRaw` después de `$disconnect()` **no** rechaza — Prisma
+     reconecta perezosamente en la siguiente consulta, a diferencia de `ioredis` (`status` no vuelve a
+     `'ready'` solo; no hay un estado "cerrado" público equivalente). El test de apagado ordenado espía
+     `prisma.$disconnect` (`vi.spyOn`) para comprobar que `onApplicationShutdown` efectivamente lo llamó,
+     en vez de inferirlo por una consulta fallida.
+- GREEN final: `npm run test:integracion -- salud` → `Test Files 1 passed (1)`, `Tests 4 passed (4)`
+  (postgres up/down, redis up/down, contra Postgres 16 + Redis 7 reales de Testcontainers y contra
+  puertos sin servicio, ambos casos "down" en menos de 1500 ms y sin exponer `ECONNREFUSED`/credenciales
+  en el resultado). `npm run test:e2e -- aplicacion` → `Test Files 1 passed (1)`, `Tests 7 passed (7)`
+  (los 6 escenarios nombrados de PLT4/PLT5/API2 + el test de import sin variables de entorno).
+- **Work Unit Evidence**:
+
+  | Evidencia | Resultado |
+  |---|---|
+  | Prueba enfocada | `npm run test:integracion -- salud` — exit 0; 1 archivo, 4 tests. `npm run test:e2e -- aplicacion` — exit 0; 1 archivo, 7 tests. `npm test` (suite unitaria completa, sin cambios de esta tarea) — exit 0; 10 archivos, 53 tests. |
+  | Arnés de runtime | `docker compose up -d` → `postgres`/`redis` `healthy`; `.env` local temporal (gitignorado, nunca commiteado) con los defaults de `.env.example`; `npm run start:dev` → arranque real con `configurarAplicacion`, log JSON de pino, `SaludController {/health}` mapeado; `curl -i localhost:3000/health` → `200` `{"status":"ok","info":{"postgres":{"status":"up"},"redis":{"status":"up"}},"error":{},"details":{...}}`; `curl -i localhost:3000/api/v1/health` → `404` (confirma la excepción de prefijo, API2). Proceso de `start:dev` detenido y `docker compose down` (sin `-v`, volúmenes conservados) al terminar. |
+  | Límite de rollback | Revertir `src/plataforma/salud/**`, `src/configurar-aplicacion.ts`, el cableado de `src/main.ts`/`src/app.module.ts`, el bloque `globalSetup` agregado al proyecto `e2e` de `vitest.config.ts`, `test/integracion/salud.spec.ts`, `test/e2e/**` y la dependencia `@nestjs/terminus`/`supertest`/`@types/supertest` de `package.json`; mantener intactos T1-T8. |
+- Presupuesto de revisión: el commit completo (`git show --stat`) suma 913 líneas, pero esa cifra incluye
+  `package-lock.json` generado; medido sin él (`git diff --cached --stat` antes de commitear, solo
+  `package.json`, `src/**`, `test/**` y `vitest.config.ts`): **527 líneas de autoría**. Por encima del
+  rango ~400 previsto para PR7 en el "Review Workload Forecast" de arriba (527 vs. ~400). No se puede reducir
+  sin perder cobertura: los 6 escenarios nombrados de PLT4/PLT5/API2 exigen su propio `it()` con arranque
+  real de la app (design, Testing Strategy), y los dos hallazgos de Terminus/Supertest documentados arriba
+  (arranque con `listen(0)`, espera del evento `'connection'`, aceptar `200`/`503 shutting_down`) requieren
+  las explicaciones inline que ya están escritas como comentarios, no como relleno. **Se recomienda
+  `size:exception` para PR7**; no se crea PR ni se hace push (decisión del usuario).
+
+**commit:** `7344138` — `feat(plataforma/salud): health check de postgres y redis con apagado ordenado`
 
 ---
 
