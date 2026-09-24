@@ -431,7 +431,7 @@ total). No se recortaron tests, comentarios ni documentación para acercarse al 
 cadena `stacked-to-main`, o que el usuario confirme el exceso antes de continuar con T3 — el propio
 `tasks.md` advierte que no se asume la misma excepción de T1 por adelantado.
 
-**commit:** `<pendiente>` — `feat(plataforma/errores): agregar filtro RFC 9457 y pipe de validacion nativo`
+**commit:** `0290b5ec9172f62b7bca5df2210ee4e612272cdf` — `feat(plataforma/errores): agregar filtro RFC 9457 y pipe de validacion nativo`
 
 ---
 
