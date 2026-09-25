@@ -57,7 +57,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 |---|---|---|---|---|
 | 00a | Esqueleto y verificación local | Esqueleto NestJS 12 con config validada (Zod), reloj inyectable, logger con redacción, `compartido/`, fronteras (dependency-cruiser), Vitest (ESM), health con Terminus (Postgres + Redis vía `schema.prisma` mínimo, sin modelos) y Docker Compose de desarrollo, en el repo propio ya iniciado | `npm run verify` en verde en local (lint, typecheck, fronteras, tests); `npm test` corre con Vitest; `GET /health` responde con Postgres y Redis arriba; primera tarea deja registrada la verificación de compatibilidad de dependencias clave con NestJS 12 (ADR-0001 enmienda) | cerrada |
 | 00b | CI y contrato de API | Hook pre-push local (lint, typecheck, tests unitarios, commitlint, gitleaks) + workflow de GitHub Actions completo listo (activo al subir el repo), y el pipeline de contrato de API (ADR-0008/ADR-0010): `StandardSchemaValidationPipe` nativo (NestJS 12) + `@nestjs/swagger` generan `openapi/openapi.json` (público) y `openapi/openapi.interno.json` (completo), Scalar sirve `/docs` protegido fuera de desarrollo, `GET /health` entra al documento **interno**, excluido del público, errores RFC 9457 (ADR-0011), CHANGELOG con `git-cliff`. Depende de 00a | CI en verde local (pre-push) con el workflow de Actions escrito; `openspec/config.yaml` en `strict_tdd: true`; `npm run ci` completo en verde: lint, typecheck, `dependency-cruiser`, tests de integración (Testcontainers), `gitleaks`, `npm audit`, commitlint, deriva de los dos documentos + Spectral + oasdiff | cerrada |
-| 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | idea |
+| 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | aprobada |
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | idea |
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | idea |
 | 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | idea |
@@ -78,15 +78,11 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
 
 > Las Fases 00a y 00b están cerradas y archivadas: `openspec/changes/archive/2026-09-23-fase-00a-esqueleto/` y `openspec/changes/archive/2026-09-25-fase-00b-ci-contrato-api/`.
-> La Fase 00b tiene su change de OpenSpec en curso: `openspec/changes/fase-00b-ci-contrato-api/`
-> (proposal, specs, design y tasks aprobados por el usuario el 2026-09-24). Las siete tareas de
-> `tasks.md` (T1-T7) están completas y commiteadas en la rama `fase-00b-ci-contrato-api`, con
-> `npm run ci` completo en verde; queda pendiente `sdd-verify` (registrar `verify-report.md`) y
-> `sdd-archive` (fusionar los delta specs en `openspec/specs/` y mover el change a `archive/`) antes
-> de que esta fila pase a `cerrada` — por eso sigue en `en curso` según la tabla de equivalencia de
-> arriba. Las demás fases siguen en `idea`. En cuanto una fase pase a `spec en revisión`, esta fila
-> se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
-> (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
+> La Fase 01 tiene su change de OpenSpec en `openspec/changes/fase-01-persistencia/` (proposal,
+> specs, design y tasks aprobados por el usuario el 2026-09-25); `sdd-apply` arranca con T1. Las
+> demás fases siguen en `idea`. En cuanto una fase pase a `spec en revisión`, esta fila se anota con
+> su carpeta: `openspec/changes/fase-NN-<nombre>/` (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez
+> cerrada).
 
 ## Prerrequisitos externos
 
