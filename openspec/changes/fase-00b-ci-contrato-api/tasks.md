@@ -951,7 +951,7 @@ correr el pipeline completo de verdad. No se recortaron tests, comentarios ni do
 acercarse al presupuesto. Igual que T3-T5, no se infiere `size:exception`; queda anotado para que
 el usuario decida junto con el resto de la cadena.
 
-**commit:** `<pendiente>` — `feat(ci): agregar workflow de GitHub Actions y componer npm run ci`
+**commit:** `d18c2d7555bd649fc21bcdb1d7ce8568e26951c3` — `feat(ci): agregar workflow de GitHub Actions y componer npm run ci`
 
 ---
 
