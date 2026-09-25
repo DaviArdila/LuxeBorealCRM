@@ -28,6 +28,11 @@ function commitear(raiz: string, mensaje: string): string {
 describe('scripts/verificar-commits — resolverRangoDeCommits', () => {
   it('un rango vacío (main == HEAD) devuelve una lista vacía', () => {
     const raiz_ = crearRepositorioDePrueba();
+    // Aísla del entorno real: si quien corre los tests ya exportó LUXE_COMMITS_DESDE (p. ej. al
+    // rebasar esta rama sobre la deuda histórica de 00a, D8), ese valor no existe en el
+    // repositorio de prueba aislado y `git rev-list` fallaría por una razón ajena a este escenario.
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    delete process.env.LUXE_COMMITS_DESDE;
     return raiz_.then(async (raiz) => {
       try {
         commitear(raiz, 'chore: inicial');
@@ -36,6 +41,9 @@ describe('scripts/verificar-commits — resolverRangoDeCommits', () => {
 
         expect(rango).toEqual([]);
       } finally {
+        if (previo !== undefined) {
+          process.env.LUXE_COMMITS_DESDE = previo;
+        }
         await rm(raiz, { recursive: true, force: true });
       }
     });
@@ -68,6 +76,9 @@ describe('scripts/verificar-commits — resolverRangoDeCommits', () => {
 describe('scripts/verificar-commits — verificarCommits', () => {
   it('rango vacío: termina en verde y lo dice explícitamente en la salida', async () => {
     const raiz = await crearRepositorioDePrueba();
+    // Mismo aislamiento que el escenario equivalente de resolverRangoDeCommits (arriba).
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    delete process.env.LUXE_COMMITS_DESDE;
     try {
       commitear(raiz, 'chore: inicial');
 
@@ -76,6 +87,9 @@ describe('scripts/verificar-commits — verificarCommits', () => {
       expect(resultado.limpio).toBe(true);
       expect(resultado.mensaje.toLowerCase()).toContain('vacío');
     } finally {
+      if (previo !== undefined) {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
       await rm(raiz, { recursive: true, force: true });
     }
   });

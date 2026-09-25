@@ -32,7 +32,9 @@
     "secretos:historial": "npm run herramienta -- scripts/cli.ts secretos --historial",
     "commits": "npm run herramienta -- scripts/cli.ts commits",
     "auditoria": "npm run herramienta -- scripts/cli.ts auditoria",
-    "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits"
+    "flujos": "npm run herramienta -- scripts/cli.ts flujos",
+    "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
+    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.0",

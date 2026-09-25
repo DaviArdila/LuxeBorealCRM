@@ -26,7 +26,7 @@ verde y su commit anotado.
 - [x] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
 - [x] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
 - [x] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
-- [ ] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
+- [x] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
 - [ ] T7 — Cierre: `git-cliff`, `strict_tdd: true`, `coverage_threshold`, documentación (S7)
 
 ## Review Workload Forecast
@@ -883,6 +883,73 @@ verificarlo hoy, sin remoto (Q4).
 - Nota para Q4 (no bloquea): el criterio "CI completo en verde" queda satisfecho localmente; el día
   que el usuario decida subir el repositorio a GitHub, el mismo workflow se reverifica contra un
   remoto real sin cambios de código.
+
+**Desviación registrada (SHA exactos de las acciones fijadas):** esta sesión sí tuvo acceso a red
+(confirmado con `npm view` contra el registro real y `git ls-remote` contra GitHub), a diferencia de
+la sesión de `sdd-design` que dejó la nota "sin acceso a red ni documentación en vivo". Se fijaron
+`actions/checkout@11d5960a326750d5838078e36cf38b85af677262` (`v4.4.0`) y
+`actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020` (`v4.4.0`), confirmados con
+`git ls-remote --tags` real contra ambos repositorios el 2026-09-25, en vez de reusar un SHA
+recordado de entrenamiento sin verificar.
+
+**Desviación registrada (test de CI7, sin ejecutar `npm run ci`/`npm run ci:hook` desde el test):**
+el paso 3 del RED→GREEN→REFACTOR de esta tarea sugiere "romper deliberadamente un test unitario... y
+confirmar que `npm run ci` se detiene ahí". Invocar `npm run ci`/`ci:hook` de verdad **desde un test
+que forma parte del propio proyecto `unit`** crea una recursión sin salida: ambos comandos corren
+`npm test`, que volvería a ejecutar ese mismo archivo de test dentro del hijo, que volvería a
+invocar `npm run ci`, indefinidamente (documentado con detalle en el encabezado de
+`test/fronteras/workflow-ci.spec.ts`). Se verifica el mismo hecho observable —los pasos que
+necesitan Testcontainers están *después* de `ci:hook`, que corre `npm test` antes que cualquier otra
+cosa, y `&&` corta en el primer fallo— con una prueba de **contenido** sobre `package.json` (orden
+de los pasos de `ci` y de `ci:hook`), sin ejecutar ningún subproceso. El mismo criterio que ya usa
+`test/fronteras/contrato-scripts.spec.ts` (PLT7) para el mismo tipo de afirmación.
+
+**Hallazgo no anticipado, descubierto al correr `npm run ci` de verdad (no por T5/T6 en sí, sino
+por la contención que generan sus nuevos tests con Docker):** con tres archivos de test que lanzan
+contenedores Docker reales en paralelo (`buscar-secretos.spec.ts` de T1, `comparar-contrato.spec.ts`
+de T5, `validar-flujos.spec.ts` de esta tarea), varias corridas de `npm test` (fuera de `ci`, cuando
+Vitest paraleliza esos tres archivos en workers distintos) empezaron a fallar de forma intermitente
+por timeout en tests **sin ninguna relación con Docker** (`verificar-commits.spec.ts`,
+`eslint.spec.ts`), por contención real de CPU/E/S en esta máquina (Windows + virtualización de
+Docker Desktop, mismo costo ya medido en T1). Se subió el timeout por defecto de Vitest de 5 s a
+20 s (`vitest.config.ts`, aplica a los tres proyectos vía `extends: true`) y el timeout explícito de
+`eslint.spec.ts` de 15 s a 45 s (la primera invocación de ESLint en ese archivo crea el
+`projectService` de `typescript-eslint`, la más cara de las tres bajo contención). Ninguno de los
+dos cambios oculta un fallo real: los scripts no cambiaron de comportamiento, solo tardan más bajo
+carga.
+
+**Bug real encontrado y corregido (no de esta tarea, de T1 — expuesto al correr `npm run ci` con
+`LUXE_COMMITS_DESDE` exportado, como exige la decisión del usuario en T1):** los dos escenarios de
+"rango vacío" de `test/fronteras/verificar-commits.spec.ts` no guardaban ni restauraban
+`process.env.LUXE_COMMITS_DESDE` como sí hacen los otros cuatro tests del mismo archivo. Con la
+variable exportada en el shell (el estado real y documentado de esta rama), esos dos tests fallaban
+con `git rev-list f3fd4d3..HEAD` contra un repositorio de prueba aislado que nunca tuvo ese commit —
+un fallo real del aislamiento del test, no de `verificar-commits.ts`. Se corrigió aplicando el mismo
+patrón guardar/restaurar que ya usan los otros cuatro tests del archivo. Verificado corriendo
+`npm test -- verificar-commits` con `LUXE_COMMITS_DESDE=f3fd4d3` exportado: 6/6 en verde antes y
+después del resto de esta tarea.
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- validar-flujos workflow-ci` — exit 0; 6/6 (2 de `validar-flujos.spec.ts` con Docker real: YAML mal formado con acción inexistente → falla nombrando `ci.yml`; YAML válido → pasa; 4 de `workflow-ci.spec.ts`: contenido del workflow, disparadores, `fetch-depth: 0`, orden de `ci`/`ci:hook`). Primer intento real de `validar-flujos.spec.ts`: 2/2 en rojo — `actionlint` exige un directorio con `.git/` para descubrir `.github/workflows/` ("no project was found in any parent directories"); corregido inicializando un repositorio git real en el directorio temporal, igual que el resto de `test/fronteras/`. |
+| Runtime harness command/scenario and exact result | `npm run ci` completo, real, con Docker arriba y `LUXE_COMMITS_DESDE=f3fd4d3` exportado (D8 de T1) — **exit 0** en **1m27.998s** (medido con `time`), ejecutando en orden: `prisma:generar` → `ci:hook` (lint, typecheck, 136 tests unitarios, `contrato:deriva` en verde, `secretos` sin hallazgos, `commits`: 12 commits verificados) → `fronteras` (95 módulos, 189 dependencias, sin violaciones) → `test:cobertura` (35 archivos, 145 tests, cobertura global 88.34% statements/80% branches/89.13% funcs/88.03% lines) → `test:e2e` (7/7) → `contrato:lint` (0 errores, 2 advertencias no bloqueantes ya documentadas en T5) → `contrato:diff` (`SIN BASE DE COMPARACIÓN`, primer PR de la cadena) → `auditoria` (sin vulnerabilidades ≥ high sin excepción vigente) → `flujos` (actionlint en verde sobre `.github/workflows/ci.yml` real). |
+| Full verify | `npm run verify` — exit 0 en 41.6s (`time`); lint, typecheck, fronteras y Vitest (unit+integración) en verde. `npm test` (solo unit) — 32 archivos, 136 tests, exit 0, corrido dos veces seguidas para confirmar que ya no es intermitente tras el ajuste de timeouts. |
+| Rollback boundary | Revertir `.github/workflows/ci.yml`, `scripts/validar-flujos.ts`, `test/fronteras/validar-flujos.spec.ts`, `test/fronteras/workflow-ci.spec.ts`, el comando `flujos` nuevo de `scripts/cli.ts`, `flujos`/`ci` de `package.json`, el `testTimeout` de `vitest.config.ts`, el timeout explícito de `test/fronteras/eslint.spec.ts` y el guardado/restaurado de `LUXE_COMMITS_DESDE` en `test/fronteras/verificar-commits.spec.ts` — devuelve el estado exacto de T5 (los últimos tres archivos son correcciones de tests preexistentes, no de comportamiento de producción; revertirlos reintroduce la intermitencia y el bug de aislamiento documentados arriba, pero no rompe nada de T1-T5). |
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD):** el diff real de esta tarea es
+**257 líneas de autoría** (`git diff --cached --numstat`, excluye `package-lock.json`, que no
+cambió en esta tarea), frente a `~180` estimadas en `design.md`/este archivo (~1.43×, proporción
+similar al resto de la cadena). La diferencia es honesta: `.github/workflows/ci.yml` (36 líneas,
+comentado), `scripts/validar-flujos.ts` (31 líneas) con su cobertura RED→GREEN completa
+(`test/fronteras/validar-flujos.spec.ts`, 83 líneas) y el test de contenido de CI5/CI6/CI7
+(`test/fronteras/workflow-ci.spec.ts`, 62 líneas), más las tres correcciones de resiliencia de
+tests preexistentes explicadas arriba (`vitest.config.ts`, `eslint.spec.ts`,
+`verificar-commits.spec.ts`, 31 líneas en total) que esta tarea descubrió al ser la primera en
+correr el pipeline completo de verdad. No se recortaron tests, comentarios ni documentación para
+acercarse al presupuesto. Igual que T3-T5, no se infiere `size:exception`; queda anotado para que
+el usuario decida junto con el resto de la cadena.
 
 **commit:** `<pendiente>` — `feat(ci): agregar workflow de GitHub Actions y componer npm run ci`
 

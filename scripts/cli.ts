@@ -5,6 +5,7 @@ import { verificarCommits, type ResultadoVerificacionCommits } from './verificar
 import { generarContrato, type ResultadoContrato } from './generar-contrato.js';
 import { verificarDerivaContrato } from './verificar-deriva-contrato.js';
 import { compararContrato, type ResultadoComparacionContrato } from './comparar-contrato.js';
+import { validarFlujos, type ResultadoValidacionFlujos } from './validar-flujos.js';
 
 /**
  * Único punto de entrada de línea de comandos para los scripts de esta fase (`package.json`:
@@ -26,7 +27,8 @@ type Resultado =
   | ResultadoVerificacionCommits
   | ResultadoAuditoria
   | ResultadoContrato
-  | ResultadoComparacionContrato;
+  | ResultadoComparacionContrato
+  | ResultadoValidacionFlujos;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -61,10 +63,13 @@ async function main(): Promise<void> {
     case 'contrato:diff':
       imprimirResultado(await compararContrato());
       return;
+    case 'flujos':
+      imprimirResultado(await validarFlujos());
+      return;
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
-          'auditoria, contrato:generar, contrato:deriva, contrato:diff.\n',
+          'auditoria, contrato:generar, contrato:deriva, contrato:diff, flujos.\n',
       );
       process.exitCode = 1;
   }

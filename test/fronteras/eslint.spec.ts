@@ -47,7 +47,13 @@ describe('fronteras — eslint (D10)', () => {
       const ids = idsDe(await lint(codigoConReloj, 'src/main.ts'));
 
       expect(ids).toContain('no-restricted-syntax');
-    }, 15_000);
+      // 45 s (era 15 s): la primera llamada a ESLint en este archivo crea el `projectService` de
+      // typescript-eslint (TypeScript real, no incremental todavía), y desde T6 (fase 00b) compite
+      // por CPU con hasta tres archivos de test que lanzan contenedores Docker reales en paralelo
+      // (gitleaks de T1, oasdiff de T5, actionlint de T6) — medido de forma intermitente en la
+      // máquina de desarrollo real (vitest.config.ts documenta el mismo hallazgo para el timeout
+      // por defecto).
+    }, 45_000);
 
     it('Date() sin new viola la regla fuera de plataforma/reloj', async () => {
       const ids = idsDe(await lint('export const hora = Date();\n', 'src/main.ts'));

@@ -1,0 +1,36 @@
+# CI5/CI6 (openspec/specs/integracion-continua/spec.md): un solo job que invoca `npm run ci`
+# (D8 de openspec/changes/fase-00b-ci-contrato-api/design.md) sin redefinir ningún paso individual
+# aquí. `fetch-depth: 0` porque `commits` necesita `merge-base(main, HEAD)` y `contrato:diff`
+# necesita comparar el documento público contra `main` (D11). Docker ya viene preinstalado en
+# `ubuntu-latest`, que es lo que usan `secretos`, `contrato:diff` y `flujos` (D10) y lo que levanta
+# Testcontainers para `test:integracion`/`test:e2e` (ADR-0009).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: npm run ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Ejecutar la secuencia completa de CI
+        run: npm run ci

@@ -9,6 +9,16 @@ export default defineConfig({
   test: {
     globals: true,
     root: './',
+    // 20 s (el default de Vitest es 5 s): T6 (fase 00b) agregó un tercer archivo de test que
+    // lanza contenedores Docker reales en paralelo con los ya existentes de T1 (gitleaks) y T5
+    // (oasdiff) — bajo esa contención real (medida en la máquina de desarrollo, Windows +
+    // virtualización de Docker Desktop), subprocesos de git triviales (`merge-base`, `rev-list`)
+    // que normalmente responden en milisegundos empezaron a superar el timeout por defecto de
+    // Vitest de forma intermitente, sin que el comportamiento de los scripts cambiara. Subir el
+    // timeout por defecto es honesto (no oculta un fallo real, D8 de fase 00b); no se bajó la
+    // cantidad de tests con Docker ni se serializó todo el proyecto `unit` porque eso alargaría
+    // cada corrida local y de CI sin necesidad.
+    testTimeout: 20_000,
     projects: [
       {
         extends: true,
