@@ -1,0 +1,55 @@
+# Reglas de lint del contrato OpenAPI (CI9/API10, D11 de
+# openspec/changes/fase-00b-ci-contrato-api/design.md). Se aplica a los dos documentos commiteados
+# (`openapi/openapi.json` público y `openapi/openapi.interno.json` completo, D1): el público hoy
+# tiene `paths: {}` y no ejercita ninguna regla; el interno sí, con `/health`.
+extends:
+  - spectral:oas
+
+rules:
+  # API2 — todas las rutas del contrato usan el prefijo /api/v1, salvo /health (ruta operativa sin
+  # versión, exenta explícitamente por diseño — D6 de esta fase).
+  luxeboreal-prefijo-api-v1:
+    description: >-
+      Toda ruta del contrato MUST empezar con /api/v1, salvo /health (ruta operativa sin prefijo de
+      versión, API2/D6).
+    message: 'la ruta "{{property}}" no empieza con /api/v1 (única excepción: /health)'
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/api/v1(/.*)?|/health)$"
+
+  # skill luxeboreal-arquitectura §8 — nombres estables e idiomáticos del contrato.
+  luxeboreal-operation-id-camel-case:
+    description: El operationId de cada operación MUST estar en camelCase.
+    message: 'operationId "{{value}}" no está en camelCase'
+    severity: error
+    given: "$.paths[*][*].operationId"
+    then:
+      function: casing
+      functionOptions:
+        type: camel
+
+  # API3 — convenciones JSON: propiedades en camelCase.
+  luxeboreal-propiedades-camel-case:
+    description: Las propiedades de los esquemas del contrato MUST estar en camelCase.
+    message: 'la propiedad "{{property}}" no está en camelCase'
+    severity: error
+    given: "$.components.schemas..properties[*]~"
+    then:
+      function: casing
+      functionOptions:
+        type: camel
+
+  # API4 — toda respuesta de error declara application/problem+json, salvo /health (exenta, D6).
+  luxeboreal-errores-problem-json:
+    description: >-
+      Las respuestas de error (4xx/5xx) MUST declarar application/problem+json, salvo /health
+      (exenta: conserva el cuerpo de Terminus, API4/D6).
+    message: 'la respuesta "{{property}}" no declara application/problem+json'
+    severity: error
+    given: "$.paths[?(@property !== '/health')][*].responses[?(@property >= '400')]"
+    then:
+      field: content.application/problem+json
+      function: truthy

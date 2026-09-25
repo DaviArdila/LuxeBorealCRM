@@ -1,0 +1,181 @@
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { compararContrato, MENSAJE_SIN_BASE } from '../../scripts/comparar-contrato.js';
+import type { ResultadoHerramienta } from '../../scripts/herramientas.js';
+
+/**
+ * `scripts/comparar-contrato.ts` (CI9, API10, D11). Cuatro ramas de la política "sin base de
+ * comparación": con base, sin base, sin rama `main`/`git show` falla, y Docker no responde. Se
+ * ejercita contra repositorios git aislados y reales — nunca contra este repositorio — para poder
+ * controlar si `main` existe y si tiene `openapi/openapi.json` commiteado.
+ */
+async function crearRepositorioDePrueba(): Promise<string> {
+  const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-oasdiff-prueba-'));
+  execFileSync('git', ['init', '--quiet', '--initial-branch=main'], { cwd: raiz });
+  execFileSync('git', ['config', 'user.email', 'prueba@luxeboreal.test'], { cwd: raiz });
+  execFileSync('git', ['config', 'user.name', 'Prueba'], { cwd: raiz });
+  return raiz;
+}
+
+function commitearTodo(raiz: string, mensaje: string): void {
+  execFileSync('git', ['add', '-A'], { cwd: raiz });
+  execFileSync('git', ['commit', '--quiet', '-m', mensaje], { cwd: raiz });
+}
+
+const DOCUMENTO_BASE = {
+  openapi: '3.1.0',
+  info: { title: 'Ejemplo', version: '0.0.1' },
+  paths: {
+    '/api/v1/ejemplos': {
+      get: {
+        operationId: 'listarEjemplos',
+        responses: {
+          '200': {
+            description: 'ok',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { id: { type: 'string' }, nombre: { type: 'string' } },
+                  required: ['id', 'nombre'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+async function escribirDocumentoPublico(raiz: string, documento: unknown): Promise<string> {
+  const directorio = path.join(raiz, 'openapi');
+  await mkdir(directorio, { recursive: true });
+  const ruta = path.join(directorio, 'openapi.json');
+  await writeFile(ruta, JSON.stringify(documento, null, 2), 'utf8');
+  return ruta;
+}
+
+describe('scripts/comparar-contrato — política "sin base" (D11)', () => {
+  it(
+    'CI9 — Sin documento base, el paso no falla pero deja rastro visible',
+    async () => {
+      const raiz = await crearRepositorioDePrueba();
+      try {
+        await writeFile(path.join(raiz, 'README.md'), 'sin contrato todavía\n', 'utf8');
+        commitearTodo(raiz, 'chore: inicial sin contrato');
+        const rutaActual = await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+
+        const resultado = await compararContrato(raiz, rutaActual);
+
+        expect(resultado.limpio).toBe(true);
+        expect(resultado.mensaje).toBe(MENSAJE_SIN_BASE);
+        expect(resultado.mensaje).toContain('SIN BASE DE COMPARACIÓN');
+        expect(resultado.mensaje.toLowerCase()).not.toContain(' ok');
+        expect(resultado.mensaje).not.toContain('sin cambios incompatibles');
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+
+  it(
+    'sin la rama main, el paso falla nombrando el comando git',
+    async () => {
+      const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-oasdiff-sin-main-'));
+      try {
+        // `git init` sin --initial-branch dentro de un repo aislado y sin ningún commit todavía:
+        // no existe refs/heads/main.
+        execFileSync('git', ['init', '--quiet', '--initial-branch=zzz-no-main'], { cwd: raiz });
+        execFileSync('git', ['config', 'user.email', 'prueba@luxeboreal.test'], { cwd: raiz });
+        execFileSync('git', ['config', 'user.name', 'Prueba'], { cwd: raiz });
+        execFileSync('git', ['commit', '--allow-empty', '--quiet', '-m', 'chore: inicial'], {
+          cwd: raiz,
+        });
+        const rutaActual = await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+
+        const resultado = await compararContrato(raiz, rutaActual);
+
+        expect(resultado.limpio).toBe(false);
+        expect(resultado.mensaje).toContain('rev-parse');
+        expect(resultado.mensaje).toContain('main');
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+
+  it(
+    'Docker no responde: el paso falla nombrando el problema, sin fingir una comparación real',
+    async () => {
+      const raiz = await crearRepositorioDePrueba();
+      try {
+        await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+        commitearTodo(raiz, 'feat: contrato inicial');
+        const rutaActual = await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+        const ejecutarOasdiffFalso = (): Promise<ResultadoHerramienta> =>
+          Promise.reject(new Error('No se pudo ejecutar Docker (¿Docker Desktop está corriendo?): ENOENT'));
+
+        const resultado = await compararContrato(raiz, rutaActual, {
+          ejecutarOasdiff: ejecutarOasdiffFalso,
+        });
+
+        expect(resultado.limpio).toBe(false);
+        expect(resultado.mensaje).toContain('Docker');
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+
+  it(
+    'CI9 — Con documento base, la comparación es real: sin cambios incompatibles queda en verde',
+    async () => {
+      const raiz = await crearRepositorioDePrueba();
+      try {
+        await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+        commitearTodo(raiz, 'feat: contrato inicial');
+        const rutaActual = await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+
+        const resultado = await compararContrato(raiz, rutaActual);
+
+        expect(resultado.limpio).toBe(true);
+        expect(resultado.mensaje).toContain('sin cambios incompatibles');
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
+
+  it(
+    'API10 — Cambio incompatible sin nueva versión bloquea el build',
+    async () => {
+      const raiz = await crearRepositorioDePrueba();
+      try {
+        await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+        commitearTodo(raiz, 'feat: contrato inicial');
+        const documentoConCampoQuitado = structuredClone(DOCUMENTO_BASE);
+        delete (
+          documentoConCampoQuitado.paths['/api/v1/ejemplos'].get.responses['200'].content[
+            'application/json'
+          ].schema.properties as { nombre?: unknown }
+        ).nombre;
+        const rutaActual = await escribirDocumentoPublico(raiz, documentoConCampoQuitado);
+
+        const resultado = await compararContrato(raiz, rutaActual);
+
+        expect(resultado.limpio).toBe(false);
+        expect(resultado.mensaje).toContain('cambios incompatibles');
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
+});

@@ -25,7 +25,7 @@ verde y su commit anotado.
 - [x] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
 - [x] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
 - [x] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
-- [ ] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
+- [x] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
 - [ ] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
 - [ ] T7 — Cierre: `git-cliff`, `strict_tdd: true`, `coverage_threshold`, documentación (S7)
 
@@ -777,6 +777,55 @@ convenciones que Spectral verifica sobre el documento interno de prueba).
 - `npm run contrato:lint` y `npm run contrato:diff` corren limpios contra el estado actual del
   repositorio (que hoy, al no tener `main` con `openapi/openapi.json` en el primer PR de la cadena,
   MUST reportar explícitamente "sin base" para `contrato:diff`, sin fallar).
+
+**Desviación registrada (montaje del contenedor de oasdiff):** `ejecutarHerramienta`/`docker run`
+no fija un `WORKDIR` propio para la imagen `tufin/oasdiff`, así que pasarle rutas relativas
+(`base.json`, `actual.json`) dejaba la comparación resolviendo contra el directorio de trabajo por
+defecto de la imagen, no `/repo` (el primer RED real de esta tarea: el escenario "con base, sin
+cambios" fallaba con `limpio: false` aunque los dos documentos eran idénticos). Se corrigió pasando
+las rutas absolutas dentro del contenedor (`/repo/base.json`, `/repo/actual.json`) — sin tocar
+`ejecutarHerramienta`/`construirArgumentosDocker` (D10 sin cambios, siguen montando un único origen
+genérico).
+
+**Desviación registrada (prueba del branch "Docker no responde"):** en vez de apagar Docker
+Desktop de verdad en la máquina de desarrollo (no reproducible de forma determinista en CI ni en
+sesiones futuras), `compararContrato` acepta una inyección de prueba opcional
+`OpcionesCompararContrato.ejecutarOasdiff` (por defecto, la `ejecutarHerramienta` real). El test de
+esa rama inyecta una función que rechaza con el mismo mensaje que produce
+`ejecutarHerramienta` cuando `docker` no responde (`herramientas.ts`, sin tocar), así que el
+comportamiento de producción (`scripts/cli.ts` llama `compararContrato()` sin opciones) sigue
+siendo el real en todo momento; solo el test de esa rama concreta sustituye la llamada a Docker.
+
+**Nota sobre el chequeo de la excepción `/health` de Spectral:** las cuatro reglas propias de
+`.spectral.yaml` (prefijo `/api/v1`, `operationId` camelCase, propiedades camelCase, errores
+`problem+json`) excluyen explícitamente `/health` con la misma condición que ya usa
+`filtrarDocumentoPublico` (D6); hoy ninguna de las cuatro se ejercita de verdad contra el estado
+commiteado (el público tiene `paths: {}` y el interno solo tiene `/health`, que está exento en las
+cuatro), así que quedan sin cobertura por un test unitario — se confirmó su sintaxis y su
+comportamiento de no bloqueo ejecutando `npm run contrato:lint` real dos veces (ver Work Unit
+Evidence). `npm run fronteras` (regla 11, sin cambios) sigue en verde: `scripts/comparar-contrato.ts`
+solo importa `./herramientas.js`, ningún archivo interno de `plataforma/`.
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- comparar-contrato` — exit 0; 5/5 tests en verde (CI9 sin base, CI9 con base, API10 cambio incompatible, sin rama `main`, Docker no responde). Primer intento real: 4/5 en verde y 1 en rojo (el bug de rutas relativas documentado arriba); corregido y reejecutado en verde. |
+| Runtime harness command/scenario and exact result | `npm run contrato:lint` real sobre `openapi/openapi.json` y `openapi/openapi.interno.json` — exit 0; 0 errores, 2 advertencias no bloqueantes del ruleset `spectral:oas` por defecto sobre `/health` en el documento interno (`operation-description`: falta descripción; `operation-tag-defined`: el tag `"Salud"` no está declarado en `tags` global — ninguna de las dos viene de las reglas propias de esta tarea, y ninguna bloquea `--fail-severity error`; se documentan aquí en vez de silenciarlas con una excepción de regla, como pide el paso 5 de REFACTOR). `npm run contrato:diff` real contra este repositorio (que sí tiene una rama `main` local, pero sin `openapi/openapi.json` commiteado todavía — primer PR de la cadena `stacked-to-main`) — exit 0, imprime exactamente `oasdiff: SIN BASE DE COMPARACIÓN — main no tiene openapi/openapi.json; este PR no fue comparado`. |
+| Full verify | `npm run lint`, `npm run typecheck`, `npm run fronteras` (94 módulos, 187 dependencias, sin violaciones) y `npm test` (30 archivos, 130 tests) — los cuatro en verde. `npm run verify` completo (con `contrato:deriva`) se corre en el checkpoint final de T6, cuando `ci` ya compone `contrato:lint`/`contrato:diff` junto a lo demás. |
+| Rollback boundary | Revertir `.spectral.yaml`, `scripts/comparar-contrato.ts`, `test/fronteras/comparar-contrato.spec.ts`, los dos comandos nuevos de `scripts/cli.ts`, `contrato:lint`/`contrato:diff` de `package.json`, y la devDependency `@stoplight/spectral-cli` de `package.json`/`package-lock.json` — devuelve el estado exacto de T4; nada de T1-T4 se toca. |
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD):** el diff real de esta tarea es
+**381 líneas de autoría** (`git diff --cached --numstat`, excluye `package-lock.json`), frente a
+`~250` estimadas en `design.md`/este archivo (~1.52×, proporción similar a T1/T2/T4). La diferencia
+es honesta: `.spectral.yaml` (55 líneas, cuatro reglas propias con comentarios que citan el
+requisito que verifican), `scripts/comparar-contrato.ts` (133 líneas, las cuatro ramas de D11 más
+sus tipos y comentarios) y su cobertura RED→GREEN completa en `test/fronteras/comparar-contrato.spec.ts`
+(181 líneas, 5 escenarios contra repositorios git aislados y Docker real). No se recortaron tests,
+comentarios ni documentación para acercarse al presupuesto. Siguiendo el mismo criterio que T3/T4
+(auto-chain sin pedir `size:exception` salvo que dividir la tarea fuera más honesto, lo que no
+aplica aquí — Spectral y oasdiff son la misma unidad de "lint y diff del contrato"), no se infiere
+ninguna excepción; queda anotado para que el usuario decida junto con el resto de la cadena.
 
 **commit:** `<pendiente>` — `feat(ci): agregar lint y diff del contrato OpenAPI con Spectral y oasdiff`
 
