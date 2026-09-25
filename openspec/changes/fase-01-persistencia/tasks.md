@@ -32,7 +32,7 @@ Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test
 verde y su commit anotado.
 
 - [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
-- [ ] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2)
+- [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
 - [ ] T3 — Repositorio de geografía + regla de fronteras 12 (S3)
 - [ ] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4)
 - [ ] T5 — Cierre documental (S5)
@@ -386,7 +386,9 @@ worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta cont
 | Arnés runtime | `npm run test:integracion -- migracion` — código 0; `migrate deploy`, `migrate diff --exit-code` y `migrate dev` reales contra bases temporales Postgres 16. |
 | Rollback boundary | Revertir `MODELO_DATOS.md`, `package.json`, `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/`, `prisma/README.md`, `src/plataforma/prisma/prisma.service.ts`, los cuatro archivos nuevos/modificados bajo `test/integracion/persistencia/` y el ajuste T2 de `vitest.config.ts`. No hay datos de negocio ni dependencias de T3. |
 
-**Review workload real**: 1,695 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
+**Commit de unidad de trabajo**: `e195a4fb244003036d87cf2595f180caa662e27a` — `feat(persistencia): agregar esquema v1 y guardias de migración`.
+
+**Review workload real**: 1,700 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
 
 **TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
 
