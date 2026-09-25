@@ -39,6 +39,9 @@ export default defineConfig({
             'test/fakes/**/*.spec.ts',
             'test/fronteras/**/*.spec.ts',
             'test/contrato/**/*.spec.ts',
+            // T1 (fase-01-persistencia, D6/D7): funciones puras del arnés de bases de prueba, sin
+            // tocar ningún Postgres real.
+            'test/soporte/**/*.spec.ts',
           ],
           exclude: ['test/fronteras/fixtures/**'],
         },
@@ -51,6 +54,13 @@ export default defineConfig({
           // Testcontainers (D1 de openspec/changes/fase-00a-esqueleto/design.md): levanta
           // Postgres 16 + Redis 7 reales una sola vez por corrida de este proyecto.
           globalSetup: ['test/soporte/contenedores.global-setup.ts'],
+          // T1 (D6): cada archivo de test de integración recrea su propia base `test_<poolId>`
+          // clonada de la plantilla, antes de que corra ningún test de ese archivo.
+          setupFiles: ['test/soporte/base-por-worker.setup.ts'],
+          // L3 de 00b + D6 de fase-01: el `beforeAll` de clonado corre bajo la contención real de
+          // Docker; el default de 10 s es el mismo riesgo que ya midió 00b. `testTimeout` (20 s,
+          // global, sin cambio) ya absorbe la contención de los tests individuales.
+          hookTimeout: 60_000,
         },
       },
       {
@@ -62,6 +72,9 @@ export default defineConfig({
           // (test/e2e/aplicacion.e2e-spec.ts) necesita Postgres 16 + Redis 7 reales, igual que el
           // proyecto `integracion`.
           globalSetup: ['test/soporte/contenedores.global-setup.ts'],
+          // T1 (D6): mismo arnés de base por worker que `integracion`.
+          setupFiles: ['test/soporte/base-por-worker.setup.ts'],
+          hookTimeout: 60_000,
         },
       },
     ],

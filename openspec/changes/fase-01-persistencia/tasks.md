@@ -31,7 +31,7 @@ cobertura de las 30 está completa y trazable, ver tabla de mapeo abajo).
 Estado de avance que lee `gentle-ai sdd-status`. Se marca `[x]` solo con el test de la tarea en
 verde y su commit anotado.
 
-- [ ] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
+- [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
 - [ ] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2)
 - [ ] T3 — Repositorio de geografía + regla de fronteras 12 (S3)
 - [ ] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4)
@@ -168,6 +168,71 @@ queda construido pero sin ejercitarse contra una migración real todavía (eso o
   `test_<poolId>` en vez del contenedor compartido.
 - `npm run verify` sigue en verde y por debajo de 3 minutos (PLT7); la duración real queda anotada
   aquí tras aplicar la tarea.
+
+**Evidencia real (máquina de desarrollo, 2026-09-25, Docker arriba)**:
+
+- `npm test -- bases-de-prueba` (RED, módulo inexistente):
+  ```
+  FAIL  |unit| test/soporte/bases-de-prueba.spec.ts [ test/soporte/bases-de-prueba.spec.ts ]
+  Error: Cannot find module './bases-de-prueba.js' imported from
+  .../test/soporte/bases-de-prueba.spec.ts
+  Test Files  1 failed (1)
+       Tests  no tests
+  ```
+  GREEN tras implementar `bases-de-prueba.ts`:
+  ```
+  Test Files  1 passed (1)
+       Tests  6 passed (6)
+  ```
+- `npm run test:integracion -- aislamiento` (RED, `setupFiles` inexistente):
+  ```
+  FAIL  |integracion| test/integracion/persistencia/aislamiento.spec.ts
+  Error: Cannot find module '.../test/soporte/base-por-worker.setup.ts'
+  Test Files  1 failed (1)
+       Tests  no tests
+  ```
+  GREEN tras implementar `prisma-cli.ts`, `base-por-worker.setup.ts` y modificar
+  `contenedores.global-setup.ts`/`infraestructura.ts`/`vitest.config.ts`:
+  ```
+  ✓ |integracion| .../aislamiento.spec.ts > Aislamiento de bases de prueba por worker (T1, integración)
+    > PER10 — Cada worker de pruebas usa su propia base de datos clonada de la plantilla 21ms
+  ✓ |integracion| .../aislamiento.spec.ts > Aislamiento de bases de prueba por worker (T1, integración)
+    > PER10 — Las filas escritas por un worker no son visibles para otro worker 325ms
+  Test Files  1 passed (1)
+       Tests  2 passed (2)
+  ```
+  Los títulos de `it(...)` son los literales exactos de los encabezados `#### Scenario:` de
+  `specs/persistencia/spec.md` (PER10), confirmados con `--reporter=verbose`.
+- `npm run verify` completo (`prisma:generar` → `lint` → `typecheck` → `fronteras` →
+  `contrato:deriva` → `vitest run --project unit --project integracion`): **verde, 39 archivos de
+  test / 163 tests pasados**, corridos dos veces para confirmar estabilidad — **~40 s** la primera
+  corrida (incluye `prisma:generar` con red fría de módulos) y **~35 s** la segunda, ambas muy por
+  debajo del presupuesto de 3 min (PLT7). Los tests de 00a/00b (`infraestructura.spec.ts`,
+  `salud.spec.ts`, `configuracion.spec.ts`, `test/e2e/aplicacion.e2e-spec.ts`, etc.) siguen en verde
+  sin cambiar su código, ahora contra `test_<poolId>` — confirmado leyendo `current_database()`
+  dentro del propio test de aislamiento.
+- `npm run test:e2e` por separado: verde, 1 archivo / 8 tests, ~8.7 s.
+- `npm run test:cobertura`: verde, 39/163 tests, cobertura de líneas **89.73%** (umbral 80% de
+  `vitest.config.ts`/`openspec/config.yaml`, sin cambios de este archivo en esta tarea) — no baja
+  respecto al 88.03% que dejó 00b.
+- `npm run lint`, `npm run typecheck`, `npm run fronteras`: verdes, sin violaciones (`fronteras`:
+  "no dependency violations found (95 modules, 189 dependencies cruised)").
+
+**Desviación registrada**: el comando exacto de la tabla "Suggested Work Units" de `tasks.md`
+(`npm test -- bases-de-prueba aislamiento`) solo ejecuta el proyecto `unit` (script `test` =
+`vitest run --project unit`); como `aislamiento.spec.ts` vive en `test/integracion/`, ese segundo
+filtro no selecciona ningún archivo bajo `unit` y el comando termina corriendo solo
+`bases-de-prueba.spec.ts`. No es un fallo: los dos escenarios de `aislamiento.spec.ts` sí se
+verificaron, con el comando correcto para el proyecto `integracion`
+(`npm run test:integracion -- aislamiento`), documentado arriba.
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD)**: el diff real de esta tarea es
+**365 líneas de autoría** (`git diff --cached --numstat`, excluyendo `package-lock.json`: 350
+adiciones + 15 borrados), frente a la estimación de ~230 de `design.md`. La diferencia (+135) es
+honesta: la matriz de amenazas exige que `nombreBaseDeWorker` valide **antes** de ejecutar SQL, lo
+que añadió su propio test unitario con tres casos (válido, SQL inyectado, vacío) más un cuarto caso
+de `urlConBase` que no estaba en el diseño explícito (conservar query string). Sigue **dentro** del
+presupuesto de ~400 líneas; no hace falta pedir `size:exception` para este PR1.
 
 ---
 
