@@ -2,7 +2,9 @@
 
 ## MODIFIED Requirements
 
-### Requirement: API1 — Contrato OpenAPI generado desde el código, en dos documentos commiteados
+### Requirement: API1 — Contrato OpenAPI generado desde el código
+
+(Reason: Modificado en 00b: el sistema genera dos documentos commiteados en git en vez de uno solo.)
 
 El sistema MUST generar, en una sola construcción del documento OpenAPI, dos documentos commiteados
 en git: `openapi/openapi.interno.json` (documento **interno**, completo: toda operación, incluida
@@ -14,9 +16,6 @@ fuente, mediante el soporte nativo de Standard Schema de NestJS 12 (`StandardSch
 conversión nativa de `@nestjs/swagger`). Los dos documentos commiteados en git MUST coincidir
 exactamente con los que el código genera en el momento del build; ninguno de los dos MUST editarse a
 mano.
-
-(Previously: exigía un solo documento, `openapi/openapi.json`, generado desde el código, sin
-distinguir un documento interno commiteado del que se deriva el público.)
 
 Fase que lo implementa: 00b (pipeline y convenciones)
 
@@ -49,6 +48,8 @@ de verdad.
 
 ### Requirement: API4 — Errores en formato RFC 9457
 
+(Reason: Modificado en 00b: ampliado de validación a toda respuesta de error, con catálogo de códigos estable y exención de `/health`.)
+
 Toda respuesta de error (de validación, de negocio o no manejada) MUST usar el formato
 `application/problem+json` de RFC 9457 y MUST incluir un código de error propio, tomado de un
 catálogo de códigos de error documentado y estable entre despliegues (ADR-0011), distinto del
@@ -61,10 +62,6 @@ El endpoint operativo `GET /health` queda **exento** de este formato: MUST conse
 de su chequeo de salud (Terminus, PLT4) en vez de `application/problem+json`, porque responde a
 orquestadores de infraestructura (Docker, Dokploy, Uptime Kuma) y no es un recurso del contrato de
 negocio hacia el cliente de back office (API8).
-
-(Previously: solo cubría el escenario de error de validación del pipe, sin exigir un catálogo de
-códigos estables, sin cubrir errores no manejados y sin distinguir la excepción operativa de
-`/health`.)
 
 Fase que lo implementa: 00b (convención, catálogo, errores no manejados, exención de `/health`), cada
 fase con endpoints
@@ -99,7 +96,9 @@ fase con endpoints
   `application/problem+json`, y no incluye ningún código del catálogo de errores del cliente de back
   office.
 
-### Requirement: API9 — Documentación interactiva no accesible públicamente fuera de desarrollo
+### Requirement: API9 — Documentación interactiva no accesible públicamente en producción
+
+(Reason: Modificado en 00b: ampliado de protección en producción a protección en todo entorno distinto de desarrollo, y agregado rechazo de arranque.)
 
 La interfaz Scalar (`/docs`) MUST estar protegida por autenticación o desactivada en cualquier entorno
 que no sea desarrollo (incluye preproducción y producción); MUST NOT ser accesible sin protección para
@@ -107,10 +106,6 @@ cualquiera que conozca la URL fuera del entorno de desarrollo. Además, el proce
 arrancar cuando la configuración combina `NODE_ENV=production` con la variable que habilita `/docs`
 en verdadero (PLT1): la protección no depende únicamente de una comprobación en tiempo de ejecución
 que alguien podría olvidar, sino de una validación de configuración que impide el arranque.
-
-(Previously: solo exigía protección "en producción"; ahora exige protección o desactivación en
-cualquier entorno fuera de desarrollo, incluida preproducción, y agrega el rechazo de arranque cuando
-`/docs` se habilita en producción.)
 
 Fase que lo implementa: 00b (pipeline, rechazo de arranque), 09 (endurecimiento en producción)
 
@@ -134,7 +129,9 @@ Fase que lo implementa: 00b (pipeline, rechazo de arranque), 09 (endurecimiento 
 - Entonces la validación de configuración de arranque (PLT1) lo rechaza y el proceso no arranca, de
   modo que `/docs` no puede encenderse en producción ni por accidente.
 
-### Requirement: API8 — Endpoints internos fuera del documento público, presentes en el documento interno
+### Requirement: API8 — Endpoints internos fuera del documento público
+
+(Reason: Modificado en 00b: agregada la presencia en el documento interno commiteado para distinguir del público distribuido.)
 
 Los endpoints internos (health check operativo, webhook de Chatwoot, kill switch de administración)
 MUST etiquetarse `internal` y MUST excluirse del documento OpenAPI público servido en `/docs` y del
@@ -144,9 +141,6 @@ con la etiqueta `internal`, en el documento OpenAPI **interno** commiteado
 distribuye, no del contrato completo que queda commiteado para lint y para el chequeo de deriva.
 `GET /health` MUST excluirse del documento público aunque no lleve el prefijo `/api/v1` (API2): es una
 ruta operativa para orquestadores de infraestructura, no un recurso del contrato de negocio.
-
-(Previously: la exclusión solo se describía sobre "el documento público", sin nombrar un documento
-interno commiteado en el que el endpoint interno sí queda documentado.)
 
 Fase que lo implementa: 00b (exclusión de `/health` del documento público y su presencia en el
 documento interno, cuando exista el pipeline OpenAPI; en 00a solo aplican la ruta sin versión de API2
