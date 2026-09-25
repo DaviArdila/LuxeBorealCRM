@@ -726,7 +726,7 @@ ya trae PR1 y PR2 con excepción aceptada explícitamente y PR3 sin ella.
 política global, no por el proyecto. No bloquea ningún escenario de "Hecho cuando"; queda como
 seguimiento explícito para el usuario o una sesión futura con permisos ajustados.
 
-**commit:** `<pendiente>` — `feat(plataforma/salud): documentar /health como internal y montar /docs con Scalar`
+**commit:** `64a4e0ad1b3f854f69076b9a4a7e8fb81349b4e4` — `feat(plataforma/salud): documentar /health como internal y montar /docs con Scalar`
 
 ---
 
