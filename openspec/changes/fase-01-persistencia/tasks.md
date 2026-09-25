@@ -249,8 +249,8 @@ migración inicial no se parte sin cambiar ese acuerdo (`proposal.md` Risks fila
 **Dependencias**: T1 (el arnés con base por worker ya existe; el `globalSetup` de T1 ya sabe migrar
 `plantilla_luxe` cuando `prisma/migrations/` deja de estar vacío).
 
-**Checkpoints `[sin verificar]` de esta tarea** (design.md D2, D4.5) — se resuelven en el primer
-commit de esta tarea, antes de escribir el resto del esquema, y su resultado real se anota aquí:
+**Checkpoints de esta tarea** (design.md D2, D4.5) — resultados reales de ejecución registrados
+abajo:
 
 1. **`uuid(7)` en Prisma 7.10.0**: `design.md` D2 lo verificó de forma **estática** (leyendo
    `node_modules/prisma/package.json` y el runtime del cliente generado), pero no lo ejecutó. Esta
@@ -314,35 +314,97 @@ es parte de "Hecho cuando", no un detalle de estilo, por la lección de `verify-
 
 **RED → GREEN → REFACTOR**:
 
-1. RED (checkpoint 1): script temporal mínimo con un solo modelo `id String @id @default(uuid(7)) @db.Uuid`
-   contra `prisma validate`; observar si pasa o falla antes de escribir el esquema completo.
-2. RED: `MODELO_DATOS.md` — aplicar los 8 ajustes de D12; sin test propio (es documento), pero es
-   precondición para todo lo que sigue (regla `§design` de `openspec/config.yaml`).
-3. RED: `test/integracion/persistencia/migracion.spec.ts` — PER1, contra una base vacía sin
-   `prisma/migrations/` todavía. Correr `npm run test:integracion -- migracion` y observar fallo
-   (no hay migración que aplicar).
-4. RED: `test/integracion/persistencia/invariantes-esquema.spec.ts` — los 9 escenarios de PER2-PER5.
-   Observar fallo (el esquema sigue siendo el mínimo de 00a, sin las 21 tablas).
-5. RED: `test/integracion/persistencia/restricciones-manuales.spec.ts` — los 7 escenarios de
-   PER6-PER9. Observar fallo (ni las tablas ni las restricciones existen).
-6. GREEN: escribir `prisma/schema.prisma` completo (D1); generar la migración con
-   `npm run prisma:migrar -- --name esquema_v1 --create-only`; editar a mano los 3 bloques `[manual]`
-   con su comentario de marca; aplicarla con `prisma migrate deploy` contra la plantilla; correr los
-   tres specs hasta que pasen.
-7. RED/GREEN (checkpoint 2): tras aplicar la migración editada, correr
-   `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` y
-   anotar el código real; si es 2, agregar el paso obligatorio a `prisma/README.md` antes de cerrar
-   la tarea.
-8. GREEN: escribir la verificación de marcas `[manual]` (lee `prisma/migrations/**`, consulta
-   `pg_indexes`/`pg_constraint`) que exige PER9; correr `restricciones-manuales.spec.ts` completo.
-9. REFACTOR: actualizar el TSDoc de `prisma.service.ts` (de "sin modelos" a la lista real, D5, sin
-   tocar su código); escribir `prisma/README.md` con el patrón `[manual]` documentado para
-   migraciones futuras.
+1. **Esquema/migración ya presentes al retomar**: `schema.prisma`, la migración inicial y el primer
+   test PER1 estaban en el worktree. No se dispone de la salida RED del trabajo interrumpido y no se
+   inventa. Esta continuación no reescribió el esquema: creó primero los tests de aceptación y
+   confirmó luego los 19 escenarios y los checkpoints contra Postgres real. El ciclo histórico
+   RED→GREEN de esos archivos heredados queda **no evidenciado**.
+2. **RED de la nueva guardia PER9**: el primer run de `restricciones-manuales.spec.ts` detectó que
+   la regex de marcas era inválida. Tras corregirla, el test de mutación detectó que un `CHECK` con
+   el mismo nombre pero con `cantidad >= 0` se aceptaba como correcto (`expected true to be false`).
+3. **GREEN**: se registraron explícitamente las tres formas `[manual]`; la guardia compara tabla,
+   columnas, unicidad y `NULLS NOT DISTINCT` del índice, y tabla/expresión validada de cada `CHECK`.
+   Los 8 tests de restricciones pasaron. Los 10 tests de invariantes también pasaron.
+4. **REFACTOR**: se documentó el registro en `prisma/README.md`, se añadió el test runtime de
+   `migrate dev`/ausencia de defaults y se ajustaron los workers de Vitest tras medir contención en
+   `npm run verify` (detalle abajo). Se reejecutaron los tests afectados después de cada cambio.
+
+**Evidencia real (máquina local con Docker, 2026-09-25)**:
+
+- `npm exec -- prisma validate`: código **0**; salida: `The schema at prisma\\schema.prisma is valid`.
+- `npm run prisma:generar`: código **0**; cliente Prisma **7.10.0** generado en
+  `src/plataforma/prisma/generado/`.
+- RED de PER9 antes de corregir la guardia: `npm run test:integracion -- restricciones-manuales`
+  terminó con **1 fallo / 7 aprobados**; el test de condición alterada recibió `ok: true`. GREEN:
+  mismo comando terminó con **1 archivo / 8 tests aprobados**.
+- `npm run test:integracion -- persistencia`: código **0**, **4 archivos / 23 tests aprobados**
+  (21 de T2 y los 2 escenarios PER10 de T1).
+- `npm test -- bases-de-prueba`: código **0**, **1 archivo / 6 tests aprobados**; incluye los casos
+  de la matriz de amenazas `poolId = '1; DROP DATABASE x'` y vacío (reutilizados de T1).
+- Ejecución runtime con salida habilitada:
+  `$env:LUXE_T2_EVIDENCIA_RUNTIME = '1'; npm run test:integracion -- migracion` → código **0**,
+  **1 archivo / 3 tests aprobados**. Los subprocesos de Prisma usaron bases temporales Testcontainers
+  creadas desde `template0` y se eliminaron al terminar:
+
+  ```text
+  prisma migrate deploy: código 0
+  1 migration found in prisma/migrations
+  Applying migration `20260925210822_esquema_v1`
+  All migrations have been successfully applied.
+
+  prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code:
+  código 0 — No difference detected.
+
+  prisma migrate dev --name verificar_esquema_v1: código 0
+  Applying migration `20260925210822_esquema_v1`
+  Your database is now in sync with your schema.
+  ```
+
+- El test runtime comprobó **17 columnas PK UUID y 0 defaults SQL**, que las migraciones quedaron
+  finalizadas/no revertidas y que un `create()` de `PrismaService` produjo un UUID con nibble `7`.
+  El diff real dio código **0** aun con las tres restricciones `[manual]`, así que `migrate diff` no
+  las detecta; la guardia PER9 es necesaria.
+- `npm run verify`: código **0**, **42 archivos / 184 tests aprobados**, duración **45,98 s**. Incluye
+  generación, lint, typecheck, fronteras (95 módulos / 189 dependencias), deriva de ambos contratos y
+  los proyectos unitario + integración. `npm run test:e2e`: código **0**, **1 archivo / 8 tests
+  aprobados**, duración **11,63 s**.
+- Para cumplir D6 de `design.md`, el primer verify real se midió por encima de 150 s y hubo timeouts
+  por contención entre tareas que lanzan Docker/Git/Prisma. Se fijaron 4 workers en `unit` e
+  `integracion`; Vitest exige `sequence.groupOrder` distinto cuando los límites por proyecto
+  difieren. Con esa configuración el comando exacto `npm run verify` quedó en verde, por debajo de
+  3 minutos.
+
+**Límite de evidencia heredada**: las pruebas, runtime y criterios de aceptación actuales están en
+verde, pero el RED histórico de `schema.prisma`/`migration.sql` no se puede reconstruir desde este
+worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta continuación.
+
+**Work Unit Evidence**:
+
+| Evidencia | Resultado |
+|---|---|
+| Test enfocado | `npm run test:integracion -- persistencia` — código 0; 4 archivos / 23 tests aprobados. |
+| Arnés runtime | `npm run test:integracion -- migracion` — código 0; `migrate deploy`, `migrate diff --exit-code` y `migrate dev` reales contra bases temporales Postgres 16. |
+| Rollback boundary | Revertir `MODELO_DATOS.md`, `package.json`, `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/`, `prisma/README.md`, `src/plataforma/prisma/prisma.service.ts`, los cuatro archivos nuevos/modificados bajo `test/integracion/persistencia/` y el ajuste T2 de `vitest.config.ts`. No hay datos de negocio ni dependencias de T3. |
+
+**Review workload real**: 1,695 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
+
+**TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
+
+| Parte de T2 | Safety net | RED | GREEN | TRIANGULATE | REFACTOR |
+|---|---|---|---|---|---|
+| Esquema y migración heredados | PER1 2/2 ya pasaba al retomar | No observado en esta continuación: los archivos de implementación ya existían y no se dispone de evidencia anterior | Checkpoints y 19 escenarios PER1-PER9 pasan ahora | 19 escenarios exactos | No se reescribió el esquema heredado |
+| Guardias `[manual]` | Helper parcial inspeccionado | Regex inválida y, después, mutación de `CHECK` aceptada incorrectamente | 8/8 tests de restricciones pasan tras registrar las formas esperadas | Inserciones inválidas, valor válido, objeto ausente y definición alterada | Consulta de catálogo verifica forma, no solo nombre |
+| Presupuesto de ejecución | Verify inicial con contención | Timeouts y configuración Vitest inválida al diferir `maxWorkers` con mismo `groupOrder` | Verify exacto 42/184, 45,98 s | Unit + integración agrupados; e2e aparte 8/8 | Límite 4 y grupos secuenciales por proyecto |
+
+**Límite de TDD heredado**: no se afirma un RED previo para `schema.prisma`/`migration.sql`; el
+worktree contenía esa implementación antes de iniciar esta continuación. Sus criterios sí quedaron
+verificados en bases PostgreSQL reales. La única desviación de proceso que no puede reconstruirse es
+ese orden histórico; no se ocultó ni se fabricó.
 
 **Hecho cuando**:
 - Los 19 escenarios listados pasan, cada uno con el título exacto de su encabezado `#### Scenario:`
   como nombre del test.
-- Ambos checkpoints `[sin verificar]` quedan resueltos y su resultado real anotado en esta sección
+- Ambos checkpoints quedan resueltos y su resultado real anotado en esta sección
   (código de salida de `prisma validate`, del `create` con nibble de versión 7, y del
   `migrate diff --exit-code`).
 - `prisma migrate deploy` real contra una base vacía termina con código 0 y su salida completa queda

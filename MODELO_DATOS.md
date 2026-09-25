@@ -21,6 +21,22 @@
 | Negocio | un solo negocio, sin `cuenta_id` (ADR-0006) | |
 | Mensajes | **no** se guarda el contenido de las conversaciones; Chatwoot es la fuente (P3) | Privacidad, sin duplicar |
 
+### Ajustes de la Fase 01 al bajar el modelo a Prisma (D12 de `design.md`)
+
+Aparecieron al escribir `prisma/schema.prisma`; se registran aquí primero, como pide
+`openspec/config.yaml` §design, y el usuario los ve al aprobar el diseño de la fase.
+
+| # | Ajuste | Decisión |
+|---|---|---|
+| 1 | Generación de ids | La hace el **cliente Prisma** (`@default(uuid(7))`), confirmado en ejecución en la Fase 01 (T2): `prisma validate` lo acepta, la migración generada **no** trae `DEFAULT` en la columna `id`, y un `create()` real devuelve un id con nibble de versión `7`. Postgres 16 no tiene `uuidv7()` nativo; un `INSERT` en SQL crudo MUST traer su propio `id` |
+| 2 | Marcas de tiempo | `timestamptz(3)` en Postgres (`@db.Timestamptz(3)` en Prisma, porque `DateTime` sin `@db` sería `timestamp(3)` sin zona); `creado`/`actualizado` llevan `@default(now())` como red de seguridad para SQL crudo y herramientas, pero **la aplicación las escribe explícitamente desde el `Clock` inyectado** (regla crítica 6 de `CLAUDE.md`); sin `@updatedAt` |
+| 3 | `conversacion.version` | `int`, **default `0`** |
+| 4 | `uso_llm.costo_estimado_usd` | **`decimal(12,6)`** (§7 decía solo "decimal") |
+| 5 | Defaults | Solo los que este documento ya fija (`activo`, `orden`, `stock`, `stock_minimo`, `acepta_contacto`, `peso_min_g`, `contraentrega_disponible`, `es_portada`) más los técnicos: `version = 0`, `intentos = 0`, las fechas de creación/recepción con `now()` y `outbox.proximo_intento` con `now()`. **Sin default para estados de negocio** (`conversacion.estado`, `lead.estado`, `venta.estado`, `envio.estado`, booleanos de `lead`): los fija el caso de uso de su fase, no el esquema |
+| 6 | `ON DELETE` no especificado en este documento | Geografía: `Restrict` siempre, incluidas las FK opcionales, porque en `zona_sin_cobertura` y `tarifa_estimada` el `NULL` *significa* "todo el departamento" o "nacional" y borrar el catálogo DANE no es una operación normal. `venta.contacto_id`, `venta.usuario_id`, `envio.venta_id` y `movimiento_inventario.usuario_id`: `Restrict` (son registros contables; los usuarios se desactivan, no se borran, y un `SetNull` violaría el `CHECK` del ajuste 7). `uso_llm.conversacion_id`, `venta.lead_id` y `evento_fuera_cobertura.producto_id`: `SetNull` (permiten borrar un contacto o un producto sin arrastrar historial de costo/ventas) |
+| 7 | `CHECK (cantidad > 0)` en `movimiento_inventario` | Se hace cumplir en la base la frase de §6 "siempre positiva; el signo lo da `tipo`", con una restricción `CHECK` escrita a mano (Prisma no la expresa por sí solo) |
+| 8 | `evento_entrante.origen`, `outbox.tipo` | `text` (§8 no les define un enum: sus valores los definen las fases 04-05 que los escriben, no el esquema) |
+
 ## 2. Mapa global
 
 ```mermaid
@@ -199,7 +215,7 @@ Una fila por **conversación de Chatwoot** (sesión), no por cliente. Sin mensaj
 | `canal` | enum `canal_conversacion` | no | `whatsapp`, `instagram`, `messenger`, `web`, `otro` (de `conversation.channel`) |
 | `estado` | enum `estado_atencion` | no | `bot`, `handoff_pendiente`, `humano`, `pausado` |
 | `expira_control_en` | timestamptz | sí | cuándo vuelve al bot (antes `expira_humano_en`) |
-| `version` | int | no | bloqueo optimista de las transiciones (ADR-0003) |
+| `version` | int | no | bloqueo optimista de las transiciones (ADR-0003); default `0` |
 | `creado`, `actualizado` | timestamptz | no | |
 
 ### `lead` — CAMBIA (embudo, P2)
@@ -237,7 +253,7 @@ enlazada) / `perdido` (con motivo) / `descartado` (no era lead real — sirve pa
 | `id` | uuid | no | PK |
 | `producto_id` | uuid | no | FK, restrict |
 | `tipo` | enum | no | `entrada`, `salida`, `ajuste`, `devolucion` |
-| `cantidad` | int | no | siempre positiva; el signo lo da `tipo` |
+| `cantidad` | int | no | siempre positiva; el signo lo da `tipo` (`CHECK cantidad > 0`, escrito a mano en la migración) |
 | `saldo_despues` | int | no | |
 | `motivo` | text | sí | |
 | `venta_id` | uuid | sí | FK, set null |
@@ -269,9 +285,9 @@ confirmado por Interrapidísimo al despachar**, `direccion`, `localidad` (copias
 
 | Tabla | Columnas clave | Para qué |
 |---|---|---|
-| `evento_entrante` | `id`, `origen`, `id_externo`, `payload` jsonb, `recibido_en`, `procesado_en?`, `intentos`, `error?`; único `(origen, id_externo)` | Inbox: ningún evento aceptado se pierde; el único es la deduplicación (ADR-0004). Se purga a los 30 días |
-| `outbox` | `id`, `tipo`, `payload` jsonb, `creado`, `enviado_en?`, `intentos`, `proximo_intento`, `error?` | Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004) |
-| `uso_llm` | `id`, `conversacion_id?`, `proveedor`, `modelo`, `tokens_entrada`, `tokens_salida`, `tokens_cache`, `costo_estimado_usd` decimal, `latencia_ms`, `exito`, `creado` | Costo por turno y techo de gasto (P9) |
+| `evento_entrante` | `id`, `origen` text, `id_externo`, `payload` jsonb, `recibido_en`, `procesado_en?`, `intentos`, `error?`; único `(origen, id_externo)` | Inbox: ningún evento aceptado se pierde; el único es la deduplicación (ADR-0004). Se purga a los 30 días |
+| `outbox` | `id`, `tipo` text, `payload` jsonb, `creado`, `enviado_en?`, `intentos`, `proximo_intento`, `error?` | Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004) |
+| `uso_llm` | `id`, `conversacion_id?`, `proveedor`, `modelo`, `tokens_entrada`, `tokens_salida`, `tokens_cache`, `costo_estimado_usd` `decimal(12,6)`, `latencia_ms`, `exito`, `creado` | Costo por turno y techo de gasto (P9) |
 
 `payload` de `evento_entrante` guarda el evento de Chatwoot **redactado** (P15): ids, tipo de evento y
 metadatos, **nunca** el texto del mensaje, adjuntos ni datos personales. Para reprocesar, el contenido

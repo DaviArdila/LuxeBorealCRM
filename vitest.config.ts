@@ -44,6 +44,10 @@ export default defineConfig({
             'test/soporte/**/*.spec.ts',
           ],
           exclude: ['test/fronteras/fixtures/**'],
+          // El límite de cuatro workers evita que los tests unitarios que lanzan Docker, Git y
+          // CLIs saturen el host mientras se prepara el proyecto de integración de T2.
+          maxWorkers: 4,
+          sequence: { groupOrder: 0 },
         },
       },
       {
@@ -61,6 +65,13 @@ export default defineConfig({
           // Docker; el default de 10 s es el mismo riesgo que ya midió 00b. `testTimeout` (20 s,
           // global, sin cambio) ya absorbe la contención de los tests individuales.
           hookTimeout: 60_000,
+          // D6 de fase-01: con el esquema y las migraciones de T2, `npm run verify` superó 150 s
+          // y los procesos de Docker/Prisma agotaron timeouts bajo el paralelismo sin límite. El
+          // tope de cuatro workers mantiene la contención dentro del presupuesto medido.
+          maxWorkers: 4,
+          // Vitest exige groupOrder distinto al de `unit` cuando los proyectos tienen distintos
+          // maxWorkers; ejecutar integración después del unitario también evita competir por Docker.
+          sequence: { groupOrder: 1 },
         },
       },
       {

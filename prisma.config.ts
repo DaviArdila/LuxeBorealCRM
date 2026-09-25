@@ -18,4 +18,11 @@ export default defineConfig({
   datasource: {
     url: process.env.DATABASE_URL ?? 'postgresql://generar:generar@localhost:5432/generar',
   },
+  // Explícito desde la Fase 01 (T2, design.md §"File Changes"): mismo valor que el default de
+  // Prisma, pero declarado para que la ubicación de las migraciones no dependa de una convención
+  // implícita. Sin `seed`: la semilla DANE (T4) es un comando explícito de `package.json`
+  // (`npm run semilla:geografia`), nunca un efecto secundario de `prisma migrate`.
+  migrations: {
+    path: path.join('prisma', 'migrations'),
+  },
 });

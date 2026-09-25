@@ -1,8 +1,18 @@
-// Esquema mínimo de 00a (D6 de openspec/changes/fase-00a-esqueleto/design.md): solo `generator` y
-// `datasource`, sin modelos. El diseño de datos v1 es de la Fase 01 (MODELO_DATOS.md); este
-// archivo únicamente permite generar un `PrismaClient` capaz de `$queryRaw` para el health check
-// (T9) y este smoke de `SELECT 1` (T8). La URL de conexión NO va aquí con Prisma 7: vive en
-// `prisma.config.ts` (raíz).
+// Esquema v1 de LuxeBorealCRM (Fase 01 — persistencia). Fuente de verdad del diseño de datos:
+// `MODELO_DATOS.md` (con los ajustes D12 de `openspec/changes/fase-01-persistencia/design.md`
+// ya aplicados ahí primero, `openspec/config.yaml` §design). Este archivo sigue el mismo orden de
+// secciones que `MODELO_DATOS.md` (D1): generator/datasource, §3 Catálogo, §4 Envíos, §5 Atención,
+// §6 Operación, §7 Técnica, §8 Enums al final.
+//
+// Convenciones (D1, `MODELO_DATOS.md` §1): modelos en PascalCase singular, campos en camelCase,
+// `@@map`/`@map` a snake_case; `id uuid` v7 generado por el cliente Prisma (`@default(uuid(7))`,
+// D2 — confirmado en ejecución en T2: `prisma validate` lo acepta, la migración no trae `DEFAULT`
+// en `id`, y un `create()` real devuelve un id con nibble de versión 7), salvo las excepciones de
+// llave natural de ADR-0007 (`departamento.id`, `ciudad.id`, `parametro.clave`,
+// `excepcion_horario.fecha`); dinero en `Int` (COP); porcentajes en `Decimal(5,2)`; fechas en
+// `timestamptz(3)` (D3: default `now()` como red de seguridad, la aplicación las escribe desde
+// `Clock`, por eso no se usa `@updatedAt`); `jsonb` como `Json @db.JsonB`; enums nativos con
+// valores snake_case tal cual `MODELO_DATOS.md` §8.
 generator client {
   provider = "prisma-client"
   output   = "../src/plataforma/prisma/generado"
@@ -10,4 +20,518 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------------------------
+// §3 Catálogo
+// ---------------------------------------------------------------------------------------------
+
+model CategoriaProducto {
+  id          String     @id @default(uuid(7)) @db.Uuid
+  nombre      String     @unique
+  orden       Int        @default(0)
+  activo      Boolean    @default(true)
+  creado      DateTime   @default(now()) @db.Timestamptz(3)
+  actualizado DateTime   @default(now()) @db.Timestamptz(3)
+  productos   Producto[]
+
+  @@map("categoria_producto")
+}
+
+model Producto {
+  id                          String                 @id @default(uuid(7)) @db.Uuid
+  sku                         String                 @unique
+  categoriaId                 String?                @map("categoria_id") @db.Uuid
+  nombre                      String
+  descripcionCorta            String                 @map("descripcion_corta")
+  descripcionLarga            String                 @map("descripcion_larga")
+  precioCop                   Int                    @map("precio_cop")
+  activo                      Boolean                @default(true)
+  pesoGramos                  Int?                   @map("peso_gramos")
+  largoMm                     Int?                   @map("largo_mm")
+  anchoMm                     Int?                   @map("ancho_mm")
+  altoMm                      Int?                   @map("alto_mm")
+  stock                       Int                    @default(0)
+  stockMinimo                 Int                    @default(0) @map("stock_minimo")
+  claveCollage                String?                @map("clave_collage")
+  fotosHash                   String?                @map("fotos_hash")
+  creado                      DateTime               @default(now()) @db.Timestamptz(3)
+  actualizado                 DateTime               @default(now()) @db.Timestamptz(3)
+  categoria                   CategoriaProducto?     @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  fotos                       Foto[]
+  movimientos                 MovimientoInventario[]
+  ventaItems                  VentaItem[]
+  leads                       Lead[]
+  eventosFueraCobertura       EventoFueraCobertura[]
+  contactosComoUltimoProducto Contacto[]             @relation("ContactoUltimoProducto")
+
+  @@index([activo])
+  @@index([categoriaId])
+  @@map("producto")
+}
+
+model Foto {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  productoId   String   @map("producto_id") @db.Uuid
+  orden        Int
+  claveArchivo String   @map("clave_archivo")
+  esPortada    Boolean  @default(false) @map("es_portada")
+  origenUrl    String?  @map("origen_url")
+  creado       DateTime @default(now()) @db.Timestamptz(3)
+  actualizado  DateTime @default(now()) @db.Timestamptz(3)
+  producto     Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@map("foto")
+}
+
+/// `valor` se valida en código con un registro tipado por `clave` (MODELO_DATOS.md §3); Prisma
+/// solo guarda `Json`.
+model Parametro {
+  clave       String   @id
+  valor       Json     @db.JsonB
+  actualizado DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("parametro")
+}
+
+// ---------------------------------------------------------------------------------------------
+// §4 Envíos — geografía DANE (llave natural, ADR-0007) y cobertura/tarifas (P4)
+// ---------------------------------------------------------------------------------------------
+
+/// Código DANE de 2 dígitos como llave natural (ADR-0007); se siembra desde el listado oficial
+/// DIVIPOLA (T4), no se edita a mano.
+model Departamento {
+  id                    String                 @id
+  nombre                String                 @unique
+  ciudades              Ciudad[]
+  zonasSinCobertura     ZonaSinCobertura[]
+  tarifasEstimadas      TarifaEstimada[]
+  eventosFueraCobertura EventoFueraCobertura[]
+
+  @@map("departamento")
+}
+
+/// Código DANE de 5 dígitos como llave natural (ADR-0007); único por departamento.
+model Ciudad {
+  id                    String                 @id
+  departamentoId        String                 @map("departamento_id")
+  nombre                String
+  departamento          Departamento           @relation(fields: [departamentoId], references: [id], onDelete: Restrict)
+  zonasSinCobertura     ZonaSinCobertura[]
+  tarifasEstimadas      TarifaEstimada[]
+  eventosFueraCobertura EventoFueraCobertura[]
+  contactos             Contacto[]
+  envios                Envio[]
+
+  @@unique([departamentoId, nombre])
+  @@map("ciudad")
+}
+
+/// Lista corta de exclusiones (MODELO_DATOS.md §4): si el destino no está aquí, hay cobertura.
+/// Único `(departamento_id, ciudad_id)` con `NULLS NOT DISTINCT` para que no haya dos filas de
+/// "todo el departamento" (bug de `tarifa_envio` del prototipo) — cláusula escrita a mano en la
+/// migración (D4, marca `[manual]`); Prisma conoce el índice por su nombre (`map:`) pero no ve la
+/// cláusula `NULLS NOT DISTINCT`.
+model ZonaSinCobertura {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  departamentoId String       @map("departamento_id")
+  ciudadId       String?      @map("ciudad_id")
+  motivo         String?
+  creado         DateTime     @default(now()) @db.Timestamptz(3)
+  actualizado    DateTime     @default(now()) @db.Timestamptz(3)
+  departamento   Departamento @relation(fields: [departamentoId], references: [id], onDelete: Restrict)
+  ciudad         Ciudad?      @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+
+  // [manual] NULLS NOT DISTINCT se agrega a mano en la migración (D4, prisma/README.md, PER6/PER9).
+  @@unique([departamentoId, ciudadId], map: "zona_sin_cobertura_departamento_id_ciudad_id_key")
+  @@map("zona_sin_cobertura")
+}
+
+/// Lo que el bot cita: un rango, nunca un precio exacto (MODELO_DATOS.md §4). Sin unicidad en
+/// esta fase (se decide en la Fase 02, cuando se implemente la búsqueda de "más específica que
+/// calce").
+model TarifaEstimada {
+  id                      String        @id @default(uuid(7)) @db.Uuid
+  departamentoId          String?       @map("departamento_id")
+  ciudadId                String?       @map("ciudad_id")
+  pesoMinG                Int           @default(0) @map("peso_min_g")
+  pesoMaxG                Int?          @map("peso_max_g")
+  rangoMinCop             Int           @map("rango_min_cop")
+  rangoMaxCop             Int           @map("rango_max_cop")
+  diasMin                 Int           @map("dias_min")
+  diasMax                 Int           @map("dias_max")
+  contraentregaDisponible Boolean       @default(true) @map("contraentrega_disponible")
+  creado                  DateTime      @default(now()) @db.Timestamptz(3)
+  actualizado             DateTime      @default(now()) @db.Timestamptz(3)
+  departamento            Departamento? @relation(fields: [departamentoId], references: [id], onDelete: Restrict)
+  ciudad                  Ciudad?       @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+
+  @@map("tarifa_estimada")
+}
+
+/// Guarda lo que escribió el cliente y, si se pudo traducir, el código DANE (MODELO_DATOS.md §4):
+/// sirve para decidir si ampliar la cobertura.
+model EventoFueraCobertura {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  productoId        String?       @map("producto_id") @db.Uuid
+  departamentoTexto String        @map("departamento_texto")
+  ciudadTexto       String?       @map("ciudad_texto")
+  departamentoId    String?       @map("departamento_id")
+  ciudadId          String?       @map("ciudad_id")
+  fecha             DateTime      @default(now()) @db.Timestamptz(3)
+  producto          Producto?     @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  departamento      Departamento? @relation(fields: [departamentoId], references: [id], onDelete: Restrict)
+  ciudad            Ciudad?       @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+
+  @@map("evento_fuera_cobertura")
+}
+
+// ---------------------------------------------------------------------------------------------
+// §5 Atención
+// ---------------------------------------------------------------------------------------------
+
+/// Llave propia (P1): el teléfono nunca es identidad. `chatwoot_contact_id` une la misma persona
+/// entre canales (Chatwoot, ADR-0005).
+model Contacto {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  chatwootContactId Int?           @unique @map("chatwoot_contact_id")
+  telefono          String?        @unique
+  nombre            String?
+  documento         String?        @unique
+  correo            String?
+  telefonoAlterno   String?        @map("telefono_alterno")
+  direccion         String?
+  localidad         String?
+  departamentoTexto String?        @map("departamento_texto")
+  ciudadTexto       String?        @map("ciudad_texto")
+  ciudadId          String?        @map("ciudad_id")
+  ultimoProductoId  String?        @map("ultimo_producto_id") @db.Uuid
+  aceptaContacto    Boolean        @default(false) @map("acepta_contacto")
+  creado            DateTime       @default(now()) @db.Timestamptz(3)
+  actualizado       DateTime       @default(now()) @db.Timestamptz(3)
+  ciudad            Ciudad?        @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+  ultimoProducto    Producto?      @relation("ContactoUltimoProducto", fields: [ultimoProductoId], references: [id], onDelete: SetNull)
+  conversaciones    Conversacion[]
+  leads             Lead[]
+  ventas            Venta[]
+
+  @@map("contacto")
+}
+
+/// Una fila por conversación de Chatwoot (sesión), no por cliente. Sin mensajes (P3): el
+/// historial vive en Chatwoot. `version` para bloqueo optimista de las transiciones (ADR-0003,
+/// Fase 05).
+model Conversacion {
+  id                     String            @id @default(uuid(7)) @db.Uuid
+  contactoId             String            @map("contacto_id") @db.Uuid
+  chatwootConversationId Int               @unique @map("chatwoot_conversation_id")
+  canal                  CanalConversacion
+  estado                 EstadoAtencion
+  expiraControlEn        DateTime?         @map("expira_control_en") @db.Timestamptz(3)
+  version                Int               @default(0)
+  creado                 DateTime          @default(now()) @db.Timestamptz(3)
+  actualizado            DateTime          @default(now()) @db.Timestamptz(3)
+  contacto               Contacto          @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  leads                  Lead[]
+  usosLlm                UsoLlm[]
+
+  @@map("conversacion")
+}
+
+/// Embudo de leads (P2): `estado` sigue el ciclo nuevo → en_atencion → ganado/perdido/descartado.
+model Lead {
+  id                    String          @id @default(uuid(7)) @db.Uuid
+  contactoId            String          @map("contacto_id") @db.Uuid
+  conversacionId        String?         @map("conversacion_id") @db.Uuid
+  productoId            String?         @map("producto_id") @db.Uuid
+  temperatura           TemperaturaLead
+  senales               Json            @db.JsonB
+  resumen               String
+  derivado              Boolean
+  capturadoFueraHorario Boolean         @map("capturado_fuera_horario")
+  estado                EstadoLead
+  motivoPerdida         String?         @map("motivo_perdida")
+  notificadoEn          DateTime?       @map("notificado_en") @db.Timestamptz(3)
+  recordatorioEn        DateTime?       @map("recordatorio_en") @db.Timestamptz(3)
+  creado                DateTime        @default(now()) @db.Timestamptz(3)
+  actualizado           DateTime        @default(now()) @db.Timestamptz(3)
+  contacto              Contacto        @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  conversacion          Conversacion?   @relation(fields: [conversacionId], references: [id], onDelete: SetNull)
+  producto              Producto?       @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  venta                 Venta?
+
+  @@map("lead")
+}
+
+/// Festivos y cierres planeados; `fecha` es la llave natural (ADR-0007).
+model ExcepcionHorario {
+  fecha  DateTime @id @db.Date
+  motivo String?
+
+  @@map("excepcion_horario")
+}
+
+// ---------------------------------------------------------------------------------------------
+// §6 Operación (back office, fases 11-13) — Q1: se crean en esta migración inicial, sin código
+// que las use todavía.
+// ---------------------------------------------------------------------------------------------
+
+model Usuario {
+  id                    String                 @id @default(uuid(7)) @db.Uuid
+  email                 String                 @unique
+  nombre                String
+  passwordHash          String                 @map("password_hash")
+  rol                   RolUsuario
+  activo                Boolean                @default(true)
+  ultimoAcceso          DateTime?              @map("ultimo_acceso") @db.Timestamptz(3)
+  creado                DateTime               @default(now()) @db.Timestamptz(3)
+  actualizado           DateTime               @default(now()) @db.Timestamptz(3)
+  movimientosInventario MovimientoInventario[]
+  ventas                Venta[]
+
+  @@map("usuario")
+}
+
+/// El ledger es la verdad; `producto.stock` es caché, escrita en la misma transacción
+/// (MODELO_DATOS.md §6). `cantidad` siempre positiva (`CHECK`, D4) y `usuario_id` obligatorio
+/// solo si `origen = usuario` (`CHECK`, D4) — las dos restricciones se escriben a mano en la
+/// migración, marcadas `[manual]`.
+model MovimientoInventario {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  productoId   String           @map("producto_id") @db.Uuid
+  tipo         TipoMovimiento
+  cantidad     Int
+  saldoDespues Int              @map("saldo_despues")
+  motivo       String?
+  ventaId      String?          @map("venta_id") @db.Uuid
+  origen       OrigenMovimiento
+  usuarioId    String?          @map("usuario_id") @db.Uuid
+  creado       DateTime         @default(now()) @db.Timestamptz(3)
+  producto     Producto         @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  venta        Venta?           @relation(fields: [ventaId], references: [id], onDelete: SetNull)
+  usuario      Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  // [manual] CHECK cantidad > 0 se agrega a mano en la migración (D4, PER8/PER9).
+  // [manual] CHECK usuario_id obligatorio si origen = 'usuario' se agrega a mano (D4, PER7/PER9).
+  @@map("movimiento_inventario")
+}
+
+/// No guarda dinero: `total = Σ(cantidad × precio_unitario) + recargo_contraentrega`
+/// (MODELO_DATOS.md §6). `numero` es un consecutivo legible, único, que no es la llave primaria
+/// (PER3).
+model Venta {
+  id           String                 @id @default(uuid(7)) @db.Uuid
+  numero       Int                    @unique @default(autoincrement())
+  contactoId   String                 @map("contacto_id") @db.Uuid
+  leadId       String?                @unique @map("lead_id") @db.Uuid
+  usuarioId    String                 @map("usuario_id") @db.Uuid
+  estado       EstadoVenta
+  canal        CanalVenta
+  metodoPago   MetodoPago             @map("metodo_pago")
+  notas        String?
+  confirmadaEn DateTime?              @map("confirmada_en") @db.Timestamptz(3)
+  cerradaEn    DateTime?              @map("cerrada_en") @db.Timestamptz(3)
+  creado       DateTime               @default(now()) @db.Timestamptz(3)
+  actualizado  DateTime               @default(now()) @db.Timestamptz(3)
+  contacto     Contacto               @relation(fields: [contactoId], references: [id], onDelete: Restrict)
+  lead         Lead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  usuario      Usuario                @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  items        VentaItem[]
+  movimientos  MovimientoInventario[]
+  envio        Envio?
+
+  @@map("venta")
+}
+
+/// Precio congelado en el momento de la venta (MODELO_DATOS.md §6): `descripcion` y
+/// `precio_unitario_cop` son copias, no referencias vivas a `producto`.
+model VentaItem {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  ventaId           String   @map("venta_id") @db.Uuid
+  productoId        String   @map("producto_id") @db.Uuid
+  descripcion       String
+  cantidad          Int
+  precioUnitarioCop Int      @map("precio_unitario_cop")
+  venta             Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  producto          Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+
+  @@map("venta_item")
+}
+
+/// `costo_transportadora_cop` es el precio real que confirma Interrapidísimo al despachar
+/// (MODELO_DATOS.md §6); `recargo_contraentrega_cop` lo paga el cliente.
+model Envio {
+  id                      String      @id @default(uuid(7)) @db.Uuid
+  ventaId                 String      @unique @map("venta_id") @db.Uuid
+  transportadora          String
+  numeroGuia              String?     @map("numero_guia")
+  estado                  EstadoEnvio
+  porcentajeContraentrega Decimal?    @map("porcentaje_contraentrega") @db.Decimal(5, 2)
+  recargoContraentregaCop Int         @map("recargo_contraentrega_cop")
+  costoTransportadoraCop  Int?        @map("costo_transportadora_cop")
+  direccion               String
+  localidad               String
+  ciudadId                String      @map("ciudad_id")
+  creado                  DateTime    @default(now()) @db.Timestamptz(3)
+  actualizado             DateTime    @default(now()) @db.Timestamptz(3)
+  venta                   Venta       @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  ciudad                  Ciudad      @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+
+  @@map("envio")
+}
+
+// ---------------------------------------------------------------------------------------------
+// §7 Técnica — inbox/outbox (ADR-0004) y costo por turno (P9)
+// ---------------------------------------------------------------------------------------------
+
+/// Inbox: ningún evento aceptado se pierde; el único `(origen, id_externo)` es la deduplicación
+/// (ADR-0004, PER2) — dos columnas `NOT NULL`, Prisma lo expresa solo, sin SQL a mano (D4).
+/// `payload` guarda el evento de Chatwoot redactado (P15): nunca el texto del mensaje ni datos
+/// personales; para reprocesar, el contenido se relee de la API de Chatwoot. Se purga a los 30
+/// días (comportamiento, Fase 04/09 — fuera de alcance de esta fase).
+model EventoEntrante {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  origen      String
+  idExterno   String    @map("id_externo")
+  payload     Json      @db.JsonB
+  recibidoEn  DateTime  @default(now()) @map("recibido_en") @db.Timestamptz(3)
+  procesadoEn DateTime? @map("procesado_en") @db.Timestamptz(3)
+  intentos    Int       @default(0)
+  error       String?
+
+  @@unique([origen, idExterno])
+  @@map("evento_entrante")
+}
+
+/// Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004). `tipo` es `text`
+/// (D12 ajuste 8): sus valores los define la fase que escribe cada tipo de efecto, no el esquema.
+model Outbox {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  tipo           String
+  payload        Json      @db.JsonB
+  creado         DateTime  @default(now()) @db.Timestamptz(3)
+  enviadoEn      DateTime? @map("enviado_en") @db.Timestamptz(3)
+  intentos       Int       @default(0)
+  proximoIntento DateTime  @default(now()) @map("proximo_intento") @db.Timestamptz(3)
+  error          String?
+
+  @@map("outbox")
+}
+
+/// Costo por turno y techo de gasto (P9). `costo_estimado_usd` en `decimal(12,6)` (D12 ajuste 4).
+model UsoLlm {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  conversacionId   String?       @map("conversacion_id") @db.Uuid
+  proveedor        String
+  modelo           String
+  tokensEntrada    Int           @map("tokens_entrada")
+  tokensSalida     Int           @map("tokens_salida")
+  tokensCache      Int           @map("tokens_cache")
+  costoEstimadoUsd Decimal       @map("costo_estimado_usd") @db.Decimal(12, 6)
+  latenciaMs       Int           @map("latencia_ms")
+  exito            Boolean
+  creado           DateTime      @default(now()) @db.Timestamptz(3)
+  conversacion     Conversacion? @relation(fields: [conversacionId], references: [id], onDelete: SetNull)
+
+  @@map("uso_llm")
+}
+
+// ---------------------------------------------------------------------------------------------
+// §8 Enums (11, valores snake_case tal cual `MODELO_DATOS.md` §8)
+// ---------------------------------------------------------------------------------------------
+
+enum EstadoAtencion {
+  bot
+  handoff_pendiente
+  humano
+  pausado
+
+  @@map("estado_atencion")
+}
+
+enum CanalConversacion {
+  whatsapp
+  instagram
+  messenger
+  web
+  otro
+
+  @@map("canal_conversacion")
+}
+
+enum TemperaturaLead {
+  frio
+  tibio
+  caliente
+
+  @@map("temperatura_lead")
+}
+
+enum EstadoLead {
+  nuevo
+  en_atencion
+  ganado
+  perdido
+  descartado
+
+  @@map("estado_lead")
+}
+
+enum TipoMovimiento {
+  entrada
+  salida
+  ajuste
+  devolucion
+
+  @@map("tipo_movimiento")
+}
+
+enum OrigenMovimiento {
+  usuario
+  sistema
+
+  @@map("origen_movimiento")
+}
+
+enum EstadoVenta {
+  pendiente
+  confirmada
+  cancelada
+  rechazada
+
+  @@map("estado_venta")
+}
+
+enum EstadoEnvio {
+  pendiente
+  despachado
+  entregado
+  rechazado
+
+  @@map("estado_envio")
+}
+
+enum CanalVenta {
+  whatsapp
+  marketplace
+  instagram
+  presencial
+  otro
+
+  @@map("canal_venta")
+}
+
+enum MetodoPago {
+  contraentrega
+  transferencia
+  efectivo
+
+  @@map("metodo_pago")
+}
+
+enum RolUsuario {
+  admin
+  asesor
+
+  @@map("rol_usuario")
 }

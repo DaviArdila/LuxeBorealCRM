@@ -13,6 +13,8 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "prisma:generar": "prisma generate",
+    "prisma:migrar": "prisma migrate dev",
+    "prisma:aplicar": "prisma migrate deploy",
     "postinstall": "npm run prisma:generar",
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "lint": "eslint .",
