@@ -35,24 +35,36 @@ export interface OpcionesCompararContrato {
   readonly ejecutarOasdiff?: typeof ejecutarHerramienta;
 }
 
-function ramaBaseExiste(raiz: string): boolean {
-  try {
-    execFileSync('git', ['-C', raiz, 'rev-parse', '--verify', '--quiet', `refs/heads/${RAMA_BASE}`], {
-      encoding: 'utf8',
-    });
-    return true;
-  } catch {
-    return false;
+const REFS_RAMA_BASE = [`refs/heads/${RAMA_BASE}`, `refs/remotes/origin/${RAMA_BASE}`];
+
+/**
+ * `refs/heads/main` existe en un checkout local normal, pero `actions/checkout` (D8, `fetch-depth:
+ * 0`) sobre cualquier ref que no sea `main` (el caso normal de un push a rama de fase o un PR) deja
+ * `main` únicamente como `refs/remotes/origin/main`, sin crear la rama local. Se intentan ambas
+ * referencias, en ese orden, y se usa la primera que exista — así el gate corre de verdad en CI, no
+ * solo en checkouts locales de desarrollo.
+ */
+function resolverRamaBase(raiz: string): string | null {
+  for (const ref of REFS_RAMA_BASE) {
+    try {
+      execFileSync('git', ['-C', raiz, 'rev-parse', '--verify', '--quiet', ref], {
+        encoding: 'utf8',
+      });
+      return ref;
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 /**
  * `null` cuando la rama existe pero no tiene el archivo (D11: eso es "sin base", no es un fallo).
  * Cualquier otro error de `git show` se propaga: es la rama "falla git show" de D11.
  */
-function contenidoEnRamaBase(raiz: string): string | null {
+function contenidoEnRamaBase(raiz: string, ref: string): string | null {
   try {
-    return execFileSync('git', ['-C', raiz, 'show', `${RAMA_BASE}:${ARCHIVO_PUBLICO}`], {
+    return execFileSync('git', ['-C', raiz, 'show', `${ref}:${ARCHIVO_PUBLICO}`], {
       encoding: 'utf8',
       maxBuffer: 1024 * 1024 * 32,
     });
@@ -71,23 +83,24 @@ export async function compararContrato(
   archivoActual: string = path.join(raiz, ARCHIVO_PUBLICO),
   opciones: OpcionesCompararContrato = {},
 ): Promise<ResultadoComparacionContrato> {
-  if (!ramaBaseExiste(raiz)) {
+  const ramaBase = resolverRamaBase(raiz);
+  if (!ramaBase) {
     return {
       limpio: false,
       mensaje:
-        `contrato:diff: no se pudo comparar — "git rev-parse --verify refs/heads/${RAMA_BASE}" ` +
-        `no encontró la rama ${RAMA_BASE}.`,
+        `contrato:diff: no se pudo comparar — no se encontró ninguna referencia de ${RAMA_BASE} ` +
+        `(se intentó: ${REFS_RAMA_BASE.join(', ')}).`,
     };
   }
 
   let base: string | null;
   try {
-    base = contenidoEnRamaBase(raiz);
+    base = contenidoEnRamaBase(raiz, ramaBase);
   } catch (error) {
     return {
       limpio: false,
       mensaje:
-        `contrato:diff: no se pudo comparar — "git show ${RAMA_BASE}:${ARCHIVO_PUBLICO}" falló: ` +
+        `contrato:diff: no se pudo comparar — "git show ${ramaBase}:${ARCHIVO_PUBLICO}" falló: ` +
         `${(error as Error).message}`,
     };
   }

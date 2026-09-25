@@ -220,15 +220,15 @@ tree tal como está.
 | exceptionFactory propio en vez del default de StandardSchemaValidationPipe (T2) | El default aplana a strings y pierde `code` | Razonable: sigue siendo el punto de extensión documentado del pipe nativo |
 | Delegación por tipo (no por ruta) en FiltroProblemJson para eximir a Terminus antes de que exista FiltroSaludOperativo (T2) | Evita romper test:e2e de 00a antes de que T4 exista | Razonable y transitorio como se documentó; T4 agregó FiltroSaludOperativo sin conflicto |
 | @ApiTags('internal') agrega en vez de reemplazar la etiqueta del controlador (T4) | Detalle de @nestjs/swagger, no afecta el comportamiento observable | Confirmado: `filtrarDocumentoPublico` usa `tags.some(...)`; el documento público real tiene `paths: {}` |
-| .env.example no documenta DOCS_HABILITADO - bloqueado por política global de permisos (T4) | Fuera del control de la tarea | Sigue sin resolver: confirmado en esta sesión que `.env.example` no contiene DOCS_HABILITADO. Es un incumplimiento real, menor, de la skill §9 |
+| .env.example no documenta DOCS_HABILITADO - bloqueado por política global de permisos (T4) | Fuera del control de la tarea | **Corrección (post-review nativo):** la premisa era incorrecta. `.claude/settings.local.json` permite explícitamente `Read(.env.example)`/`Edit(.env.example)`; el deny global solo cubre `.env`, `.env.local`, `.env.*.local`, `.env.production`, `.env.development`, `.env.test` y `.env.staging` — nunca `.env.example`. Editado y commiteado fuera de esta sesión de verify (commit `5eb5bb3`) |
 | WORKDIR de oasdiff - rutas absolutas dentro del contenedor (T5) | Bug real encontrado y corregido | Razonable, sin impacto en D10 |
 | Timeouts de Vitest subidos (20s global, 120s eslint.spec.ts) por contención de Docker en paralelo (T6/T7) | Evita falsos negativos intermitentes bajo carga real | Razonable y consistente con lo observado en esta sesión (sin intermitencia) |
 | Bug de aislamiento en verificar-commits.spec.ts (no restauraba LUXE_COMMITS_DESDE), corregido en T6 | Fallo real de test, no de producción | Confirmado corregido: `commits` corrió limpio en esta sesión |
 | No se ejecutó sdd-archive ni se marcó la fila 00b como cerrada (T7) | Instrucción explícita de la sesión de sdd-apply de no archivar | Correcto según openspec/config.yaml §archive; este mismo archivo es el registro de cierre que falta para poder archivar |
 
 Conclusión: las desviaciones registradas por apply son honestas y, en su gran mayoría, técnicamente
-razonables. La única que sigue siendo trabajo real pendiente (no solo una nota histórica) es
-.env.example/DOCS_HABILITADO.
+razonables. La afirmación de bloqueo de permisos sobre `.env.example` no lo era — ver corrección en
+la fila de arriba, ya resuelta en un commit posterior a esta sesión de verify.
 
 ## 7. ADRs creados
 
@@ -260,8 +260,10 @@ esta fase.
 3. Docker real en paralelo dentro de Vitest es una fuente de contención real y medible (T1, T5, T6 lo
    descubrieron por separado). Fases futuras que agreguen más tests con Docker real deberían revisar
    el timeout global antes de que vuelva a ser insuficiente.
-4. El bloqueo de permisos sobre .env.* es real y va a repetirse: cualquier fase futura que necesite
-   tocar .env.example debe anticipar el mismo bloqueo (política global sobre política de proyecto).
+4. **Corrección:** el bloqueo de permisos sobre `.env.*` existe (T4 lo documentó correctamente para
+   `.env`, `.env.local`, etc.), pero no cubre `.env.example` — `.claude/settings.local.json` ya lo
+   permite explícitamente. Fases futuras no deben asumir que `.env.example` está bloqueado sin
+   verificarlo primero.
 5. LUXE_COMMITS_DESDE es una solución transitoria que expira al fusionar a main: cualquier sesión de
    trabajo futura sobre esta rama debe seguir exportando la variable; sdd-archive debería mencionarlo
    explícitamente al cerrar.
@@ -271,12 +273,27 @@ esta fase.
 Implementación completa y funcionalmente verde: las 7/7 tareas de tasks.md están commiteadas, npm
 run verify y npm run ci pasan de verdad en esta sesión (no solo lo reportado por sesiones
 anteriores), el drift del contrato está limpio, y 8/9 puntos del checklist de cierre se cumplen sin
-reservas. La recomendación operativa es sdd-archive cuando el usuario lo decida, con dos advertencias
-explícitas que no bloquean pero sí requieren su atención:
+reservas. Las dos advertencias originales de esta sección ya están resueltas en commits posteriores
+a esta sesión de verify, ambos verificados en verde:
 
-1. El punto 3 del checklist (cobertura por nombre exacto de escenario) es parcial - 15/36 escenarios
-   sin test de regresión con el título literal, aunque con cobertura funcional real.
-2. .env.example sigue sin documentar DOCS_HABILITADO (bloqueo de permisos no resuelto).
+1. Cobertura por nombre exacto de escenario (punto 3 del checklist): resuelta, commit `8da38bf`
+   (`test(00b): nombrar los 15 escenarios sin test literal detectados por sdd-verify`) - 21/36 (58%)
+   pasó a 36/36 (100%), confirmado por grep literal de los 15 títulos objetivo contra `test/` y
+   `src/`.
+2. `.env.example`/DOCS_HABILITADO: resuelto, commit `5eb5bb3` - la premisa de bloqueo de permisos era
+   incorrecta (ver §6), el archivo simplemente no se había editado todavía.
 
-Ninguna de las dos es un hallazgo CRÍTICO: no hay ningún comando que falle, ningún "Hecho cuando" que
-sea falso, ni ninguna regla invariante (R1-R16) violada.
+Además, la revisión nativa (`gentle-ai review`, lente `review-reliability`, riesgo alto) encontró un
+hallazgo CRÍTICO real no detectado por esta sesión de verify: `ramaBaseExiste()` en
+`scripts/comparar-contrato.ts` solo comprobaba `refs/heads/main`, una referencia que
+`actions/checkout` (`.github/workflows/ci.yml`, T6) nunca crea para un push o PR sobre una rama
+distinta de `main` - solo deja `refs/remotes/origin/main`. El gate CI9/D11 nunca habría corrido la
+comparación real de oasdiff en CI, solo en checkouts locales de desarrollo. Corregido (ambas
+referencias se intentan, en ese orden) y cubierto con un test de regresión nuevo que reproduce la
+topología real de checkout de CI (`test/fronteras/comparar-contrato.spec.ts`, "En CI, main solo
+existe como refs/remotes/origin/main..."), commit de corrección aplicado antes del acknowledge de
+esta revisión.
+
+Ninguna advertencia restante es un hallazgo CRÍTICO abierto: no hay ningún comando que falle, ningún
+"Hecho cuando" que sea falso, ni ninguna regla invariante (R1-R16) violada. Recomendación operativa:
+sdd-archive.
