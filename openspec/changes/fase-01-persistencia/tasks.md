@@ -234,6 +234,8 @@ que añadió su propio test unitario con tres casos (válido, SQL inyectado, vac
 de `urlConBase` que no estaba en el diseño explícito (conservar query string). Sigue **dentro** del
 presupuesto de ~400 líneas; no hace falta pedir `size:exception` para este PR1.
 
+**commit:** `c69f12fef6e50416432566b2769d82ef5fa3b365` — `feat(persistencia): construir arnes de pruebas con base por worker`
+
 ---
 
 ## T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]`
