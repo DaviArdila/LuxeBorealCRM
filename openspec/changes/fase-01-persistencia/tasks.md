@@ -14,8 +14,8 @@ Rollout" de `design.md` sugiere 8 tareas para `sdd-tasks` (partiendo S2 en T2 ve
 esquema/migración + T4 restricciones manuales). Esta versión de `tasks.md` sigue en cambio el mapeo
 1:1 explícito pedido para esta sesión (5 tareas, T1-T5), que también cabe dentro del límite de 10.
 La verificación de Prisma (`uuid(7)`) y la comprobación de `migrate diff` ante `NULLS NOT DISTINCT`
-que `design.md` proponía como tarea aparte quedan como los primeros pasos de **T2**, marcados
-`[sin verificar]` abajo, en vez de como una tarea separada.
+que `design.md` proponía como tarea aparte quedan dentro de **T2**, con su evidencia de ejecución
+registrada en esa tarea.
 
 **Resultado: 5 tareas, dentro del límite de 10.** No hace falta proponer partir la fase.
 
@@ -331,7 +331,7 @@ es parte de "Hecho cuando", no un detalle de estilo, por la lección de `verify-
 
 **Evidencia real (máquina local con Docker, 2026-09-25)**:
 
-- `npm exec -- prisma validate`: código **0**; salida: `The schema at prisma\\schema.prisma is valid`.
+- `npm exec -- prisma validate`: código **0**; salida: `The schema at prisma\schema.prisma is valid`.
 - `npm run prisma:generar`: código **0**; cliente Prisma **7.10.0** generado en
   `src/plataforma/prisma/generado/`.
 - RED de PER9 antes de corregir la guardia: `npm run test:integracion -- restricciones-manuales`
@@ -347,17 +347,44 @@ es parte de "Hecho cuando", no un detalle de estilo, por la lección de `verify-
   creadas desde `template0` y se eliminaron al terminar:
 
   ```text
-  prisma migrate deploy: código 0
+  [T2] prisma migrate deploy sobre una base vacía (código 0)
+  Datasource "db": PostgreSQL database "test_migracion_3dbbd986e45d4bc6b956c2c0198b504a", schema "public" at "localhost:32880"
+
   1 migration found in prisma/migrations
+
   Applying migration `20260925210822_esquema_v1`
+
+  The following migration(s) have been applied:
+
+  migrations/
+    └─ 20260925210822_esquema_v1/
+      └─ migration.sql
+
   All migrations have been successfully applied.
+  Loaded Prisma config from prisma.config.ts.
 
-  prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code:
-  código 0 — No difference detected.
+  Prisma schema loaded from prisma\schema.prisma.
 
-  prisma migrate dev --name verificar_esquema_v1: código 0
+  [T2] prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code (código 0)
+  No difference detected.
+
+  Loaded Prisma config from prisma.config.ts.
+
+  [T2] prisma migrate dev --name verificar_esquema_v1 sobre una base vacía (código 0)
+  Datasource "db": PostgreSQL database "test_dev_7393b4e7a7a24fe497824fcd74d5fd18", schema "public" at "localhost:32880"
+
   Applying migration `20260925210822_esquema_v1`
+
+  The following migration(s) have been applied:
+
+  migrations/
+    └─ 20260925210822_esquema_v1/
+      └─ migration.sql
+
   Your database is now in sync with your schema.
+  Loaded Prisma config from prisma.config.ts.
+
+  Prisma schema loaded from prisma\schema.prisma.
   ```
 
 - El test runtime comprobó **17 columnas PK UUID y 0 defaults SQL**, que las migraciones quedaron
@@ -388,7 +415,7 @@ worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta cont
 
 **Commit de unidad de trabajo**: `e195a4fb244003036d87cf2595f180caa662e27a` — `feat(persistencia): agregar esquema v1 y guardias de migración`.
 
-**Review workload real**: 1,700 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
+**Review workload real**: 1,743 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
 
 **TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
 
