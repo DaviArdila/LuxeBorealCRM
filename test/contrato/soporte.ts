@@ -21,12 +21,15 @@ export function configuracionDeContrato(): Configuracion {
     DATABASE_URL: 'postgresql://usuario:clave@localhost:5432/inexistente',
     REDIS_URL: 'redis://localhost:6379/0',
     HEALTH_TIMEOUT_MS: 1500,
+    DOCS_HABILITADO: false,
   };
 }
 
 /**
  * Arranca `AppModule + ContratoFixtureModule` con el mismo cableado de producción
- * (`configurarAplicacion`, D3) para los tests de `test/contrato/`.
+ * (`configurarAplicacion`, D3, D6 de T4) para los tests de `test/contrato/`: el prefijo
+ * `/api/v1` (con la exclusión de `/health`) y el montaje condicional de `/docs` ya viven dentro
+ * de `configurarAplicacion`, así que este harness no repite `setGlobalPrefix` por su cuenta.
  */
 export async function crearAplicacionDeContrato(): Promise<INestApplication> {
   const modulo = await Test.createTestingModule({
@@ -37,8 +40,6 @@ export async function crearAplicacionDeContrato(): Promise<INestApplication> {
     .compile();
 
   const app = modulo.createNestApplication();
-  // T3 ejercita el prefijo como configuración global; producción lo activa en T4.
-  app.setGlobalPrefix('api/v1');
   configurarAplicacion(app);
   await app.init();
   return app;

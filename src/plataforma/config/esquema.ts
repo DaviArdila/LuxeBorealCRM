@@ -5,20 +5,35 @@ import { z } from 'zod';
  * verdad de la forma de `Configuracion`; `process.env` MUST leerse solo en `plataforma/config`
  * (ver `cargar-configuracion.ts` y `configuracion.module.ts`).
  */
-export const esquemaConfiguracion = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  LOG_LEVEL: z
-    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-    .default('info'),
-  DATABASE_URL: z
-    .string()
-    .regex(/^postgres(ql)?:\/\/\S+$/, 'debe ser una URL con esquema postgresql:// o postgres://'),
-  REDIS_URL: z
-    .string()
-    .regex(/^rediss?:\/\/\S+$/, 'debe ser una URL con esquema redis:// o rediss://'),
-  HEALTH_TIMEOUT_MS: z.coerce.number().int().min(100).max(10000).default(1500),
-});
+export const esquemaConfiguracion = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
+    DATABASE_URL: z
+      .string()
+      .regex(/^postgres(ql)?:\/\/\S+$/, 'debe ser una URL con esquema postgresql:// o postgres://'),
+    REDIS_URL: z
+      .string()
+      .regex(/^rediss?:\/\/\S+$/, 'debe ser una URL con esquema redis:// o rediss://'),
+    HEALTH_TIMEOUT_MS: z.coerce.number().int().min(100).max(10000).default(1500),
+    /** Habilita `/docs` (Scalar, D7 de 00b); MUST NOT quedar en `true` en producción. */
+    DOCS_HABILITADO: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((valor) => valor === 'true'),
+  })
+  .superRefine((datos, ctx) => {
+    if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DOCS_HABILITADO'],
+        message: 'DOCS_HABILITADO MUST NOT ser verdadero cuando NODE_ENV es production (API9, D7).',
+      });
+    }
+  });
 
 export type Configuracion = Readonly<z.infer<typeof esquemaConfiguracion>>;
 

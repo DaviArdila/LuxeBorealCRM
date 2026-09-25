@@ -20,27 +20,24 @@
   "paths": {
     "/health": {
       "get": {
-        "operationId": "SaludController_comprobar",
+        "operationId": "obtenerSalud",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": false,
                   "properties": {
                     "details": {
                       "additionalProperties": {
-                        "additionalProperties": true,
+                        "additionalProperties": {},
                         "properties": {
-                          "responseTime": {
-                            "description": "Time the health indicator took to respond, in ms",
-                            "type": "number"
-                          },
                           "status": {
                             "enum": [
                               "up",
-                              "degraded",
-                              "down"
+                              "down",
+                              "degraded"
                             ],
                             "type": "string"
                           }
@@ -49,28 +46,18 @@
                           "status"
                         ],
                         "type": "object"
-                      },
-                      "example": {
-                        "database": {
-                          "responseTime": 12,
-                          "status": "up"
-                        }
                       },
                       "type": "object"
                     },
                     "error": {
                       "additionalProperties": {
-                        "additionalProperties": true,
+                        "additionalProperties": {},
                         "properties": {
-                          "responseTime": {
-                            "description": "Time the health indicator took to respond, in ms",
-                            "type": "number"
-                          },
                           "status": {
                             "enum": [
                               "up",
-                              "degraded",
-                              "down"
+                              "down",
+                              "degraded"
                             ],
                             "type": "string"
                           }
@@ -80,25 +67,17 @@
                         ],
                         "type": "object"
                       },
-                      "example": {},
-                      "type": [
-                        "object",
-                        "null"
-                      ]
+                      "type": "object"
                     },
                     "info": {
                       "additionalProperties": {
-                        "additionalProperties": true,
+                        "additionalProperties": {},
                         "properties": {
-                          "responseTime": {
-                            "description": "Time the health indicator took to respond, in ms",
-                            "type": "number"
-                          },
                           "status": {
                             "enum": [
                               "up",
-                              "degraded",
-                              "down"
+                              "down",
+                              "degraded"
                             ],
                             "type": "string"
                           }
@@ -108,31 +87,27 @@
                         ],
                         "type": "object"
                       },
-                      "example": {
-                        "database": {
-                          "responseTime": 12,
-                          "status": "up"
-                        }
-                      },
-                      "type": [
-                        "object",
-                        "null"
-                      ]
+                      "type": "object"
                     },
                     "status": {
                       "enum": [
                         "ok",
-                        "degraded"
+                        "error",
+                        "degraded",
+                        "shutting_down"
                       ],
-                      "example": "ok",
                       "type": "string"
                     }
                   },
+                  "required": [
+                    "status",
+                    "details"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "The Health Check is successful"
+            "description": "Estado de salud operativo de Postgres y Redis.\n\nThe Health Check is successful"
           },
           "503": {
             "content": {
@@ -257,8 +232,10 @@
             "description": "The Health Check is not successful"
           }
         },
+        "summary": "",
         "tags": [
-          "Salud"
+          "Salud",
+          "internal"
         ]
       }
     }

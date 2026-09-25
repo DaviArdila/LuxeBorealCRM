@@ -131,4 +131,58 @@ describe('cargarConfiguracion', () => {
       expect(nombres).toEqual(expect.arrayContaining(['NODE_ENV', 'PORT']));
     }
   });
+
+  describe('DOCS_HABILITADO (D7, API9)', () => {
+    it('por defecto queda en false cuando la variable no viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.DOCS_HABILITADO).toBe(false);
+    });
+
+    it('acepta "true" y lo convierte a boolean', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, DOCS_HABILITADO: 'true' });
+
+      expect(configuracion.DOCS_HABILITADO).toBe(true);
+    });
+
+    it('acepta "false" explícito y lo convierte a boolean', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, DOCS_HABILITADO: 'false' });
+
+      expect(configuracion.DOCS_HABILITADO).toBe(false);
+    });
+
+    it('rechaza un valor que no sea "true" ni "false"', () => {
+      const fuenteInvalida = { ...fuenteValida, DOCS_HABILITADO: 'yes' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'DOCS_HABILITADO',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('rechaza NODE_ENV=production combinado con DOCS_HABILITADO=true', () => {
+      const fuenteInvalida = { ...fuenteValida, NODE_ENV: 'production', DOCS_HABILITADO: 'true' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'DOCS_HABILITADO',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta NODE_ENV=production con DOCS_HABILITADO=false (o ausente)', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, NODE_ENV: 'production' });
+
+      expect(configuracion.DOCS_HABILITADO).toBe(false);
+    });
+  });
 });

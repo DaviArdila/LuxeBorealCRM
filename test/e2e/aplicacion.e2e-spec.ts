@@ -8,6 +8,7 @@ import { configurarAplicacion } from '../../src/configurar-aplicacion.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
+import { esquemaRespuestaSalud } from '../../src/plataforma/salud/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 
 interface CuerpoHealth {
@@ -25,6 +26,9 @@ function configuracionValida(): Configuracion {
     DATABASE_URL: urlPostgresDePrueba(),
     REDIS_URL: urlRedisDePrueba(),
     HEALTH_TIMEOUT_MS: 1500,
+    // Sin fijar explícitamente: confirma que el e2e existente de 00a sigue en verde con el
+    // default `false` de D7, sin que este archivo dependa de /docs.
+    DOCS_HABILITADO: false,
   };
 }
 
@@ -90,6 +94,11 @@ describe('Arranque completo de la aplicación (T9, e2e)', () => {
       expect(respuesta.status).toBe(200);
       expect(cuerpo.details.postgres?.status).toBe('up');
       expect(cuerpo.details.redis?.status).toBe('up');
+      // API8/D6, T4: la respuesta real valida contra esquemaRespuestaSalud (única fuente que
+      // documenta /health, respuestaDesdeZod) — confirma también que FiltroSaludOperativo
+      // conserva el cuerpo propio de Terminus, no application/problem+json (que no tiene
+      // `details`/`info`/`error` con esta forma).
+      expect(() => esquemaRespuestaSalud.parse(cuerpo)).not.toThrow();
     });
 
     it('API2 — GET /health es la única ruta pública sin el prefijo de versión', async () => {
@@ -159,6 +168,9 @@ describe('Arranque completo de la aplicación (T9, e2e)', () => {
       expect(respuesta.status).toBe(503);
       expect(cuerpo.error).toEqual({ redis: { status: 'down' } });
       expect(cuerpo.info).toEqual({ postgres: { status: 'up' } });
+      // API4, D6: exento de problem+json también en el caso 503 — sigue siendo el cuerpo de
+      // Terminus, validado por el mismo esquema que el caso 200.
+      expect(() => esquemaRespuestaSalud.parse(cuerpo)).not.toThrow();
     });
 
     it('PLT4 — El cuerpo de health no expone secretos', async () => {

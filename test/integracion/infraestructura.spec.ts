@@ -28,6 +28,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -50,6 +51,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -80,6 +82,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

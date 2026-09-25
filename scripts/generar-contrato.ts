@@ -20,6 +20,9 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   DATABASE_URL: 'postgresql://usuario:clave@localhost:5432/inexistente',
   REDIS_URL: 'redis://localhost:6379/0',
   HEALTH_TIMEOUT_MS: 1500,
+  // El contrato commiteado documenta /docs a través de esquemaRespuestaSalud, sin necesidad de
+  // montarlo de verdad (D7 de T4): la generación nunca depende de si /docs está habilitado.
+  DOCS_HABILITADO: false,
 };
 
 export interface DocumentosContrato {

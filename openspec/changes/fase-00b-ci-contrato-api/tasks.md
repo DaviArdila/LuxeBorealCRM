@@ -24,7 +24,7 @@ verde y su commit anotado.
 - [x] T1 — Puerta local: hooks, `commitlint`, `gitleaks`, `npm audit`, `herramientas.ts` (S1)
 - [x] T2 — Errores RFC 9457 + pipe nativo + fixture de contrato (S2)
 - [x] T3 — Documento OpenAPI determinista (interno + público) y su chequeo de deriva (S3)
-- [ ] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
+- [x] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
 - [ ] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
 - [ ] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
 - [ ] T7 — Cierre: `git-cliff`, `strict_tdd: true`, `coverage_threshold`, documentación (S7)
@@ -642,12 +642,89 @@ cambia en ningún caso: el esquema zod sigue siendo la única fuente (nunca `@Ap
 7. REFACTOR: confirmar que el e2e existente de 00a (`NODE_ENV: 'test'`, sin `DOCS_HABILITADO`) sigue
    pasando sin tocarse (D7: compatibilidad con el default `false`).
 
+**Checkpoint (c) resuelto (máquina real, 2026-09-25):** inspección directa de
+`node_modules/@nestjs/swagger@12.0.2` (`decorators/api-response.decorator.d.ts`,
+`services/response-object-factory.js`, `services/standard-schema-openapi.converter.js`) y de
+`node_modules/zod@4.6.5` (`v4/classic/schemas.js`): `@ApiResponse` acepta un campo
+`standardSchema?: StandardSchemaObject` (`StandardSchemaV1 | StandardJSONSchemaV1` de
+`@standard-schema/spec`, ya presente como dependencia transitiva) y `ResponseObjectFactory.
+getSchemaOverride` lo prioriza **siempre** sobre `schema`/`type` cuando resuelve, así que no hace
+falta convertir con `z.toJSONSchema(esquema)`. zod v4 expone `~standard.jsonSchema` de fábrica
+(sobrescribe el `~standard` del núcleo para agregarlo), que es exactamente lo que
+`StandardSchemaOpenApiConverter` invoca (`convert({ target: 'openapi-3.0' })`). `respuestaDesdeZod`
+pasa el esquema zod tal cual a `standardSchema`. Confirmado empíricamente con un test que genera un
+documento real (`src/plataforma/documentacion/respuesta-desde-zod.spec.ts`): el esquema generado
+para una respuesta documentada con `respuestaDesdeZod` refleja las propiedades y tipos del esquema
+zod (`type: 'integer'`, `enum`), sin ningún `@ApiProperty` escrito a mano.
+
+**Desviación registrada (nombres de archivo de test, no de comportamiento):** `tasks.md` sugiere
+`test/contrato/documento-interno.e2e-spec.ts` y `test/contrato/docs.e2e-spec.ts`, pero
+`vitest.config.ts` solo incluye `test/contrato/**/*.spec.ts` en el proyecto `unit` — un archivo
+`*.e2e-spec.ts` dentro de `test/contrato/` no lo recogería ningún proyecto de Vitest (los
+`*.e2e-spec.ts` solo corren desde `test/e2e/`, que exige Testcontainers). Se nombraron
+`documento-interno.spec.ts` y `docs.spec.ts`, mismo sufijo que `documentacion.spec.ts`,
+`errores.spec.ts` y `convenciones.spec.ts` ya existentes en ese directorio. El escenario "T9 —
+FiltroSaludOperativo conserva el cuerpo de Terminus" se verificó extendiendo
+`test/e2e/aplicacion.e2e-spec.ts` (que ya ejercita `/health` completo por HTTP, con Testcontainers
+reales) en vez de `test/integracion/salud.spec.ts` (que solo prueba los indicadores en aislado, sin
+pasar por ningún filtro de excepciones): es el único lugar donde el filtro de controlador entra en
+juego de verdad.
+
+**Desviación registrada (`tags` de `/health`):** `@ApiTags('internal')` en el método `comprobar()`
+**agrega** la etiqueta a la que `autoTagControllers` ya pone por el nombre del controlador
+(`SaludController` → `"Salud"`), en vez de reemplazarla: el documento interno terminó con
+`tags: ["Salud", "internal"]` en `/health`, no solo `["internal"]`. `filtrarDocumentoPublico`
+excluye la operación igual (usa `tags.some(...)`, no igualdad exacta — verificado con
+`documento-interno.spec.ts`), así que el comportamiento observable (API8: fuera del público, dentro
+del interno) es el correcto; se documenta el detalle por si una fase futura depende del valor
+exacto de `tags`.
+
+**Bloqueador no resuelto — `.env.example` (permisos):** `Read(.env.example)`/`Edit(.env.example)`
+en `.claude/settings.local.json` (proyecto) no habilitan el acceso: la política global
+`~/.claude/settings.json` tiene `Read(.env.*)`/`Edit(.env.*)` en `deny`, y un `deny` global gana
+sobre un `allow` de proyecto en este motor de permisos (confirmado con dos intentos reales de
+`Read` sobre la ruta absoluta del archivo, mismo error exacto en ambos: "File is in a directory
+that is denied by your permission settings."). Por eso `.env.example` **no** documenta
+`DOCS_HABILITADO` en este commit — el resto de la tarea (esquema de configuración, controlador,
+documentación, `/docs`, contrato regenerado, todos los tests) está completo y verificado sin
+depender de ese archivo. Queda como seguimiento trivial (una línea) para el usuario o para una
+sesión con permisos ajustados: agregar a `.env.example`, junto a las demás variables de
+`plataforma/config`, algo como `DOCS_HABILITADO=false` con un comentario que explique D7 (default
+`false`; `true` solo en desarrollo; rechazado si `NODE_ENV=production`).
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- salud documentacion contrato cargar-configuracion` — exit 0; incluye `esquema-respuesta.spec.ts` (4), `respuesta-desde-zod.spec.ts` (1, checkpoint (c)), `documento-interno.spec.ts` (2), `docs.spec.ts` (2) y la extensión de `cargar-configuracion.spec.ts` (6 casos nuevos de `DOCS_HABILITADO`). `npm test` completo (todo el proyecto `unit`): 134→ ver "Full verify" abajo. |
+| Runtime harness command/scenario and exact result | `npm run start:dev` real + `curl -i localhost:3000/docs`: con `DOCS_HABILITADO=false` → `404` (sin construir el documento); con `DOCS_HABILITADO=true` → `200`, `Content-Type: text/html`, cuerpo con `<title>Scalar API Reference</title>`. Adicional (no pedido explícitamente por el checklist, pero es el tercer escenario de API9): `NODE_ENV=production DOCS_HABILITADO=true` con `npm run start:dev` real → el proceso lanza `ConfiguracionInvalidaError: DOCS_HABILITADO (valor)` durante `InstanceLoader`, nunca llega a escuchar el puerto (confirmado con `Get-NetTCPConnection` sin resultados). `npm run test:e2e` — 7/7 en verde, incluidas las dos aserciones nuevas contra `esquemaRespuestaSalud` (200 y 503). |
+| Full verify | `npm run verify` — exit 0; lint, typecheck, fronteras (93 módulos, 181 dependencias, sin violaciones), deriva del contrato y Vitest (`unit` + `integracion`): 32 archivos, 134 tests, 18.49 s (bajo el límite de 3 minutos). Los logs de error esperados (Postgres/Redis caídos a propósito en los tests de `IndicadorPostgres`/`IndicadorRedis`) siguen apareciendo, como en T3. |
+| Rollback boundary | Revertir `src/plataforma/documentacion/respuesta-desde-zod.ts` (+ `.spec.ts`), `src/plataforma/documentacion/montar-documentacion.ts`, la exportación nueva en `src/plataforma/documentacion/index.ts`, `src/plataforma/salud/esquema-respuesta.ts` (+ `.spec.ts`), `src/plataforma/salud/filtro-salud-operativo.ts`, la exportación nueva en `src/plataforma/salud/index.ts`, los decoradores nuevos de `src/plataforma/salud/salud.controller.ts`, `DOCS_HABILITADO` de `src/plataforma/config/esquema.ts` (+ su bloque de tests en `cargar-configuracion.spec.ts`), `setGlobalPrefix`/`montarDocumentacion` de `src/configurar-aplicacion.ts`, `DOCS_HABILITADO: false` en los cuatro archivos de test que construyen `Configuracion` a mano, `test/contrato/documento-interno.spec.ts`, `test/contrato/docs.spec.ts`, las dos aserciones nuevas de `test/e2e/aplicacion.e2e-spec.ts`, la dependencia `@scalar/nestjs-api-reference` de `package.json`/`package-lock.json`, y ambos `openapi/*.json` regenerados — devuelve el estado exacto de T3. `DOCS_HABILITADO=false` sigue siendo el default, así que revertir código sin revertir el contrato no deja `/docs` expuesto por accidente. |
+
+**Nota de presupuesto de revisión (Section E, PR4):** `486` líneas de autoría (adiciones +
+eliminaciones, `git diff --cached --numstat`, excluye `openapi/*.json` y `package-lock.json`),
+frente a `~330` estimadas en `design.md`/este archivo (~1.47×, proporción similar a T1/T2). La
+diferencia es honesta: cinco archivos nuevos con su cobertura RED→GREEN completa
+(`esquema-respuesta.ts`, `filtro-salud-operativo.ts`, `montar-documentacion.ts`,
+`respuesta-desde-zod.ts` y sus specs, `docs.spec.ts`, `documento-interno.spec.ts`), más la
+extensión de `cargar-configuracion.spec.ts` (6 casos nuevos) y los ajustes de tipo (`DOCS_HABILITADO`)
+en cuatro archivos de test existentes. No se recortaron tests, comentarios ni documentación para
+acercarse al presupuesto (prohibido explícitamente por el protocolo). Siguiendo el mismo criterio
+que T3 (que tampoco recibió `size:exception`), no se infiere aquí ninguna excepción: queda anotado
+para que el usuario decida, sin bloquear este commit local — la cadena PR1→PR7 (`stacked-to-main`)
+ya trae PR1 y PR2 con excepción aceptada explícitamente y PR3 sin ella.
+
 **Hecho cuando**:
 - Los ocho escenarios listados pasan.
 - El checkpoint (c) queda resuelto y registrado.
 - El documento público commiteado tiene `paths: {}` (Success Criteria de `proposal.md`, ahora ya
-  definitivo, no transitorio).
+  definitivo, no transitorio). Confirmado: `openapi/openapi.json` regenerado dos veces consecutivas
+  produce el mismo hash SHA-1 (`58b1c5e1e71057ea3092ab5c3c2729f7d4e24586`) y `tags: []`, `paths: {}`.
 - El e2e completo de 00a (`npm run test:e2e`) sigue en verde sin modificaciones de comportamiento.
+
+**Bloqueador no resuelto (ver arriba):** `.env.example` no se modificó — permiso denegado por la
+política global, no por el proyecto. No bloquea ningún escenario de "Hecho cuando"; queda como
+seguimiento explícito para el usuario o una sesión futura con permisos ajustados.
 
 **commit:** `<pendiente>` — `feat(plataforma/salud): documentar /health como internal y montar /docs con Scalar`
 

@@ -37,6 +37,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -52,6 +53,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       DATABASE_URL: 'postgresql://usuario:clave@127.0.0.1:65533/basedatos',
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     });
 
     const inicio = performance.now();
@@ -71,6 +73,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -86,6 +89,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: 'redis://127.0.0.1:65534',
       HEALTH_TIMEOUT_MS: 1500,
+      DOCS_HABILITADO: false,
     });
 
     const inicio = performance.now();
