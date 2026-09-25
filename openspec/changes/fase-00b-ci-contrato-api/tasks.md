@@ -1086,7 +1086,7 @@ comentarios ni documentación para acercarse al presupuesto. Es la última tarea
 para que el usuario confirme si aplica algún `size:exception` sobre el conjunto completo T1-T7 al
 revisar la cadena `stacked-to-main`.
 
-**commit:** `<pendiente>` — `chore(ci): generar CHANGELOG.md, fijar coverage_threshold y activar strict_tdd`
+**commit:** `d6c1bb989dbddeff671134cb1f38e2b6dbd60b09` — `chore(ci): generar CHANGELOG.md, fijar coverage_threshold y activar strict_tdd`
 
 ---
 
