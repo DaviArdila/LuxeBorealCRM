@@ -249,6 +249,16 @@ los tests comparten la base, y cada test MUST usar sus propios datos.
 - Cada slice anota en `tasks.md` la duración real de `npm run verify`. Si pasa de 150 s, la slice no
   cierra sin aplicar el tope de workers.
 
+**Desviación de ejecución registrada durante T2 (2026-09-25)**: D6 describe el fallback condicional
+`maxWorkers: 4` únicamente para `integracion`. En la primera ejecución de `npm run verify` de T2 se
+observaron más de 150 s y timeouts por contención entre tareas que lanzan Docker/Git/Prisma. El
+ajuste aplicado limitó a 4 workers tanto `integracion` como `unit`, por lo que el cambio en `unit`
+amplió el alcance previsto por D6. La primera configuración por proyecto también fue inválida al
+conservar el mismo `sequence.groupOrder`; se corrigió con grupos distintos (0/1). Con esa
+configuración, el `npm run verify` final del primer apply terminó con código 0, 42 archivos / 184
+tests, en 45,98 s. Esta nota registra la desviación ya aplicada; no cambia D6 ni modifica la
+configuración.
+
 ### D7 — CLI de Prisma desde los tests: un solo helper, sin shell
 
 **Elección**: `test/soporte/prisma-cli.ts` exporta

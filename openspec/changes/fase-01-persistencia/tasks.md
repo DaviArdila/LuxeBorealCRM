@@ -395,23 +395,28 @@ es parte de "Hecho cuando", no un detalle de estilo, por la lección de `verify-
   generación, lint, typecheck, fronteras (95 módulos / 189 dependencias), deriva de ambos contratos y
   los proyectos unitario + integración. `npm run test:e2e`: código **0**, **1 archivo / 8 tests
   aprobados**, duración **11,63 s**.
-- Para cumplir D6 de `design.md`, el primer verify real se midió por encima de 150 s y hubo timeouts
-  por contención entre tareas que lanzan Docker/Git/Prisma. Se fijaron 4 workers en `unit` e
-  `integracion`; Vitest exige `sequence.groupOrder` distinto cuando los límites por proyecto
-  difieren. Con esa configuración el comando exacto `npm run verify` quedó en verde, por debajo de
-  3 minutos.
+- **Desviación acotada respecto de D6**: el primer `npm run verify` real de T2 superó 150 s y
+  registró timeouts por contención entre tareas que lanzan Docker/Git/Prisma. D6 preveía aplicar
+  `maxWorkers: 4` solo al proyecto `integracion`; el cambio aplicado también limitó `unit` a 4, por
+  lo que su alcance fue más amplio que el diseño aprobado. La primera configuración por proyecto
+  también fue inválida al conservar el mismo `sequence.groupOrder`; se corrigió usando grupos
+  distintos (0/1), como requiere Vitest cuando difieren esos límites. Con `maxWorkers: 4` en `unit`
+  e `integracion`, el `npm run verify` final del primer apply terminó en código 0: 42 archivos / 184
+  tests, 45,98 s (menos de 3 min). Se registra el comportamiento ya aplicado; esta nota no modifica
+  el ajuste ni amplía T2.
 
-**Límite de evidencia heredada**: las pruebas, runtime y criterios de aceptación actuales están en
-verde, pero el RED histórico de `schema.prisma`/`migration.sql` no se puede reconstruir desde este
-worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta continuación.
+**Límite de evidencia heredada**: `schema.prisma`, la migración y PER1 ya estaban en el worktree al
+retomar; no se dispone de la evidencia histórica RED que pruebe el orden test-first. Los resultados
+GREEN y de runtime conservados aquí son del primer apply y no sustituyen ese RED. La guardia PER9 sí
+tiene RED/GREEN observado en el primer apply.
 
-**Work Unit Evidence**:
+**Work Unit Evidence (primer apply, 2026-09-25; no reejecutado en esta corrección)**:
 
 | Evidencia | Resultado |
 |---|---|
 | Test enfocado | `npm run test:integracion -- persistencia` — código 0; 4 archivos / 23 tests aprobados. |
-| Arnés runtime | `npm run test:integracion -- migracion` — código 0; `migrate deploy`, `migrate diff --exit-code` y `migrate dev` reales contra bases temporales Postgres 16. |
-| Rollback boundary | Revertir `MODELO_DATOS.md`, `package.json`, `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/`, `prisma/README.md`, `src/plataforma/prisma/prisma.service.ts`, los cuatro archivos nuevos/modificados bajo `test/integracion/persistencia/` y el ajuste T2 de `vitest.config.ts`. No hay datos de negocio ni dependencias de T3. |
+| Arnés runtime | `npm run test:integracion -- migracion` — código 0; 1 archivo / 3 tests aprobados; `migrate deploy`, `migrate diff --exit-code` y `migrate dev` reales contra bases temporales Postgres 16. |
+| Rollback boundary | Revertir `MODELO_DATOS.md`, `package.json`, `prisma.config.ts`, `prisma/schema.prisma`, `prisma/migrations/`, `prisma/README.md`, `src/plataforma/prisma/prisma.service.ts`, y exactamente estos cuatro archivos T2: `test/integracion/persistencia/migracion.spec.ts`, `test/integracion/persistencia/invariantes-esquema.spec.ts`, `test/integracion/persistencia/restricciones-manuales.spec.ts` y `test/integracion/persistencia/marcas-manuales.ts`; revertir también el ajuste T2 de `vitest.config.ts`. Se excluye expresamente `test/integracion/persistencia/aislamiento.spec.ts` (T1). No hay datos de negocio ni dependencias de T3. |
 
 **Commit de unidad de trabajo**: `e195a4fb244003036d87cf2595f180caa662e27a` — `feat(persistencia): agregar esquema v1 y guardias de migración`.
 
@@ -419,16 +424,15 @@ worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta cont
 
 **TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
 
-| Parte de T2 | Safety net | RED | GREEN | TRIANGULATE | REFACTOR |
-|---|---|---|---|---|---|
-| Esquema y migración heredados | PER1 2/2 ya pasaba al retomar | No observado en esta continuación: los archivos de implementación ya existían y no se dispone de evidencia anterior | Checkpoints y 19 escenarios PER1-PER9 pasan ahora | 19 escenarios exactos | No se reescribió el esquema heredado |
-| Guardias `[manual]` | Helper parcial inspeccionado | Regex inválida y, después, mutación de `CHECK` aceptada incorrectamente | 8/8 tests de restricciones pasan tras registrar las formas esperadas | Inserciones inválidas, valor válido, objeto ausente y definición alterada | Consulta de catálogo verifica forma, no solo nombre |
-| Presupuesto de ejecución | Verify inicial con contención | Timeouts y configuración Vitest inválida al diferir `maxWorkers` con mismo `groupOrder` | Verify exacto 42/184, 45,98 s | Unit + integración agrupados; e2e aparte 8/8 | Límite 4 y grupos secuenciales por proyecto |
+| Tarea/parte | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|---|---|---|---|---|---|---|---|
+| Esquema/migración/PER1 heredados | `test/integracion/persistencia/migracion.spec.ts` | Integración | PER1 2/2 estaba verde al retomar; no consta una corrida baseline en esta continuación | **FAILED / no disponible** — no se conserva una salida ni observación que demuestre el fallo del test antes de la implementación heredada; no se reconstruye | En el primer apply, los 19 escenarios PER1-PER9 y los checkpoints reales de Prisma/PostgreSQL quedaron verdes; evidencia funcional que no sustituye RED | Los 19 escenarios están cubiertos actualmente; no hay evidencia de triangulación test-first para el cambio heredado | No se reescribió el esquema/migración heredados |
+| Guardia `[manual]` PER9 | `test/integracion/persistencia/restricciones-manuales.spec.ts` | Integración | Helper parcial inspeccionado | Observado en el primer apply: la ejecución inicial detectó una regex inválida; después, la mutación de un `CHECK` con el mismo nombre y `cantidad >= 0` fue aceptada (`expected true to be false`) | Tras corregir la guardia: `npm run test:integracion -- restricciones-manuales` — 1 archivo / 8 tests aprobados (primer apply) | Inserciones inválidas, valor válido, objeto ausente y definición alterada | La consulta de catálogo verifica la forma, no solo el nombre; los 8 tests quedaron verdes |
 
-**Límite de TDD heredado**: no se afirma un RED previo para `schema.prisma`/`migration.sql`; el
-worktree contenía esa implementación antes de iniciar esta continuación. Sus criterios sí quedaron
-verificados en bases PostgreSQL reales. La única desviación de proceso que no puede reconstruirse es
-ese orden histórico; no se ocultó ni se fabricó.
+**Estado del gate Strict TDD**: T2 conserva `[x]` por su finalización funcional y el commit anotado,
+pero el ciclo de esquema/migración/PER1 queda **FAILED / no acreditado** por falta de evidencia RED
+histórica. Los resultados GREEN/runtime de arriba corresponden al primer apply; en esta corrección
+no se ejecutaron tests, `verify` ni runtime. El apply global no se declara gate-passing ni completo.
 
 **Hecho cuando**:
 - Los 19 escenarios listados pasan, cada uno con el título exacto de su encabezado `#### Scenario:`
