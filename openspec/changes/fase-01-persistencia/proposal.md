@@ -1,7 +1,8 @@
 # Proposal: Fase 01 — Persistencia
 
 - Change: `fase-01-persistencia` · Fase de la hoja de ruta: **01** (`docs/fases/README.md`)
-- Rama: `fase-01-persistencia` · Fecha: 2026-09-25 · Estado: `spec en revisión`
+- Rama: `fase-01-persistencia` · Fecha: 2026-09-25 · Estado: `aprobada` (proposal, specs, design y
+  tasks aprobados por el usuario el 2026-09-25)
 - Depende de: **Fase 00a y Fase 00b, cerradas** (`openspec/changes/archive/2026-09-23-fase-00a-esqueleto/`,
   `openspec/changes/archive/2026-09-25-fase-00b-ci-contrato-api/`)
 - Insumo principal: exploración en Engram `sdd/fase-01-persistencia/explore`; `MODELO_DATOS.md`
