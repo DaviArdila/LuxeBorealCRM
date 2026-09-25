@@ -187,12 +187,9 @@ el primer commit de la fase. `npm run verify` MUST terminar en verde solo si las
 pasan, y MUST fallar si cualquiera de ellas falla.
 La detección de secretos (`gitleaks`), la validación del mensaje de commit (`commitlint`) y la
 auditoría de dependencias (`npm audit`) MUST NOT formar parte de `npm run verify`: dependen del estado
-de git o del registro de npm, no del código construido
-(`openspec/specs/integracion-continua/spec.md`, CI1-CI4). `gitleaks` y `commitlint` corren tanto en el
-hook pre-push como en el workflow de CI (CI1, CI2); `npm audit` corre **solo** en el workflow de CI
-(CI4, CI5) — el hook pre-push MUST NOT ejecutarlo, para no depender de red ni del registro de npm en
-cada push. `npm run verify` MUST completarse en menos de 3 minutos en un entorno de desarrollo local
-con Postgres y Redis ya arriba.
+de git o del registro de npm, no del código construido, y viven en el hook pre-push y en el workflow
+de CI (`openspec/specs/integracion-continua/spec.md`, CI1-CI4). `npm run verify` MUST completarse en
+menos de 3 minutos en un entorno de desarrollo local con Postgres y Redis ya arriba.
 
 (Previously: exigía cinco comprobaciones — lint, typecheck, fronteras, tests unitarios e integración —
 sin la verificación de deriva del contrato de API, que no existía hasta la Fase 00b.)
@@ -234,10 +231,8 @@ contrato)
 #### Scenario: `gitleaks`, `commitlint` y `npm audit` no forman parte de `npm run verify`
 
 - Dado el comando `npm run verify` en un repositorio con un secreto sin commitear detectable por
-  `gitleaks`, un mensaje de commit no convencional en el historial, o una dependencia vulnerable con
-  severidad igual o mayor al umbral configurado (CI4 — una vulnerabilidad que sí haría fallar
-  `npm audit` si corriera),
+  `gitleaks`, un mensaje de commit no convencional en el historial, o una dependencia vulnerable por
+  debajo del umbral,
 - Cuando se ejecuta `npm run verify`,
-- Entonces ninguna de esas tres condiciones afecta su resultado: el comando termina en verde pese a la
-  vulnerabilidad sobre el umbral, porque esas comprobaciones corren en el hook pre-push
-  (`gitleaks`, `commitlint`) y en el workflow de CI (las tres), no en `verify`.
+- Entonces ninguna de esas tres condiciones afecta su resultado, porque esas comprobaciones corren en
+  el hook pre-push y en el workflow de CI, no en `verify`.
