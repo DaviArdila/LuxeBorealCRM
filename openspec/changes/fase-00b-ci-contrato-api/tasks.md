@@ -827,7 +827,7 @@ comentarios ni documentación para acercarse al presupuesto. Siguiendo el mismo 
 aplica aquí — Spectral y oasdiff son la misma unidad de "lint y diff del contrato"), no se infiere
 ninguna excepción; queda anotado para que el usuario decida junto con el resto de la cadena.
 
-**commit:** `<pendiente>` — `feat(ci): agregar lint y diff del contrato OpenAPI con Spectral y oasdiff`
+**commit:** `1702eeb91ffc94235a4dfa4a91f2efb70490dafd` — `feat(ci): agregar lint y diff del contrato OpenAPI con Spectral y oasdiff`
 
 ---
 
