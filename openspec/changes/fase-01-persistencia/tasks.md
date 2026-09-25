@@ -415,7 +415,7 @@ worktree. El ciclo de la guardia `[manual]` sí tiene RED observado en esta cont
 
 **Commit de unidad de trabajo**: `e195a4fb244003036d87cf2595f180caa662e27a` — `feat(persistencia): agregar esquema v1 y guardias de migración`.
 
-**Review workload real**: 1,743 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
+**Review workload real**: 1,730 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
 
 **TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
 
