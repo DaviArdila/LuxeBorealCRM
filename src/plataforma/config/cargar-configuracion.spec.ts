@@ -165,7 +165,7 @@ describe('cargarConfiguracion', () => {
       }
     });
 
-    it('rechaza NODE_ENV=production combinado con DOCS_HABILITADO=true', () => {
+    it('API9 — El proceso rechaza arrancar con /docs habilitado en producción', () => {
       const fuenteInvalida = { ...fuenteValida, NODE_ENV: 'production', DOCS_HABILITADO: 'true' };
 
       expect.assertions(1);

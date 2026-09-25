@@ -179,6 +179,19 @@ describe('Arranque completo de la aplicación (T9, e2e)', () => {
       expect(respuesta.status).toBe(503);
       expect(JSON.stringify(respuesta.body)).not.toMatch(/redis:\/\/|127\.0\.0\.1:65534|ECONNREFUSED/i);
     });
+
+    it('API4 — GET /health queda exento de application/problem+json', async () => {
+      const respuesta = await request(obtenerServidor(app)).get('/health');
+      const cuerpo = respuesta.body as CuerpoHealth;
+
+      expect(respuesta.status).toBe(503);
+      // El cuerpo sigue siendo el propio de Terminus (info/error/details), nunca
+      // application/problem+json ni el código del catálogo de errores del cliente de back office.
+      expect(respuesta.type).not.toBe('application/problem+json');
+      expect(cuerpo).not.toHaveProperty('codigo');
+      expect(cuerpo).not.toHaveProperty('type');
+      expect(cuerpo.error).toEqual({ redis: { status: 'down' } });
+    });
   });
 
   describe('apagado ordenado', () => {

@@ -47,7 +47,7 @@ describe('API9 — /docs con Scalar (D7)', () => {
     app = undefined;
   });
 
-  it('DOCS_HABILITADO=false (default): /docs responde 404', async () => {
+  it('API9 — /docs protegido fuera de desarrollo: DOCS_HABILITADO=false (default) responde 404', async () => {
     app = await crearAplicacion(false);
 
     const respuesta = await request(servidor(app)).get('/docs');
@@ -55,7 +55,7 @@ describe('API9 — /docs con Scalar (D7)', () => {
     expect(respuesta.status).toBe(404);
   });
 
-  it('DOCS_HABILITADO=true: /docs sirve el documento público con Scalar', async () => {
+  it('API9 — /docs accesible en desarrollo: DOCS_HABILITADO=true sirve el documento público con Scalar', async () => {
     app = await crearAplicacion(true);
 
     const respuesta = await request(servidor(app)).get('/docs');

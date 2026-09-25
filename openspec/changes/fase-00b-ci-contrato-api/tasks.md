@@ -1103,3 +1103,92 @@ revisar la cadena `stacked-to-main`.
   `sdd-design`). Ninguna tarea de este archivo los crea; T2 (ADR-0011, D5) y T3 (ADR-0010, D1) los
   implementan tal como quedaron redactados. Su aceptación formal es decisión del usuario, en
   cualquier momento hasta el cierre (T7 la registra si ocurre antes).
+
+---
+
+## Remediación — cobertura de nombres de escenario (post `sdd-verify`)
+
+Ejecutada en una sesión de `sdd-apply` posterior a `sdd-verify`, sobre el WARNING 1 de
+`verify-report.md` §2/§3 (punto 3 del checklist, "PARCIAL"): 15 de 36 escenarios aplicables de las
+specs delta de esta fase no tenían un test nombrado literalmente `<id> — <título del escenario>`,
+aunque los 36 ya tenían cobertura funcional real (verificada en vivo o bajo otro nombre). No es una
+tarea nueva (T1-T7 quedan como estaban, las siete `[x]`); es una corrección dirigida sobre el mismo
+alcance ya aprobado, pedida explícitamente por el usuario antes de disparar `sdd-archive`.
+
+**Grupo A — solo renombrar (7 escenarios, mismo comportamiento, sin aserciones nuevas):**
+
+| Escenario | Archivo | Acción |
+|---|---|---|
+| `CI5 — El workflow de CI invoca la misma definición, sin duplicarla` | `test/fronteras/workflow-ci.spec.ts:25` | Título del `it()` reemplazado por el literal exacto |
+| `CI6 — El workflow ejecuta la secuencia completa en cada push y PR` | `test/fronteras/workflow-ci.spec.ts:33` | Ídem |
+| `API9 — /docs accesible en desarrollo` | `test/contrato/docs.spec.ts:58` | Ídem (prefijo agregado al título existente) |
+| `API9 — /docs protegido fuera de desarrollo` | `test/contrato/docs.spec.ts:50` | Ídem |
+| `API9 — El proceso rechaza arrancar con /docs habilitado en producción` | `src/plataforma/config/cargar-configuracion.spec.ts:168` | Ídem |
+| `PLT7 — Un endpoint modificado sin regenerar el contrato hace fallar npm run verify` | `test/fronteras/verificar-deriva-contrato.spec.ts` | Título del `it()` existente (antes "nombra el archivo y la primera línea distinta") reemplazado, con el detalle original como sufijo tras `:` |
+| `PLT7 — gitleaks, commitlint y npm audit no forman parte de npm run verify` | `test/fronteras/contrato-scripts.spec.ts:9` | Título del `it()` reemplazado por el literal exacto |
+
+`API1 — Generar dos veces sin cambios produce el mismo documento` ya tenía el nombre exacto
+(`test/contrato/documentacion.spec.ts:42`); no se tocó.
+
+**Caso especial — `API4 — GET /health queda exento de application/problem+json`:** el test
+existente en `test/e2e/aplicacion.e2e-spec.ts:176` (`PLT4 — El cuerpo de health no expone
+secretos`) resultó ser un escenario **legítimo y distinto** de `PLT4` (confirmado contra
+`openspec/specs/plataforma/spec.md`, Requirement PLT4, tercer escenario) — no se podía renombrar
+sin perder cobertura de PLT4. Se agregó un `it()` nuevo, con el nombre exacto de API4, en el mismo
+`describe('con Redis caído')`, que aserta que el 503 de `/health` nunca lleva
+`Content-Type: application/problem+json` ni el campo `codigo` del catálogo de errores.
+
+**Grupo B — tests nuevos y reales (8 escenarios sin ningún test dedicado):**
+
+| Escenario | Archivo nuevo/extendido | Cómo se hizo real |
+|---|---|---|
+| `CI1 — Un error de lint bloquea el push` | `test/fronteras/hook-pre-push.spec.ts` (nuevo) | `git push` real contra un repositorio bare local temporal, con el `.githooks/pre-push` **real** copiado byte a byte a un repositorio git aislado (nunca la raíz de este proyecto — invocar `npm run ci:hook` de la raíz real recrearía la recursión sin salida que ya documentó `workflow-ci.spec.ts` para CI7). El `ci:hook` del repositorio aislado reproduce la composición real (mismos nombres de paso, mismo orden, leídos de `package.json`) con cada paso atómico sustituido por un `exit 0`/`exit 1` controlable |
+| `CI1 — El hook se salta explícitamente` | Ídem | Mismo repositorio aislado, `git push --no-verify` real; se confirma que el mensaje de arranque del hook nunca aparece en la salida y que el remoto sí recibe el commit |
+| `CI1 — El hook no corre tests de integración` | Ídem | Mismo repositorio aislado, sin `DATABASE_URL`/`REDIS_URL` en el entorno del proceso hijo; el push termina en verde porque la composición real de `ci:hook` (confirmada dinámicamente, no hardcodeada) nunca incluye `test:integracion` |
+| `API1 — El contrato generado coincide con el commiteado` | `test/fronteras/verificar-deriva-contrato.spec.ts` (extendido) | Llama a `verificarDerivaContrato()` real (la misma función que usa `npm run contrato:deriva`) contra los dos archivos `openapi/*.json` **commiteados** de este repositorio, sin fabricar strings |
+| `PLT7 — npm run verify en verde ejecuta las seis comprobaciones` | `test/fronteras/contrato-scripts.spec.ts` (extendido) | Test de contenido/orden real sobre `package.json` (mismo criterio que CI5/CI6/CI7 en `workflow-ci.spec.ts`): confirma que los cinco pasos `&&` de `verify` cubren las seis comprobaciones (el paso `vitest run` cubre dos) en el orden correcto. No ejecuta `npm run verify` de verdad desde este test por la misma razón de recursión de CI1/CI7; el resultado "en verde" ya está confirmado en vivo en esta misma sesión de remediación (ver abajo) |
+| `PLT7 — Un fallo en cualquier comprobación hace fallar npm run verify` | Ídem | `npm run verify` real, pero en un `package.json` aislado que reproduce el número y el orden reales de pasos de `verify` con stubs controlables (marcador de archivo por paso); un paso intermedio falla a propósito y se confirma que ningún paso posterior llegó a escribir su marcador |
+| `PLT7 — Un cambio en /health sin regenerar el contrato se detecta aunque el documento público esté vacío` | `test/fronteras/verificar-deriva-contrato.spec.ts` (extendido) | Muta temporalmente un campo real de `openapi/openapi.interno.json` (commiteado) en disco, corre `verificarDerivaContrato()` real, confirma que falla nombrando el archivo interno mientras el público (con `paths: {}`) sigue "coincide byte a byte", y restaura el archivo original en `finally` (confirmado con `git status --porcelain openapi/` limpio después de correr el test) |
+
+**Desviación encontrada y corregida durante esta remediación (no oculta ningún fallo real):**
+`spawnSync('npm', ...)` sin `shell: true` falla con `EINVAL` en Windows (`npm` se resuelve a
+`npm.cmd`, que Node no puede lanzar directamente — limitación documentada de `child_process`, no de
+este proyecto). Se usa `shell: true` solo para este caso puntual (`contrato-scripts.spec.ts`), con
+el argumento y el `cwd` fijos (sin texto interpolado en la línea de comando), a diferencia de
+`ejecutarHerramienta` que evita `shell: true` por rutas de repositorio variables (matriz de
+amenazas de este archivo). Los tests de `hook-pre-push.spec.ts` no lo necesitan: invocan `git`
+directamente (binario real, no `.cmd`).
+
+**Desviación encontrada y corregida (contención real, mismo patrón que T6/T7):** en una corrida real
+de `npm run ci` completo, `hook-pre-push.spec.ts` y el nuevo test de `contrato-scripts.spec.ts`
+(varios `spawn`/`npm run` anidados reales cada uno) superaron su timeout de 30 s bajo la contención
+de Docker Desktop en Windows ya documentada por T6/T7 — no por un fallo del mecanismo bajo prueba
+(confirmado corriendo los mismos archivos solos, en verde, repetidas veces). Se subió su timeout
+explícito a 90 s (60 s para el test de deriva de `/health`, que reconstruye la app real dos veces).
+Con el ajuste, una corrida limpia de `npm run ci` completo (ver Work Unit Evidence abajo) terminó en
+verde con estos archivos incluidos.
+
+**Hallazgo no atribuible a esta remediación (confirmado, no oculto):** dos de las cuatro corridas
+reales de `npm run ci` de esta sesión fallaron en `test/integracion/salud.spec.ts` ("el indicador de
+postgres responde 'up' contra el contenedor real"), un archivo que esta remediación no toca —
+mismo indicador y mismo test que T3-T7 ya usaron sin problema. Corrido solo (`vitest --project
+integracion salud`), pasa 4/4 en verde. Es la misma clase de contención real de Docker/Testcontainers
+en Windows que T6/T7 ya documentaron para otros archivos, no una regresión de esta remediación.
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- hook-pre-push` — exit 0, 3/3. `npm test -- verificar-deriva-contrato` — exit 0, 4/4 (2 nuevos). `npm test -- contrato-scripts` — exit 0, 5/5 (2 nuevos). `npm run test:e2e` — exit 0, 8/8 (1 nuevo, era 7/7). |
+| Runtime harness command/scenario and exact result | `npm test` (proyecto `unit` completo) — exit 0, 34 archivos, 145 tests. `npm run verify` (con `LUXE_COMMITS_DESDE=f3fd4d3`) — exit 0, 37 archivos, 154 tests. `npm run ci` completo — 3 de 4 corridas reales en esta sesión: la primera falló por el timeout de 30 s documentado arriba (corregido después); dos fallaron únicamente en `test/integracion/salud.spec.ts` (hallazgo no atribuible, arriba); la cuarta terminó **exit 0** completa: unit 145/145, unit+integración con cobertura 154/154, e2e 8/8, `gitleaks: sin secretos detectados`, `commits: 16/16 válidos`, fronteras sin violaciones, Spectral 0 errores/2 advertencias (las mismas ya documentadas por T5), `oasdiff: SIN BASE DE COMPARACIÓN` (correcto, primer PR de la cadena), auditoría sin vulnerabilidades `>= high` sin excepción, `flujos` (actionlint) en verde. |
+| Rollback boundary | Revertir `test/fronteras/hook-pre-push.spec.ts` (nuevo), los cambios de título/aserciones en `test/fronteras/workflow-ci.spec.ts`, `test/contrato/docs.spec.ts`, `src/plataforma/config/cargar-configuracion.spec.ts`, `test/fronteras/verificar-deriva-contrato.spec.ts`, `test/fronteras/contrato-scripts.spec.ts` y `test/e2e/aplicacion.e2e-spec.ts` — solo archivos de test, ningún archivo de `src/` de producción cambia; T1-T7 quedan intactos. |
+
+**Ratio final:** 21/36 (58%) → **36/36 (100%)** de los escenarios aplicables con un test nombrado
+literalmente `<id> — <título del escenario>` (confirmado con una búsqueda literal de los 15 títulos
+contra `test/` y `src/` tras esta remediación). El punto 3 del checklist de cierre
+(`verify-report.md` §3) queda satisfecho sin reservas.
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD):** el diff real de esta remediación
+es **382 líneas de autoría** (`git diff --numstat` sobre los seis archivos modificados + el archivo
+nuevo, sin contar `.env.example`/`.gitignore`, fuera de alcance de esta sesión), dentro del
+presupuesto de 400 líneas; no se pidió `size:exception`.

@@ -22,7 +22,7 @@ const workflow = readFileSync(
 );
 
 describe('CI5/CI6 — el workflow de GitHub Actions invoca npm run ci sin redefinir pasos', () => {
-  it('el workflow invoca "npm run ci" y no repite comprobaciones individuales en YAML', () => {
+  it('CI5 — El workflow de CI invoca la misma definición, sin duplicarla', () => {
     expect(workflow).toMatch(/run:\s*npm run ci\s*$/m);
     // Ninguno de los pasos atómicos que compone `ci` se repite como un `run:` propio del YAML.
     for (const pasoAtomico of ['npm run lint', 'npm run typecheck', 'npm run fronteras', 'npm run test:e2e']) {
@@ -30,7 +30,7 @@ describe('CI5/CI6 — el workflow de GitHub Actions invoca npm run ci sin redefi
     }
   });
 
-  it('está configurado para correr en cada push y en cada pull request', () => {
+  it('CI6 — El workflow ejecuta la secuencia completa en cada push y PR', () => {
     expect(workflow).toMatch(/^on:/m);
     expect(workflow).toContain('push:');
     expect(workflow).toContain('pull_request:');
