@@ -123,7 +123,7 @@ repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta 
 
 ## Comandos
 
-Confirmados en la Fase 00a (`package.json`):
+Confirmados en la Fase 00a y la Fase 00b (`package.json`):
 
 | Comando | Qué hace |
 |---|---|
@@ -132,12 +132,24 @@ Confirmados en la Fase 00a (`package.json`):
 | `npm run prisma:generar` | Genera el cliente Prisma en `src/plataforma/prisma/generado/` (también corre en `postinstall`) |
 | `npm run lint` | ESLint (flat config) sobre todo el repo |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run fronteras` | `dependency-cruiser` sobre `src/` con las reglas de fronteras |
+| `npm run fronteras` | `dependency-cruiser` sobre `src/` y `scripts/` con las reglas de fronteras |
 | `npm test` | Vitest, proyecto `unit` (sin infraestructura) |
 | `npm run test:integracion` | Vitest, proyecto `integracion` (Postgres + Redis reales vía Testcontainers) |
 | `npm run test:e2e` | Vitest, proyecto `e2e` (arranque completo con Supertest) |
-| `npm run test:cobertura` | Vitest con cobertura sobre `unit` + `integracion` (solo reporta; sin umbral en 00a, D2) |
-| `npm run verify` | Puerta única: `prisma:generar` → `lint` → `typecheck` → `fronteras` → tests unitarios e integración, en menos de 3 minutos con Postgres/Redis ya arriba |
+| `npm run test:cobertura` | Vitest con cobertura sobre `unit` + `integracion`; umbral de líneas 80 % (`coverage_threshold`, D15 de la Fase 00b) |
+| `npm run verify` | Puerta local de build: `prisma:generar` → `lint` → `typecheck` → `fronteras` → deriva del contrato → tests unitarios e integración (seis comprobaciones), en menos de 3 minutos con Postgres/Redis ya arriba |
+| `npm run contrato:generar` | Genera `openapi/openapi.json` (público) y `openapi/openapi.interno.json` (completo) desde el código (D1/D2 de la Fase 00b) |
+| `npm run contrato:deriva` | Regenera el contrato en memoria y lo compara byte a byte con lo commiteado; falla si difiere |
+| `npm run contrato:lint` | Lint del contrato con Spectral (`.spectral.yaml`) sobre ambos documentos |
+| `npm run contrato:diff` | Compara el documento público contra `main` con oasdiff; sin base commiteada, deja constancia sin fallar (D11) |
+| `npm run secretos` | `gitleaks` sobre el árbol de trabajo (rápido; parte del hook `pre-push`) |
+| `npm run secretos:historial` | `gitleaks` sobre el historial completo de commits (lento; solo en `ci`) |
+| `npm run commits` | `commitlint` sobre el rango `merge-base(main, HEAD)..HEAD` (u override con `LUXE_COMMITS_DESDE`) |
+| `npm run auditoria` | `npm audit` filtrado por el umbral `high` y las excepciones versionadas de `auditoria-excepciones.json` |
+| `npm run flujos` | Valida estáticamente `.github/workflows/` con `actionlint` |
+| `npm run changelog` | Regenera `CHANGELOG.md` con `git-cliff` desde los commits de Conventional Commits (`cliff.toml`); nunca se edita a mano |
+| `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
+| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + lint/diff del contrato + auditoría + validación de workflows |
 
 `npm run evals` llega en la Fase 07, cuando exista el agente.
 

@@ -33,6 +33,7 @@
     "commits": "npm run herramienta -- scripts/cli.ts commits",
     "auditoria": "npm run herramienta -- scripts/cli.ts auditoria",
     "flujos": "npm run herramienta -- scripts/cli.ts flujos",
+    "changelog": "git-cliff -o CHANGELOG.md",
     "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
     "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
@@ -58,6 +59,7 @@
     "@commitlint/config-conventional": "^21.2.3",
     "@nestjs/cli": "^12.0.5",
     "@stoplight/spectral-cli": "^6.16.3",
+    "git-cliff": "^2.14.2",
     "@nestjs/testing": "^12.1.0",
     "@swc/core": "^1.16.2",
     "@testcontainers/postgresql": "^12.1.0",

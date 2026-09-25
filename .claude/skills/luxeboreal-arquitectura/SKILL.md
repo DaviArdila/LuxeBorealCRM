@@ -10,7 +10,7 @@ vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/
 y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
 una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
-> Estado: borrador 0.1 — se ajusta al cerrar las Fases 00a y 00b con lo que el scaffold real haya fijado.
+> Estado: 0.2 — ajustada al cerrar la Fase 00b (CI y contrato de API) con lo que el pipeline real fijó.
 
 ## 1. Estructura
 
@@ -25,6 +25,11 @@ src/
 │   ├── prisma/                 PrismaService (conexión y ciclo de vida)
 │   ├── redis/                  cliente Redis inyectable
 │   ├── salud/                  GET /health con @nestjs/terminus (indicadores postgres/redis, D4/D13)
+│   ├── documentacion/          pipeline del contrato OpenAPI: construir/filtrar/ordenar/serializar
+│   │                           el documento, respuestaDesdeZod, montarDocumentacion (Scalar en
+│   │                           /docs, Fase 00b D1/D4/D7)
+│   ├── errores/                catálogo de códigos RFC 9457 + filtro global problem+json
+│   │                           (Fase 00b D5)
 │   └── outbox/                 tabla outbox + publicador
 ├── compartido/                 funciones puras sin dependencias: dinero, texto, número
 └── modulos/
@@ -61,8 +66,9 @@ modulos/<m>/
 - Sin ciclos entre módulos. Si A necesita reaccionar a algo de B y B a algo de A, uno de los dos
   sentidos es un **evento**.
 - **Herramienta elegida: `dependency-cruiser`** (`.dependency-cruiser.cjs`, decisión del usuario,
-  fijada en la Fase 00a). Diez reglas, todas `severity: 'error'`, cada una con un test de fixture
-  que la viola (`test/fronteras/dependency-cruiser.spec.ts`):
+  fijada en la Fase 00a). Once reglas, todas `severity: 'error'`, cada una con un test de fixture
+  que la viola (`test/fronteras/dependency-cruiser.spec.ts`); `npm run fronteras` cruza `src` y
+  `scripts` (Fase 00b):
 
   | # | Regla | Qué prohíbe |
   |---|---|---|
@@ -76,6 +82,7 @@ modulos/<m>/
   | 8 | `src-no-importa-test` | `src/` importando de `test/` |
   | 9 | `src-sin-dev-dependencies` | `src/` importando una `devDependency` |
   | 10 | `sin-irresolubles` | imports que no resuelven a ningún módulo real |
+  | 11 | `scripts-solo-barriles-de-plataforma` | `scripts/` importando algo de `plataforma/` que no sea el `index.ts` público de un submódulo (Fase 00b D12) |
 
 ## 3. Inyección de dependencias
 
@@ -134,9 +141,15 @@ modulos/<m>/
 | Nivel | Qué | Dónde | Infra |
 |---|---|---|---|
 | Unitario (Vitest) | `dominio/` y `compartido/`, casos de uso con puertos falsos | junto al archivo, `*.spec.ts` | ninguna |
+| Fronteras (Vitest) | scripts de la puerta de CI, reglas de `dependency-cruiser`, ESLint, commitlint | `test/fronteras/` | ninguna (algunos casos usan Docker real: gitleaks, oasdiff, actionlint — ADR-0009) |
+| Contrato (Vitest) | pipeline OpenAPI ejercitado con el controlador *fixture* de `test/contrato/fixture/` (D3 de la Fase 00b): nunca se importa desde `src/`, la frontera 8 lo hace estructuralmente imposible | `test/contrato/` | ninguna |
 | Integración (Vitest) | repositorios, máquina de estados, colas, controladores | `test/integracion/` | Postgres + Redis reales, base aislada por worker |
 | E2E (Vitest + Supertest) | flujo completo por HTTP con canal y LLM falsos | `test/e2e/` | stack completo |
 | Evals | conversaciones de referencia contra LLM simulado (siempre) o real (bajo demanda) | `test/evals/` | según modo |
+
+Fronteras y Contrato corren dentro del proyecto `unit` de Vitest (`npm test`, sin infraestructura
+propia); son filas separadas en esta tabla porque agrupan un tipo de comportamiento distinto
+(puerta de CI y pipeline de contrato), no porque tengan su propio proyecto de Vitest.
 
 - Cada escenario de las specs tiene al menos un test nombrado `<R#> — <título del escenario>`
   (ej. `R13 — Respuesta agrupada en el mínimo de mensajes`); así verify comprueba la cobertura por
@@ -178,13 +191,21 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 - El esquema **zod** de cada endpoint es la **única fuente**: se pasa con la opción `schema` a
   `@Body()`/`@Query()`/`@Param()`/`@RawBody()` (`StandardSchemaValidationPipe`, soporte nativo de
   NestJS 12 — enmienda 2026-09-23 de ADR-0008; sin paquete de terceros como `nestjs-zod`), y
-  `@nestjs/swagger` genera el fragmento OpenAPI desde ese mismo esquema. Nunca se documenta un
-  endpoint con `@ApiProperty` por separado.
+  `@nestjs/swagger` genera el fragmento OpenAPI desde ese mismo esquema. La respuesta se documenta
+  con `respuestaDesdeZod(esquema, opciones)` (`plataforma/documentacion`, Fase 00b D4) — nunca con
+  `@ApiProperty` a mano.
 - Los DTO viven en `interfaz/` del módulo dueño, junto a los controllers que los usan.
-- Nadie escribe ni edita `openapi/openapi.json` a mano; se genera.
-- Si un commit agrega o cambia un endpoint, **el mismo commit** actualiza
-  `openapi/openapi.json` (pipeline y CI en la Fase 00b: regeneración, Scalar en `/docs`, Spectral,
-  oasdiff).
+- Nadie escribe ni edita `openapi/openapi.json` ni `openapi/openapi.interno.json` a mano; ambos se
+  generan desde una sola construcción del documento (`npm run contrato:generar`, ADR-0010, Fase
+  00b D1): el **interno** tiene todo, el **público** es la función pura `filtrarDocumentoPublico`
+  que retira lo etiquetado `internal` (health check, webhooks, kill switch).
+- Todo error de respuesta sigue RFC 9457 (`plataforma/errores`, `FiltroProblemJson`, ADR-0011): un
+  código estable del catálogo `CATALOGO_CODIGOS`, nunca el `status` HTTP como código y nunca el
+  valor recibido en el detalle de validación (Fase 00b D5).
+- Si un commit agrega o cambia un endpoint, **el mismo commit** regenera y commitea los dos
+  documentos (`npm run contrato:generar`) y `npm run verify`/`npm run ci` los verifica: deriva
+  (`contrato:deriva`), lint (`contrato:lint`, Spectral) y cambios incompatibles contra `main`
+  (`contrato:diff`, oasdiff, D11) — pipeline real desde la Fase 00b, ya no aspiracional.
 
 ## 11. Documentación
 
@@ -194,12 +215,14 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
   nunca en `dominio/`, `infraestructura/` ni tipos internos.
 - Runbooks de operación (qué hacer si algo falla en producción) van en `docs/operacion/`, desde la
   Fase 09.
-- `CHANGELOG.md` se genera desde Conventional Commits; la herramienta es **git-cliff**
-  (decidido 2026-09-23; se configura en la Fase 00b).
+- `CHANGELOG.md` se genera desde Conventional Commits con **git-cliff** (`npm run changelog`,
+  `cliff.toml`, decidido 2026-09-23, configurado en la Fase 00b). Nunca se edita a mano: una
+  edición manual se sobrescribe al volver a generar (CI8).
 
 ## 12. Checklist de cierre (no se reporta "listo" sin esto)
 
-1. `npm run verify` en verde (lint, typecheck, fronteras, tests unitarios e integración).
+1. `npm run verify` en verde (lint, typecheck, fronteras, deriva del contrato, tests unitarios e
+   integración — seis comprobaciones, PLT7).
 2. `npm run test:e2e` si se tocó un flujo, Docker, esquema o `main.ts`.
 3. Cada escenario de las specs delta del change (`openspec/changes/fase-NN-<nombre>/specs/`) tiene
    su test y pasa.
@@ -209,5 +232,6 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 7. Sin `Date.now()`, sin `process.env` fuera de config, sin imports cruzados a rutas internas.
 8. Un commit por unidad de trabajo (Conventional Commits, sin atribución de IA), en rama de fase,
    nunca en `main`; push, PR y merge los decide el usuario. Nunca `.env` ni secretos.
-9. Si cambió un endpoint: `openapi/openapi.json` regenerado y commiteado en el mismo commit,
-   Spectral y oasdiff en verde (§10).
+9. Si cambió un endpoint: `openapi/openapi.json` y `openapi/openapi.interno.json` regenerados y
+   commiteados en el mismo commit (`npm run contrato:generar`), `contrato:lint` (Spectral) y
+   `contrato:diff` (oasdiff contra `main`) en verde (§10).

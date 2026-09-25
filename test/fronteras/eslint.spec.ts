@@ -47,13 +47,20 @@ describe('fronteras — eslint (D10)', () => {
       const ids = idsDe(await lint(codigoConReloj, 'src/main.ts'));
 
       expect(ids).toContain('no-restricted-syntax');
-      // 45 s (era 15 s): la primera llamada a ESLint en este archivo crea el `projectService` de
-      // typescript-eslint (TypeScript real, no incremental todavía), y desde T6 (fase 00b) compite
-      // por CPU con hasta tres archivos de test que lanzan contenedores Docker reales en paralelo
-      // (gitleaks de T1, oasdiff de T5, actionlint de T6) — medido de forma intermitente en la
-      // máquina de desarrollo real (vitest.config.ts documenta el mismo hallazgo para el timeout
-      // por defecto).
-    }, 45_000);
+      // 120 s (era 15 s, luego 45 s): la primera llamada a ESLint en este archivo crea el
+      // `projectService` de typescript-eslint (TypeScript real, no incremental todavía). Bajo
+      // `npm run test:cobertura` dentro de `npm run ci` completo (T7, medido en la máquina de
+      // desarrollo real) compite a la vez con: instrumentación de cobertura v8 sobre los proyectos
+      // `unit` + `integracion`, los contenedores de Testcontainers de `integracion`, y hasta tres
+      // archivos de test que lanzan contenedores Docker reales en paralelo (gitleaks de T1,
+      // oasdiff de T5, actionlint de T6) — 45 s no bastó en esa combinación (observado real: FAIL
+      // por timeout corriendo `npm run ci` de punta a punta antes de subir a 120 s). Vitest
+      // paraleliza archivos de test independientes por diseño (más rápido en el caso común); no se
+      // desactivó esa paralelización solo para este caso extremo (D8 no la pide para `ci`, y
+      // serializar `unit`+`integracion` alargaría cada corrida normal sin necesidad) — en cambio,
+      // se da a este test, específicamente lento por naturaleza (creación de un `projectService`
+      // real), el margen que necesita para el peor caso medido.
+    }, 120_000);
 
     it('Date() sin new viola la regla fuera de plataforma/reloj', async () => {
       const ids = idsDe(await lint('export const hora = Date();\n', 'src/main.ts'));

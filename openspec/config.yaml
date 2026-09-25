@@ -10,13 +10,14 @@ context: |
   Community como plataforma de canales. Un solo negocio (ADR-0006). Estado: planeación,
   sin código todavía — el scaffold real se crea en la Fase 00a.
 
-# strict_tdd es la puerta de Gentle-AI y MUST quedar en false mientras no exista un runner real
-# (no hay package.json). apply.tdd es la convención del proyecto: TDD estricto desde la primera
-# línea de código. No se contradicen: antes de la Fase 00a no hay código que probar.
-# La Fase 00a MUST terminar con `npm test` corriendo (runner Vitest confirmado); la Fase 00b MUST
-# terminar con strict_tdd en true (criterio de salida en docs/fases/README.md); a partir de ahí
-# ambos valen lo mismo y manda strict_tdd.
-strict_tdd: false
+# strict_tdd pasó a true al cerrar la Fase 00b (T7, 2026-09-25): criterio de salida de
+# docs/fases/README.md. A partir de aquí strict_tdd (la puerta de Gentle-AI) y apply.tdd (la
+# convención del proyecto: RED → GREEN → REFACTOR estricto por tarea) valen lo mismo; strict_tdd
+# manda. Historial: strict_tdd quedó en false durante la planeación y toda la Fase 00a porque no
+# había runner real todavía (no había package.json); la Fase 00a terminó con `npm test` corriendo
+# (runner Vitest confirmado) y la Fase 00b (este archivo) confirmó el ciclo completo con `npm run ci`
+# real en verde antes de este cambio.
+strict_tdd: true
 
 rules:
   general:
@@ -116,7 +117,10 @@ rules:
     build_command: "npm run verify" # Confirmado en la Fase 00a (T2, T10): prisma:generar → lint →
                                      # typecheck → fronteras (dependency-cruiser) → tests
                                      # unitarios e integración, en un solo comando.
-    coverage_threshold: 0 # revisado en 00a: 0; se fija en 00b con CI.
+    coverage_threshold: 80 # D15 de fase 00b/design.md, T7 (2026-09-25): umbral = max(60,
+                           # floor(medido/5)*5-5) sobre `npm run test:cobertura` real
+                           # (88.03% de líneas) → 80. MUST coincidir con
+                           # vitest.config.ts:coverage.thresholds.lines.
     checklist:
       - >-
         Checklist de cierre §12 de la skill luxeboreal-arquitectura (9 puntos:

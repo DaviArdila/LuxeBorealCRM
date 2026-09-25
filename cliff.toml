@@ -1,0 +1,53 @@
+# Configuración de git-cliff (CI8, D16 de openspec/changes/fase-00b-ci-contrato-api/design.md).
+# `npm run changelog` regenera CHANGELOG.md desde los commits de Conventional Commits; el archivo
+# generado MUST NOT editarse a mano (skill luxeboreal-arquitectura §11).
+
+[changelog]
+header = """
+# Changelog
+
+Generado automáticamente con [git-cliff](https://git-cliff.org) a partir de los commits de
+Conventional Commits (CI8, `openspec/specs/integracion-continua/spec.md`). **No editar a mano**:
+cualquier corrección se hace corrigiendo el commit origen (si aún no se publicó) o agregando un
+commit nuevo, nunca editando este archivo directamente.
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [Sin publicar]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=7, end="") }}](../../commit/{{ commit.id }}))\
+    {% endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+postprocessors = []
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9]*"
+topo_order = false
+sort_commits = "oldest"
+
+commit_parsers = [
+  { message = "^feat", group = "Características" },
+  { message = "^fix", group = "Correcciones" },
+  { message = "^docs", group = "Documentación" },
+  { message = "^refactor", group = "Refactorizaciones" },
+  { message = "^perf", group = "Rendimiento" },
+  { message = "^test", group = "Tests" },
+  { message = "^ci", group = "Integración continua" },
+  { message = "^build", group = "Build" },
+  { message = "^style", group = "Estilo" },
+  { message = "^revert", group = "Reversiones" },
+  { message = "^chore", group = "Mantenimiento" },
+]

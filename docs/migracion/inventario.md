@@ -20,7 +20,7 @@ Leyenda de decisión:
 | `lib/logger.ts` | Rediseñar | `nestjs-pino` con redacción | 00 | |
 | `lib/tiempo.ts` | Conservar | `plataforma/reloj` (`Clock` inyectable) | 00 | B8; se elimina el reloj global mutable |
 | `lib/dinero.ts`, `lib/texto.ts`, `lib/numero.ts` | Conservar | `compartido/` | 00 | **Migrado** — `src/compartido/dinero/`, `src/compartido/texto/`, `src/compartido/numero/` (Fase 00a, T5, commit `d2aa48a`); funciones puras con tests reescritos |
-| `health/` | Rediseñar | `@nestjs/terminus` | 00 | |
+| `health/` | Rediseñar | `@nestjs/terminus` | 00 | **Migrado** — `src/plataforma/salud/` (Fase 00a: indicadores Postgres/Redis, apagado ordenado; Fase 00b, T4: `esquemaRespuestaSalud` documenta la respuesta desde zod, `FiltroSaludOperativo` la exime de `application/problem+json`, y `GET /health` entra al documento OpenAPI **interno**, excluido del público) |
 | `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | La regla "solo la capa de datos toca Prisma" se conserva, pero por módulo |
 | `envios/calculo.ts` | Conservar | `catalogo/dominio/envio` | 02 | B12, puro |
 | `horario/dentroHorario.ts` | Conservar | `horario/` | 02 | |

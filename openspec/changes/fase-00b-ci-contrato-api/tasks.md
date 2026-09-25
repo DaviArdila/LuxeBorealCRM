@@ -27,7 +27,7 @@ verde y su commit anotado.
 - [x] T4 — `GET /health` en el contrato interno y `/docs` con Scalar (S4)
 - [x] T5 — Lint (Spectral) y diff (oasdiff) del contrato (S5)
 - [x] T6 — Workflow de GitHub Actions y `npm run ci` (S6)
-- [ ] T7 — Cierre: `git-cliff`, `strict_tdd: true`, `coverage_threshold`, documentación (S7)
+- [x] T7 — Cierre: `git-cliff`, `strict_tdd: true`, `coverage_threshold`, documentación (S7)
 
 ## Review Workload Forecast
 
@@ -1021,6 +1021,70 @@ proposal).
 - Nota para Q2 (no bloquea, sigue pendiente): la redacción de `err.message` en logs no se tocó en
   ninguna tarea de esta fase porque ninguna la necesitó (D5); si una fase futura sí la necesita, se
   pregunta al usuario entonces, sin modificar aquí la tabla D9 de 00a.
+
+**Medición real de cobertura (D15, máquina real, 2026-09-25):** `npm run test:cobertura` sobre el
+estado final de 00a+00b: **88.34% statements, 80% branches, 89.13% funcs, 88.03% lines** (470/532,
+188/235, 123/138, 456/518). Fórmula `umbral = max(60, floor(medido / 5) * 5 - 5)` aplicada sobre
+**líneas** (88.03): `floor(88.03/5) = 17`, `17*5-5 = 80`, `max(60, 80) = 80`. `coverage_threshold: 80`
+escrito en `openspec/config.yaml` y `coverage.thresholds.lines: 80` en `vitest.config.ts`;
+confirmado que ambos coinciden. Verificación real de que el umbral bloquea de verdad: se subió
+temporalmente a `95` y `npm run test:cobertura` salió con código 1 imprimiendo
+`ERROR: Coverage for lines (88.03%) does not meet global threshold (95%)`; restaurado a `80`,
+volvió a salir en verde (código 0) con las mismas cifras.
+
+**Checkpoint de CI7 resuelto sin ejecutar `npm run ci` desde el propio test (deviación registrada
+también en la nota de T6):** al correr `npm run ci` de punta a punta por primera vez (evidencia de
+T6 y de esta tarea), `test:cobertura` combina instrumentación de cobertura v8 + Testcontainers de
+`integracion` + hasta tres archivos con Docker real (`buscar-secretos`, `comparar-contrato`,
+`validar-flujos`) en paralelo — la contención real resultante hizo que el timeout de 45 s fijado en
+T6 para `test/fronteras/eslint.spec.ts` (creación del `projectService` de typescript-eslint) **no
+bastara** bajo esa combinación concreta (`npm run ci` completo falló una vez, en ese paso exacto,
+por timeout — no por ningún fallo real del código). Se subió a 120 s (documentado en el propio
+archivo) en vez de reducir la paralelización de Vitest para todo el proyecto (eso penalizaría cada
+corrida normal de `npm test`/`npm run verify`, que sí terminan rápido). Verificado con `npm run ci`
+completo, real, dos veces seguidas tras el ajuste: la primera en **1m27.998s** (antes del ajuste de
+120 s, ese intento específico había fallado en el paso `test:cobertura`) y, ya con el ajuste
+aplicado, una corrida limpia completa en **4m57.274s** — variación esperada de la contención real de
+esta máquina, no de un comportamiento distinto del pipeline; las 138+147+7 pruebas y las ocho
+comprobaciones adicionales (`fronteras`, `contrato:lint`, `contrato:diff`, `auditoria`, `flujos`)
+terminaron en verde en ambas corridas exitosas.
+
+**Work Unit Evidence:**
+
+| Evidence | Resultado |
+|---|---|
+| Focused test command and exact result | `npm test -- changelog` — exit 0; 2/2 (CI8: agrupación por tipo de Conventional Commits contra un repositorio git aislado; edición manual sobrescrita al regenerar). Primer intento real: 2/2 en rojo — `fileURLToPath` faltante (`new URL(...).pathname` deja `/C:/...` con `%20` en Windows, `MODULE_NOT_FOUND`); corregido usando `fileURLToPath`. Segundo hallazgo real: la aserción original esperaba el mensaje del commit en minúscula, pero la plantilla de `cliff.toml` (`upper_first`) capitaliza la primera letra; corregido comparando en minúsculas. |
+| Runtime harness command/scenario and exact result | `npm run changelog` real sobre el historial completo de esta rama — exit 0; `CHANGELOG.md` generado con 93 líneas, agrupado en "Características", "Correcciones", "Documentación" y "Mantenimiento", con enlace a cada commit. `npm run ci` completo, real, con Docker arriba y `LUXE_COMMITS_DESDE=f3fd4d3` — **exit 0** en la corrida limpia final (**4m57.274s**; ver el checkpoint de CI7 arriba para la corrida que sí falló antes del ajuste de timeout, y por qué). |
+| Full verify | `npm run verify` — exit 0 en **76.958s** (`time`); lint, typecheck, fronteras (95 módulos, 189 dependencias), deriva del contrato y Vitest (unit 36 archivos/147 tests, incluye `integracion`) en verde. `npm test` (solo unit) corrido de nuevo tras todos los cambios de esta tarea: 33 archivos, 138 tests, exit 0. |
+| Rollback boundary | Revertir `cliff.toml`, `CHANGELOG.md`, `test/fronteras/changelog.spec.ts`, `changelog` de `package.json` (+ devDependency `git-cliff`), `coverage.thresholds.lines` de `vitest.config.ts`, el timeout de 120 s de `test/fronteras/eslint.spec.ts` (queda en 45 s, el valor de T6), `strict_tdd`/`coverage_threshold` de `openspec/config.yaml`, y las secciones nuevas de `CLAUDE.md`, la skill `luxeboreal-arquitectura`, `docs/fases/README.md` y `docs/migracion/inventario.md` — devuelve el estado exacto de T6; no toca código de producción. |
+
+**Desviación registrada (`docs/fases/README.md` — no se marcó `cerrada`):** el propio archivo de
+`design.md`/`tasks.md` de esta fase (nota inicial del prompt de esta sesión) instruyó explícitamente
+**no ejecutar `sdd-archive`** en esta sesión ("esa es una fase separada que el usuario dispara
+explícitamente"). La tabla de equivalencia del propio `docs/fases/README.md` define `cerrada` como
+"`sdd-verify` + `sdd-archive` completos: el `verify-report.md` queda archivado y los delta specs se
+fusionaron en `openspec/specs/`" — ninguna de las dos cosas ocurrió en esta sesión. Marcar la fila
+como `cerrada` sin haber corrido `sdd-verify`/`sdd-archive` habría sido una afirmación falsa según
+la propia regla del archivo (y contra `openspec/config.yaml` §archive: "No se archiva una fase cuyo
+`verify-report.md` no tenga el registro de cierre completo"). Se corrigió la descripción de la fila
+00b (la desviación que sí pedía `design.md`: "`/health` entra al contrato OpenAPI" → "entra al
+documento interno, excluido del público") y se dejó una nota explícita bajo la tabla: las siete
+tareas están completas y commiteadas, `npm run ci` está en verde, y la fila pasa a `cerrada` recién
+cuando el usuario dispare `sdd-verify → sdd-archive`. Queda para que el usuario decida el siguiente
+paso, tal como pidió el prompt de esta sesión.
+
+**Nota de presupuesto de revisión (Section E del protocolo SDD):** el diff real de esta tarea es
+**287 líneas de autoría** (`git diff --cached --numstat`, excluye `package-lock.json` y
+`CHANGELOG.md` por ser generado, mismo criterio que la tabla "Review Workload Forecast" de este
+archivo), frente a `~220` estimadas en `design.md`/este archivo (~1.30×, la proporción más baja de
+toda la cadena). La diferencia es honesta: `cliff.toml` (53 líneas) y su cobertura RED→GREEN
+completa (`test/fronteras/changelog.spec.ts`, 93 líneas), más la documentación real (skill
+`luxeboreal-arquitectura` 52 líneas, `CLAUDE.md` 20 líneas, `docs/fases/README.md` 14 líneas,
+`openspec/config.yaml` 20 líneas) que esta tarea, al ser el cierre, es la única con el trabajo
+completo de las seis áreas anteriores para describir con precisión. No se recortaron tests,
+comentarios ni documentación para acercarse al presupuesto. Es la última tarea de la cadena; queda
+para que el usuario confirme si aplica algún `size:exception` sobre el conjunto completo T1-T7 al
+revisar la cadena `stacked-to-main`.
 
 **commit:** `<pendiente>` — `chore(ci): generar CHANGELOG.md, fijar coverage_threshold y activar strict_tdd`
 

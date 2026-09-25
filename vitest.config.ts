@@ -19,6 +19,16 @@ export default defineConfig({
     // cantidad de tests con Docker ni se serializó todo el proyecto `unit` porque eso alargaría
     // cada corrida local y de CI sin necesidad.
     testTimeout: 20_000,
+    // D15 de openspec/changes/fase-00b-ci-contrato-api/design.md: umbral = max(60, floor(medido /
+    // 5) * 5 - 5), medido con `npm run test:cobertura` sobre el estado final de 00a+00b (T7,
+    // 2026-09-25): 88.03% de líneas → floor(88.03/5)*5-5 = 80. MUST coincidir con
+    // `coverage_threshold` de `openspec/config.yaml`. `ci` corre `test:cobertura` (no `test` +
+    // `test:integracion` por separado, D8/T6), así que este umbral bloquea de verdad.
+    coverage: {
+      thresholds: {
+        lines: 80,
+      },
+    },
     projects: [
       {
         extends: true,
