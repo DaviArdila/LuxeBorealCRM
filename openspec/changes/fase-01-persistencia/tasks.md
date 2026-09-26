@@ -422,6 +422,8 @@ tiene RED/GREEN observado en el primer apply.
 
 **Review workload real**: 1,730 líneas de autoría (adiciones + borrados), excluyendo el SQL de migración generado salvo 11 líneas `[manual]` y el cliente Prisma generado. T2 es PR2 de la cadena `stacked-to-main`; el siguiente slice es T3 y requiere que el usuario resuelva `size:exception` antes de aplicarlo.
 
+**Decisión del usuario (2026-09-25)**: `size:exception` aceptado para T2 (1,730 líneas de autoría frente al presupuesto de ~400). El exceso viene de una sola migración inicial con 21 tablas/11 enums que `proposal.md` (Risks fila 1) y `design.md` ya anticipaban como no partible sin cambiar ese acuerdo; no se pidió partir T2. `sdd-apply` continúa con T3.
+
 **TDD Cycle Evidence** (Strict TDD activo por `openspec/config.yaml`):
 
 | Tarea/parte | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
