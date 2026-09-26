@@ -35,6 +35,7 @@
     "commits": "npm run herramienta -- scripts/cli.ts commits",
     "auditoria": "npm run herramienta -- scripts/cli.ts auditoria",
     "flujos": "npm run herramienta -- scripts/cli.ts flujos",
+    "semilla:geografia": "npm run herramienta -- scripts/cli.ts semilla:geografia",
     "changelog": "git-cliff -o CHANGELOG.md",
     "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
     "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"

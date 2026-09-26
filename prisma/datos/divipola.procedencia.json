@@ -1,0 +1,15 @@
+{
+  "fuente": "https://www.datos.gov.co/resource/gdxc-w37w.json?$limit=5000",
+  "dataset": "gdxc-w37w",
+  "descargado": "2026-09-25",
+  "sha256": "1028ab04c10a08fa860dd89e621de1eb9246710a56102c915f0988ae9e10d63d",
+  "filas": 1122,
+  "departamentos": 33,
+  "ciudades": 1122,
+  "campos": {
+    "codigoDepartamento": "cod_dpto",
+    "departamento": "dpto",
+    "codigoMunicipio": "cod_mpio",
+    "municipio": "nom_mpio"
+  }
+}

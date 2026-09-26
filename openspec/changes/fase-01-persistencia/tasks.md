@@ -34,7 +34,7 @@ verde y su commit anotado.
 - [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
 - [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c`)
-- [ ] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4)
+- [x] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4; commit pendiente de anotar tras crearlo)
 - [ ] T5 — Cierre documental (S5)
 
 ## Mapeo de escenarios por tarea (30 escenarios, 14 requisitos)
@@ -626,20 +626,38 @@ probar que correrla dos veces deja la base exactamente igual, sin cargar ningún
 
 **Dependencias**: T3 (`RepositorioGeografia.guardarCatalogo` ya existe y está probado).
 
-**Checkpoint `[sin verificar]` de esta tarea** (design.md D9) — se resuelve en el primer paso de
-esta tarea, antes de escribir el intérprete, y su resultado real se anota aquí:
+**Checkpoint de esta tarea** (design.md D9) — resuelto en el primer paso, antes de escribir el
+intérprete; resultado real:
 
-**Nombres reales de los campos del JSON de SODA (dataset `gdxc-w37w`)**: `design.md` D9 no tiene
-acceso a la red y **presume** los nombres `cod_dpto`, `dpto`, `cod_mpio`, `nom_mpio` sin verificarlos
-en vivo. Esta tarea MUST:
-1. Descargar el archivo real: `curl -fL "https://www.datos.gov.co/resource/gdxc-w37w.json?$limit=5000" -o prisma/datos/divipola.json`.
-2. Anotar en `prisma/datos/divipola.procedencia.json` (`campos`) los nombres reales de los cuatro
-   campos usados (código de departamento, nombre de departamento, código de municipio, nombre de
-   municipio) y los conteos reales (`filas`, `departamentos`, `ciudades`).
-3. Ajustar la constante única de nombres de campo en `interpretar-divipola.ts` a lo que el archivo
-   realmente trae, si difiere de la presunción de `design.md`.
-4. **Si el endpoint JSON no responde** (código ≠ 200, timeout, formato inesperado), esta tarea
-   **se detiene y reporta** el error tal cual, sin improvisar otro formato ni otra fuente.
+**Nombres reales de los campos del JSON de SODA (dataset `gdxc-w37w`)**: `design.md` D9 no tenía
+acceso a la red y **presumía** los nombres `cod_dpto`, `dpto`, `cod_mpio`, `nom_mpio` sin
+verificarlos en vivo. Ejecutado en esta tarea (máquina de desarrollo, 2026-09-25):
+
+1. Descarga real: `curl -fL "https://www.datos.gov.co/resource/gdxc-w37w.json?$limit=5000" -o prisma/datos/divipola.json`
+   → código **200** (confirmado con `-w "HTTP_CODE:%{http_code}"`), archivo de **172.803 bytes**.
+2. Inspección real del primer registro (`node -e "..."` sobre el archivo descargado):
+   ```json
+   {
+     "cod_dpto": "05", "dpto": "ANTIOQUIA", "cod_mpio": "05001", "nom_mpio": "MEDELLÍN",
+     "tipo_municipio": "Municipio", "longitud": "-75,581775", "latitud": "6,246631"
+   }
+   ```
+   Los **cuatro nombres de campo reales coinciden exactamente con la presunción de `design.md`**:
+   `cod_dpto`, `dpto`, `cod_mpio`, `nom_mpio` — **sin ajuste necesario** en la constante `CAMPOS` de
+   `interpretar-divipola.ts`.
+3. Conteos reales (script Node sobre el archivo completo): **1122 filas**, **33 departamentos
+   únicos** (`cod_dpto`), **1122 códigos de municipio únicos** (`cod_mpio`, sin duplicados),
+   `tipo_municipio` con tres valores (`Municipio`, `Isla`, `Área no municipalizada`), 0 códigos de
+   departamento/municipio con formato inválido, 0 municipios cuyo código no empiece con el código de
+   su departamento, 0 departamentos con nombre inconsistente entre filas repetidas, y 3 filas con
+   coma en el nombre (`"BOGOTÁ, D.C."`, confirmando el caso límite anticipado por la matriz de
+   amenazas).
+4. El endpoint respondió 200 con el formato esperado; no aplicó el plan de detención del punto 4 del
+   checkpoint.
+5. `sha256` real del archivo descargado (`node -e "crypto.createHash('sha256')..."`):
+   `1028ab04c10a08fa860dd89e621de1eb9246710a56102c915f0988ae9e10d63d`. Registrado en
+   `prisma/datos/divipola.procedencia.json` junto con `filas: 1122`, `departamentos: 33`,
+   `ciudades: 1122` y los cuatro nombres de campo reales.
 
 **Archivos/áreas** (design D8, D9):
 - `src/modulos/geografia/dominio/interpretar-divipola.ts` (+ `.spec.ts`) (Create) — puro, sin
@@ -695,6 +713,213 @@ en vivo. Esta tarea MUST:
 - La salida real de `npm run semilla:geografia` corrida dos veces queda anotada aquí, mostrando
   `insertados = 0, actualizados = 0` en la segunda corrida.
 - `npm run verify` sigue en verde y por debajo de 3 minutos.
+
+**Evidencia real (máquina de desarrollo, 2026-09-25, Docker arriba)**:
+
+1. RED — `src/modulos/geografia/dominio/interpretar-divipola.spec.ts` con `interpretar-divipola.ts`
+   movido fuera del árbol (`npm test -- interpretar-divipola`):
+   ```
+   FAIL  |unit| src/modulos/geografia/dominio/interpretar-divipola.spec.ts
+   Error: Cannot find module './interpretar-divipola.js' imported from
+   .../dominio/interpretar-divipola.spec.ts
+   Test Files  1 failed (1)
+        Tests  no tests
+   ```
+   GREEN tras restaurar `interpretar-divipola.ts` (relleno de ceros, validación de forma y
+   jerarquía, códigos repetidos, `FuenteDivipolaInvalida`):
+   ```
+   Test Files  1 passed (1)
+        Tests  12 passed (12)
+   ```
+2. RED — `src/modulos/geografia/aplicacion/sembrar-geografia.spec.ts` con `sembrar-geografia.ts`
+   movido fuera del árbol (`npm test -- sembrar-geografia`):
+   ```
+   FAIL  |unit| src/modulos/geografia/aplicacion/sembrar-geografia.spec.ts
+   Error: Cannot find module './sembrar-geografia.js' imported from
+   .../aplicacion/sembrar-geografia.spec.ts
+   Test Files  1 failed (1)
+        Tests  no tests
+   ```
+   GREEN tras restaurar `sembrar-geografia.ts`:
+   ```
+   Test Files  1 passed (1)
+        Tests  2 passed (2)
+   ```
+3. RED — `test/integracion/geografia/semilla.spec.ts` con `SembrarGeografia` sin registrar todavía
+   en `GeografiaModule` (providers/exports revertidos temporalmente para reproducir "el caso de uso
+   no existe [en el contexto Nest]", `npm run test:integracion -- semilla`):
+   ```
+   FAIL  |integracion| test/integracion/geografia/semilla.spec.ts > ... > PER11 — Ejecutar la
+   semilla dos veces deja los mismos departamentos y ciudades
+   Error: Nest could not find SembrarGeografia element (this provider does not exist in the
+   current context)
+   FAIL  |integracion| ... > PER11 — La segunda ejecución de la semilla no inserta ni actualiza
+   ninguna fila
+   Error: Nest could not find SembrarGeografia element (this provider does not exist in the
+   current context)
+   FAIL  |integracion| ... > PER12 — La semilla solo escribe filas en departamento y ciudad
+   Error: Nest could not find SembrarGeografia element (this provider does not exist in the
+   current context)
+   Test Files  1 failed (1)
+        Tests  3 failed | 1 passed (4)
+   ```
+   (El cuarto escenario, "PER12 — El archivo de procedencia documenta...", no depende del contexto
+   Nest y ya pasaba.) GREEN tras registrar `SembrarGeografia` como provider y export de
+   `GeografiaModule`:
+   ```
+   Test Files  1 passed (1)
+        Tests  4 passed (4)
+   ```
+4. **Desviación registrada (hallazgo real durante GREEN, no prevista en `design.md`)**: al escribir
+   `sembrar-geografia.spec.ts` "junto al archivo" (skill §7, "casos de uso con puertos falsos") e
+   importar `test/fakes/repositorio-geografia-en-memoria.ts`, `npm run fronteras` real reportó una
+   violación genuina de la regla 8 `src-no-importa-test`
+   (`src/modulos/geografia/aplicacion/sembrar-geografia.spec.ts → test/fakes/...`): esa regla, tal
+   como la dejó la Fase 00a, prohibía **cualquier** import de `src/` hacia `test/`, sin la misma
+   excepción de `.spec.ts` que ya tienen las reglas 3 (`dominio-aislado`) y 9
+   (`src-sin-dev-dependencies`). Como T4 es el primer caso de uso del repo que necesita un doble de
+   `test/fakes/` en su unitario "junto al archivo", el hueco no se había manifestado hasta ahora —
+   mismo patrón que el hallazgo de la regla 3 en T3. Se corrigió con el mismo criterio
+   (`pathNot: '\\.spec\\.ts$'` en `from`), con su propio ciclo RED→GREEN:
+   - RED (`npm test -- fronteras`, fixture nueva
+     `test/fronteras/fixtures/src/modulos/pedidos/aplicacion/caso-uso.spec.ts` importando el
+     fixture `test/doble-interno.ts`, regla 8 todavía sin la excepción):
+     ```
+     × regla 8 — src-no-importa-test (permitido): un test unitario junto a aplicacion/ puede
+       importar un doble de test/fakes/
+     AssertionError: expected true to be false
+     Test Files  1 failed | 13 passed (14)
+          Tests  1 failed | 85 passed (86)
+     ```
+   - GREEN tras el ajuste de la regla 8:
+     ```
+     Test Files  14 passed (14)
+          Tests  86 passed (86)
+     ```
+   Confirmado también con el código real: `npm run fronteras` sobre `src`/`scripts` reales terminó
+   en **0 violaciones, 107 módulos / 222 dependencias cruzadas** tras registrar `SembrarGeografia`,
+   así que la violación solo existía en el fixture, nunca en el código de producción. Este ajuste no
+   estaba presupuestado en `design.md` §S4 (~435 líneas); se documenta aquí, no se silencia en el
+   chat (skill `luxeboreal-fases` §5).
+5. `scripts/sembrar-geografia.ts` y `scripts/cli.ts` (`semilla:geografia`) implementados siguiendo
+   el patrón de `generarContrato()`/`resolverRaizRepositorio()` ya existente en `scripts/`: contexto
+   Nest sin HTTP (`NestFactory.createApplicationContext` sobre un módulo raíz mínimo
+   `[ConfiguracionModule, GeografiaModule]`), cierre con `contexto.close()`, y una función que
+   devuelve `{ limpio, mensaje }` (mismo contrato que las demás funciones de `scripts/cli.ts`) en
+   vez de escribir a `stdout` directamente — así `cli.ts` sigue siendo el único punto que toca
+   `process.stdout`/`process.exitCode` (su propio contrato documentado).
+6. **Primera corrida real de `npm run semilla:geografia`** (`DATABASE_URL`/`REDIS_URL` apuntando al
+   Postgres/Redis de desarrollo de `docker-compose.yml`, contenedores ya arriba; base
+   `luxeboreal` confirmada vacía en `departamento`/`ciudad` antes de correr):
+   ```
+   > luxeborealcrm@0.0.1 semilla:geografia
+   > npm run herramienta -- scripts/cli.ts semilla:geografia
+
+   > luxeborealcrm@0.0.1 herramienta
+   > vite-node --config vitest.config.ts scripts/cli.ts semilla:geografia
+
+   Geografía sembrada: 33 departamentos, 1122 ciudades (insertadas 1155, actualizadas 0, sin
+   cambios 0)
+   ```
+7. **Segunda corrida real, inmediatamente después, mismo archivo**:
+   ```
+   > luxeborealcrm@0.0.1 semilla:geografia
+   > npm run herramienta -- scripts/cli.ts semilla:geografia
+
+   > luxeborealcrm@0.0.1 herramienta
+   > vite-node --config vitest.config.ts scripts/cli.ts semilla:geografia
+
+   Geografía sembrada: 33 departamentos, 1122 ciudades (insertadas 0, actualizadas 0, sin
+   cambios 1155)
+   ```
+   Confirma PER11: la segunda corrida reporta `insertadas 0, actualizadas 0` para el total de
+   departamentos + ciudades (1155 = 33 + 1122). Verificado también contra la base real con
+   `psql`: `departamentos = 33, ciudades = 1122` tras ambas corridas, sin cambios entre una y otra.
+8. REFACTOR: confirmado con el propio test de integración (PER12, tercer escenario) que ninguna
+   tabla del esquema salvo `departamento`/`ciudad`/`_prisma_migrations` recibió filas, consultando
+   dinámicamente `information_schema.tables` (no una lista fija) y contando cada una. La sección
+   "Datos de referencia" de `prisma/README.md` ya existía desde T2 (creada anticipadamente); se
+   revisó y sigue describiendo correctamente la fuente y el proceso de actualización — no necesitó
+   cambios.
+9. `npm run verify` completo: primera corrida real tras implementar T4 falló por la misma
+   contención transitoria de Testcontainers que T2/T3 ya documentaron (`D6`, "Desviación de
+   ejecución de T2"; `carrera de CREATE DATABASE ... TEMPLATE` en `base-por-worker.setup.ts` y
+   `Can't reach database server` en el indicador de salud de `salud.spec.ts`, que simula
+   intencionalmente Postgres/Redis inalcanzables): **3 archivos fallidos / 44 pasados (47)**, 210
+   tests pasados / 7 omitidos (217), no relacionado con el código de T4. Repetido inmediatamente:
+   código **0**, **47 archivos / 217 tests aprobados**, duración **41,99 s** (muy por debajo de los
+   3 min de PLT7). `npm run test:e2e`: código **0**, **1 archivo / 8 tests aprobados**, 8,72 s.
+   `npm run lint`: 5 errores reales en el primer intento (`@typescript-eslint/require-await` en los
+   tres métodos `async` sin `await` de `RepositorioGeografiaEnMemoria`, y
+   `@typescript-eslint/no-unsafe-assignment` por `expect.any(Number)` dentro de un objeto tipado en
+   `semilla.spec.ts`); corregidos (métodos sin `async`, devolviendo `Promise.resolve(...)`; y
+   aserciones separadas con `toBe`/`typeof` en vez de `expect.any` dentro de un `toEqual`), `npm run
+   lint` quedó limpio en la corrida siguiente.
+
+**Líneas de autoría reales** (`git diff --cached --numstat`, excluyendo `prisma/datos/divipola.json`
+por ser el archivo fuente descargado byte a byte, no autoría — `design.md` "Migration / Rollout"):
+
+| Archivo | + | − |
+|---|---|---|
+| `.dependency-cruiser.cjs` | 9 | 2 |
+| `.gitattributes` | 4 | 0 |
+| `package.json` | 1 | 0 |
+| `prisma/datos/divipola.procedencia.json` | 15 | 0 |
+| `scripts/cli.ts` | 8 | 2 |
+| `scripts/sembrar-geografia.ts` | 64 | 0 |
+| `src/modulos/geografia/aplicacion/sembrar-geografia.spec.ts` | 37 | 0 |
+| `src/modulos/geografia/aplicacion/sembrar-geografia.ts` | 24 | 0 |
+| `src/modulos/geografia/dominio/interpretar-divipola.spec.ts` | 119 | 0 |
+| `src/modulos/geografia/dominio/interpretar-divipola.ts` | 132 | 0 |
+| `src/modulos/geografia/geografia.module.ts` | 8 | 3 |
+| `src/modulos/geografia/index.ts` | 2 | 0 |
+| `test/fakes/repositorio-geografia-en-memoria.ts` | 65 | 0 |
+| `test/fronteras/dependency-cruiser.spec.ts` | 12 | 0 |
+| `test/fronteras/fixtures/src/modulos/pedidos/aplicacion/caso-uso.spec.ts` | 8 | 0 |
+| `test/integracion/geografia/semilla.spec.ts` | 157 | 0 |
+| **Total** | **665** | **7** |
+
+**672 líneas de autoría** frente a la estimación de ~435 de `design.md` §"Migration / Rollout" S4
+(+237, ~1.54×) y frente al presupuesto general de ~400 (~1.68×). A diferencia de T2 (excepción por
+naturaleza, una sola migración inicial no partible), aquí el exceso tiene causas puntuales y
+explicables, ninguna oculta:
+
+- **~31 líneas no presupuestadas por el hallazgo real de la regla 8** (punto 4 arriba): ajuste de
+  `.dependency-cruiser.cjs` (+9/−2), su test nuevo en `dependency-cruiser.spec.ts` (+12) y el
+  fixture `caso-uso.spec.ts` (+8) — igual de imprevisible que el hallazgo de la regla 3 en T3.
+- **~13 líneas de registro de `SembrarGeografia`** en `geografia.module.ts` (+8/−3) e `index.ts`
+  (+2) que `design.md` §"Migration / Rollout" no separó como línea propia de S4 (solo mencionó
+  "S4 agrega el caso de uso" en la tabla "File Changes", sin presupuesto explícito).
+- **`interpretar-divipola.ts` + su spec, 251 líneas reales frente a ~160 estimadas (+91)**: el
+  intérprete real necesitó funciones auxiliares separadas (`parsearFilas`, `leerCampo`,
+  `normalizarCodigo`, `normalizarNombre`) para mantener cada regla de validación como una rama
+  propia con su mensaje de error nombrando fila y regla (P15); el unitario cubre 12 casos (relleno
+  de ceros, prefijo, repetidos con incluidos/rechazados, comillas y comas, campos faltantes, JSON
+  inválido, JSON no-arreglo, y el caso "nombra la fila correcta") en vez de un subconjunto menor.
+- **`test/integracion/geografia/semilla.spec.ts`, 157 líneas reales frente a ~90 estimadas (+67)**:
+  la verificación dinámica de "ninguna tabla fuera de `departamento`/`ciudad` recibió filas"
+  (PER12) consulta `information_schema.tables` en vez de una lista fija de 19 tablas, para que la
+  guardia siga siendo válida si el esquema cambia en fases futuras; eso añade su propio bloque de
+  consulta y verificación fila por fila.
+- **`test/fakes/repositorio-geografia-en-memoria.ts`, 65 líneas reales frente a ~30 estimadas
+  (+35)**: el doble reproduce el mismo contrato de upsert por id (insertado/actualizado/sin
+  cambios) que el adaptador Prisma real, no un mapa trivial, para que `SembrarGeografia` se pruebe
+  contra un comportamiento equivalente al de producción.
+
+No se recortó ningún test, comentario ni la corrección de la regla 8 para acercarse al presupuesto.
+Siguiendo la autorización explícita ya dada para esta tarea (instrucción de la sesión: "si el diff
+real supera significativamente el presupuesto, no te detengas... anótalo como desviación... y
+repórtalo con claridad"), esta tarea **no se detuvo a pedir `size:exception`** — se documenta aquí,
+igual que T2/T3, para que el usuario lo revise al cerrar la fase.
+
+**Verificación final de escenarios PER11/PER12** (búsqueda literal de los 4 títulos contra `test/`,
+mismo criterio de cierre de 00b): los 4 aparecen exactamente una vez cada uno, como nombre de `it(...)`
+en `test/integracion/geografia/semilla.spec.ts`, confirmado por la corrida verde de arriba
+(4 tests aprobados, `--reporter=verbose` implícito en la salida de Vitest).
+
+**commit:** pendiente de registrar (se anota en un commit de documentación siguiente, mismo patrón
+que T3: commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c` + `b33cb56` "docs(01): registrar hash del
+commit de T3") — `feat(persistencia): agregar semilla DANE con interprete e idempotencia`
 
 ---
 

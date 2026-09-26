@@ -100,9 +100,16 @@ module.exports = {
     },
     {
       name: 'src-no-importa-test',
-      comment: 'Los dobles de prueba viven en test/fakes/, nunca al revés (skill §3).',
+      comment:
+        'Los dobles de prueba viven en test/fakes/, nunca al revés (skill §3). Los tests ' +
+        'unitarios colocados junto al código (*.spec.ts) sí pueden importar un doble de ' +
+        '`test/fakes/`, igual que la regla 3 y la regla 9 ya exceptúan a los `.spec.ts` de sus ' +
+        'propias restricciones — hallazgo real de T4 de fase-01-persistencia: ' +
+        '`sembrar-geografia.spec.ts` bajo `aplicacion/` necesita ' +
+        '`test/fakes/repositorio-geografia-en-memoria.ts` para probar el caso de uso con un ' +
+        'puerto falso (skill §7, "casos de uso con puertos falsos").',
       severity: 'error',
-      from: { path: '^src/' },
+      from: { path: '^src/', pathNot: '\\.spec\\.ts$' },
       to: { path: '^test/' },
     },
     {

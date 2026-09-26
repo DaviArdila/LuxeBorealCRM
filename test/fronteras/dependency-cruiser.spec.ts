@@ -222,6 +222,18 @@ describe('fronteras — dependency-cruiser (D11)', () => {
     );
   });
 
+  it('regla 8 — src-no-importa-test (permitido): un test unitario junto a aplicacion/ puede importar un doble de test/fakes/', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'src-no-importa-test',
+        'src/modulos/pedidos/aplicacion/caso-uso.spec.ts',
+      ),
+    ).toBe(false);
+  });
+
   it('regla 9 — src-sin-dev-dependencies: src/ importando una devDependency viola la regla', async () => {
     const violaciones = await violacionesDeFixtures();
 

@@ -5,6 +5,7 @@
  * contactos, ventas) puedan inyectar `REPOSITORIO_GEOGRAFIA` en su propia `infraestructura/`.
  */
 export { GeografiaModule } from './geografia.module.js';
+export { SembrarGeografia } from './aplicacion/sembrar-geografia.js';
 export {
   REPOSITORIO_GEOGRAFIA,
   type ConteoGuardado,
@@ -19,3 +20,4 @@ export {
   type Ciudad,
   type Departamento,
 } from './dominio/geografia.js';
+export { interpretarDivipola } from './dominio/interpretar-divipola.js';

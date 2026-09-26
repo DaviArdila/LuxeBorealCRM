@@ -9,3 +9,7 @@
 
 # El contrato generado conserva LF exacto para que la deriva byte a byte sea portable (D2, T3).
 openapi/*.json text eol=lf
+
+# Fase 01, T4: el archivo DIVIPOLA se guarda byte a byte (D9); su sha256 documentado en
+# prisma/datos/divipola.procedencia.json debe corresponder exactamente a esos bytes.
+prisma/datos/divipola.json -text
