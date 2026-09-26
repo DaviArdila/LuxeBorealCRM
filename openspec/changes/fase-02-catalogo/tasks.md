@@ -46,10 +46,10 @@ envío — se sigue el diagrama de flujo de datos por ser más específico que l
 
 - [x] T1 — `compartido/texto`: `normalizarTexto`/`normalizarLugar` (S(a)) — ya portado en
       `d2aa48a` (Fase 00a); sin commit nuevo, ver nota bajo "T1" más abajo.
-- [ ] T2 — Dominio de envío: peso facturable, exclusión, elección de tarifa, cotización con
-      cobertura (S(a))
-- [ ] T3 — Dominio de producto: ficha y catálogo compacto (S(a))
-- [ ] T4 — Dominio de horario: momento local, rango, decisión dentro/fuera (S(a))
+- [x] T2 — Dominio de envío: peso facturable, exclusión, elección de tarifa, cotización con
+      cobertura (S(a)) — commit `84db4e5`
+- [x] T3 — Dominio de producto: ficha y catálogo compacto (S(a)) — commit `e1e02ba`
+- [x] T4 — Dominio de horario: momento local, rango, decisión dentro/fuera (S(a)) — commit `0a2c600`
 - [ ] T5 — Puertos + repositorios Prisma de catálogo (producto, envío, parámetro) + tests de
       integración (S(b))
 - [ ] T6 — Puerto + repositorio Prisma de horario + test de integración (S(b))
