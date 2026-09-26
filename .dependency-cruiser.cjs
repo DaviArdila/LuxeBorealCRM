@@ -164,5 +164,17 @@ module.exports = {
     tsConfig: {
       fileName: 'tsconfig.json',
     },
+    // T4 de fase-03-importador-medios: `csv-parse` (D10) solo declara subrutas (`./sync`) en su
+    // `package.json` `exports`, sin un campo `main` que las cubra. El resolvedor de
+    // dependency-cruiser (`enhanced-resolve`) no consulta `exports` a menos que se le pida
+    // explícitamente (`exportsFields: []` es su valor por defecto, confirmado en
+    // `node_modules/dependency-cruiser/src/main/resolve-options/normalize.mjs`); sin esto, la
+    // regla `sin-irresolubles` marca `csv-parse/sync` como no resoluble aunque Node/Vitest lo
+    // resuelvan sin problema. Mismos nombres de condición que la plantilla oficial de
+    // `dependency-cruiser init` para proyectos ESM.
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'require', 'node', 'default', 'types'],
+    },
   },
 };

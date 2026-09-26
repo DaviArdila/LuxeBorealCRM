@@ -70,7 +70,7 @@ abierta sin ampliar ningún contrato.
 - [x] T1 — Dominio: resolución de departamento/ciudad a DANE (`resolver-lugar.ts`) (S(a))
 - [x] T2 — Dominio: validación del catálogo por pestaña (`validar-catalogo.ts`) (S(a))
 - [x] T3 — `medios/aplicacion/collage.ts`: generación de collage (S(a))
-- [ ] T4 — Puerto `FuenteCatalogo` + adaptadores Sheets/Directorio + helper CSV (S(b))
+- [x] T4 — Puerto `FuenteCatalogo` + adaptadores Sheets/Directorio + helper CSV (S(b))
 - [ ] T5 — Puerto `Almacenamiento` + adaptador MinIO + wiring de config/Docker/Testcontainers (S(b))
 - [ ] T6 — `descarga-drive.ts`: conversión de enlaces, carpeta, magic bytes (S(b))
 - [ ] T7 — Puerto `RepositorioImportacionCatalogo` + adaptador Prisma (escritura todo-o-nada) (S(b))

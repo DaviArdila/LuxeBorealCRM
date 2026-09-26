@@ -49,6 +49,7 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@scalar/nestjs-api-reference": "^1.2.23",
+    "csv-parse": "^7.0.3",
     "ioredis": "^6.0.0",
     "nestjs-pino": "^5.2.0",
     "pino": "^10.3.1",
