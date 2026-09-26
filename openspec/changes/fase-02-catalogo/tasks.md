@@ -44,7 +44,8 @@ envío — se sigue el diagrama de flujo de datos por ser más específico que l
 
 ## Checklist
 
-- [ ] T1 — `compartido/texto`: `normalizarTexto`/`normalizarLugar` (S(a))
+- [x] T1 — `compartido/texto`: `normalizarTexto`/`normalizarLugar` (S(a)) — ya portado en
+      `d2aa48a` (Fase 00a); sin commit nuevo, ver nota bajo "T1" más abajo.
 - [ ] T2 — Dominio de envío: peso facturable, exclusión, elección de tarifa, cotización con
       cobertura (S(a))
 - [ ] T3 — Dominio de producto: ficha y catálogo compacto (S(a))
@@ -185,6 +186,16 @@ escenario de spec.
 **Slice de PR**: S(a)
 
 **Review requerida**: RDD
+
+**Nota de aplicación (2026-09-26)**: al ejecutar `sdd-apply` para T1 se encontró que
+`src/compartido/texto/texto.ts`, `texto.spec.ts` e `index.ts` ya existían, portados junto con
+`compartido/dinero` y `compartido/numero` en el commit `d2aa48a` ("feat(compartido): portar
+dinero, texto y numero como funciones puras", Fase 00a, 2026-09-23) — anterior a la creación de
+esta fase. El módulo ya cumple "Hecho cuando" tal cual está: `normalizarLugar('Bogotá D.C.')` y
+`normalizarLugar('BOGOTA, D.C')` producen el mismo resultado (`texto.spec.ts` línea 12-13), el
+archivo no importa nada, y `npm test -- texto` está en verde (3 tests). No se creó ningún commit
+nuevo para T1 porque no había ningún cambio de comportamiento que aplicar; el checklist se marca
+completo con esta nota como evidencia en vez de un hash de commit.
 
 ---
 
