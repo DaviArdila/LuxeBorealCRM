@@ -21,10 +21,10 @@ Leyenda de decisión:
 | `lib/tiempo.ts` | Conservar | `plataforma/reloj` (`Clock` inyectable) | 00 | B8; se elimina el reloj global mutable |
 | `lib/dinero.ts`, `lib/texto.ts`, `lib/numero.ts` | Conservar | `compartido/` | 00 | **Migrado** — `src/compartido/dinero/`, `src/compartido/texto/`, `src/compartido/numero/` (Fase 00a, T5, commit `d2aa48a`); funciones puras con tests reescritos |
 | `health/` | Rediseñar | `@nestjs/terminus` | 00 | **Migrado** — `src/plataforma/salud/` (Fase 00a: indicadores Postgres/Redis, apagado ordenado; Fase 00b, T4: `esquemaRespuestaSalud` documenta la respuesta desde zod, `FiltroSaludOperativo` la exime de `application/problem+json`, y `GET /health` entra al documento OpenAPI **interno**, excluido del público) |
-| `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | **Migrado** — `PrismaService` (Fase 00a) + esquema v1 con 21 tablas/11 enums y migración inicial (Fase 01, T2) + primer repositorio real por módulo, `src/modulos/geografia/infraestructura/repositorio-geografia-prisma.ts` (Fase 01, T3); la regla "solo la capa de datos toca Prisma" pasa a fronteras (regla 12) |
-| `envios/calculo.ts` | Conservar | `catalogo/dominio/envio` | 02 | B12, puro |
-| `horario/dentroHorario.ts` | Conservar | `horario/` | 02 | |
-| `motor/catalogoCompacto.ts` | Rediseñar | `catalogo/aplicacion` con caché inyectable | 02 | La invalidación por versión (ADR-005) se conserva |
+| `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | **Migrado** — `PrismaService` (Fase 00a) + esquema v1 con 21 tablas/11 enums y migración inicial (Fase 01, T2) + primer repositorio real por módulo, `src/modulos/geografia/infraestructura/repositorio-geografia-prisma.ts` (Fase 01, T3); la regla "solo la capa de datos toca Prisma" pasa a fronteras (regla 12). Extendido en Fase 02 (T5/T6): repositorios de producto, envío, parámetro (`catalogo`) y horario (`horario`), cada uno con puerto propio, sin módulo `configuracion` compartido (D4) |
+| `envios/calculo.ts` | Conservar | `catalogo/dominio/envio` | 02 | B12, puro. **Migrado** — `src/modulos/catalogo/dominio/envio.ts` (Fase 02, T2, commit `84db4e5`) |
+| `horario/dentroHorario.ts` | Conservar | `horario/` | 02 | **Migrado** — `src/modulos/horario/dominio/horario.ts` (Fase 02, T4, commit `0a2c600`) + puerto/repositorio/aplicación (T6, T9) |
+| `motor/catalogoCompacto.ts` | Rediseñar | `catalogo/aplicacion` con caché inyectable | 02 | La invalidación por versión (ADR-005) se conserva. **Migrado** — `src/modulos/catalogo/infraestructura/cache-catalogo-redis.ts` como *provider* de NestJS, sin abrir Redis al importarse (corrige A1/A3) (Fase 02, T7, commit `1a9eb26`) |
 | `catalogo/` (importador Sheets/Drive) | Conservar | `catalogo/importacion` + comando CLI | 03 | Funciona; se adapta a puertos (`FuenteCatalogo`, `Almacenamiento`) |
 | `media/collage.ts`, `media/placeholder.ts` | Conservar | `medios/` | 03 | `sharp` igual |
 | `webhook/verifySignature.ts`, `parseEvent.ts` | Conservar | `canales/chatwoot/entrada` | 04 | Probado con Chatwoot real |
@@ -38,7 +38,7 @@ Leyenda de decisión:
 | `queue/reactivacionQueue.ts`, `leadsQueue.ts` | Rediseñar | `@nestjs/schedule` / jobs repetibles BullMQ | 05, 08 | |
 | `rateLimit/rateLimiter.ts` | Conservar | `conversaciones/politicas` | 05 | |
 | `llm/*` | Rediseñar | `llm/` (puerto + gateway + adaptador AI SDK) | 06 | A7, ver investigación §3 |
-| `tools/*` (6 tools) | Rediseñar | `agente/herramientas` con efectos tipados | 07 | Contratos con el LLM **sin cambios** (SPEC §3.1); A4 |
+| `tools/*` (6 tools) | Rediseñar | `agente/herramientas` con efectos tipados | 07 | Contratos con el LLM **sin cambios** (SPEC §3.1); A4. La lógica de aplicación de `obtenerFicha.ts`/`cotizarEnvio.ts` (sin el contrato de *tool*) ya está **migrada** a `src/modulos/catalogo/aplicacion/obtener-ficha-producto.ts`/`cotizar-envio.ts` (Fase 02, T8, commit `ea87f58`); Fase 07 construye el envoltorio de *tool* sobre estos servicios, no la lógica de negocio |
 | `motor/motor.ts`, `bucleHerramientas.ts`, `enrutadorTipoMensaje.ts`, `contextoInicial.ts` | Rediseñar | `agente/` pipeline de políticas + bucle | 07 | A5 |
 | `motor/systemPrompt.ts` | Rediseñar | `agente/prompts/*.md` versionados | 07 | Prefijo estable para caché |
 | `leads/*` (señales, calificar, derivar, captura) | Conservar reglas / Rediseñar orquestación | `leads/` | 08 | B3; la derivación pasa a eventos + outbox |
@@ -52,7 +52,7 @@ Leyenda de decisión:
 | `.kilo/worktrees/`, `data/sqlite/`, `db.sql` | Descartar | — | — | Restos |
 | **Todos los datos** del prototipo (catálogo de prueba, contactos, leads, parámetros) | Descartar | — | — | Arranque limpio (P7); solo se toma la estructura (`MODELO_DATOS.md`) |
 | `db/repositorios/estadoConversacion.ts` + tabla `estado_conversacion` | Rediseñar | tabla `conversacion` por sesión | 01, 05 | ADR-0003. Fase 01 (T2): tabla `conversacion` con `version` en el esquema; repositorio y máquina de estados llegan en la Fase 05 |
-| `db/repositorios/tarifas.ts`, `envios/` + tabla `tarifa_envio` | Rediseñar | `zona_sin_cobertura` + `tarifa_estimada` | 01, 02 | P4: cobertura por exclusión, rango aproximado. Fase 01 (T2): ambas tablas en el esquema, incluida la restricción `[manual]` de `zona_sin_cobertura`; repositorio y cálculo de envío llegan en la Fase 02 |
+| `db/repositorios/tarifas.ts`, `envios/` + tabla `tarifa_envio` | Rediseñar | `zona_sin_cobertura` + `tarifa_estimada` | 01, 02 | P4: cobertura por exclusión, rango aproximado. Fase 01 (T2): ambas tablas en el esquema, incluida la restricción `[manual]` de `zona_sin_cobertura`. **Migrado** — repositorio (`src/modulos/catalogo/infraestructura/repositorio-envio-prisma.ts`, join directo a `departamento`/`ciudad` sin depender de `geografia`) y cálculo de envío (T2/T5, Fase 02); especificidad de `tarifa_estimada` resuelta por algoritmo, sin restricción de esquema nueva (Q2) |
 | Contacto identificado por teléfono (`lib/numero.ts` como clave) | Rediseñar | `contacto.id` + `chatwoot_contact_id` | 01, 04 | P1. Fase 01 (T2): `contacto.id` propia y `chatwoot_contact_id` en el esquema; traducción/uso real desde el canal llega en la Fase 04 |
 | Inventario, ventas, envíos, usuarios (solo tablas) | Construir | `inventario/`, `ventas/`, `usuarios/` | 11+ | Lógica nueva según MODELO_DATOS §5-§6 |
 
