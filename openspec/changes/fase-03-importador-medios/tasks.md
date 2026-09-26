@@ -68,7 +68,7 @@ abierta sin ampliar ningún contrato.
 ## Checklist
 
 - [x] T1 — Dominio: resolución de departamento/ciudad a DANE (`resolver-lugar.ts`) (S(a))
-- [ ] T2 — Dominio: validación del catálogo por pestaña (`validar-catalogo.ts`) (S(a))
+- [x] T2 — Dominio: validación del catálogo por pestaña (`validar-catalogo.ts`) (S(a))
 - [ ] T3 — `medios/aplicacion/collage.ts`: generación de collage (S(a))
 - [ ] T4 — Puerto `FuenteCatalogo` + adaptadores Sheets/Directorio + helper CSV (S(b))
 - [ ] T5 — Puerto `Almacenamiento` + adaptador MinIO + wiring de config/Docker/Testcontainers (S(b))
