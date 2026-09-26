@@ -50,9 +50,9 @@ envío — se sigue el diagrama de flujo de datos por ser más específico que l
       cobertura (S(a)) — commit `84db4e5`
 - [x] T3 — Dominio de producto: ficha y catálogo compacto (S(a)) — commit `e1e02ba`
 - [x] T4 — Dominio de horario: momento local, rango, decisión dentro/fuera (S(a)) — commit `0a2c600`
-- [ ] T5 — Puertos + repositorios Prisma de catálogo (producto, envío, parámetro) + tests de
-      integración (S(b))
-- [ ] T6 — Puerto + repositorio Prisma de horario + test de integración (S(b))
+- [x] T5 — Puertos + repositorios Prisma de catálogo (producto, envío, parámetro) + tests de
+      integración (S(b)) — commit `adcfd6f`
+- [x] T6 — Puerto + repositorio Prisma de horario + test de integración (S(b)) — commit `52598fb`
 - [ ] T7 — Caché de catálogo compacto (puerto + adaptador Redis) + tests (S(c))
 - [ ] T8 — Servicios de aplicación de catálogo (ficha, listado, catálogo compacto, cotización) +
       módulo Nest + barril (S(c))
@@ -400,6 +400,12 @@ como se guardaron) sin que el nombre del test lleve el id CAT9 — el test con e
 **Slice de PR**: S(b)
 
 **Review requerida**: RDD
+
+**Nota de aplicación (2026-09-26, commit `adcfd6f`)**: `RepositorioParametroCatalogoPrisma` necesitó
+fijar dos valores por defecto que ninguna spec de esta fase especifica (para cuando el parámetro no
+existe en la base): `obtenerRecargoContraentregaPct()` → 0%, `obtenerMensajeFueraCobertura()` →
+mensaje genérico en código. Documentados en el JSDoc del adaptador; el usuario puede vetarlos o
+fijar el valor real de negocio al aprobar el cierre de esta fase.
 
 ---
 
