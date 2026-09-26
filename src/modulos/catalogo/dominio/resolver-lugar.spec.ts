@@ -32,5 +32,11 @@ describe('catalogo/dominio/resolver-lugar', () => {
 
       expect(resultado).toEqual({ departamentoId: '27', ciudadId: null });
     });
+
+    it('IMP9 — Una ciudad con error de tipeo dentro de un departamento válido es una fila inválida', () => {
+      const resultado = resolverLugar(catalogo(), 'Antioquia', 'Medelin');
+
+      expect(resultado).toBeNull();
+    });
   });
 });

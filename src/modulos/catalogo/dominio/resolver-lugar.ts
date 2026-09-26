@@ -32,8 +32,9 @@ export interface LugarResuelto {
 /**
  * Resuelve el texto de departamento (obligatorio) y ciudad (opcional) de una fila de `cobertura` o
  * `tarifas` a sus códigos DANE. Devuelve `null` cuando el departamento no matchea ningún nombre de
- * `catalogo` (Q1: nunca se adivina). Una ciudad vacía o sin match dentro del departamento resuelto
- * deja `ciudadId` en `null` (fila válida que excluye/cubre todo el departamento).
+ * `catalogo`, o cuando la ciudad viene no vacía y no matchea ninguna ciudad del departamento resuelto
+ * (Q1/IMP9: nunca se adivina, ambos casos son fila inválida). Solo una ciudad vacía deja `ciudadId`
+ * en `null` (fila válida que excluye/cubre todo el departamento, IMP9 tercer escenario).
  */
 export function resolverLugar(
   catalogo: CatalogoLugares,
@@ -55,6 +56,7 @@ export function resolverLugar(
     (candidata) =>
       candidata.departamentoId === departamento.id && normalizarLugar(candidata.nombre) === ciudadNormalizada,
   );
+  if (ciudad === undefined) return null;
 
-  return { departamentoId: departamento.id, ciudadId: ciudad?.id ?? null };
+  return { departamentoId: departamento.id, ciudadId: ciudad.id };
 }
