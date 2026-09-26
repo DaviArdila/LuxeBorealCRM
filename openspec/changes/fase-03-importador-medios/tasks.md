@@ -73,7 +73,7 @@ abierta sin ampliar ningún contrato.
 - [x] T4 — Puerto `FuenteCatalogo` + adaptadores Sheets/Directorio + helper CSV (S(b))
 - [x] T5 — Puerto `Almacenamiento` + adaptador MinIO + wiring de config/Docker/Testcontainers (S(b))
 - [x] T6 — `descarga-drive.ts`: conversión de enlaces, carpeta, magic bytes (S(b))
-- [ ] T7 — Puerto `RepositorioImportacionCatalogo` + adaptador Prisma (escritura todo-o-nada) (S(b))
+- [x] T7 — Puerto `RepositorioImportacionCatalogo` + adaptador Prisma (escritura todo-o-nada) (S(b))
 - [ ] T8 — Resolución de geografía de importación + `ProcesarFotos` (S(c))
 - [ ] T9 — `ImportarCatalogo`: orquestador todo-o-nada + wiring de módulos (S(d))
 - [ ] T10 — Comando CLI + fixtures + cierre documental (S(e))
