@@ -87,6 +87,14 @@ Preguntas, en orden:
 - Una desviación de la spec se anota en el `design.md`/`tasks.md` del change (no solo en el chat)
   antes de seguir; si cambia un criterio de aceptación, se avisa al usuario.
 - Decisión con alternativas → ADR `propuesta` en `docs/adr/`.
+- **Ceremonia proporcional al riesgo** (`openspec/config.yaml` §rules.tasks/apply, decisión del
+  usuario 2026-09-25): para tareas de bajo riesgo (datos de referencia estáticos, funciones puras,
+  tareas sin cambios de producción) se permite evidencia RED→GREEN resumida, `npm run verify`
+  reservado al cierre de slice, `size:exception` auto-aplicado cuando ya estaba anticipado en
+  `proposal.md`, y forecast de una línea para tareas documentales. Nunca aplica a dinero,
+  cantidades, restricciones `[manual]` de esquema ni reglas invariantes R1-R16 — ahí la ceremonia
+  completa (transcripción íntegra, forecast completo, pregunta explícita de excepción) sigue siendo
+  obligatoria.
 
 ## 6. Cerrar la fase (`sdd-verify → sdd-archive`)
 

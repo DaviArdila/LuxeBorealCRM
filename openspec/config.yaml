@@ -96,6 +96,15 @@ rules:
       Declarar explícitamente "Review requerida: RDD" o "Review requerida: RDD +
       judgment-day"; judgment-day es obligatorio para el cierre de las fases 04, 05,
       06 y 10 (docs/fases/README.md regla 6).
+    - >-
+      Si el exceso de una tarea sobre el presupuesto de ~400 líneas ya está anticipado y motivado
+      en la tabla de Risks de proposal.md, tasks.md aplica size:exception automáticamente con una
+      nota que cite esa fila, sin preguntar al usuario de nuevo; solo se pregunta cuando el exceso
+      no estaba previsto (decisión del usuario, 2026-09-25).
+    - >-
+      Si una tarea no toca src/, prisma/ ni test/ (solo documentación), se omite la tabla completa
+      de "Review Workload Forecast" y basta una línea: "sin cambios de producción, sin riesgo de
+      presupuesto" (decisión del usuario, 2026-09-25).
 
   apply:
     guidelines:
@@ -109,6 +118,17 @@ rules:
         Conventional Commits, sin atribución de IA ni líneas Co-Authored-By.
       - >-
         Rama por fase (fase-NN-<nombre>), nunca directo en main.
+      - >-
+        Para escenarios de riesgo bajo (funciones puras, datos de referencia estáticos — nunca
+        dinero, cantidades, restricciones [manual] de esquema ni reglas invariantes R1-R16), la
+        evidencia RED→GREEN en tasks.md puede resumirse en una línea por ciclo
+        ("RED: <comando> → <fallo real>; GREEN: <comando> → verde") en vez de la transcripción
+        completa de terminal. Para lógica de negocio o restricciones [manual], la transcripción
+        completa sigue siendo obligatoria (decisión del usuario, 2026-09-25).
+      - >-
+        npm run verify completo se reserva para el cierre de cada slice de PR, no para cada tarea
+        individual; durante la tarea basta el test enfocado que ejercita sus escenarios (decisión
+        del usuario, 2026-09-25).
     tdd: true # RED → GREEN → REFACTOR estricto por tarea, observado, no asumido.
     test_command: "npm test" # Confirmado en la Fase 00a (T2): Vitest ESM, proyecto `unit`.
 
