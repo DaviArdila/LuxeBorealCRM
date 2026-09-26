@@ -34,7 +34,7 @@ verde y su commit anotado.
 - [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
 - [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c`)
-- [x] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4; commit pendiente de anotar tras crearlo)
+- [x] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4; commit `ed5adfdce9ed20be2652fbe8e482bc12ce332bcf`)
 - [ ] T5 — Cierre documental (S5)
 
 ## Mapeo de escenarios por tarea (30 escenarios, 14 requisitos)
@@ -917,9 +917,8 @@ mismo criterio de cierre de 00b): los 4 aparecen exactamente una vez cada uno, c
 en `test/integracion/geografia/semilla.spec.ts`, confirmado por la corrida verde de arriba
 (4 tests aprobados, `--reporter=verbose` implícito en la salida de Vitest).
 
-**commit:** pendiente de registrar (se anota en un commit de documentación siguiente, mismo patrón
-que T3: commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c` + `b33cb56` "docs(01): registrar hash del
-commit de T3") — `feat(persistencia): agregar semilla DANE con interprete e idempotencia`
+**commit:** `ed5adfdce9ed20be2652fbe8e482bc12ce332bcf` — `feat(persistencia): agregar semilla DANE
+con interprete e idempotencia`
 
 ---
 
