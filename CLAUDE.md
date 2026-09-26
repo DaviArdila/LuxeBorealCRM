@@ -123,13 +123,16 @@ repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta 
 
 ## Comandos
 
-Confirmados en la Fase 00a y la Fase 00b (`package.json`):
+Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 
 | Comando | Qué hace |
 |---|---|
 | `npm run start:dev` | Levanta la aplicación en modo desarrollo (`nest start --watch`) |
 | `npm run build` | Compila a `dist/` con `tsc` (`nest build`) |
 | `npm run prisma:generar` | Genera el cliente Prisma en `src/plataforma/prisma/generado/` (también corre en `postinstall`) |
+| `npm run prisma:migrar` | `prisma migrate dev`: crea y aplica una migración nueva a partir de `prisma/schema.prisma` (desarrollo) |
+| `npm run prisma:aplicar` | `prisma migrate deploy`: aplica las migraciones pendientes sin generar una nueva (CI, producción) |
+| `npm run semilla:geografia` | Siembra `departamento`/`ciudad` desde `prisma/datos/divipola.json` (catálogo DANE); idempotente |
 | `npm run lint` | ESLint (flat config) sobre todo el repo |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run fronteras` | `dependency-cruiser` sobre `src/` y `scripts/` con las reglas de fronteras |

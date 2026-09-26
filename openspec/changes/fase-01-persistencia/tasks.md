@@ -35,7 +35,7 @@ verde y su commit anotado.
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
 - [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c`)
 - [x] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4; commit `ed5adfdce9ed20be2652fbe8e482bc12ce332bcf`)
-- [ ] T5 — Cierre documental (S5)
+- [x] T5 — Cierre documental (S5)
 
 ## Mapeo de escenarios por tarea (30 escenarios, 14 requisitos)
 
@@ -966,3 +966,49 @@ para toda la fase, y que el Success Criteria completo de `proposal.md` se cumple
   30 títulos contra `test/` (misma verificación que hizo la remediación de 00b antes de archivar).
 - `MODELO_DATOS.md` queda como "v1 aprobada" y coincide con `schema.prisma`.
 - El Success Criteria completo de `proposal.md` queda satisfecho.
+
+**Evidencia real (máquina de desarrollo, 2026-09-25, Docker arriba)**:
+
+- Documentos editados: `MODELO_DATOS.md` (encabezado "Borrador v1 · propuesta" → "v1 · aprobada
+  (2026-09-25)"); `CLAUDE.md` §Comandos (agregadas `prisma:migrar`, `prisma:aplicar`,
+  `semilla:geografia`); `.claude/skills/luxeboreal-arquitectura/SKILL.md` (§1 módulo `geografia`
+  sin registrar en `AppModule`; §2 regla 12 `prisma-service-solo-en-infraestructura`, de 11 a 12
+  reglas; §5 marcas `-- [manual] <nombre> — <motivo>` + `--create-only`; §7 base por
+  archivo/worker; estado del documento a 0.3); `docs/adr/0007-llaves-primarias-uuid-v7.md` y
+  `docs/adr/0009-testcontainers-infraestructura-de-pruebas.md` (sección "Implementado en la Fase
+  01" en cada uno, con lo confirmado en ejecución real en T1/T2). Ningún archivo de `src/`,
+  `prisma/` ni `test/` se tocó en esta tarea.
+- `npm run verify`: primera corrida real con **1 fallo transitorio** (`PER12 — La semilla solo
+  escribe filas en departamento y ciudad`, `terminating connection due to administrator command`
+  contra Postgres) — la misma contención de Testcontainers que T2/T3 ya documentaron (D6,
+  "Desviación de ejecución de T2"), no relacionada con los cambios de esta tarea (solo
+  documentación). Repetido de inmediato: código **0**, **47 archivos / 217 tests aprobados**,
+  duración **52,72 s** (por debajo del presupuesto de 3 min, PLT7). Los errores de
+  `IndicadorPostgres`/`IndicadorRedis` en la salida son del propio `salud.spec.ts`, que simula a
+  propósito una base/Redis inalcanzable (no son un fallo real).
+- `npm run test:e2e`: código **0**, **1 archivo / 8 tests aprobados**, 10,89 s.
+- **Checklist de cierre §12** (skill `luxeboreal-arquitectura`), verificado contra el estado real
+  del repo tras T1-T5:
+  1. `npm run verify` en verde — confirmado arriba (segunda corrida).
+  2. `npm run test:e2e` — confirmado arriba (la fase tocó esquema y semilla).
+  3. Los 30 escenarios de `specs/persistencia/spec.md` tienen su test y pasan — confirmado abajo.
+  4. Esquema cambiado → `MODELO_DATOS.md` actualizado + migración + semilla corren — confirmado
+     (T2, T4; `MODELO_DATOS.md` en "v1 · aprobada").
+  5. Decisión con alternativas → ADR escrito e indexado — ADR-0007 y ADR-0009 ya existían con sus
+     alternativas; esta tarea les agregó su nota de implementación real.
+  6. `docs/migracion/inventario.md` y `docs/fases/README.md` — **pendiente a propósito**: por regla
+     de `docs/fases/README.md` §"Reglas de las fases" y por el alcance de S5 en `design.md`, esos
+     dos documentos se actualizan al archivar la fase (`sdd-archive`), no en T5.
+  7. Sin `Date.now()`/`process.env` fuera de config/imports cruzados — confirmado por `fronteras`
+     (0 violaciones, 107 módulos/222 dependencias) y `lint` limpios; esta tarea no tocó código.
+  8. Un commit por unidad de trabajo, Conventional Commits, sin atribución de IA, en rama de fase —
+     este commit de T5 lo cumple; push/PR/merge quedan para el usuario.
+  9. Endpoint cambiado → contrato regenerado — no aplica (fase 01 no toca la API); `contrato:deriva`
+     confirmó coincidencia byte a byte de ambos documentos igual.
+- **Búsqueda literal de los 30 títulos de escenario** (`<PERn> — <título exacto>`, construidos
+  emparejando cada `### Requirement: PERn` con sus `#### Scenario:` de
+  `specs/persistencia/spec.md`) contra `test/`: las **30 aparecen exactamente una vez** cada una
+  como nombre de `it(...)`/`describe(...)`, sin faltantes ni duplicados.
+- Success Criteria de `proposal.md`: migración aplicada desde cero (T2), test de repositorio contra
+  Postgres real (T3), semilla DANE idempotente (T4) — los tres puntos quedan demostrados por la
+  evidencia ya registrada en T2-T4; esta tarea no agrega comportamiento nuevo que verificar.

@@ -10,7 +10,8 @@ vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/
 y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
 una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
-> Estado: 0.2 — ajustada al cerrar la Fase 00b (CI y contrato de API) con lo que el pipeline real fijó.
+> Estado: 0.3 — ajustada al cerrar la Fase 01 (Persistencia) con el módulo `geografia`, la regla de
+> fronteras 12 y el flujo de migraciones con marcas `[manual]`.
 
 ## 1. Estructura
 
@@ -33,6 +34,8 @@ src/
 │   └── outbox/                 tabla outbox + publicador
 ├── compartido/                 funciones puras sin dependencias: dinero, texto, número
 └── modulos/
+    ├── geografia/                                 (Fase 01: solo lectura + guardarCatalogo,
+    │                                                aún sin registrar en AppModule)
     ├── catalogo/  horario/  canales/  conversaciones/  llm/  agente/
     ├── leads/  notificaciones/  contactos/  admin/
     └── usuarios/  inventario/  ventas/            (fases 11+)
@@ -66,7 +69,7 @@ modulos/<m>/
 - Sin ciclos entre módulos. Si A necesita reaccionar a algo de B y B a algo de A, uno de los dos
   sentidos es un **evento**.
 - **Herramienta elegida: `dependency-cruiser`** (`.dependency-cruiser.cjs`, decisión del usuario,
-  fijada en la Fase 00a). Once reglas, todas `severity: 'error'`, cada una con un test de fixture
+  fijada en la Fase 00a). Doce reglas, todas `severity: 'error'`, cada una con un test de fixture
   que la viola (`test/fronteras/dependency-cruiser.spec.ts`); `npm run fronteras` cruza `src` y
   `scripts` (Fase 00b):
 
@@ -83,6 +86,7 @@ modulos/<m>/
   | 9 | `src-sin-dev-dependencies` | `src/` importando una `devDependency` |
   | 10 | `sin-irresolubles` | imports que no resuelven a ningún módulo real |
   | 11 | `scripts-solo-barriles-de-plataforma` | `scripts/` importando algo de `plataforma/` que no sea el `index.ts` público de un submódulo (Fase 00b D12) |
+  | 12 | `prisma-service-solo-en-infraestructura` | `PrismaService` (barril de `plataforma/prisma`) importado desde `aplicacion/`, `puertos/` o `interfaz/` de un módulo — solo su `infraestructura/` puede (Fase 01) |
 
 ## 3. Inyección de dependencias
 
@@ -117,7 +121,13 @@ modulos/<m>/
 - Dinero en `Int` de pesos. Nunca `Float` ni cálculos de dinero en el LLM.
 - Un repositorio por agregado, en la `infraestructura/` del módulo dueño; métodos con nombre de
   negocio (`listarControlVencido`), no de Prisma.
-- Migraciones: `prisma migrate dev --name <que-cambia>`; nunca se edita una migración aplicada.
+- Migraciones: `prisma migrate dev --name <que-cambia>`; nunca se edita una migración aplicada. Una
+  restricción que Prisma no expresa por sí solo (`NULLS NOT DISTINCT`, un `CHECK` a mano) se escribe
+  en la migración generada con un bloque marcado `-- [manual] <nombre> — <motivo>`, y queda
+  registrada en `prisma/README.md`; una guardia de test la busca en el catálogo de Postgres para que
+  una migración futura no la borre sin querer (Fase 01, PER9). Si la migración toca una restricción
+  `[manual]` existente, revisar primero con `prisma migrate dev --create-only` antes de aplicar
+  (`prisma/README.md`).
 - Transacciones: el caso de uso las abre (servicio de transacción inyectable); los repositorios
   reciben el cliente transaccional.
 
@@ -165,6 +175,11 @@ propia); son filas separadas en esta tabla porque agrupan un tipo de comportamie
   (`test/soporte/contenedores.global-setup.ts`, ADR-0009): un solo mecanismo de infraestructura de
   pruebas, idéntico en local y en CI (00b); Docker Compose queda solo para desarrollo manual
   (`npm run start:dev`).
+- **Base por archivo/worker** (Fase 01, ADR-0009): sobre ese mismo contenedor, el `globalSetup` migra
+  una sola base plantilla (`plantilla_luxe`) una vez por corrida; cada worker de Vitest clona su
+  propia base (`test_<poolId>`) desde esa plantilla antes de sus tests
+  (`test/soporte/base-por-worker.setup.ts`) y le da su propio prefijo de claves de Redis
+  (`prefijoRedisDePrueba()`). Ningún test ve datos de otro worker ni depende del orden de ejecución.
 
 ## 8. Nombres e idioma
 

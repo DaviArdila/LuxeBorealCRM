@@ -35,3 +35,10 @@ Implementado en la Fase 00a (T8, T9): `testcontainers` + `@testcontainers/postgr
 - `npm run verify` y CI usan el mismo mecanismo; Docker MUST estar corriendo para probar.
 - No hay choque de puertos con otros servicios de la máquina.
 - Prohibido: pruebas que dependan de servicios levantados a mano o de datos del entorno de desarrollo.
+
+## Implementado en la Fase 01
+
+Aislamiento por worker construido sobre este mismo arnés (T1, 2026-09-25): el `globalSetup` migra
+una base plantilla (`plantilla_luxe`) una sola vez por corrida; cada worker de Vitest clona su
+propia base (`test_<poolId>`) desde esa plantilla y usa su propio prefijo de claves de Redis. Las
+filas escritas por un worker no son visibles para otro (PER10).

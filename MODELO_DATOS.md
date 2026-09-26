@@ -1,6 +1,6 @@
 # Modelo de datos — LuxeBorealCRM
 
-> **Borrador v1 · estado: propuesta (2026-09-22).** Fuente de verdad del diseño de datos: se decide
+> **v1 · estado: aprobada (2026-09-25).** Fuente de verdad del diseño de datos: se decide
 > aquí primero y después se refleja en `prisma/schema.prisma` (Fase 01). Parte del diseño del
 > usuario en el prototipo (`ChatLuxeCRM/prisma/schema.prisma` desde la línea 90 y
 > `ChatLuxeCRM/MODELO_DATOS.md`); cada cambio está justificado en §9. Arranque limpio: se toma la

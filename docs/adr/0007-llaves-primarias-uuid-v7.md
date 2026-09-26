@@ -30,3 +30,10 @@ El prototipo usa `cuid()` guardado como `text` en casi todas las tablas y el tel
 - Costo: 16 bytes por id frente a 4-8 de un entero; irrelevante a este volumen.
 - El orden por id equivale aproximadamente al orden de creación; no se usa como reemplazo de
   `creado`.
+
+## Implementado en la Fase 01
+
+Confirmado en ejecución (T2, 2026-09-25), no solo de forma estática: Prisma 7.10.0 acepta
+`@default(uuid(7)) @db.Uuid`, la migración generada no trae `DEFAULT` en la columna `id`, y un
+`create()` real por `PrismaService` devuelve un id con el nibble de versión `7`. No hizo falta el
+plan B (generación del id en la aplicación).
