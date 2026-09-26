@@ -58,7 +58,7 @@ envío — se sigue el diagrama de flujo de datos por ser más específico que l
       módulo Nest + barril (S(c)) — commit `ea87f58`
 - [x] T9 — Servicio de aplicación de horario (`HorarioAtencion`) + módulo Nest + barril (S(c)) —
       commit `5a3dc2f`
-- [ ] T10 — Cierre documental (S(d))
+- [x] T10 — Cierre documental (S(d)) — ver evidencia bajo "T10" más abajo
 
 ## Mapeo de escenarios por tarea (32 escenarios, 18 requisitos)
 
@@ -646,3 +646,20 @@ escenarios listados en el mapeo de arriba tiene su test nombrado `"<id> — <tí
 **Slice de PR**: S(d)
 
 **Review requerida**: RDD
+
+**Evidencia de aplicación (2026-09-26)**:
+- `.claude/skills/luxeboreal-arquitectura/SKILL.md` §1 actualizada: `catalogo` y `horario` listados
+  como módulos existentes (Fase 02, aún sin registrar en `AppModule`, igual que `geografia`);
+  `compartido/texto` ya estaba desde Fase 00a. Estado de la skill pasa de 0.3 a 0.4.
+- `npm run verify` corrido 3 veces contra Postgres/Redis reales (Testcontainers, 4 workers): 2
+  corridas fallaron por una condición de carrera pre-existente de la Fase 01 en
+  `test/soporte/base-por-worker.setup.ts` (`CREATE DATABASE ... TEMPLATE` bajo paralelismo de
+  Docker — riesgo ya documentado en la proposal de la Fase 01, "Arnés lento o inestable"), afectando
+  solo tests de `persistencia`/`geografia` ya cerrados, nunca los de `catalogo`/`horario`; la 3ª
+  corrida pasó completa: **61 test files, 281 tests, en verde** (lint, typecheck, fronteras,
+  deriva del contrato y tests unitarios+integración).
+- Verificación aparte con `--reporter=verbose`: los 32 escenarios de `specs/catalogo/spec.md` y
+  `specs/horario/spec.md` (CAT1-CAT11, HOR1-HOR7) aparecen cada uno como un test en verde con su
+  título exacto (`"<id> — <título>"`), sin ninguno faltante.
+- No se tocó `docs/migracion/inventario.md` ni `docs/fases/README.md` en esta tarea (los actualiza
+  `sdd-archive` al cerrar la fase).

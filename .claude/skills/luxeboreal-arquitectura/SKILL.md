@@ -10,8 +10,9 @@ vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/
 y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
 una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
-> Estado: 0.3 — ajustada al cerrar la Fase 01 (Persistencia) con el módulo `geografia`, la regla de
-> fronteras 12 y el flujo de migraciones con marcas `[manual]`.
+> Estado: 0.4 — ajustada al aplicar la Fase 02 (Catálogo) con los módulos `catalogo` y `horario`
+> (dominio puro + puertos + infraestructura Prisma/Redis, patrón heredado de `geografia` en la
+> Fase 01, regla de fronteras 12 y el flujo de migraciones con marcas `[manual]`).
 
 ## 1. Estructura
 
@@ -36,7 +37,12 @@ src/
 └── modulos/
     ├── geografia/                                 (Fase 01: solo lectura + guardarCatalogo,
     │                                                aún sin registrar en AppModule)
-    ├── catalogo/  horario/  canales/  conversaciones/  llm/  agente/
+    ├── catalogo/                                  (Fase 02: dominio de producto/envío, caché
+    │                                                con invalidación por versión, servicios de
+    │                                                aplicación; aún sin registrar en AppModule)
+    ├── horario/                                   (Fase 02: puerto Horario sobre patrón semanal
+    │                                                + excepciones; aún sin registrar en AppModule)
+    ├── canales/  conversaciones/  llm/  agente/
     ├── leads/  notificaciones/  contactos/  admin/
     └── usuarios/  inventario/  ventas/            (fases 11+)
 ```
