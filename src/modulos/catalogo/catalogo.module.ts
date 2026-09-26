@@ -1,40 +1,62 @@
 import { Module } from '@nestjs/common';
+import { GeografiaModule } from '../geografia/index.js';
+import { MediosModule } from '../medios/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
 import { CotizarEnvio } from './aplicacion/cotizar-envio.js';
+import { ImportarCatalogo } from './aplicacion/importar-catalogo.js';
 import { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
 import { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
 import { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
+import { ProcesarFotos } from './aplicacion/procesar-fotos.js';
+import { ResolverGeografiaImportacion } from './aplicacion/resolver-geografia-importacion.js';
 import { CacheCatalogoRedis } from './infraestructura/cache-catalogo-redis.js';
 import { RepositorioEnvioPrisma } from './infraestructura/repositorio-envio-prisma.js';
+import { RepositorioImportacionPrisma } from './infraestructura/repositorio-importacion-prisma.js';
 import { RepositorioParametroCatalogoPrisma } from './infraestructura/repositorio-parametro-prisma.js';
 import { RepositorioProductoPrisma } from './infraestructura/repositorio-producto-prisma.js';
 import { CACHE_CATALOGO } from './puertos/cache-catalogo.js';
 import { REPOSITORIO_ENVIO } from './puertos/repositorio-envio.js';
+import { REPOSITORIO_IMPORTACION_CATALOGO } from './puertos/repositorio-importacion.js';
 import { REPOSITORIO_PARAMETRO_CATALOGO } from './puertos/repositorio-parametro.js';
 import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
 
 /**
- * Módulo de catálogo (design.md, tabla "Módulos tocados y dependencias"): hoja del monolito, no
- * depende de `modulos/geografia` (D1) ni de `modulos/horario`. Registra los adaptadores Prisma
- * (T5) y Redis (T7) de esta fase detrás de sus puertos, y los cuatro casos de uso de aplicación
- * (T8). `RedisModule` se importa explícito porque, a diferencia de `plataforma/reloj`, no es
- * `@Global()` (skill `luxeboreal-arquitectura`); `CLOCK` le llega a `CacheCatalogoRedis` sin
- * import adicional. `AppModule` MUST NOT importarlo todavía — lo hará la primera fase que lo
- * necesite (07), igual que `GeografiaModule`/`HorarioModule` quedaron sin registrar tras sus fases.
+ * Módulo de catálogo (design.md, tabla "Módulos tocados y dependencias"): hoja del monolito hasta
+ * la Fase 02; desde esta fase (03) depende de `modulos/geografia` (D5: `resolverGeografiaImportacion`
+ * resuelve departamento/ciudad a código DANE, IMP9) y de `modulos/medios` (D1: `ALMACENAMIENTO`,
+ * `construirCollage`, consumidos por `ProcesarFotos`). Registra los adaptadores Prisma (T5, T7) y
+ * Redis (T7) detrás de sus puertos, y los casos de uso de aplicación de ambas fases. `RedisModule`
+ * se importa explícito porque, a diferencia de `plataforma/reloj`, no es `@Global()` (skill
+ * `luxeboreal-arquitectura`); `CLOCK` le llega a `CacheCatalogoRedis`/`ImportarCatalogo` sin import
+ * adicional. `AppModule` MUST NOT importarlo todavía — lo hará la primera fase que lo necesite (07),
+ * igual que `GeografiaModule`/`HorarioModule` quedaron sin registrar tras sus fases.
+ *
+ * Nota de deviación (reportada, no silenciosa, T9): `FUENTE_CATALOGO` (puerto de lectura del
+ * catálogo, D2) MUST NOT registrarse aquí con un adaptador fijo — a diferencia de
+ * `REPOSITORIO_IMPORTACION_CATALOGO` (siempre `RepositorioImportacionPrisma`), la elección entre
+ * `FuenteCatalogoSheets`/`FuenteCatalogoDirectorio` depende de qué flag de CLI (`--sheet-id`/`--dir`)
+ * usó el usuario en esa corrida — una decisión en tiempo de ejecución que solo conoce el comando
+ * (`scripts/importar-catalogo.ts`, T10, todavía no construido), no este módulo estático. `T10`
+ * MUST proveer `FUENTE_CATALOGO` en el contexto de aplicación del CLI antes de resolver
+ * `ImportarCatalogo`.
  */
 @Module({
-  imports: [PrismaModule, RedisModule],
+  imports: [PrismaModule, RedisModule, GeografiaModule, MediosModule],
   providers: [
     { provide: REPOSITORIO_PRODUCTO, useClass: RepositorioProductoPrisma },
     { provide: REPOSITORIO_ENVIO, useClass: RepositorioEnvioPrisma },
     { provide: REPOSITORIO_PARAMETRO_CATALOGO, useClass: RepositorioParametroCatalogoPrisma },
+    { provide: REPOSITORIO_IMPORTACION_CATALOGO, useClass: RepositorioImportacionPrisma },
     { provide: CACHE_CATALOGO, useClass: CacheCatalogoRedis },
     ObtenerFichaProducto,
     ListarProductosActivos,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
+    ResolverGeografiaImportacion,
+    ProcesarFotos,
+    ImportarCatalogo,
   ],
-  exports: [ObtenerFichaProducto, ListarProductosActivos, ObtenerCatalogoCompacto, CotizarEnvio],
+  exports: [ObtenerFichaProducto, ListarProductosActivos, ObtenerCatalogoCompacto, CotizarEnvio, ImportarCatalogo],
 })
 export class CatalogoModule {}

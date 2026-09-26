@@ -10,6 +10,11 @@
  */
 export { CatalogoModule } from './catalogo.module.js';
 export { CotizarEnvio } from './aplicacion/cotizar-envio.js';
+export {
+  ImportarCatalogo,
+  type OpcionesImportacion,
+  type ReporteImportacion,
+} from './aplicacion/importar-catalogo.js';
 export { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
 export { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
 export { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';

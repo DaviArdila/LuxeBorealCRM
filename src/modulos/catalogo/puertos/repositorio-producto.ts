@@ -4,8 +4,9 @@ import type { Producto, ProductoResumen } from '../dominio/producto.js';
 export const REPOSITORIO_PRODUCTO = Symbol('REPOSITORIO_PRODUCTO');
 
 /**
- * Puerto de acceso a `producto` (design.md, tabla "Puertos y adaptadores"). Solo lectura: ningún
- * caso de uso de esta fase escribe en `producto` todavía.
+ * Puerto de acceso a `producto` (design.md, tabla "Puertos y adaptadores"). Solo lectura: la
+ * escritura del importador (Fase 03, IMP11) vive en un puerto propio,
+ * `RepositorioImportacionCatalogo` (`puertos/repositorio-importacion.ts`), no aquí.
  */
 export interface RepositorioProducto {
   /** Solo activos, ordenado por `nombre` (CAT1, CAT4). */
