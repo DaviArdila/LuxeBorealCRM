@@ -29,6 +29,14 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -52,6 +60,14 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -83,6 +99,14 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

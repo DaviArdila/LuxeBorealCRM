@@ -185,4 +185,68 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.DOCS_HABILITADO).toBe(false);
     });
   });
+
+  describe('Variables MINIO_*/CATALOGO_SHEET_ID (T5 de fase-03-importador-medios, D3)', () => {
+    it('usa los valores de desarrollo por defecto cuando ninguna variable MINIO_* viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.MINIO_ENDPOINT).toBe('localhost');
+      expect(configuracion.MINIO_PUERTO).toBe(9000);
+      expect(configuracion.MINIO_SSL).toBe(false);
+      expect(configuracion.MINIO_ACCESS_KEY).toBe('luxe');
+      expect(configuracion.MINIO_SECRET_KEY).toBe('luxeclave');
+      expect(configuracion.MINIO_BUCKET).toBe('luxeboreal-medios');
+      expect(configuracion.MINIO_URL_PUBLICA).toBeUndefined();
+      expect(configuracion.CATALOGO_SHEET_ID).toBeUndefined();
+    });
+
+    it('acepta MINIO_SSL="true" y lo convierte a boolean', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, MINIO_SSL: 'true' });
+
+      expect(configuracion.MINIO_SSL).toBe(true);
+    });
+
+    it('rechaza MINIO_SSL con un valor que no sea "true" ni "false"', () => {
+      const fuenteInvalida = { ...fuenteValida, MINIO_SSL: 'yes' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'MINIO_SSL',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('rechaza MINIO_URL_PUBLICA que no es una URL', () => {
+      const fuenteInvalida = { ...fuenteValida, MINIO_URL_PUBLICA: 'no-es-una-url' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'MINIO_URL_PUBLICA',
+          problema: 'formato',
+        });
+      }
+    });
+
+    it('acepta MINIO_URL_PUBLICA cuando es una URL válida', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        MINIO_URL_PUBLICA: 'https://medios.luxeboreal.com',
+      });
+
+      expect(configuracion.MINIO_URL_PUBLICA).toBe('https://medios.luxeboreal.com');
+    });
+
+    it('acepta CATALOGO_SHEET_ID cuando viene, sin transformarlo', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, CATALOGO_SHEET_ID: 'abc123' });
+
+      expect(configuracion.CATALOGO_SHEET_ID).toBe('abc123');
+    });
+  });
 });

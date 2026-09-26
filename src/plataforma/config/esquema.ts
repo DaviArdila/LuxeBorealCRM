@@ -24,6 +24,21 @@ export const esquemaConfiguracion = z
       .enum(['true', 'false'])
       .default('false')
       .transform((valor) => valor === 'true'),
+    /** Host de MinIO (T5 de fase-03-importador-medios, design.md §"Configuración", D3). */
+    MINIO_ENDPOINT: z.string().default('localhost'),
+    MINIO_PUERTO: z.coerce.number().int().min(1).max(65535).default(9000),
+    /** `'true'`/`'false'` de texto, igual que `DOCS_HABILITADO`; se convierte a boolean. */
+    MINIO_SSL: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((valor) => valor === 'true'),
+    MINIO_ACCESS_KEY: z.string().default('luxe'),
+    MINIO_SECRET_KEY: z.string().default('luxeclave'),
+    MINIO_BUCKET: z.string().default('luxeboreal-medios'),
+    /** Si falta, `AlmacenamientoMinio` arma la URL pública con endpoint + puerto + SSL (D3). */
+    MINIO_URL_PUBLICA: z.string().url().optional(),
+    /** Valor por defecto de `--sheet-id`; el CLI de importación también lo acepta como flag. */
+    CATALOGO_SHEET_ID: z.string().optional(),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {

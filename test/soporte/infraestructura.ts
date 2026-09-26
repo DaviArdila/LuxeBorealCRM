@@ -1,5 +1,5 @@
 import { inject } from 'vitest';
-import { nombreBaseDeWorker, urlConBase } from './bases-de-prueba.js';
+import { NOMBRE_BUCKET_PRUEBA, nombreBaseDeWorker, urlConBase } from './bases-de-prueba.js';
 
 /**
  * Helper que entrega a cada test de integración/e2e la URL de la base de datos **de su propio
@@ -31,4 +31,22 @@ export function prefijoRedisDePrueba(): string {
     throw new Error(`poolId de Vitest inválido para el prefijo de Redis: "${poolId}" (MUST cumplir ^\\d+$).`);
   }
   return `test:${poolId}:`;
+}
+
+/** URL de administración del contenedor MinIO de prueba (D9, T5 de fase-03-importador-medios). */
+export function urlMinioDePrueba(): string {
+  return inject('urlMinioAdmin');
+}
+
+/** Credenciales del contenedor MinIO de prueba, generadas por `contenedores.global-setup.ts` (D9). */
+export function credencialesMinioDePrueba(): { accessKeyId: string; secretAccessKey: string } {
+  return {
+    accessKeyId: inject('minioAccessKeyId'),
+    secretAccessKey: inject('minioSecretAccessKey'),
+  };
+}
+
+/** Nombre del bucket MinIO compartido entre los tests de integración (D9, T5). */
+export function bucketMinioDePrueba(): string {
+  return NOMBRE_BUCKET_PRUEBA;
 }

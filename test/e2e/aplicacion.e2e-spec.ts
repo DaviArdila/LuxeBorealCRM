@@ -29,6 +29,14 @@ function configuracionValida(): Configuracion {
     // Sin fijar explícitamente: confirma que el e2e existente de 00a sigue en verde con el
     // default `false` de D7, sin que este archivo dependa de /docs.
     DOCS_HABILITADO: false,
+    MINIO_ENDPOINT: 'localhost',
+    MINIO_PUERTO: 9000,
+    MINIO_SSL: false,
+    MINIO_ACCESS_KEY: 'luxe',
+    MINIO_SECRET_KEY: 'luxeclave',
+    MINIO_BUCKET: 'luxeboreal-medios',
+    MINIO_URL_PUBLICA: undefined,
+    CATALOGO_SHEET_ID: undefined,
   };
 }
 

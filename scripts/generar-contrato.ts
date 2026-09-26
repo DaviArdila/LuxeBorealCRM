@@ -23,6 +23,14 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   // El contrato commiteado documenta /docs a través de esquemaRespuestaSalud, sin necesidad de
   // montarlo de verdad (D7 de T4): la generación nunca depende de si /docs está habilitado.
   DOCS_HABILITADO: false,
+  MINIO_ENDPOINT: 'localhost',
+  MINIO_PUERTO: 9000,
+  MINIO_SSL: false,
+  MINIO_ACCESS_KEY: 'luxe',
+  MINIO_SECRET_KEY: 'luxeclave',
+  MINIO_BUCKET: 'luxeboreal-medios',
+  MINIO_URL_PUBLICA: undefined,
+  CATALOGO_SHEET_ID: undefined,
 };
 
 export interface DocumentosContrato {

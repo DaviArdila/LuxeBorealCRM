@@ -35,8 +35,47 @@ services:
       timeout: 5s
       retries: 10
 
+  # T5 de fase-03-importador-medios (ADR-0012, D3 de design.md): backend del puerto
+  # `Almacenamiento`. Igual que postgres/redis, los tests NO usan este servicio: levantan MinIO con
+  # Testcontainers desde test/soporte/contenedores.global-setup.ts (D9). Este solo es para
+  # `npm run start:dev` manual. Consola web en el puerto 9001 (${LUXE_MINIO_PUERTO_CONSOLA_HOST:-9091}).
+  #
+  # Hallazgo real (T5, no anticipado por D3/D9): `minio/minio` ya no existe en Docker Hub ("pull
+  # access denied", confirmado en esta sesión) — MinIO restringió su distribución gratuita en 2025;
+  # `quay.io/minio/minio` tampoco es accesible sin autenticación. `bitnamilegacy/minio` (imagen
+  # congelada de Bitnami, gratuita, sin autenticación) ejecuta el mismo binario `minio`, verificado
+  # con `/minio/health/live` (200) y `mc ready local` (éxito) contra un contenedor real de esta
+  # imagen. El usuario puede vetar esta imagen al aprobar (por ejemplo, por un self-host propio de
+  # `minio/minio` desde binario, o una cuenta de quay.io) — queda documentado aquí para que la
+  # decisión sea explícita, no silenciosa.
+  #
+  # Segundo hallazgo real: a diferencia de la imagen oficial (que corre como `root`), esta imagen
+  # corre como el usuario no-root `1001` y solo tiene permiso de escritura sobre el volumen que ella
+  # misma declara (`/bitnami/minio/data`), no sobre `/data` (confirmado con `FATAL Unable to
+  # initialize backend: file access denied` contra `/data` en esta sesión) — de ahí el comando y el
+  # volumen apuntando a esa ruta.
+  minio:
+    image: bitnamilegacy/minio:latest
+    restart: unless-stopped
+    command: server --console-address ":9001" /bitnami/minio/data
+    environment:
+      MINIO_ROOT_USER: ${LUXE_MINIO_ACCESS_KEY:-luxe}
+      MINIO_ROOT_PASSWORD: ${LUXE_MINIO_SECRET_KEY:-luxeclave}
+    ports:
+      - '${LUXE_MINIO_PUERTO_HOST:-9000}:9000'
+      - '${LUXE_MINIO_PUERTO_CONSOLA_HOST:-9091}:9001'
+    volumes:
+      - luxeborealcrm_minio_datos:/bitnami/minio/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   luxeborealcrm_postgres_datos:
     name: luxeborealcrm_postgres_datos
   luxeborealcrm_redis_datos:
     name: luxeborealcrm_redis_datos
+  luxeborealcrm_minio_datos:
+    name: luxeborealcrm_minio_datos

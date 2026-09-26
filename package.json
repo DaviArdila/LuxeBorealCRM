@@ -41,6 +41,7 @@
     "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
     "@nestjs/common": "^12.1.0",
     "@nestjs/core": "^12.1.0",
     "@nestjs/platform-express": "^12.1.0",
@@ -66,6 +67,7 @@
     "@nestjs/testing": "^12.1.0",
     "@stoplight/spectral-cli": "^6.16.3",
     "@swc/core": "^1.16.2",
+    "@testcontainers/minio": "^12.1.0",
     "@testcontainers/postgresql": "^12.1.0",
     "@testcontainers/redis": "^12.1.0",
     "@types/express": "^5.0.0",

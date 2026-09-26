@@ -26,6 +26,14 @@ async function crearRepositorio(): Promise<RepositorioHorario> {
     REDIS_URL: urlRedisDePrueba(),
     HEALTH_TIMEOUT_MS: 1500,
     DOCS_HABILITADO: false,
+    MINIO_ENDPOINT: 'localhost',
+    MINIO_PUERTO: 9000,
+    MINIO_SSL: false,
+    MINIO_ACCESS_KEY: 'luxe',
+    MINIO_SECRET_KEY: 'luxeclave',
+    MINIO_BUCKET: 'luxeboreal-medios',
+    MINIO_URL_PUBLICA: undefined,
+    CATALOGO_SHEET_ID: undefined,
   };
 
   modulo = await Test.createTestingModule({

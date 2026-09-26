@@ -1,11 +1,15 @@
 /**
- * Funciones puras del arnés de bases de prueba (T1 de `openspec/changes/fase-01-persistencia/tasks.md`,
- * D6/D7 de `design.md`). Ningún I/O aquí: quien conecta a Postgres es `base-por-worker.setup.ts`
- * y `contenedores.global-setup.ts`.
+ * Funciones y constantes puras del arnés de bases/objetos de prueba (T1 de
+ * `openspec/changes/fase-01-persistencia/tasks.md`, D6/D7 de `design.md`; T5 de
+ * `fase-03-importador-medios`, D9, agrega el nombre del bucket MinIO de prueba). Ningún I/O aquí:
+ * quien conecta a Postgres/MinIO es `base-por-worker.setup.ts` y `contenedores.global-setup.ts`.
  */
 
 /** Nombre de la base plantilla, migrada una sola vez por `contenedores.global-setup.ts` (D6). */
 export const NOMBRE_PLANTILLA = 'plantilla_luxe';
+
+/** Nombre del bucket MinIO compartido entre los tests de integración (D9, T5). */
+export const NOMBRE_BUCKET_PRUEBA = 'luxeboreal-medios-prueba';
 
 const POOL_ID_VALIDO = /^\d+$/;
 

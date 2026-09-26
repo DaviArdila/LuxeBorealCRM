@@ -38,6 +38,14 @@ describe('Indicadores de salud (T9, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -54,6 +62,14 @@ describe('Indicadores de salud (T9, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     });
 
     const inicio = performance.now();
@@ -74,6 +90,14 @@ describe('Indicadores de salud (T9, integración)', () => {
       REDIS_URL: urlRedisDePrueba(),
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -90,6 +114,14 @@ describe('Indicadores de salud (T9, integración)', () => {
       REDIS_URL: 'redis://127.0.0.1:65534',
       HEALTH_TIMEOUT_MS: 1500,
       DOCS_HABILITADO: false,
+      MINIO_ENDPOINT: 'localhost',
+      MINIO_PUERTO: 9000,
+      MINIO_SSL: false,
+      MINIO_ACCESS_KEY: 'luxe',
+      MINIO_SECRET_KEY: 'luxeclave',
+      MINIO_BUCKET: 'luxeboreal-medios',
+      MINIO_URL_PUBLICA: undefined,
+      CATALOGO_SHEET_ID: undefined,
     });
 
     const inicio = performance.now();
