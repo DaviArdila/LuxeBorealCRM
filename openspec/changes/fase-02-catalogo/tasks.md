@@ -53,10 +53,11 @@ envío — se sigue el diagrama de flujo de datos por ser más específico que l
 - [x] T5 — Puertos + repositorios Prisma de catálogo (producto, envío, parámetro) + tests de
       integración (S(b)) — commit `adcfd6f`
 - [x] T6 — Puerto + repositorio Prisma de horario + test de integración (S(b)) — commit `52598fb`
-- [ ] T7 — Caché de catálogo compacto (puerto + adaptador Redis) + tests (S(c))
+- [x] T7 — Caché de catálogo compacto (puerto + adaptador Redis) + tests (S(c)) — commit `1a9eb26`
 - [ ] T8 — Servicios de aplicación de catálogo (ficha, listado, catálogo compacto, cotización) +
       módulo Nest + barril (S(c))
-- [ ] T9 — Servicio de aplicación de horario (`HorarioAtencion`) + módulo Nest + barril (S(c))
+- [x] T9 — Servicio de aplicación de horario (`HorarioAtencion`) + módulo Nest + barril (S(c)) —
+      commit `5a3dc2f`
 - [ ] T10 — Cierre documental (S(d))
 
 ## Mapeo de escenarios por tarea (32 escenarios, 18 requisitos)
