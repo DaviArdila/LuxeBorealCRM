@@ -49,14 +49,10 @@ function esFechaPasada(fecha: Date, hoy: Date): boolean {
  * `repositorio-importacion.spec.ts`. Solo usa el *query builder* de Prisma, nunca `$queryRaw`
  * (matriz de amenazas de `tasks.md`).
  *
- * Nota de desviación (reportada, no silenciosa): el contrato canónico de `NuevoProductoImportado`
- * (design.md, "Interfaces / Contracts") no incluye un campo `activo` — a diferencia de
- * `ProductoValidado.activo` que sí valida IMP4 en `dominio/validar-catalogo.ts` (T2). Este
- * adaptador, fiel al puerto tal como está fijado, trata la sola presencia de un SKU en
- * `datos.productos` como "activo = true"; un producto ausente de la hoja se desactiva (IMP11).
- * Cómo `aplicacion/importar-catalogo.ts` (T9) traslada `ProductoValidado.activo` (un producto
- * marcado `activo = no` en la hoja, pero presente en ella) al puerto real queda para esa tarea —
- * el puerto no tiene hoy ningún campo que lo represente.
+ * `NuevoProductoImportado.activo` (puerto, corregido tras T7) refleja el `activo` explícito de la
+ * fila de la hoja (IMP4): un producto presente pero marcado `activo = no` queda inactivo con este
+ * mismo upsert, distinto de un SKU ausente de la hoja, que se desactiva por el paso 3 (`NOT IN`,
+ * IMP11).
  */
 @Injectable()
 export class RepositorioImportacionPrisma implements RepositorioImportacionCatalogo {
@@ -105,7 +101,7 @@ export class RepositorioImportacionPrisma implements RepositorioImportacionCatal
             descripcionCorta: producto.descripcionCorta,
             descripcionLarga: producto.descripcionLarga,
             precioCop: producto.precioCop,
-            activo: true,
+            activo: producto.activo,
             pesoGramos: producto.pesoGramos,
             largoMm: producto.largoMm,
             anchoMm: producto.anchoMm,
@@ -118,7 +114,7 @@ export class RepositorioImportacionPrisma implements RepositorioImportacionCatal
             descripcionCorta: producto.descripcionCorta,
             descripcionLarga: producto.descripcionLarga,
             precioCop: producto.precioCop,
-            activo: true,
+            activo: producto.activo,
             pesoGramos: producto.pesoGramos,
             largoMm: producto.largoMm,
             anchoMm: producto.anchoMm,

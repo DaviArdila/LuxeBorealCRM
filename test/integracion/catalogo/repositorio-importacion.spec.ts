@@ -70,6 +70,7 @@ function producto(overrides: Partial<NuevoProductoImportado> = {}): NuevoProduct
     descripcionCorta: overrides.descripcionCorta ?? 'Descripción corta',
     descripcionLarga: overrides.descripcionLarga ?? 'Descripción larga',
     precioCop: overrides.precioCop ?? 50000,
+    activo: overrides.activo ?? true,
     pesoGramos: overrides.pesoGramos ?? null,
     largoMm: overrides.largoMm ?? null,
     anchoMm: overrides.anchoMm ?? null,
@@ -208,6 +209,28 @@ describe('Repositorio de importación de catálogo (T7, integración)', () => {
     await repositorio.escribirTodoONada(datosVacios({ productos: [producto()] }), HOY);
 
     const fila = await prisma.producto.findUnique({ where: { id: ausente.id } });
+
+    expect(fila).not.toBeNull();
+    expect(fila?.activo).toBe(false);
+  });
+
+  it('IMP4 — Un producto presente en la hoja con activo=no explícito queda inactivo tras importar (distinto de un SKU ausente, IMP11)', async () => {
+    const { repositorio, prisma } = await crearRepositorio();
+    const sku = `SKU-INA-${crypto.randomUUID().slice(0, 8)}`;
+    await prisma.producto.create({
+      data: {
+        sku,
+        nombre: 'Producto que la hoja marca inactivo',
+        descripcionCorta: 'x',
+        descripcionLarga: 'x',
+        precioCop: 1000,
+        activo: true,
+      },
+    });
+
+    await repositorio.escribirTodoONada(datosVacios({ productos: [producto({ sku, activo: false, fotos: [] })] }), HOY);
+
+    const fila = await prisma.producto.findUnique({ where: { sku } });
 
     expect(fila).not.toBeNull();
     expect(fila?.activo).toBe(false);

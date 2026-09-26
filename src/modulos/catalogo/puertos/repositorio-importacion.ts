@@ -39,6 +39,8 @@ export interface NuevoProductoImportado {
   readonly descripcionCorta: string;
   readonly descripcionLarga: string;
   readonly precioCop: number;
+  /** `activo = no` explícito de una fila presente en la hoja (IMP4); distinto de un SKU ausente (IMP11). */
+  readonly activo: boolean;
   readonly pesoGramos: number | null;
   readonly largoMm: number | null;
   readonly anchoMm: number | null;
