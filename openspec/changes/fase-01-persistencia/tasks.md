@@ -33,7 +33,7 @@ verde y su commit anotado.
 
 - [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
-- [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `<pendiente>`)
+- [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c`)
 - [ ] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4)
 - [ ] T5 — Cierre documental (S5)
 
