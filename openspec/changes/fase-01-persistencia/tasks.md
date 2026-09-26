@@ -35,7 +35,7 @@ verde y su commit anotado.
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
 - [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `4636f4bc78bdd9bc9699d7815e38be8f5edf137c`)
 - [x] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4; commit `ed5adfdce9ed20be2652fbe8e482bc12ce332bcf`)
-- [x] T5 — Cierre documental (S5)
+- [x] T5 — Cierre documental (S5; commit `6b54ead4723eb102a36a32a518c1616a9fbf7621`)
 
 ## Mapeo de escenarios por tarea (30 escenarios, 14 requisitos)
 
@@ -1012,3 +1012,5 @@ para toda la fase, y que el Success Criteria completo de `proposal.md` se cumple
 - Success Criteria de `proposal.md`: migración aplicada desde cero (T2), test de repositorio contra
   Postgres real (T3), semilla DANE idempotente (T4) — los tres puntos quedan demostrados por la
   evidencia ya registrada en T2-T4; esta tarea no agrega comportamiento nuevo que verificar.
+
+**commit:** `6b54ead4723eb102a36a32a518c1616a9fbf7621` — `docs(01): cerrar fase de persistencia`
