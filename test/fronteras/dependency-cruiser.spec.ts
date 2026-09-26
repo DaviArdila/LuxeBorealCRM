@@ -106,6 +106,18 @@ describe('fronteras — dependency-cruiser (D11)', () => {
     ).toBe(false);
   });
 
+  it('regla 3 — dominio-aislado (permitido): un test unitario junto a dominio/ puede importar una devDependency', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'dominio-aislado',
+        'src/modulos/pedidos/dominio/entidad.spec.ts',
+      ),
+    ).toBe(false);
+  });
+
   it('regla 4 — prisma-solo-en-infraestructura: aplicacion/ importando @prisma/client viola la regla', async () => {
     const violaciones = await violacionesDeFixtures();
 
@@ -260,6 +272,30 @@ describe('fronteras — dependency-cruiser (D11)', () => {
         violaciones,
         'scripts-solo-barriles-de-plataforma',
         'scripts/consumidor-plataforma-publica.ts',
+      ),
+    ).toBe(false);
+  });
+
+  it('PER14 — Un import de PrismaService desde aplicacion, puertos o interfaz de un módulo falla la verificación de fronteras', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'prisma-service-solo-en-infraestructura',
+        'src/modulos/pedidos/aplicacion/caso-uso-prisma-service.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('PER14 — El módulo raíz de composición puede importar PrismaModule sin fallar', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'prisma-service-solo-en-infraestructura',
+        'src/modulos/pedidos/pedidos.module.ts',
       ),
     ).toBe(false);
   });

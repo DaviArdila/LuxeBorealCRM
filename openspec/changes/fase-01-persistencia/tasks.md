@@ -33,7 +33,7 @@ verde y su commit anotado.
 
 - [x] T1 — Arnés: plantilla + base por worker + prefijo de Redis (S1)
 - [x] T2 — Esquema v1 + migración inicial + deriva + invariantes + restricciones `[manual]` (S2; commit `e195a4fb244003036d87cf2595f180caa662e27a`)
-- [ ] T3 — Repositorio de geografía + regla de fronteras 12 (S3)
+- [x] T3 — Repositorio de geografía + regla de fronteras 12 (S3; commit `<pendiente>`)
 - [ ] T4 — Semilla DANE: descarga, intérprete, caso de uso, idempotencia (S4)
 - [ ] T5 — Cierre documental (S5)
 
@@ -505,6 +505,116 @@ esos modelos).
 - El test de repositorio contra Postgres real (Success Criteria de `proposal.md`, cuarto ítem) queda
   demostrado con este repositorio de geografía.
 - `npm run verify` sigue en verde y por debajo de 3 minutos.
+
+**Evidencia real (máquina de desarrollo, 2026-09-25, Docker arriba)**:
+
+1. RED — `src/modulos/geografia/dominio/geografia.spec.ts` sin `geografia.ts` (`npm test -- geografia`):
+   ```
+   FAIL  |unit| src/modulos/geografia/dominio/geografia.spec.ts
+   Error: Cannot find module './geografia.js' imported from .../dominio/geografia.spec.ts
+   Test Files  1 failed (1)
+   ```
+   GREEN tras implementar `geografia.ts` (`Departamento`, `Ciudad`, `CatalogoGeografico`,
+   `esCodigoDepartamentoValido`, `esCodigoCiudadValido`, `FuenteDivipolaInvalida`):
+   ```
+   Test Files  1 passed (1)
+        Tests  8 passed (8)
+   ```
+2. RED — `test/integracion/geografia/repositorio-geografia.spec.ts` con `geografia.module.ts`,
+   `index.ts` e `infraestructura/repositorio-geografia-prisma.ts` movidos fuera del árbol
+   (`npm run test:integracion -- repositorio-geografia`):
+   ```
+   FAIL  |integracion| test/integracion/geografia/repositorio-geografia.spec.ts
+   Error: Cannot find module '.../src/modulos/geografia/index.js'
+   Test Files  1 failed (1)
+   ```
+   GREEN tras restaurar/implementar el puerto, el adaptador Prisma (`guardarCatalogo` con
+   `$queryRaw` en plantilla etiquetada + `unnest`, `listarDepartamentos`, `listarCiudadesDe`), el
+   módulo y el barril:
+   ```
+   Test Files  1 passed (1)
+        Tests  3 passed (3)
+   ```
+   Los 3 escenarios de PER13 pasaron contra Postgres real (Testcontainers) en el primer intento tras
+   implementar el adaptador; no hicieron falta correcciones adicionales de comportamiento SQL.
+3. RED — fixture de la regla 12 (`test/fronteras/fixtures/src/modulos/pedidos/aplicacion/caso-uso-prisma-service.ts`
+   importando el barril fixture `plataforma/prisma/index.ts`, más el permitido
+   `pedidos.module.ts`) sin la regla en `.dependency-cruiser.cjs` (`npm test -- fronteras`):
+   ```
+   × PER14 — Un import de PrismaService desde aplicacion, puertos o interfaz de un módulo falla la
+     verificación de fronteras
+   AssertionError: expected false to be true
+   Test Files  1 failed | 13 passed (14)
+   ```
+   GREEN tras agregar la regla 12 `prisma-service-solo-en-infraestructura`
+   (`from: ^src/modulos/[^/]+/(aplicacion|puertos|interfaz)/`, `to: ^src/plataforma/prisma/`):
+   ```
+   Test Files  14 passed (14)
+        Tests  85 passed (85)
+   ```
+4. `npm run fronteras` real sobre `src`/`scripts`: **0 violaciones, 101 módulos / 200 dependencias
+   cruzadas** (`✔ no dependency violations found`) — confirma que el módulo `geografia` real no
+   dispara la regla 12 ni ninguna otra, y que la violación solo existe en el fixture.
+
+**Desviación registrada (hallazgo real durante GREEN, no prevista en `design.md`)**: al escribir
+`geografia.spec.ts` bajo `dominio/`, `npm run fronteras` real reportó una violación genuina de la
+regla 3 `dominio-aislado` (`dominio/geografia.spec.ts → node_modules/vitest`): esa regla, tal como
+la dejó la Fase 00a, prohibía **cualquier** import fuera de `dominio/`/`compartido/` sin la misma
+excepción de `.spec.ts` que ya tiene la regla 9 (`src-sin-dev-dependencies`) para el resto de `src/`.
+Como `geografia` es el primer módulo de negocio de todo el repo, nadie había escrito antes un test
+unitario colocado junto a `dominio/`, así que el hueco no se había manifestado. Se corrigió con el
+mismo patrón que la regla 9 (`from.pathNot: '\\.spec\\.ts$'`), con su propio ciclo RED→GREEN:
+- RED (`npm test -- fronteras`, fixture nueva `.../dominio/entidad.spec.ts` importando `vitest`):
+  ```
+  × regla 3 — dominio-aislado (permitido): un test unitario junto a dominio/ puede importar una devDependency
+  AssertionError: expected true to be false
+  ```
+- GREEN tras el ajuste de la regla: `Test Files 14 passed (14)`, `Tests 85 passed (85)`.
+Sin este ajuste, ningún `dominio/*.spec.ts` de ningún módulo futuro podría importar `vitest` — no es
+un cambio de alcance de T3, es una corrección de una regla existente que T3 fue la primera en poder
+observar en ejecución real. Queda documentado aquí en vez de silenciarse en el chat, según la skill
+`luxeboreal-fases` §5.
+
+**`npm run verify` completo**: código **0**, **44 archivos / 198 tests aprobados**, duración
+**47,05 s** (muy por debajo de PLT7, 3 min). Dos corridas previas inmediatamente anteriores fallaron
+por contención transitoria de Postgres/Testcontainers al repetir `verify` completo varias veces
+seguidas sin pausa (`terminating connection due to administrator command` en un test de T2,
+`restricciones-manuales.spec.ts`, y una carrera de `CREATE DATABASE ... TEMPLATE` en
+`base-por-worker.setup.ts`, en `salud.spec.ts`); ambos tests, corridos por separado, pasaron en
+verde de inmediato, y la tercera corrida completa de `verify` fue estable — no es una regresión de
+T3, es la misma contención de infraestructura que T2 ya documentó (D6, "Desviación de ejecución").
+`npm run test:e2e`: código **0**, **1 archivo / 8 tests aprobados**, 12,74 s.
+
+**Líneas de autoría reales** (`git diff --cached --numstat`, sin generados — este slice no toca
+Prisma ni el cliente generado):
+
+| Archivo | + | − |
+|---|---|---|
+| `.dependency-cruiser.cjs` | 19 | 2 |
+| `src/modulos/geografia/dominio/geografia.ts` | 56 | 0 |
+| `src/modulos/geografia/dominio/geografia.spec.ts` | 55 | 0 |
+| `src/modulos/geografia/puertos/repositorio-geografia.ts` | 30 | 0 |
+| `src/modulos/geografia/infraestructura/repositorio-geografia-prisma.ts` | 84 | 0 |
+| `src/modulos/geografia/geografia.module.ts` | 17 | 0 |
+| `src/modulos/geografia/index.ts` | 21 | 0 |
+| `test/integracion/geografia/repositorio-geografia.spec.ts` | 104 | 0 |
+| `test/fronteras/dependency-cruiser.spec.ts` | 36 | 0 |
+| `test/fronteras/fixtures/src/modulos/pedidos/aplicacion/caso-uso-prisma-service.ts` | 6 | 0 |
+| `test/fronteras/fixtures/src/modulos/pedidos/dominio/entidad.spec.ts` | 7 | 0 |
+| `test/fronteras/fixtures/src/modulos/pedidos/pedidos.module.ts` | 6 | 0 |
+| `test/fronteras/fixtures/src/plataforma/prisma/index.ts` | 5 | 0 |
+| **Total** | **446** | **2** |
+
+**448 líneas de autoría** frente a la estimación de ~345 de `design.md` §"Migration / Rollout" S3
+(+103, ~1.30×). La diferencia no alcanza el umbral de excepción que sí aplicó a T2 (~1.65× allí,
+`size:exception` explícito del usuario): la mayor parte del exceso (~74 líneas) viene del hallazgo
+real de la regla 3 `dominio-aislado` de arriba (fixture nueva + caso de prueba + ajuste de la regla
+con su comentario), que no estaba presupuestado porque no era un objeto conocido de T3 hasta que el
+primer `npm run fronteras` real lo reveló. El resto de los archivos quedó cerca de su estimación
+individual (dominio ~111 vs ~90, puerto 30 vs ~25, adaptador 84 vs ~75, módulo+barril 38 vs ~30,
+test de integración 104 vs ~90). No se pidió `size:exception`: el exceso total sobre el presupuesto
+general de ~400 es de solo 48 líneas (~12%), y no se recortó ningún test, comentario ni la corrección
+de la regla 3 para acercarse al número.
 
 ---
 

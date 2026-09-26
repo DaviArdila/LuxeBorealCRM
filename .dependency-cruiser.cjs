@@ -29,9 +29,14 @@ module.exports = {
     },
     {
       name: 'dominio-aislado',
-      comment: 'dominio/ de un módulo solo importa su propio dominio y compartido/ (skill §2).',
+      comment:
+        'dominio/ de un módulo solo importa su propio dominio y compartido/ (skill §2). Los ' +
+        'tests unitarios colocados junto al código (*.spec.ts) quedan fuera de esta regla, igual ' +
+        'que la regla 9 los exceptúa de "sin devDependencies" (skill §7) — hallazgo real de T3 de ' +
+        'fase-01-persistencia: sin esta excepción, ningún dominio/*.spec.ts podría importar ' +
+        '`vitest`.',
       severity: 'error',
-      from: { path: '^src/modulos/([^/]+)/dominio/' },
+      from: { path: '^src/modulos/([^/]+)/dominio/', pathNot: '\\.spec\\.ts$' },
       to: { pathNot: ['^src/modulos/$1/dominio/', '^src/compartido/'] },
     },
     {
@@ -125,6 +130,18 @@ module.exports = {
         path: '^src/plataforma/[^/]+/',
         pathNot: '^src/plataforma/[^/]+/index\\.ts$',
       },
+    },
+    {
+      name: 'prisma-service-solo-en-infraestructura',
+      comment:
+        'La regla 4 prohíbe @prisma/client fuera de infraestructura/, pero no cierra el hueco de ' +
+        'importar el barril público plataforma/prisma/index.ts, que expone PrismaService (un ' +
+        'PrismaClient completo) — D10 de openspec/changes/fase-01-persistencia/design.md. Solo ' +
+        'infraestructura/ de cada módulo y <m>.module.ts (raíz de composición) pueden tocar ' +
+        'plataforma/prisma; aplicacion/, puertos/ e interfaz/ no.',
+      severity: 'error',
+      from: { path: '^src/modulos/[^/]+/(aplicacion|puertos|interfaz)/' },
+      to: { path: '^src/plataforma/prisma/' },
     },
   ],
   options: {
