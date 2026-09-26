@@ -21,7 +21,7 @@ Leyenda de decisión:
 | `lib/tiempo.ts` | Conservar | `plataforma/reloj` (`Clock` inyectable) | 00 | B8; se elimina el reloj global mutable |
 | `lib/dinero.ts`, `lib/texto.ts`, `lib/numero.ts` | Conservar | `compartido/` | 00 | **Migrado** — `src/compartido/dinero/`, `src/compartido/texto/`, `src/compartido/numero/` (Fase 00a, T5, commit `d2aa48a`); funciones puras con tests reescritos |
 | `health/` | Rediseñar | `@nestjs/terminus` | 00 | **Migrado** — `src/plataforma/salud/` (Fase 00a: indicadores Postgres/Redis, apagado ordenado; Fase 00b, T4: `esquemaRespuestaSalud` documenta la respuesta desde zod, `FiltroSaludOperativo` la exime de `application/problem+json`, y `GET /health` entra al documento OpenAPI **interno**, excluido del público) |
-| `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | La regla "solo la capa de datos toca Prisma" se conserva, pero por módulo |
+| `db/prisma.ts`, `db/repositorios/*`, `db/tipos.ts` | Rediseñar | `PrismaService` + repositorios por módulo | 01 | **Migrado** — `PrismaService` (Fase 00a) + esquema v1 con 21 tablas/11 enums y migración inicial (Fase 01, T2) + primer repositorio real por módulo, `src/modulos/geografia/infraestructura/repositorio-geografia-prisma.ts` (Fase 01, T3); la regla "solo la capa de datos toca Prisma" pasa a fronteras (regla 12) |
 | `envios/calculo.ts` | Conservar | `catalogo/dominio/envio` | 02 | B12, puro |
 | `horario/dentroHorario.ts` | Conservar | `horario/` | 02 | |
 | `motor/catalogoCompacto.ts` | Rediseñar | `catalogo/aplicacion` con caché inyectable | 02 | La invalidación por versión (ADR-005) se conserva |
@@ -51,9 +51,9 @@ Leyenda de decisión:
 | `queue/refrescoMediaQueue.ts` (stub, ya obsoleto) | Descartar | — | — | Chatwoot sube los medios |
 | `.kilo/worktrees/`, `data/sqlite/`, `db.sql` | Descartar | — | — | Restos |
 | **Todos los datos** del prototipo (catálogo de prueba, contactos, leads, parámetros) | Descartar | — | — | Arranque limpio (P7); solo se toma la estructura (`MODELO_DATOS.md`) |
-| `db/repositorios/estadoConversacion.ts` + tabla `estado_conversacion` | Rediseñar | tabla `conversacion` por sesión | 01, 05 | ADR-0003 |
-| `db/repositorios/tarifas.ts`, `envios/` + tabla `tarifa_envio` | Rediseñar | `zona_sin_cobertura` + `tarifa_estimada` | 01, 02 | P4: cobertura por exclusión, rango aproximado |
-| Contacto identificado por teléfono (`lib/numero.ts` como clave) | Rediseñar | `contacto.id` + `chatwoot_contact_id` | 01, 04 | P1 |
+| `db/repositorios/estadoConversacion.ts` + tabla `estado_conversacion` | Rediseñar | tabla `conversacion` por sesión | 01, 05 | ADR-0003. Fase 01 (T2): tabla `conversacion` con `version` en el esquema; repositorio y máquina de estados llegan en la Fase 05 |
+| `db/repositorios/tarifas.ts`, `envios/` + tabla `tarifa_envio` | Rediseñar | `zona_sin_cobertura` + `tarifa_estimada` | 01, 02 | P4: cobertura por exclusión, rango aproximado. Fase 01 (T2): ambas tablas en el esquema, incluida la restricción `[manual]` de `zona_sin_cobertura`; repositorio y cálculo de envío llegan en la Fase 02 |
+| Contacto identificado por teléfono (`lib/numero.ts` como clave) | Rediseñar | `contacto.id` + `chatwoot_contact_id` | 01, 04 | P1. Fase 01 (T2): `contacto.id` propia y `chatwoot_contact_id` en el esquema; traducción/uso real desde el canal llega en la Fase 04 |
 | Inventario, ventas, envíos, usuarios (solo tablas) | Construir | `inventario/`, `ventas/`, `usuarios/` | 11+ | Lógica nueva según MODELO_DATOS §5-§6 |
 
 ## Delegado a Chatwoot (no se construye)
@@ -72,7 +72,7 @@ Leyenda de decisión:
 |---|---|---|
 | `SPEC.md` §3-§8 (reglas de negocio) | Conservar, reescribiendo sin historial de versiones | `SPEC.md` §4 + specs de fase |
 | `SPEC.md` §10-§12 (fases del prototipo, config manual) | Descartar / Conservar | Fases nuevas en `docs/fases/`; config manual a `docs/operacion/` en Fase 09 |
-| `MODELO_DATOS.md` | Conservar como base | `MODELO_DATOS.md` borrador v1 (2026-09-22); se aprueba al escribir la Fase 01 |
+| `MODELO_DATOS.md` | Conservar como base | `MODELO_DATOS.md` v1 aprobada (Fase 01, cerrada 2026-09-25) |
 | `docs/adr/0001-0008` | Conservar como antecedentes | Se referencian; los que cambian se reemplazan con ADR nuevos |
 | `docs/CHATWOOT.md`, `docs/CATALOGO.md` | Conservar | `docs/operacion/` en las fases 03-04 |
 | `.claude/skills/whatsapp-meta-conventions` | Conservar | Copiar a `.claude/skills/` al llegar a la Fase 04 |
