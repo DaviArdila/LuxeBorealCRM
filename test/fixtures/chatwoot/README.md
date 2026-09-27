@@ -26,6 +26,9 @@ Sobre el body capturado se reemplazó, por texto exacto, antes de versionar:
 - El `pubsub_token` de `contact_inbox` (token de sesión del widget, no aplica a este canal pero
   Chatwoot lo incluye igual) → `token-pubsub-anonimizado`.
 - El dominio público de los `data_url`/`thumb_url` de adjuntos → `chatwoot.ejemplo.local`.
+- El correo real de la cuenta de administrador que envió el mensaje de prueba (`sender.email` en
+  `mensaje-creado-saliente-humano.json` y `mensaje-creado-nota-privada.json`) → `admin@ejemplo.local`
+  (hallazgo de T2: este campo no se anonimizó en la captura inicial de T1).
 
 No se tocó nada más: nombres de eventos, ids numéricos (mensaje, conversación, contacto, cuenta,
 inbox), `message_type`, `status`, `content_attributes`, timestamps y el nombre de la cuenta de

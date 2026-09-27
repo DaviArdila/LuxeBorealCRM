@@ -116,7 +116,7 @@
   "sender": {
     "id": 1,
     "name": "admin",
-    "email": "brayanardila288@gmail.com",
+    "email": "admin@ejemplo.local",
     "type": "user"
   },
   "source_id": null,
