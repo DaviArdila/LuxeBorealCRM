@@ -59,7 +59,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 00b | CI y contrato de API | Hook pre-push local (lint, typecheck, tests unitarios, commitlint, gitleaks) + workflow de GitHub Actions completo listo (activo al subir el repo), y el pipeline de contrato de API (ADR-0008/ADR-0010): `StandardSchemaValidationPipe` nativo (NestJS 12) + `@nestjs/swagger` generan `openapi/openapi.json` (público) y `openapi/openapi.interno.json` (completo), Scalar sirve `/docs` protegido fuera de desarrollo, `GET /health` entra al documento **interno**, excluido del público, errores RFC 9457 (ADR-0011), CHANGELOG con `git-cliff`. Depende de 00a | CI en verde local (pre-push) con el workflow de Actions escrito; `openspec/config.yaml` en `strict_tdd: true`; `npm run ci` completo en verde: lint, typecheck, `dependency-cruiser`, tests de integración (Testcontainers), `gitleaks`, `npm audit`, commitlint, deriva de los dos documentos + Spectral + oasdiff | cerrada |
 | 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | cerrada |
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | cerrada |
-| 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | idea |
+| 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | cerrada |
 | 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | idea |
 | 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | idea |
 | 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | idea |
@@ -77,11 +77,12 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > catálogo se carga con la hoja de Sheets + importador (Fase 03). La primera pantalla podría ser una
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
 
-> Las Fases 00a, 00b, 01 y 02 están cerradas y archivadas:
+> Las Fases 00a, 00b, 01, 02 y 03 están cerradas y archivadas:
 > `openspec/changes/archive/2026-09-23-fase-00a-esqueleto/`,
 > `openspec/changes/archive/2026-09-25-fase-00b-ci-contrato-api/`,
-> `openspec/changes/archive/2026-09-25-fase-01-persistencia/` y
-> `openspec/changes/archive/2026-09-26-fase-02-catalogo/`. Los 14 requisitos (PER1-PER14, 30
+> `openspec/changes/archive/2026-09-25-fase-01-persistencia/`,
+> `openspec/changes/archive/2026-09-26-fase-02-catalogo/` y
+> `openspec/changes/archive/2026-09-26-fase-03-importador-medios/`. Los 14 requisitos (PER1-PER14, 30
 > escenarios) de la Fase 01 quedaron fusionados en `openspec/specs/persistencia/spec.md`; los 18
 > requisitos (CAT1-CAT11, HOR1-HOR7, 32 escenarios) de la Fase 02 quedaron fusionados en
 > `openspec/specs/catalogo/spec.md` y `openspec/specs/horario/spec.md` (dominios nuevos). Su
@@ -90,8 +91,22 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > de 0 % y un mensaje genérico de fuera de cobertura cuando el parámetro respectivo no existe en la
 > base — ninguna spec de la Fase 02 fija ese valor de negocio, así que antes de la Fase 07 el usuario
 > debería cargar los valores reales de `recargo_contraentrega_pct`/`mensaje_fuera_cobertura` o decidir
-> que esos defaults son aceptables. Las demás fases siguen en `idea`. En cuanto una fase pase a
-> `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
+> que esos defaults son aceptables. Los 13 requisitos nuevos (IMP1-IMP13, 39 escenarios) de la Fase 03
+> quedaron anexados a `openspec/specs/catalogo/spec.md` (sin tocar CAT1-CAT11) y los 9 requisitos
+> (MED1-MED9, 20 escenarios) quedaron en el dominio nuevo `openspec/specs/medios/spec.md`. Su
+> `verify-report.md` dejó cuatro hallazgos abiertos, no bloqueantes, para que el usuario los revise
+> antes de la Fase 09: (1) `docker-compose.yml` y el arnés de Testcontainers usan la imagen
+> `bitnamilegacy/minio` en vez de `minio/minio` (Docker Hub retiró la imagen oficial gratuita en 2025)
+> — decisión de infraestructura tomada por necesidad durante `sdd-apply`, pendiente de que el usuario
+> la confirme o decida una alternativa antes de producción; (2) `.env.example` sigue sin las 8
+> variables `MINIO_*`/`CATALOGO_SHEET_ID` — el permiso de sandbox bloqueó leer archivos `.env*`
+> durante toda la fase, pendiente de que alguien con acceso lo complete; (3)
+> `ResultadoImportacion.productosActivados` cuenta el total de productos importados, no los que
+> quedan `activo=true` — hallazgo menor, ningún escenario depende de ese valor; (4) el escenario
+> combinado de IMP13 (error de validación + foto inaccesible en la misma corrida) no es alcanzable con
+> el contrato actual de `validarCatalogoCompleto` (aborta en el primer error de fila) — comportamiento
+> real y documentado por diseño (D6/D7), no un defecto. Las demás fases siguen en `idea`. En cuanto una
+> fase pase a `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
 > (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
 
 ## Prerrequisitos externos
