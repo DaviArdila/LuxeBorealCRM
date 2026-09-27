@@ -39,7 +39,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 ## Checklist
 
 - [x] T1 — Fixtures reales de Chatwoot anonimizados + verificación de campos (`test/fixtures/chatwoot/`) (S(a))
-- [ ] T2 — Dominio puro de canales: firma, traducción/redacción, perfil, claves (S(a))
+- [x] T2 — Dominio puro de canales: firma, traducción/redacción, perfil, claves (S(a))
 - [ ] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
 - [ ] T4 — `plataforma/colas` + procesador del inbox (S(c))
 - [ ] T5 — Puerto de salida + adaptador Chatwoot (S(d))
