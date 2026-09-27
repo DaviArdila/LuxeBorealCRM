@@ -42,7 +42,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T2 — Dominio puro de canales: firma, traducción/redacción, perfil, claves (S(a))
 - [x] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
 - [x] T4 — `plataforma/colas` + procesador del inbox (S(c))
-- [ ] T5 — Puerto de salida + adaptador Chatwoot (S(d))
+- [x] T5 — Puerto de salida + adaptador Chatwoot (S(d))
 - [ ] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
 - [ ] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
 - [ ] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
@@ -609,6 +609,48 @@ si el diff real la confirma.
 **Slice de PR**: S(d)
 
 **Review requerida**: RDD
+
+### Resultado de la implementación (`sdd-apply`, 2026-09-27)
+
+Los dos puertos (`salida-canal.ts`, `adaptador-canal.ts`) ya existían de un intento anterior
+interrumpido por un límite de sesión de la API (sin commit); se verificaron línea por línea contra
+`design.md` D9/D12/D13/D15 antes de continuar — coincidían exactamente, sin necesidad de corrección.
+Se construyó sobre ellos `ClienteChatwoot` (fetch nativo, cero reintentos, clasificación 429/5xx/timeout
+→ transitorio, otro 4xx → permanente, `Retry-After` traducido a `esperaSugeridaS` sin acotar — el
+publicador del outbox de T6/T7 decide cómo acotarlo, tal como ya documentaba el TSDoc de `FalloCanal`)
+y `AdaptadorCanalChatwoot` (las tres operaciones de CAN6, `existeMensajeConMarca` de D13 implementada
+completa —**no** el riesgo residual: T1 confirmó que `content_attributes` se persiste y es consultable
+por `GET`— y `agregarEtiquetas` con unión `GET`+`POST`, D15). `test/soporte/chatwoot-falso.ts` es un
+servidor HTTP local real (`node:http`, sin librerías externas) que registra cada llamada y permite
+programar respuestas (incluida una demora para simular el timeout del cliente); no es un doble en
+memoria del puerto, sigue el mismo criterio que los demás tests de integración de la fase (Postgres/
+Redis reales en vez de dobles).
+
+**Cobertura de tests** (RED→GREEN observado en cada archivo, `npm test`/`npm run test:integracion`
+reales antes de implementar): `cliente-chatwoot.spec.ts` (unitario, `fetch` global reemplazado con
+`vi.stubGlobal`, 7 casos: URL/header, clasificación 429/500/404/red, matriz de amenazas, timeout);
+`adaptador-canal-chatwoot.spec.ts` (unitario, doble de `ClienteChatwoot` con el mismo patrón que
+`RepositorioEventoEntranteFalso` de T4 — sin `vi.fn()` para evitar `@typescript-eslint/unbound-method`
+al leer `cliente.post`/`cliente.get` como referencia, 7 casos); `test/integracion/canales/
+adaptador-chatwoot.spec.ts` (11 casos contra `ChatwootFalso` real: los 3 escenarios de CAN6, D15,
+D13 (encuentra/no encuentra), CAN7 (429 con `Retry-After`, 500, timeout real medido con
+`CHATWOOT_HTTP_TIMEOUT_MS=300`, 404), y la matriz de amenazas).
+
+**Tamaño**: el diff real de esta tarea es de **847 líneas de autoría** (todas nuevas: dos puertos ya
+existentes del intento anterior + `cliente-chatwoot.ts`/`.spec.ts` + `adaptador-canal-chatwoot.ts`/
+`.spec.ts` + `chatwoot-falso.ts` + `adaptador-chatwoot.spec.ts` de integración), por encima del
+estimado de ~480 y del presupuesto de 400. **`size:exception` se aplica automáticamente**, citando la
+fila 4 de Risks de `proposal.md` ("presupuesto de ~400 líneas por slice con varios adaptadores e
+infraestructura nueva") y la nota de tamaño de esta misma tarea ("dos puertos + cliente HTTP +
+adaptador + doble de Chatwoot"), tal como anticipa la sección "Review Workload Forecast" de este
+archivo — sin pedir confirmación adicional. No se recortó ningún test, comentario ni documentación
+para acercarse al presupuesto.
+
+**Hallazgo real, no silencioso**: mockear `cliente.post`/`cliente.get` con `vi.fn()` sobre un objeto
+`as unknown as ClienteChatwoot` dispara `@typescript-eslint/unbound-method` al leer la referencia del
+método en `expect(cliente.post).toHaveBeenCalledWith(...)`. Se resolvió con el mismo patrón ya
+establecido en `procesar-evento-entrante.spec.ts` (T4): una clase doble que implementa la forma
+pública del colaborador y registra cada llamada en un array propio, sin `vi.fn()`.
 
 ---
 
