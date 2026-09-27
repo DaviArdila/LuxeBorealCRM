@@ -1,0 +1,4 @@
+clave,valor
+horario_atencion,"{""lun-vie"":""08:00-18:00"",""sab"":""09:00-13:00"",""dom"":null}"
+recargo_contraentrega_pct,5
+factor_volumetrico,4000

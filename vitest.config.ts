@@ -42,6 +42,10 @@ export default defineConfig({
             // T1 (fase-01-persistencia, D6/D7): funciones puras del arnés de bases de prueba, sin
             // tocar ningún Postgres real.
             'test/soporte/**/*.spec.ts',
+            // T10 (fase-03-importador-medios): esta lista no incluía `scripts/`, así que
+            // `scripts/importar-catalogo.spec.ts` (parseo puro de argumentos, sin infraestructura)
+            // nunca corría bajo `npm test` — desviación reportada, no silenciosa, corregida aquí.
+            'scripts/**/*.spec.ts',
           ],
           exclude: ['test/fronteras/fixtures/**'],
           // El límite de cuatro workers evita que los tests unitarios que lanzan Docker, Git y
