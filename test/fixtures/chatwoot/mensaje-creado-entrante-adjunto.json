@@ -1,0 +1,167 @@
+{
+  "account": {
+    "id": 1,
+    "name": "Luna SAS"
+  },
+  "additional_attributes": {},
+  "content_attributes": {},
+  "content_type": "text",
+  "content": "Aqui una foto del diseno que me gusta",
+  "conversation": {
+    "additional_attributes": {},
+    "can_reply": true,
+    "channel": "Channel::Api",
+    "contact_inbox": {
+      "id": 1,
+      "contact_id": 1,
+      "inbox_id": 1,
+      "source_id": "573001112233",
+      "created_at": "2026-09-27T02:14:03.666Z",
+      "updated_at": "2026-09-27T02:14:03.666Z",
+      "hmac_verified": false,
+      "pubsub_token": "token-pubsub-anonimizado"
+    },
+    "id": 1,
+    "inbox_id": 1,
+    "messages": [
+      {
+        "id": 2,
+        "content": "Aqui una foto del diseno que me gusta",
+        "account_id": 1,
+        "inbox_id": 1,
+        "conversation_id": 1,
+        "message_type": 0,
+        "created_at": 1790475326,
+        "updated_at": "2026-09-27T02:15:26.299Z",
+        "private": false,
+        "status": "sent",
+        "source_id": null,
+        "content_type": "text",
+        "content_attributes": {},
+        "sender_type": "Contact",
+        "sender_id": 1,
+        "external_source_ids": {},
+        "additional_attributes": {},
+        "processed_message_content": "Aqui una foto del diseno que me gusta",
+        "sentiment": {},
+        "conversation": {
+          "assignee_id": null,
+          "unread_count": 2,
+          "last_activity_at": 1790475326,
+          "contact_inbox": {
+            "source_id": "573001112233"
+          }
+        },
+        "attachments": [
+          {
+            "id": 1,
+            "message_id": 2,
+            "file_type": "image",
+            "account_id": 1,
+            "extension": "png",
+            "content_type": "image/png",
+            "data_url": "https://chatwoot.ejemplo.local/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBCZz09IiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--9f760d7cdd35195c332046d0f5fad5f6c1f2b237/pixel.png",
+            "thumb_url": "https://chatwoot.ejemplo.local/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBCZz09IiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--9f760d7cdd35195c332046d0f5fad5f6c1f2b237/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--a78cf1a6ff6e4e907cdfcdaa3557ae9463bbce40/pixel.png",
+            "file_size": 68,
+            "width": null,
+            "height": null
+          }
+        ],
+        "sender": {
+          "additional_attributes": {},
+          "custom_attributes": {},
+          "email": null,
+          "id": 1,
+          "identifier": "573001112233",
+          "name": "Cliente Ejemplo",
+          "phone_number": "+573001112233",
+          "thumbnail": "",
+          "blocked": false,
+          "type": "contact"
+        }
+      }
+    ],
+    "labels": [],
+    "meta": {
+      "sender": {
+        "additional_attributes": {},
+        "custom_attributes": {},
+        "email": null,
+        "id": 1,
+        "identifier": "573001112233",
+        "name": "Cliente Ejemplo",
+        "phone_number": "+573001112233",
+        "thumbnail": "",
+        "blocked": false,
+        "type": "contact"
+      },
+      "assignee": {
+        "id": 1,
+        "name": "ChatLuxeCRM bot",
+        "avatar_url": "",
+        "type": "agent_bot"
+      },
+      "assignee_type": "AgentBot",
+      "team": null,
+      "hmac_verified": false
+    },
+    "status": "pending",
+    "custom_attributes": {},
+    "snoozed_until": null,
+    "unread_count": 2,
+    "first_reply_created_at": null,
+    "priority": null,
+    "waiting_since": 1790475251,
+    "agent_last_seen_at": 0,
+    "contact_last_seen_at": 0,
+    "last_activity_at": 1790475326,
+    "timestamp": 1790475326,
+    "created_at": 1790475251,
+    "updated_at": 1790475326.3116896,
+    "account": {
+      "id": 1,
+      "name": "Luna SAS"
+    }
+  },
+  "created_at": "2026-09-27T02:15:26.299Z",
+  "id": 2,
+  "inbox": {
+    "id": 1,
+    "name": "WhatsApp (pruebas)"
+  },
+  "message_type": "incoming",
+  "private": false,
+  "sender": {
+    "account": {
+      "id": 1,
+      "name": "Luna SAS"
+    },
+    "additional_attributes": {},
+    "avatar": "",
+    "custom_attributes": {},
+    "email": null,
+    "id": 1,
+    "identifier": "573001112233",
+    "name": "Cliente Ejemplo",
+    "phone_number": "+573001112233",
+    "thumbnail": "",
+    "blocked": false
+  },
+  "source_id": null,
+  "attachments": [
+    {
+      "id": 1,
+      "message_id": 2,
+      "file_type": "image",
+      "account_id": 1,
+      "extension": "png",
+      "content_type": "image/png",
+      "data_url": "https://chatwoot.ejemplo.local/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBCZz09IiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--9f760d7cdd35195c332046d0f5fad5f6c1f2b237/pixel.png",
+      "thumb_url": "https://chatwoot.ejemplo.local/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBCZz09IiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--9f760d7cdd35195c332046d0f5fad5f6c1f2b237/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--a78cf1a6ff6e4e907cdfcdaa3557ae9463bbce40/pixel.png",
+      "file_size": 68,
+      "width": null,
+      "height": null
+    }
+  ],
+  "event": "message_created"
+}

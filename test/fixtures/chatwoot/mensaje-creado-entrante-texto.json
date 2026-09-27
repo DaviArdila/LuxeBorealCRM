@@ -1,0 +1,137 @@
+{
+  "account": {
+    "id": 1,
+    "name": "Luna SAS"
+  },
+  "additional_attributes": {},
+  "content_attributes": {},
+  "content_type": "text",
+  "content": "Hola, quiero preguntar por un anillo de compromiso",
+  "conversation": {
+    "additional_attributes": {},
+    "can_reply": true,
+    "channel": "Channel::Api",
+    "contact_inbox": {
+      "id": 1,
+      "contact_id": 1,
+      "inbox_id": 1,
+      "source_id": "573001112233",
+      "created_at": "2026-09-27T02:14:03.666Z",
+      "updated_at": "2026-09-27T02:14:03.666Z",
+      "hmac_verified": false,
+      "pubsub_token": "token-pubsub-anonimizado"
+    },
+    "id": 1,
+    "inbox_id": 1,
+    "messages": [
+      {
+        "id": 1,
+        "content": "Hola, quiero preguntar por un anillo de compromiso",
+        "account_id": 1,
+        "inbox_id": 1,
+        "conversation_id": 1,
+        "message_type": 0,
+        "created_at": 1790475262,
+        "updated_at": "2026-09-27T02:14:22.880Z",
+        "private": false,
+        "status": "sent",
+        "source_id": null,
+        "content_type": "text",
+        "content_attributes": {},
+        "sender_type": "Contact",
+        "sender_id": 1,
+        "external_source_ids": {},
+        "additional_attributes": {},
+        "processed_message_content": "Hola, quiero preguntar por un anillo de compromiso",
+        "sentiment": {},
+        "conversation": {
+          "assignee_id": null,
+          "unread_count": 1,
+          "last_activity_at": 1790475262,
+          "contact_inbox": {
+            "source_id": "573001112233"
+          }
+        },
+        "sender": {
+          "additional_attributes": {},
+          "custom_attributes": {},
+          "email": null,
+          "id": 1,
+          "identifier": "573001112233",
+          "name": "Cliente Ejemplo",
+          "phone_number": "+573001112233",
+          "thumbnail": "",
+          "blocked": false,
+          "type": "contact"
+        }
+      }
+    ],
+    "labels": [],
+    "meta": {
+      "sender": {
+        "additional_attributes": {},
+        "custom_attributes": {},
+        "email": null,
+        "id": 1,
+        "identifier": "573001112233",
+        "name": "Cliente Ejemplo",
+        "phone_number": "+573001112233",
+        "thumbnail": "",
+        "blocked": false,
+        "type": "contact"
+      },
+      "assignee": {
+        "id": 1,
+        "name": "ChatLuxeCRM bot",
+        "avatar_url": "",
+        "type": "agent_bot"
+      },
+      "assignee_type": "AgentBot",
+      "team": null,
+      "hmac_verified": false
+    },
+    "status": "pending",
+    "custom_attributes": {},
+    "snoozed_until": null,
+    "unread_count": 1,
+    "first_reply_created_at": null,
+    "priority": null,
+    "waiting_since": 1790475251,
+    "agent_last_seen_at": 0,
+    "contact_last_seen_at": 0,
+    "last_activity_at": 1790475262,
+    "timestamp": 1790475262,
+    "created_at": 1790475251,
+    "updated_at": 1790475262.887449,
+    "account": {
+      "id": 1,
+      "name": "Luna SAS"
+    }
+  },
+  "created_at": "2026-09-27T02:14:22.880Z",
+  "id": 1,
+  "inbox": {
+    "id": 1,
+    "name": "WhatsApp (pruebas)"
+  },
+  "message_type": "incoming",
+  "private": false,
+  "sender": {
+    "account": {
+      "id": 1,
+      "name": "Luna SAS"
+    },
+    "additional_attributes": {},
+    "avatar": "",
+    "custom_attributes": {},
+    "email": null,
+    "id": 1,
+    "identifier": "573001112233",
+    "name": "Cliente Ejemplo",
+    "phone_number": "+573001112233",
+    "thumbnail": "",
+    "blocked": false
+  },
+  "source_id": null,
+  "event": "message_created"
+}
