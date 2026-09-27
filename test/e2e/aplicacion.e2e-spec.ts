@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { Server } from 'node:http';
 import request from 'supertest';
 import type { Response } from 'supertest';
@@ -37,6 +38,12 @@ function configuracionValida(): Configuracion {
     MINIO_BUCKET: 'luxeboreal-medios',
     MINIO_URL_PUBLICA: undefined,
     CATALOGO_SHEET_ID: undefined,
+    CHATWOOT_URL: 'http://localhost:3001',
+    CHATWOOT_ACCOUNT_ID: 1,
+    CHATWOOT_BOT_TOKEN: '',
+    CHATWOOT_WEBHOOK_SECRETO: '',
+    CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+    CHATWOOT_HTTP_TIMEOUT_MS: 10000,
   };
 }
 
@@ -58,7 +65,7 @@ async function crearAplicacion(configuracion: Configuracion): Promise<INestAppli
     .useValue(configuracion)
     .compile();
 
-  const app = modulo.createNestApplication();
+  const app = modulo.createNestApplication<NestExpressApplication>();
   configurarAplicacion(app);
   // `listen(0)` (puerto efímero) en vez de solo `init()`: deja el servidor HTTP realmente
   // escuchando antes de que Supertest emita cualquier request, para que la carrera entre una

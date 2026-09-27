@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module.js';
 import { configurarAplicacion } from '../src/configurar-aplicacion.js';
 import { CONFIGURACION, type Configuracion } from '../src/plataforma/config/index.js';
@@ -31,6 +31,14 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   MINIO_BUCKET: 'luxeboreal-medios',
   MINIO_URL_PUBLICA: undefined,
   CATALOGO_SHEET_ID: undefined,
+  // Fase 04, T3: la generación del contrato no envía cuerpos al webhook; solo necesitan cumplir
+  // el formato que exige esquemaConfiguracion.
+  CHATWOOT_URL: 'http://localhost:3001',
+  CHATWOOT_ACCOUNT_ID: 1,
+  CHATWOOT_BOT_TOKEN: '',
+  CHATWOOT_WEBHOOK_SECRETO: '',
+  CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+  CHATWOOT_HTTP_TIMEOUT_MS: 10000,
 };
 
 export interface DocumentosContrato {
@@ -43,13 +51,13 @@ export interface ResultadoContrato {
   readonly mensaje: string;
 }
 
-async function crearAplicacionDeGeneracion(): Promise<INestApplication> {
+async function crearAplicacionDeGeneracion(): Promise<NestExpressApplication> {
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIGURACION)
     .useValue(CONFIGURACION_DE_GENERACION)
     .compile();
 
-  const app = modulo.createNestApplication({ logger: false });
+  const app = modulo.createNestApplication<NestExpressApplication>({ logger: false });
   try {
     configurarAplicacion(app);
     await app.init();

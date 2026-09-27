@@ -40,7 +40,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 
 - [x] T1 — Fixtures reales de Chatwoot anonimizados + verificación de campos (`test/fixtures/chatwoot/`) (S(a))
 - [x] T2 — Dominio puro de canales: firma, traducción/redacción, perfil, claves (S(a))
-- [ ] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
+- [x] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
 - [ ] T4 — `plataforma/colas` + procesador del inbox (S(c))
 - [ ] T5 — Puerto de salida + adaptador Chatwoot (S(d))
 - [ ] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
@@ -396,6 +396,48 @@ automáticamente, citando esa fila; `sdd-apply` no pregunta.
 **Slice de PR**: S(b)
 
 **Review requerida**: RDD
+
+### Resultado de la verificación de los dos riesgos técnicos (`sdd-apply`, 2026-09-27, evidencia real)
+
+1. **Body crudo global (`rawBody: true`)**: **confirmado con un test de integración real**
+   (`test/integracion/canales/webhook.spec.ts`, escenario "R3 — Evento con firma válida"). La firma
+   se verifica correctamente sobre el body crudo cuando la app se crea con
+   `NestFactory.create<NestExpressApplication>(AppModule, { ...OPCIONES_APLICACION })` +
+   `app.useBodyParser('json', { limit: '1mb' })` (`configurarAplicacion`); los demás endpoints
+   (`GET /health`, `/docs`) siguen respondiendo sin cambios (e2e completo en verde). **Hallazgo real
+   de RED no anticipado por `design.md`**: en el harness de prueba, `supertest`/`superagent`
+   serializa un `Buffer` pasado a `.send()` como JSON (`{"type":"Buffer","data":[...]}`) en vez de
+   escribir sus bytes crudos cuando `Content-Type` es `application/json` — el body que llegaba al
+   servidor no era el fixture firmado, sino su representación JSON inflada. Corregido enviando
+   `fixture.rawBody.toString('utf8')` (los fixtures son JSON UTF-8 sin BOM, viaje de ida y vuelta
+   idéntico byte a byte); el mecanismo de `rawBody: true` de NestJS en sí mismo funciona
+   correctamente una vez que el test le entrega los bytes reales.
+2. **413/400 del parser de body llegando al filtro global**: **no llegaban** — confirmado con un
+   test de integración real. Un cuerpo > 1 MB (`entity.too.large`) respondía **500** genérico
+   (`error-interno`), y un cuerpo JSON malformado (`entity.parse.failed`) respondía 400 pero con
+   `Content-Type: application/json` (el manejador de errores por defecto de Express, no
+   `FiltroProblemJson`). Motivo: estos errores los lanza el parser de `body-parser`, middleware de
+   Express que corre **antes** de que el router de NestJS despache la petición — la zona de
+   excepciones de Nest (y por tanto `FiltroProblemJson`, que solo ve esa zona) nunca los recibe.
+   Se implementó el middleware `traducirErrorDeCuerpo` (D2, respaldo que `design.md` ya anticipaba)
+   en `src/configurar-aplicacion.ts`, registrado con `app.use(...)` justo después de
+   `app.useBodyParser(...)`: detecta `error.type === 'entity.too.large'` → 413
+   `carga-demasiado-grande`, `error.type === 'entity.parse.failed'` → 400 `validacion-fallida`,
+   ambos como `application/problem+json` real (vía `construirProblema`); cualquier otro error se
+   reenvía sin tocar (`next(error)`). Confirmado en verde con los dos escenarios D2 del test de
+   integración.
+
+**Hallazgo real adicional, no anticipado por `design.md` (documentado, no silencioso)**: bajo
+`@nestjs/testing` (`TestingInjector`), un provider de `CanalesModule` que inyecta `PinoLogger` de
+`nestjs-pino` con `@InjectPinoLogger` no siempre resuelve cuando `AppModule` compone
+`CanalesModule` junto a otros módulos que también dependen del `LoggerModule` global (`ErroresModule`
+vía `ObservabilidadModule`) — reproducido de forma aislada (`Test.createTestingModule`) y confirmado
+que **`NestFactory.create` real (producción) nunca lo sufre** (probado con un script de arranque
+real). Se evitó el problema por completo: `RegistrarEventoEntrante` usa `Logger` de `@nestjs/common`
+(`new Logger(...)`, sin `@Inject`) en vez de `@InjectPinoLogger` — `configurarAplicacion` ya llama
+`app.useLogger(app.get(Logger))` (D14), que sobrescribe el logger estático de Nest para todo el
+proceso, así que `new Logger(...)` sigue saliendo por el transporte de `nestjs-pino` con la misma
+redacción, sin depender de su DI. `CanalesModule` no importa `plataforma/observabilidad`.
 
 ---
 

@@ -18,6 +18,62 @@
     }
   ],
   "paths": {
+    "/api/v1/webhooks/chatwoot": {
+      "post": {
+        "operationId": "recibirWebhookChatwoot",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {},
+                "properties": {
+                  "event": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "estado": {
+                      "enum": [
+                        "registrado",
+                        "duplicado",
+                        "ignorado"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "estado"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Estado del evento recibido: registrado, duplicado o ignorado."
+          }
+        },
+        "summary": "",
+        "tags": [
+          "WebhookChatwoot",
+          "internal"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "obtenerSalud",

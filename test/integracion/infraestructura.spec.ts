@@ -37,6 +37,12 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       MINIO_BUCKET: 'luxeboreal-medios',
       MINIO_URL_PUBLICA: undefined,
       CATALOGO_SHEET_ID: undefined,
+      CHATWOOT_URL: 'http://localhost:3001',
+      CHATWOOT_ACCOUNT_ID: 1,
+      CHATWOOT_BOT_TOKEN: '',
+      CHATWOOT_WEBHOOK_SECRETO: '',
+      CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+      CHATWOOT_HTTP_TIMEOUT_MS: 10000,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -68,6 +74,12 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       MINIO_BUCKET: 'luxeboreal-medios',
       MINIO_URL_PUBLICA: undefined,
       CATALOGO_SHEET_ID: undefined,
+      CHATWOOT_URL: 'http://localhost:3001',
+      CHATWOOT_ACCOUNT_ID: 1,
+      CHATWOOT_BOT_TOKEN: '',
+      CHATWOOT_WEBHOOK_SECRETO: '',
+      CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+      CHATWOOT_HTTP_TIMEOUT_MS: 10000,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -107,6 +119,12 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       MINIO_BUCKET: 'luxeboreal-medios',
       MINIO_URL_PUBLICA: undefined,
       CATALOGO_SHEET_ID: undefined,
+      CHATWOOT_URL: 'http://localhost:3001',
+      CHATWOOT_ACCOUNT_ID: 1,
+      CHATWOOT_BOT_TOKEN: '',
+      CHATWOOT_WEBHOOK_SECRETO: '',
+      CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+      CHATWOOT_HTTP_TIMEOUT_MS: 10000,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

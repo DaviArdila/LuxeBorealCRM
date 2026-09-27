@@ -39,6 +39,15 @@ export const esquemaConfiguracion = z
     MINIO_URL_PUBLICA: z.string().url().optional(),
     /** Valor por defecto de `--sheet-id`; el CLI de importación también lo acepta como flag. */
     CATALOGO_SHEET_ID: z.string().optional(),
+    /** Canal Chatwoot (Fase 04, D2/D3/D12 de `design.md`): API de salida y firma del webhook. */
+    CHATWOOT_URL: z.string().url().default('http://localhost:3001'),
+    CHATWOOT_ACCOUNT_ID: z.coerce.number().int().min(1).default(1),
+    /** Vacío por defecto; obligatorio no vacío en production (`superRefine` abajo). */
+    CHATWOOT_BOT_TOKEN: z.string().default(''),
+    /** Vacío ⇒ la guardia de firma rechaza todo (D3, falla cerrada); obligatorio en production. */
+    CHATWOOT_WEBHOOK_SECRETO: z.string().default(''),
+    CHATWOOT_WEBHOOK_TOLERANCIA_S: z.coerce.number().int().min(30).max(3600).default(300),
+    CHATWOOT_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(10000),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
@@ -46,6 +55,20 @@ export const esquemaConfiguracion = z
         code: 'custom',
         path: ['DOCS_HABILITADO'],
         message: 'DOCS_HABILITADO MUST NOT ser verdadero cuando NODE_ENV es production (API9, D7).',
+      });
+    }
+    if (datos.NODE_ENV === 'production' && datos.CHATWOOT_BOT_TOKEN === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHATWOOT_BOT_TOKEN'],
+        message: 'CHATWOOT_BOT_TOKEN MUST NOT estar vacío cuando NODE_ENV es production (D12).',
+      });
+    }
+    if (datos.NODE_ENV === 'production' && datos.CHATWOOT_WEBHOOK_SECRETO === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHATWOOT_WEBHOOK_SECRETO'],
+        message: 'CHATWOOT_WEBHOOK_SECRETO MUST NOT estar vacío cuando NODE_ENV es production (D3).',
       });
     }
   });

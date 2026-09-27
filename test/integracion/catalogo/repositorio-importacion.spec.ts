@@ -41,6 +41,12 @@ async function crearRepositorio(): Promise<{ repositorio: RepositorioImportacion
     MINIO_BUCKET: 'luxeboreal-medios',
     MINIO_URL_PUBLICA: undefined,
     CATALOGO_SHEET_ID: undefined,
+    CHATWOOT_URL: 'http://localhost:3001',
+    CHATWOOT_ACCOUNT_ID: 1,
+    CHATWOOT_BOT_TOKEN: '',
+    CHATWOOT_WEBHOOK_SECRETO: '',
+    CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
+    CHATWOOT_HTTP_TIMEOUT_MS: 10000,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })

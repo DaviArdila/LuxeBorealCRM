@@ -180,7 +180,15 @@ describe('cargarConfiguracion', () => {
     });
 
     it('acepta NODE_ENV=production con DOCS_HABILITADO=false (o ausente)', () => {
-      const configuracion = cargarConfiguracion({ ...fuenteValida, NODE_ENV: 'production' });
+      // CHATWOOT_BOT_TOKEN/CHATWOOT_WEBHOOK_SECRETO no vacíos (D3/D12, fase-04-canal-chatwoot):
+      // sin ellos, production ya se rechaza por esa validación, independiente de DOCS_HABILITADO
+      // — no es el foco de este caso, así que se fijan aquí para no acoplar ambas reglas.
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        NODE_ENV: 'production',
+        CHATWOOT_BOT_TOKEN: 'token-real',
+        CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+      });
 
       expect(configuracion.DOCS_HABILITADO).toBe(false);
     });
@@ -247,6 +255,82 @@ describe('cargarConfiguracion', () => {
       const configuracion = cargarConfiguracion({ ...fuenteValida, CATALOGO_SHEET_ID: 'abc123' });
 
       expect(configuracion.CATALOGO_SHEET_ID).toBe('abc123');
+    });
+  });
+
+  describe('Variables CHATWOOT_* (fase-04-canal-chatwoot, T3, D2/D3/D12)', () => {
+    it('usa los valores de desarrollo por defecto cuando ninguna variable CHATWOOT_* viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.CHATWOOT_URL).toBe('http://localhost:3001');
+      expect(configuracion.CHATWOOT_ACCOUNT_ID).toBe(1);
+      expect(configuracion.CHATWOOT_BOT_TOKEN).toBe('');
+      expect(configuracion.CHATWOOT_WEBHOOK_SECRETO).toBe('');
+      expect(configuracion.CHATWOOT_WEBHOOK_TOLERANCIA_S).toBe(300);
+      expect(configuracion.CHATWOOT_HTTP_TIMEOUT_MS).toBe(10000);
+    });
+
+    it('rechaza CHATWOOT_URL que no es una URL', () => {
+      const fuenteInvalida = { ...fuenteValida, CHATWOOT_URL: 'no-es-una-url' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'CHATWOOT_URL',
+          problema: 'formato',
+        });
+      }
+    });
+
+    it('acepta CHATWOOT_ACCOUNT_ID coercible a entero', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, CHATWOOT_ACCOUNT_ID: '7' });
+
+      expect(configuracion.CHATWOOT_ACCOUNT_ID).toBe(7);
+    });
+
+    it('D3 — secreto vacío en desarrollo/test no lanza (falla cerrada la aplica la guardia de firma, no la carga)', () => {
+      expect(() => cargarConfiguracion(fuenteValida)).not.toThrow();
+    });
+
+    it('D3/D12 — CHATWOOT_WEBHOOK_SECRETO vacío en production lanza ConfiguracionInvalidaError', () => {
+      const fuenteInvalida = { ...fuenteValida, NODE_ENV: 'production' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'CHATWOOT_WEBHOOK_SECRETO',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('D12 — CHATWOOT_BOT_TOKEN vacío en production lanza ConfiguracionInvalidaError', () => {
+      const fuenteInvalida = { ...fuenteValida, NODE_ENV: 'production' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'CHATWOOT_BOT_TOKEN',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta production cuando CHATWOOT_BOT_TOKEN y CHATWOOT_WEBHOOK_SECRETO vienen no vacíos', () => {
+      const fuenteValidaProduccion = {
+        ...fuenteValida,
+        NODE_ENV: 'production',
+        CHATWOOT_BOT_TOKEN: 'token-real',
+        CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+      };
+
+      expect(() => cargarConfiguracion(fuenteValidaProduccion)).not.toThrow();
     });
   });
 });

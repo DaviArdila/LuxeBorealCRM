@@ -4,7 +4,8 @@
  * `luxeboreal-arquitectura` §8, kebab-case en español). Cada fase que agregue un error nuevo
  * agrega su propia entrada aquí, con el id del requisito en el comentario — las Fases 11-13
  * agregan `peticion-no-autenticada`, `rol-insuficiente`, `clave-idempotencia-*` (design.md D5);
- * esta fase (00b, T2) solo necesita los dos códigos que sus propios escenarios ejercitan.
+ * la Fase 04 (T3, D2/D3 de `design.md`) agrega `firma-invalida` y `carga-demasiado-grande` para el
+ * webhook de Chatwoot.
  */
 export const CATALOGO_CODIGOS = Object.freeze({
   /** API4: el cuerpo de la petición no cumple el esquema Standard Schema del endpoint. */
@@ -16,6 +17,16 @@ export const CATALOGO_CODIGOS = Object.freeze({
   'error-interno': {
     status: 500,
     title: 'Ocurrió un error inesperado',
+  },
+  /** R3, D3 de la Fase 04: firma HMAC ausente, inválida o fuera de tolerancia del webhook. */
+  'firma-invalida': {
+    status: 401,
+    title: 'La firma de la petición es inválida o está ausente',
+  },
+  /** D2 de la Fase 04: el cuerpo de la petición supera el límite de tamaño configurado. */
+  'carga-demasiado-grande': {
+    status: 413,
+    title: 'El cuerpo de la petición supera el límite de tamaño permitido',
   },
 } as const);
 
