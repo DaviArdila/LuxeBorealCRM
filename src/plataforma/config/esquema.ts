@@ -48,6 +48,21 @@ export const esquemaConfiguracion = z
     CHATWOOT_WEBHOOK_SECRETO: z.string().default(''),
     CHATWOOT_WEBHOOK_TOLERANCIA_S: z.coerce.number().int().min(30).max(3600).default(300),
     CHATWOOT_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(10000),
+    /** `plataforma/colas` (Fase 04, T4, D6 de `design.md`): raíz de BullMQ sobre `REDIS_URL`. */
+    COLAS_PREFIJO: z.string().default('luxe:colas'),
+    /**
+     * Si este proceso arranca los *workers* de BullMQ (D6). `false` en los contextos que generan
+     * el contrato OpenAPI (sin Redis real): registran colas pero nunca arrancan un *worker* ni un
+     * barrido, para que `contrato:deriva` siga siendo determinista.
+     */
+    COLAS_TRABAJADORES: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((valor) => valor === 'true'),
+    /** Procesador del inbox (D7, CAN4): intentos de BullMQ antes de marcar `error` en la fila. */
+    INBOX_MAX_INTENTOS: z.coerce.number().int().min(1).max(20).default(5),
+    /** Barrido del inbox (D7): cada cuánto se reencolan filas pendientes sin `error`. */
+    INBOX_BARRIDO_MS: z.coerce.number().int().min(1000).default(30000),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {

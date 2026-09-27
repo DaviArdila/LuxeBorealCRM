@@ -52,6 +52,10 @@ describe('Indicadores de salud (T9, integración)', () => {
       CHATWOOT_WEBHOOK_SECRETO: '',
       CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
       CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+      COLAS_PREFIJO: 'luxe:colas',
+      COLAS_TRABAJADORES: true,
+      INBOX_MAX_INTENTOS: 5,
+      INBOX_BARRIDO_MS: 30000,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -82,6 +86,10 @@ describe('Indicadores de salud (T9, integración)', () => {
       CHATWOOT_WEBHOOK_SECRETO: '',
       CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
       CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+      COLAS_PREFIJO: 'luxe:colas',
+      COLAS_TRABAJADORES: true,
+      INBOX_MAX_INTENTOS: 5,
+      INBOX_BARRIDO_MS: 30000,
     });
 
     const inicio = performance.now();
@@ -116,6 +124,10 @@ describe('Indicadores de salud (T9, integración)', () => {
       CHATWOOT_WEBHOOK_SECRETO: '',
       CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
       CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+      COLAS_PREFIJO: 'luxe:colas',
+      COLAS_TRABAJADORES: true,
+      INBOX_MAX_INTENTOS: 5,
+      INBOX_BARRIDO_MS: 30000,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -146,6 +158,10 @@ describe('Indicadores de salud (T9, integración)', () => {
       CHATWOOT_WEBHOOK_SECRETO: '',
       CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
       CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+      COLAS_PREFIJO: 'luxe:colas',
+      COLAS_TRABAJADORES: true,
+      INBOX_MAX_INTENTOS: 5,
+      INBOX_BARRIDO_MS: 30000,
     });
 
     const inicio = performance.now();

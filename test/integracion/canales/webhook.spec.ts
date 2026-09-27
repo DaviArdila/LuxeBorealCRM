@@ -9,7 +9,7 @@ import { configurarAplicacion, OPCIONES_APLICACION } from '../../../src/configur
 import { CONFIGURACION, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../../soporte/chatwoot.js';
-import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
 const SECRETO_DE_PRUEBA = 'secreto-de-prueba-webhook';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -47,6 +47,17 @@ function configuracionDePrueba(): Configuracion {
     CHATWOOT_WEBHOOK_SECRETO: SECRETO_DE_PRUEBA,
     CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
     CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+    // T4 (D6): prefijo aislado por VITEST_POOL_ID (ADR-0009) — este archivo ya encola de verdad
+    // (ColaEventosEntrantesBullmq sustituyó al doble de T3), así que un prefijo compartido con
+    // otro archivo de test de `canales/` correría el riesgo de que sus jobs se mezclaran en el
+    // mismo Redis de Testcontainers. `COLAS_TRABAJADORES: false`: este archivo prueba la capa HTTP
+    // del webhook (D5: "Postgres es la verdad, la cola es solo el disparador"), no el
+    // procesamiento en segundo plano — mismo criterio que los contextos de generación de contrato,
+    // pero aquí por alcance del test, no porque falte Redis real.
+    COLAS_PREFIJO: `${prefijoRedisDePrueba()}colas`,
+    COLAS_TRABAJADORES: false,
+    INBOX_MAX_INTENTOS: 5,
+    INBOX_BARRIDO_MS: 30000,
   };
 }
 

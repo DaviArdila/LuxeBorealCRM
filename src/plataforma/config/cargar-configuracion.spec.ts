@@ -333,4 +333,41 @@ describe('cargarConfiguracion', () => {
       expect(() => cargarConfiguracion(fuenteValidaProduccion)).not.toThrow();
     });
   });
+
+  describe('Variables COLAS_*/INBOX_* (fase-04-canal-chatwoot, T4, D6/D7)', () => {
+    it('usa los valores de desarrollo por defecto cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.COLAS_PREFIJO).toBe('luxe:colas');
+      expect(configuracion.COLAS_TRABAJADORES).toBe(true);
+      expect(configuracion.INBOX_MAX_INTENTOS).toBe(5);
+      expect(configuracion.INBOX_BARRIDO_MS).toBe(30000);
+    });
+
+    it('acepta COLAS_TRABAJADORES="false" y lo convierte a boolean', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, COLAS_TRABAJADORES: 'false' });
+
+      expect(configuracion.COLAS_TRABAJADORES).toBe(false);
+    });
+
+    it('rechaza COLAS_TRABAJADORES con un valor que no sea "true" ni "false"', () => {
+      const fuenteInvalida = { ...fuenteValida, COLAS_TRABAJADORES: 'yes' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'COLAS_TRABAJADORES',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta INBOX_MAX_INTENTOS coercible a entero', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, INBOX_MAX_INTENTOS: '3' });
+
+      expect(configuracion.INBOX_MAX_INTENTOS).toBe(3);
+    });
+  });
 });

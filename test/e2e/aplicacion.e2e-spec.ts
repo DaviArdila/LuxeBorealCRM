@@ -44,6 +44,14 @@ function configuracionValida(): Configuracion {
     CHATWOOT_WEBHOOK_SECRETO: '',
     CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
     CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+    COLAS_PREFIJO: 'luxe:colas',
+    // `false` (D6): este archivo también arma una configuración con un REDIS_URL deliberadamente
+    // inalcanzable (ver más abajo, prueba del health check degradado) — un worker de BullMQ
+    // reintentando esa conexión indefinidamente (maxRetriesPerRequest: null, D6) no aporta nada a
+    // ese escenario y solo añade ruido al cierre de la app entre tests.
+    COLAS_TRABAJADORES: false,
+    INBOX_MAX_INTENTOS: 5,
+    INBOX_BARRIDO_MS: 30000,
   };
 }
 

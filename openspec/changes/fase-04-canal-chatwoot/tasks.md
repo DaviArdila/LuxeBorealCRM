@@ -41,7 +41,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T1 — Fixtures reales de Chatwoot anonimizados + verificación de campos (`test/fixtures/chatwoot/`) (S(a))
 - [x] T2 — Dominio puro de canales: firma, traducción/redacción, perfil, claves (S(a))
 - [x] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
-- [ ] T4 — `plataforma/colas` + procesador del inbox (S(c))
+- [x] T4 — `plataforma/colas` + procesador del inbox (S(c))
 - [ ] T5 — Puerto de salida + adaptador Chatwoot (S(d))
 - [ ] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
 - [ ] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
@@ -496,6 +496,62 @@ puntos de arranque/cierre (misma interfaz para `canales` y `outbox`; solo cambia
 **Slice de PR**: S(c)
 
 **Review requerida**: RDD
+
+### Resultado de la verificación del riesgo técnico (`sdd-apply`, 2026-09-27, evidencia real)
+
+**Compatibilidad de `@nestjs/bullmq` con NestJS 12 — confirmada, sin plan B**:
+
+1. `npm view @nestjs/bullmq peerDependencies` (real, no supuesto):
+   `{ bullmq: '^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0', '@nestjs/core': '^10.0.0 || ^11.0.0 || ^12.0.0', '@nestjs/common': '^10.0.0 || ^11.0.0 || ^12.0.0' }`
+   — cubre `@nestjs/common@^12.1.0` (`package.json` de este repo) y `bullmq@^6.3.9` (última versión).
+2. `npm install bullmq@^6.3.9 @nestjs/bullmq@^12.0.0 --save`: instaló sin conflictos de peer
+   dependencies (`npm ls` sin advertencias de `ERESOLVE`).
+3. RED→GREEN real (no un `TestingModule` de sanidad aparte, D6 lo permite: "un RED test que
+   registre `ColasModule`"): `test/integracion/canales/procesador-inbox.spec.ts` construye un
+   `Test.createTestingModule` real con `ColasModule` + `BullModule.registerQueue('canales-inbox')`
+   contra Redis real de Testcontainers, con `NestFactory`/`app.init()` real (para que
+   `onApplicationBootstrap`/`beforeApplicationShutdown` corran). Los dos escenarios (CAN4, R4 esc.
+   1) pasan: BullMQ arranca el *worker*, reintenta con backoff exponencial, deduplica por `jobId`, y
+   `beforeApplicationShutdown` cierra el *worker* sin colgar el proceso. **Conclusión: no hace
+   falta el plan B de `design.md` (un `ColasModule` propio sobre `bullmq` crudo) — se construyó
+   sobre `@nestjs/bullmq` tal como D6 prefería.**
+
+**Hallazgo real no anticipado por `design.md` (documentado, no silencioso)**: BullMQ tipa
+`connection` de `QueueOptions` contra su **propio** `RedisOptions`/`ConnectionOptions`
+(`bullmq/dist/.../redis-options.d.ts`, estructuralmente similar pero no idéntico al `RedisOptions`
+de `ioredis`, que además es más estricto). `opcionesConexionColas` devolvía inicialmente el
+`RedisOptions` de `ioredis` y `tsc` lo rechazaba (`Type 'RedisOptions' is not assignable to type
+'ConnectionOptions'`); corregido importando el `RedisOptions` de `bullmq` en vez de `ioredis`.
+
+**Hallazgo real adicional**: `@nestjs/bullmq`'s `BullExplorer` (interno del paquete) ya cierra
+**todos** los *workers* registrados en su propio `onApplicationShutdown` — una fase posterior a
+`beforeApplicationShutdown` en el ciclo de Nest. Esto no contradice D6/PLT5: como
+`ProcesadorInbox.beforeApplicationShutdown` cierra el *worker* primero (fase anterior), el cierre
+del explorador llega después sobre un *worker* ya cerrado — `Worker.close()` de BullMQ es
+idempotente (confirmado por el paso a verde de `beforeApplicationShutdown` en los tests), así que
+el orden de PLT5 (ningún job en curso pierde Prisma/Redis a mitad de camino) queda garantizado por
+nuestro propio hook, sin depender del cierre automático del paquete.
+
+**Barrido del inbox (D7)**: implementado dentro de `procesador-inbox.ts` (sin archivo de
+aplicación aparte, `design.md` no lo listaba como archivo propio de T4): un `JobScheduler` de
+BullMQ (`upsertJobScheduler`, cada `INBOX_BARRIDO_MS`) dispara un job `barrido-inbox` que el mismo
+`process()` distingue por `job.name` y reencola (vía el puerto `ColaEventosEntrantes`, mismo
+`jobId`) las filas con `recibido_en` anterior a la ventana. No tiene un escenario propio en la
+spec de esta tarea (el intervalo por defecto, 30 s, excede la duración de un test), así que su
+cobertura queda para cuando la Fase 05/09 lo necesite medir bajo carga real; su lógica de
+reclamo/reencolado reutiliza exactamente el mismo puerto que ya prueban CAN4/R4.
+
+**`COLAS_TRABAJADORES` en archivos existentes**: se fijó explícitamente en `false` (con comentario)
+en los tres contextos "de contrato" (`scripts/generar-contrato.ts`, `test/contrato/soporte.ts`,
+`test/contrato/docs.spec.ts`, sin Redis real, D6) y también en `test/e2e/aplicacion.e2e-spec.ts`
+(un escenario de ese archivo apunta a un `REDIS_URL` deliberadamente inalcanzable para probar el
+health check degradado; un *worker* de BullMQ reintentando esa conexión indefinidamente no aporta
+nada a ese escenario) y en `test/integracion/canales/webhook.spec.ts` (ese archivo prueba la capa
+HTTP del webhook, no el procesamiento en segundo plano — D5 ya separa ambas responsabilidades).
+Los demás 20 archivos que construyen un `Configuracion` literal (`geografia`, `horario`,
+`catalogo`, `medios`, `persistencia`, `salud`, `infraestructura`) no registran `CanalesModule` ni
+`ColasModule` en su árbol de módulos de prueba: los cuatro campos nuevos son datos inertes ahí,
+fijados a los valores por defecto del esquema por consistencia con el resto del archivo.
 
 ---
 

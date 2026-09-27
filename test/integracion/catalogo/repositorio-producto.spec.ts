@@ -40,6 +40,10 @@ async function crearRepositorio(): Promise<RepositorioProducto> {
     CHATWOOT_WEBHOOK_SECRETO: '',
     CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
     CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+    COLAS_PREFIJO: 'luxe:colas',
+    COLAS_TRABAJADORES: true,
+    INBOX_MAX_INTENTOS: 5,
+    INBOX_BARRIDO_MS: 30000,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
