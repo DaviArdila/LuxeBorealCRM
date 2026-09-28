@@ -18,6 +18,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0010](0010-documento-openapi-publico-e-interno.md) | Documento OpenAPI público e interno | propuesta | 2026-09-24 |
 | [0011](0011-codigos-de-error-rfc9457.md) | Códigos de error estables y forma del cuerpo RFC 9457 | propuesta | 2026-09-24 |
 | [0012](0012-minio-almacenamiento-de-objetos.md) | MinIO como almacenamiento de objetos para medios | aceptada | 2026-09-26 |
+| [0013](0013-cortacircuitos-en-memoria-pasarela-llm.md) | Circuit breaker de la pasarela LLM en memoria del proceso | propuesta | 2026-09-28 |
 
 ## Plantilla
 
