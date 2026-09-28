@@ -571,3 +571,22 @@ interno de eventos ya probado en integración), y luego la skill `judgment-day` 
 commits `fase-05-conversaciones` (obligatorio, regla 6 de `docs/fases/README.md`) **antes** de
 `sdd-verify`. El veredicto y cualquier corrección aplicada quedan documentados en `verify-report.md`
 al cerrar la fase (`sdd-verify → sdd-archive`), no en este archivo.
+
+**Corrido (2026-09-28)**: `npm run verify` completo y `npm run test:e2e` en verde. `judgment-day`
+sobre el rango `c81b983..d6b4ecb` (T1-T8): **JUDGMENT: APPROVED ✅** tras 2 rondas de corrección (el
+límite del protocolo). Ronda 1: ambos jueces confirmaron un CRITICAL —
+`ConsumidorConversaciones.manejarMensajeEntrante` no era idempotente ante reentrega del mismo evento
+(`ContadorRateLimit.verificarLimite` incrementaba sin deduplicar por `idMensaje`); corregido en
+`ddb72d2` (+ `LectorMensajeCanalChatwoot.obtenerTexto` ahora sí cumple su contrato "nunca lanza") y
+`3270d9e` (arnés de T8 sin actualizar). El re-juicio de esa corrección encontró un CRITICAL nuevo,
+causado por el propio fix: la marca de idempotencia se creaba antes de que el trabajo real
+terminara, así que una falla transitoria a mitad de turno perdía el mensaje del cliente en
+silencio — corregido en `e17c5bd` (ronda 2: marcar "procesado" solo tras el éxito). El re-juicio
+final (última ronda permitida) no encontró ningún CRITICAL en ninguno de los dos jueces. Quedan 8
+hallazgos WARNING/SUGGESTION documentados sin corregir (informativos, no bloquean el cierre):
+relectura por lote en `EnviarRespuestaTurno` en vez de por mensaje, pérdida del buffer si el
+generador falla a mitad de turno, sin heartbeat en `LockTurno`, sin validación cruzada
+`HANDOFF_ESPERA_MIN < HANDOFF_TTL_MIN`, eco de texto vacío si Chatwoot falla al resolver el mensaje,
+condición de carrera en la marca de espera de `handoff_pendiente`, posible duplicado de buffer en
+una ventana estrecha (ronda 2), y pérdida de atomicidad de la guarda si se escala a más de un
+worker de inbox (ronda 2, no explotable hoy con `concurrency: 1`).
