@@ -1,0 +1,103 @@
+# Chatwoot local (bandeja humana, ADR-0005, SPEC.md R6). Adaptado del docker-compose.production.yaml
+# oficial: imagen pineada (los webhooks del Agent Bot van firmados desde v4.13), puerto 3001 en el
+# host para no chocar con `npm run start:dev` (3000), healthchecks para poder esperar desde scripts.
+# Uso: bash scripts/chatwoot-up.sh   (o docker compose -f infra/chatwoot/docker-compose.yml ...)
+#
+# Portado de ../ChatLuxeCRM/infra/chatwoot/docker-compose.yml (docs/migracion/inventario.md línea 56):
+# mismo mecanismo, renombrado `chatluxecrm` → `luxeboreal` en el rol/bases del bot (ver init/).
+
+name: luxeborealcrm-chatwoot
+
+x-base: &base
+  image: chatwoot/chatwoot:v4.17.1
+  env_file: .env
+  volumes:
+    - chatwoot_storage:/app/storage
+
+services:
+  rails:
+    <<: *base
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      - NODE_ENV=production
+      - RAILS_ENV=production
+      - INSTALLATION_ENV=docker
+    entrypoint: docker/entrypoints/rails.sh
+    command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
+    # host.docker.internal: así el Agent Bot alcanza `npm run start:dev` en el host desde el contenedor.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+
+  sidekiq:
+    <<: *base
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - RAILS_ENV=production
+      - INSTALLATION_ENV=docker
+    command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    # Servidor de Chatwoot local, independiente del Postgres propio de LuxeBorealCRM
+    # (docker-compose.yml de la raíz, puerto 5435 — decisión de la Fase 00a/00b para desarrollo
+    # manual autocontenido). El init crea, además, un rol/base `luxeboreal`/`luxeboreal_test` en
+    # ESTE mismo servidor para poder ensayar en local la topología de producción descrita en
+    # CLAUDE.md §Stack ("mismo servidor que Chatwoot, base y rol propios — ADR-001 del prototipo");
+    # hoy la app no se conecta a esta base (usa su propio Postgres separado), así que este rol queda
+    # sin uso local hasta que una fase futura decida adoptar esa topología también en desarrollo.
+    # Puerto 5433 en el host (5432 suele estar ocupado por un Postgres nativo), solo en loopback.
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - chatwoot_pg:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    environment:
+      - POSTGRES_DB=chatwoot
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - LUXEBOREAL_DB_PASSWORD=${LUXEBOREAL_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    command: ["sh", "-c", "redis-server --requirepass \"$REDIS_PASSWORD\" --appendonly yes"]
+    env_file: .env
+    volumes:
+      - chatwoot_redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  chatwoot_storage:
+  chatwoot_pg:
+  chatwoot_redis:

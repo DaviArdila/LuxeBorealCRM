@@ -45,7 +45,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T5 — Puerto de salida + adaptador Chatwoot (S(d))
 - [x] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
 - [x] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
-- [ ] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
+- [x] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
 - [ ] T9 — Cierre documental: doc 04 §3, skill de Meta, skill de arquitectura (S(f))
 
 ## Mapeo de escenarios por tarea (17 escenarios, R3+R4+CAN1-CAN8)
@@ -954,6 +954,62 @@ de desarrollo, no comportamiento de producción).
 **Slice de PR**: S(f)
 
 **Review requerida**: RDD
+
+### Resultado de la implementación (`sdd-apply`, 2026-09-27)
+
+Portados de `../ChatLuxeCRM` (`docs/migracion/inventario.md` línea 56), sin modificar el prototipo
+(solo lectura):
+- `infra/chatwoot/docker-compose.yml`, `infra/chatwoot/.env.example`,
+  `infra/chatwoot/init/01-luxeboreal.sh` (renombrado de `01-chatluxecrm.sh`).
+- `scripts/chatwoot-up.sh`, `scripts/chatwoot-bootstrap.sh`, `scripts/chatwoot-crear-admin.sh`.
+- `scripts/postgres-crear-bases.sh` — no está en el glob `scripts/chatwoot-*.sh` de la lista de
+  archivos de esta tarea, pero es una dependencia directa de `chatwoot-up.sh` (lo invoca) en el
+  prototipo; se portó igual porque sin él `chatwoot-up.sh` fallaría.
+- `.env.example` (raíz) — solo se ajustó el comentario de las variables `CHATWOOT_BOT_TOKEN`/
+  `CHATWOOT_WEBHOOK_SECRETO` para referenciar los scripts ya portados en vez de "del prototipo (o
+  su equivalente)"; las variables `CHATWOOT_*` en sí ya existían desde T3/T6, sin cambios.
+
+**Renombrado `chatluxecrm` → `luxeboreal`**: rol/bases (`chatluxecrm`/`chatluxecrm_test` →
+`luxeboreal`/`luxeboreal_test`), variable `CHATLUXECRM_DB_PASSWORD` → `LUXEBOREAL_DB_PASSWORD`,
+cuenta de Chatwoot (`ChatLuxeCRM` → `LuxeBorealCRM`) y nombre del Agent Bot (`ChatLuxeCRM bot` →
+`LuxeBorealCRM bot`). Webhook del Agent Bot apuntando a `/api/v1/webhooks/chatwoot` (ruta real del
+controlador de T3, `webhook-chatwoot.controller.ts`), no a `/webhook/chatwoot` como en el prototipo.
+
+**Decisión documentada, no silenciosa — `scripts/chatwoot-devolver-bot.sh` NO se portó**: ese script
+del prototipo depende de infraestructura que esta fase no construye — una clave Redis
+`conv:<numero>:chatwoot` que mapea número de teléfono a conversación de Chatwoot, la variable
+`CHATWOOT_ADMIN_TOKEN` y un contenedor llamado `redis-dev` — todo eso pertenece a la máquina de
+estados bot/humano (R6) que construye una fase posterior (`docs/fases/README.md`), no la Fase 04
+(solo webhook, inbox, puerto de salida y outbox de `canales`). Portarlo ahora habría significado
+inventar convenciones de Redis/env que la fase de la máquina de estados todavía no decide — viola la
+regla de CLAUDE.md "no se adelanta trabajo de fases futuras". Queda pendiente para la fase que
+implemente R6.
+
+**Nombre del proyecto Docker**: `luxeborealcrm-chatwoot` (distinto del ya corriendo `chatwoot-local`,
+que se levantó esta sesión directo desde el compose del prototipo como solución temporal para T1).
+Migración de `chatwoot-local` a `luxeborealcrm-chatwoot` sin perder la cuenta/inbox/bot ya
+configurados: documentada en el reporte de `sdd-apply` a la orquestación, no ejecutada aquí (decisión
+operativa del usuario). Resumen: como los volúmenes de Compose se nombran
+`<proyecto>_<volumen>`, cambiar de proyecto crea volúmenes nuevos vacíos; para conservar los datos
+hay que copiarlos a los volúmenes con el nuevo prefijo (`docker volume create` + un contenedor
+`alpine` que copie `chatwoot-local_chatwoot_pg` → `luxeborealcrm-chatwoot_chatwoot_pg`, y lo mismo
+para `chatwoot_storage`/`chatwoot_redis`) y copiar el `.env` real ya generado
+(`../ChatLuxeCRM/infra/chatwoot/.env`) a `infra/chatwoot/.env` de este repo antes de correr
+`scripts/chatwoot-up.sh`, para que las contraseñas coincidan con los datos ya cifrados en esos
+volúmenes.
+
+**Verificación real ejecutada** (sin tocar la instancia `chatwoot-local` en marcha):
+- `docker compose -f infra/chatwoot/docker-compose.yml --project-name luxeborealcrm-chatwoot config`:
+  YAML válido, anclas `x-base` resueltas, los cuatro servicios y los tres volúmenes se parsean
+  correctamente; solo falla (como se espera, mismo comportamiento que el compose del prototipo) en
+  la línea `env_file: .env` porque `infra/chatwoot/.env` no existe todavía — se genera la primera vez
+  que corre `scripts/chatwoot-up.sh`, nunca se commitea.
+- `bash -n` sobre los cinco scripts portados (`chatwoot-up.sh`, `chatwoot-bootstrap.sh`,
+  `chatwoot-crear-admin.sh`, `postgres-crear-bases.sh`, `init/01-luxeboreal.sh`): sin errores de
+  sintaxis.
+- No se ejecutó `scripts/chatwoot-up.sh` de verdad (levantaría un segundo Chatwoot en los mismos
+  puertos 3001/5433 que ya usa `chatwoot-local`, chocando con la instancia real en marcha) — queda
+  para cuando el usuario decida la migración de arriba.
 
 ---
 
