@@ -34,7 +34,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 - [x] T3 — Efímero en Redis: buffer, lock, contador de rate limit, interruptor global (S(b2)) — **desviación**: los tests de los cuatro *providers* quedaron en `test/integracion/conversaciones/redis-turno.spec.ts` (no colocados), porque necesitan Redis real y el proyecto `unit` de Vitest no levanta infraestructura; el comando de esta fila queda `npm run test:integracion -- redis-turno`, no `npm test -- .../redis`
 - [x] T4 — Debounce + lock + processor del turno + "agente eco" (S(d)) — incluye D16 (`LECTOR_MENSAJE_CANAL` en `canales`, decidido con el usuario durante `sdd-apply`)
 - [x] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c)) — ver desviaciones abajo
-- [ ] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e))
+- [x] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e)) — clase adelantada en T5, aquí solo la regla 13 y su test dedicado
 - [ ] T7 — Barrido de vencimientos (S(f1))
 - [ ] T8 — Aviso único de espera en `handoff_pendiente` + cierre documental (S(f2))
 
