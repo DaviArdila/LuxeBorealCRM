@@ -326,6 +326,33 @@ describe('Outbox genérico (T6, integración, D10/D11/D12)', () => {
     expect(fila.error).toBe('sin-manejador');
   });
 
+  it('un esperaSugeridaS (Retry-After) mayor que OUTBOX_BACKOFF_MAX_S se acota al máximo (D12)', async () => {
+    const arrancado = await crearAplicacion({ OUTBOX_BACKOFF_BASE_S: 15, OUTBOX_BACKOFF_MAX_S: 300 });
+    app = arrancado.app;
+    const { clock } = arrancado;
+    const registroOutbox = app.get<RegistroOutbox>(REGISTRO_OUTBOX);
+    const registro = app.get(RegistroManejadoresOutbox);
+    const publicador = app.get(PublicadorOutbox);
+    const prisma = app.get(PrismaService);
+
+    registro.registrar(
+      'tipo.prueba',
+      new ManejadorDePrueba(() => {
+        // Retry-After absurdamente grande, como podría enviar cualquier API ante un 429.
+        throw new FalloPublicacion('transitorio', 'limite de tasa', 999_999);
+      }),
+    );
+
+    const clave = `clave-${randomUUID()}`;
+    await registroOutbox.agregar([entradaDePrueba({ claveIdempotencia: clave })]);
+
+    await publicador.publicarPendientes();
+
+    const fila = await prisma.outbox.findUniqueOrThrow({ where: { claveIdempotencia: clave } });
+    const esperaRealS = (fila.proximoIntento.getTime() - clock.ahora().getTime()) / 1000;
+    expect(esperaRealS).toBeLessThanOrEqual(300);
+  });
+
   it('agregar la misma clave_idempotencia dos veces no duplica la fila (D11, ON CONFLICT DO NOTHING)', async () => {
     const arrancado = await crearAplicacion();
     app = arrancado.app;

@@ -48,9 +48,10 @@ export interface EntradaOutbox extends NuevaEntradaOutbox {
 
 /**
  * Lanzada por un {@link ManejadorOutbox} para clasificar un fallo (D10, D12). `esperaSugeridaS`
- * (p. ej. `Retry-After` de un 429) se combina con `retrasoSegundos` tomando el máximo (D12);
- * `causa` MUST NOT ser el `message` libre de una excepción de cliente (R14) — la construye el
- * manejador que la lanza, nunca `PublicadorOutbox`.
+ * (p. ej. `Retry-After` de un 429) MUST quedar acotado a `OUTBOX_BACKOFF_MAX_S` antes de
+ * combinarse con `retrasoSegundos` tomando el máximo (D12) — lo acota `PublicadorOutbox`, no quien
+ * lanza el fallo; `causa` MUST NOT ser el `message` libre de una excepción de cliente (R14) — la
+ * construye el manejador que la lanza, nunca `PublicadorOutbox`.
  */
 export class FalloPublicacion extends Error {
   constructor(

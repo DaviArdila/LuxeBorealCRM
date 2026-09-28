@@ -156,7 +156,7 @@ export class PublicadorOutbox {
 
     const esperaS = Math.max(
       retrasoSegundos(fila.intentos, this.configuracion.OUTBOX_BACKOFF_BASE_S, this.configuracion.OUTBOX_BACKOFF_MAX_S),
-      fallo.esperaSugeridaS ?? 0,
+      Math.min(fallo.esperaSugeridaS ?? 0, this.configuracion.OUTBOX_BACKOFF_MAX_S),
     );
     await this.marcarPendiente(fila.id, esperaS);
   }
