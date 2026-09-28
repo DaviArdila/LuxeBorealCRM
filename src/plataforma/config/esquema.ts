@@ -72,6 +72,24 @@ export const esquemaConfiguracion = z
     OUTBOX_BARRIDO_MS: z.coerce.number().int().min(500).default(5000),
     /** Duración del *lease* de una fila reclamada (D10): tras vencer, vuelve a estar disponible. */
     OUTBOX_LEASE_S: z.coerce.number().int().min(10).default(60),
+    /** `modulos/conversaciones` (Fase 05, T1, D3/Q2): vencimiento de `humano` sin eco del asesor. */
+    HUMANO_TTL_HORAS: z.coerce.number().min(0.5).default(3),
+    /** Vencimiento de `handoff_pendiente` sin que nadie lo recoja (D3/Q2). */
+    HANDOFF_TTL_MIN: z.coerce.number().int().min(1).default(45),
+    /** `LockTurno` (Fase 05, T3, D7): TTL del lock `SET NX EX` por conversación. */
+    LOCK_TURNO_TTL_S: z.coerce.number().int().min(5).default(30),
+    /** `ContadorRateLimit` (T3, R13): tope de mensajes por contacto en la hora en curso. */
+    RATE_LIMIT_POR_HORA: z.coerce.number().int().min(1).default(20),
+    /** Tope de mensajes por contacto en el día en curso (R13). */
+    RATE_LIMIT_POR_DIA: z.coerce.number().int().min(1).default(60),
+    /** `ColaTurno` (Fase 05, T4, D6): ventana de debounce que agrupa una ráfaga de mensajes. */
+    DEBOUNCE_MS: z.coerce.number().int().min(500).default(3000),
+    /** `ProcesadorTurno` (T4, D7): conversaciones distintas procesadas en paralelo. */
+    CONVERSACIONES_CONCURRENCIA: z.coerce.number().int().min(1).default(10),
+    /** `BarridoVencimientos` (T7, D11): cada cuánto se devuelven a `bot` las filas vencidas. */
+    CONVERSACIONES_BARRIDO_MS: z.coerce.number().int().min(10000).default(300000),
+    /** `MarcaEsperaHandoff` (T8, D12): minutos en `handoff_pendiente` antes del aviso único de espera. */
+    HANDOFF_ESPERA_MIN: z.coerce.number().int().min(1).default(30),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {

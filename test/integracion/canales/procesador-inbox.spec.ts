@@ -77,6 +77,15 @@ async function crearAplicacion(configuracionParcial: Partial<Configuracion> = {}
     OUTBOX_BACKOFF_MAX_S: 300,
     OUTBOX_BARRIDO_MS: 5000,
     OUTBOX_LEASE_S: 60,
+    HUMANO_TTL_HORAS: 3,
+    HANDOFF_TTL_MIN: 45,
+    LOCK_TURNO_TTL_S: 30,
+    RATE_LIMIT_POR_HORA: 20,
+    RATE_LIMIT_POR_DIA: 60,
+    DEBOUNCE_MS: 3000,
+    CONVERSACIONES_CONCURRENCIA: 10,
+    CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
     ...configuracionParcial,
   };
 

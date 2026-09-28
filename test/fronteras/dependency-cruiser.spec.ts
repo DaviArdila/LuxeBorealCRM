@@ -311,4 +311,28 @@ describe('fronteras — dependency-cruiser (D11)', () => {
       ),
     ).toBe(false);
   });
+
+  it('regla 13 — solo-conversaciones-importa-canales: otro módulo importando el barril de canales viola la regla', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'solo-conversaciones-importa-canales',
+        'src/modulos/envios/importa-canales.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 13 — solo-conversaciones-importa-canales (permitido): conversaciones importa el barril de canales', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'solo-conversaciones-importa-canales',
+        'src/modulos/conversaciones/consumidor.ts',
+      ),
+    ).toBe(false);
+  });
 });

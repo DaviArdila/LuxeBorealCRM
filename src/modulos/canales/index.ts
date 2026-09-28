@@ -8,6 +8,9 @@
  * igual: la Fase 05 lo consume desde `conversaciones/salida`, que le agrega la relectura del
  * estado de la FSM antes de cada envío; hasta entonces el único consumidor es el test.
  * `ADAPTADOR_CANAL` (interno, D9) nunca se exporta: solo lo invoca `PublicarEfectoCanal`.
+ * `LECTOR_MENSAJE_CANAL` (D16 de la Fase 05, agregado en `sdd-apply`) se exporta igual: el
+ * consumidor de `conversaciones` lo usa para resolver el texto real de un mensaje entrante antes
+ * de empujarlo al buffer del turno (`EventoCanal` nunca trae texto, R14/CAN5).
  */
 export { CanalesModule } from './canales.module.js';
 export { RegistroConsumidorEventosCanal } from './aplicacion/registro-consumidor-eventos-canal.js';
@@ -16,6 +19,7 @@ export {
   type ConsumidorEventosCanal,
 } from './puertos/consumidor-eventos-canal.js';
 export type { EventoCanal } from './dominio/evento-canal.js';
+export { LECTOR_MENSAJE_CANAL, type LectorMensajeCanal } from './puertos/lector-mensaje-canal.js';
 export {
   SALIDA_CANAL,
   type MensajeSaliente,

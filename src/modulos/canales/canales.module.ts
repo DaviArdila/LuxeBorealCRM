@@ -14,12 +14,14 @@ import {
 } from './infraestructura/cola-eventos-entrantes-bullmq.js';
 import { AdaptadorCanalChatwoot } from './infraestructura/chatwoot/adaptador-canal-chatwoot.js';
 import { ClienteChatwoot } from './infraestructura/chatwoot/cliente-chatwoot.js';
+import { LectorMensajeCanalChatwoot } from './infraestructura/chatwoot/lector-mensaje-canal-chatwoot.js';
 import { ProcesadorInbox } from './infraestructura/procesador-inbox.js';
 import { RepositorioEventoEntrantePrisma } from './infraestructura/repositorio-evento-entrante-prisma.js';
 import { WebhookChatwootController } from './interfaz/webhook-chatwoot.controller.js';
 import { ADAPTADOR_CANAL } from './puertos/adaptador-canal.js';
 import { CONSUMIDOR_EVENTOS_CANAL } from './puertos/consumidor-eventos-canal.js';
 import { COLA_EVENTOS_ENTRANTES } from './puertos/cola-eventos-entrantes.js';
+import { LECTOR_MENSAJE_CANAL } from './puertos/lector-mensaje-canal.js';
 import { REPOSITORIO_EVENTO_ENTRANTE } from './puertos/repositorio-evento-entrante.js';
 import { SALIDA_CANAL } from './puertos/salida-canal.js';
 
@@ -52,6 +54,7 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
     { provide: CONSUMIDOR_EVENTOS_CANAL, useClass: ConsumidorRegistrador },
     { provide: SALIDA_CANAL, useClass: SalidaCanalOutbox },
     { provide: ADAPTADOR_CANAL, useClass: AdaptadorCanalChatwoot },
+    { provide: LECTOR_MENSAJE_CANAL, useClass: LectorMensajeCanalChatwoot },
     ClienteChatwoot,
     RegistrarEventoEntrante,
     RegistroConsumidorEventosCanal,
@@ -59,7 +62,7 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
     ProcesadorInbox,
     PublicarEfectoCanal,
   ],
-  exports: [SALIDA_CANAL],
+  exports: [SALIDA_CANAL, LECTOR_MENSAJE_CANAL, RegistroConsumidorEventosCanal],
 })
 export class CanalesModule implements OnModuleInit {
   constructor(

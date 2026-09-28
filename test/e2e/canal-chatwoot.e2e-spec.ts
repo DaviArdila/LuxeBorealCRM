@@ -11,7 +11,7 @@
  *    el primero se entrega directo, el segundo falla una vez (500) y se reintenta — cero
  *    duplicados en Chatwoot falso.
  */
-import type { INestApplication } from '@nestjs/common';
+import { Module, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { Server } from 'node:http';
@@ -25,11 +25,21 @@ import {
   type EventoCanal,
   type SalidaCanal,
 } from '../../src/modulos/canales/index.js';
+import { ConversacionesModule } from '../../src/modulos/conversaciones/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+
+/**
+ * Este e2e prueba `canales` de punta a punta con un consumidor propio (abajo); sin este
+ * reemplazo, `ConversacionesModule` (Fase 05) se registraría primero en su `onModuleInit` y
+ * `RegistroConsumidorEventosCanal.registrar` rechazaría el segundo consumidor (D8: "dos módulos no
+ * pueden competir por el mismo evento").
+ */
+@Module({})
+class ModuloConversacionesVacio {}
 
 const SECRETO_DE_PRUEBA = 'secreto-e2e-canal-chatwoot';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -75,12 +85,23 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     OUTBOX_BACKOFF_MAX_S: 1,
     OUTBOX_BARRIDO_MS: 500,
     OUTBOX_LEASE_S: 60,
+    HUMANO_TTL_HORAS: 3,
+    HANDOFF_TTL_MIN: 45,
+    LOCK_TURNO_TTL_S: 30,
+    RATE_LIMIT_POR_HORA: 20,
+    RATE_LIMIT_POR_DIA: 60,
+    DEBOUNCE_MS: 3000,
+    CONVERSACIONES_CONCURRENCIA: 10,
+    CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
   };
 }
 
 async function crearAplicacion(chatwootFalso: ChatwootFalso): Promise<INestApplication> {
   const { AppModule } = await import('../../src/app.module.js');
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideModule(ConversacionesModule)
+    .useModule(ModuloConversacionesVacio)
     .overrideProvider(CONFIGURACION)
     .useValue(configuracionDePrueba(chatwootFalso))
     .compile();

@@ -150,6 +150,20 @@ module.exports = {
       from: { path: '^src/modulos/[^/]+/(aplicacion|puertos|interfaz)/' },
       to: { path: '^src/plataforma/prisma/' },
     },
+    {
+      name: 'solo-conversaciones-importa-canales',
+      comment:
+        'D9 de la Fase 04 / D15 de la Fase 05: solo modulos/conversaciones importa el barril de ' +
+        'modulos/canales (previsto para que solo conversaciones use SALIDA_CANAL). ' +
+        'dependency-cruiser resuelve por archivo, no por export nombrado, así que esta regla ' +
+        'protege el barril completo de canales/index.ts — mismo objetivo práctico, sin poder ' +
+        'distinguir qué símbolo concreto se importó (desviación anotada en tasks.md T6).',
+      severity: 'error',
+      from: {
+        pathNot: ['^src/modulos/canales/', '^src/modulos/conversaciones/', '^src/app\\.module\\.ts$'],
+      },
+      to: { path: '^src/modulos/canales/index\\.ts$' },
+    },
   ],
   options: {
     // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros
