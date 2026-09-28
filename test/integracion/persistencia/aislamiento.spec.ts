@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { describe, expect, inject, it } from 'vitest';
-import { NOMBRE_PLANTILLA, nombreBaseDeWorker, urlConBase } from '../../soporte/bases-de-prueba.js';
+import { NOMBRE_PLANTILLA, identificadorDeWorker, nombreBaseDeWorker, urlConBase } from '../../soporte/bases-de-prueba.js';
 import { urlPostgresDePrueba } from '../../soporte/infraestructura.js';
 
 /**
  * PER10 (`specs/persistencia/spec.md`; T1 de `tasks.md`, D6 de `design.md`): cada worker de
- * Vitest corre sus tests de integración contra su propia base `test_<poolId>`, clonada de la
+ * Vitest corre sus tests de integración contra su propia base `test_<poolId>_<pid>`, clonada de la
  * plantilla ya migrada por `contenedores.global-setup.ts` y recreada por `base-por-worker.setup.ts`
  * antes de este archivo. Los títulos de `it(...)` son literales de los encabezados
  * `#### Scenario:` de la spec, sin parafrasear (nota de implementación de la spec, lección de
@@ -14,8 +14,7 @@ import { urlPostgresDePrueba } from '../../soporte/infraestructura.js';
  */
 describe('Aislamiento de bases de prueba por worker (T1, integración)', () => {
   it('PER10 — Cada worker de pruebas usa su propia base de datos clonada de la plantilla', async () => {
-    const poolId = process.env.VITEST_POOL_ID ?? '';
-    const nombreEsperado = nombreBaseDeWorker(poolId);
+    const nombreEsperado = nombreBaseDeWorker(identificadorDeWorker(process.env.VITEST_POOL_ID ?? '', process.pid));
     const urlPropia = urlPostgresDePrueba();
 
     expect(new URL(urlPropia).pathname).toBe(`/${nombreEsperado}`);

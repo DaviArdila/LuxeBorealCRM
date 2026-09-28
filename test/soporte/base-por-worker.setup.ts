@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 import { beforeAll, inject } from 'vitest';
-import { NOMBRE_PLANTILLA, nombreBaseDeWorker } from './bases-de-prueba.js';
+import { NOMBRE_PLANTILLA, identificadorDeWorker, nombreBaseDeWorker } from './bases-de-prueba.js';
 
 const MAX_REINTENTOS = 5;
 const SQLSTATE_PLANTILLA_OCUPADA = '55006';
@@ -34,31 +34,25 @@ async function crearBaseConReintento(cliente: Client, nombreBase: string): Promi
 /**
  * `setupFiles` de los proyectos `integracion` y `e2e` (T1, D6 de `design.md`): por el aislamiento
  * por archivo de Vitest, este módulo se vuelve a ejecutar para cada archivo de test, así que el
- * `beforeAll` de abajo corre una vez por archivo. Recrea `test_<poolId>` desde cero, clonada de
- * `plantilla_luxe` (ya migrada por `contenedores.global-setup.ts`), para que cada archivo empiece
- * con una base vacía que solo ve su propio worker.
+ * `beforeAll` de abajo corre una vez por archivo. Recrea `test_<poolId>_<pid>` desde cero, clonada
+ * de `plantilla_luxe` (ya migrada por `contenedores.global-setup.ts`), para que cada archivo
+ * empiece con una base vacía que solo ve su propio worker.
+ *
+ * Hallazgo real (Fase 05, confirmado en CI con logs de diagnóstico, nunca visto en local): usar
+ * solo `VITEST_POOL_ID` no basta — el planificador de Vitest puede asignar el mismo poolId a dos
+ * procesos hijos distintos cuando varios archivos terminan casi al mismo tiempo, causando que dos
+ * archivos compitan por (o compartan en vivo) la misma base. `process.pid` sí es único entre
+ * procesos del sistema operativo corriendo a la vez (`identificadorDeWorker`).
  */
-// DIAGNOSTICO TEMPORAL — quitar junto con esta función tras confirmar si el poolId se reutiliza
-// en el borde unit→integracion de `test:cobertura` (fix/actionlint-temp-dir-permisos).
-function diag(fase: string, nombreBase: string): void {
-  // eslint-disable-next-line no-restricted-syntax -- diagnóstico temporal, no lógica de negocio
-  const t = Date.now();
-  // eslint-disable-next-line no-console -- diagnóstico temporal, se lee del log crudo de CI
-  console.error(`DIAG poolId=${process.env.VITEST_POOL_ID} pid=${process.pid} db=${nombreBase} t=${t} fase=${fase}`);
-}
-
 beforeAll(async () => {
   const urlAdmin = inject('urlPostgresAdmin');
-  const nombreBase = nombreBaseDeWorker(process.env.VITEST_POOL_ID ?? '');
-  diag('inicio', nombreBase);
+  const nombreBase = nombreBaseDeWorker(identificadorDeWorker(process.env.VITEST_POOL_ID ?? '', process.pid));
 
   const cliente = new Client({ connectionString: urlAdmin });
   await cliente.connect();
   try {
     await cliente.query(`DROP DATABASE IF EXISTS "${nombreBase}" WITH (FORCE)`);
-    diag('despues-drop', nombreBase);
     await crearBaseConReintento(cliente, nombreBase);
-    diag('despues-create', nombreBase);
   } finally {
     await cliente.end();
   }

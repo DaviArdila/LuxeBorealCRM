@@ -1,5 +1,5 @@
 import { inject } from 'vitest';
-import { NOMBRE_BUCKET_PRUEBA, nombreBaseDeWorker, urlConBase } from './bases-de-prueba.js';
+import { NOMBRE_BUCKET_PRUEBA, identificadorDeWorker, nombreBaseDeWorker, urlConBase } from './bases-de-prueba.js';
 
 /**
  * Helper que entrega a cada test de integración/e2e la URL de la base de datos **de su propio
@@ -11,7 +11,7 @@ import { NOMBRE_BUCKET_PRUEBA, nombreBaseDeWorker, urlConBase } from './bases-de
  */
 export function urlPostgresDePrueba(): string {
   const urlAdmin = inject('urlPostgresAdmin');
-  const nombreBase = nombreBaseDeWorker(process.env.VITEST_POOL_ID ?? '');
+  const nombreBase = nombreBaseDeWorker(identificadorDeWorker(process.env.VITEST_POOL_ID ?? '', process.pid));
   return urlConBase(urlAdmin, nombreBase);
 }
 
@@ -21,16 +21,19 @@ export function urlRedisDePrueba(): string {
 }
 
 /**
- * Prefijo de claves de Redis por worker (`test:<VITEST_POOL_ID>:`), nuevo en la Fase 01 (D6).
- * Ningún test de esta fase escribe claves todavía; queda listo para la primera fase que lo haga
- * (04-05, ADR-0009).
+ * Prefijo de claves de Redis por worker (`test:<poolId>_<pid>:`), nuevo en la Fase 01 (D6). Usa el
+ * mismo identificador `<poolId>_<pid>` que `urlPostgresDePrueba` (ver `identificadorDeWorker`):
+ * `VITEST_POOL_ID` solo no es único entre procesos concurrentes (Fase 05).
  */
 export function prefijoRedisDePrueba(): string {
-  const poolId = process.env.VITEST_POOL_ID ?? '';
-  if (!/^\d+$/.test(poolId)) {
-    throw new Error(`poolId de Vitest inválido para el prefijo de Redis: "${poolId}" (MUST cumplir ^\\d+$).`);
+  const identificador = identificadorDeWorker(process.env.VITEST_POOL_ID ?? '', process.pid);
+  if (!/^[0-9]+_[0-9]+$/.test(identificador)) {
+    throw new Error(
+      `Identificador de worker inválido para el prefijo de Redis: "${identificador}" ` +
+        `(MUST cumplir ^[0-9]+_[0-9]+$).`,
+    );
   }
-  return `test:${poolId}:`;
+  return `test:${identificador}:`;
 }
 
 /** URL de administración del contenedor MinIO de prueba (D9, T5 de fase-03-importador-medios). */

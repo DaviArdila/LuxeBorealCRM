@@ -9,16 +9,20 @@ import { NOMBRE_PLANTILLA, nombreBaseDeWorker, urlConBase } from './bases-de-pru
  */
 describe('bases-de-prueba (T1, unitario)', () => {
   describe('nombreBaseDeWorker', () => {
-    it('devuelve test_<poolId> para un poolId entero válido', () => {
-      expect(nombreBaseDeWorker('3')).toBe('test_3');
+    it('devuelve test_<poolId>_<pid> para un identificador válido', () => {
+      expect(nombreBaseDeWorker('3_12345')).toBe('test_3_12345');
     });
 
-    it('rechaza un poolId con SQL inyectado (matriz de amenazas)', () => {
-      expect(() => nombreBaseDeWorker('1; DROP DATABASE x')).toThrow();
+    it('rechaza un identificador con SQL inyectado (matriz de amenazas)', () => {
+      expect(() => nombreBaseDeWorker('1_1; DROP DATABASE x')).toThrow();
     });
 
-    it('rechaza un poolId vacío (matriz de amenazas)', () => {
+    it('rechaza un identificador vacío (matriz de amenazas)', () => {
       expect(() => nombreBaseDeWorker('')).toThrow();
+    });
+
+    it('rechaza un poolId sin pid — Vitest no garantiza que VITEST_POOL_ID sea único entre procesos concurrentes', () => {
+      expect(() => nombreBaseDeWorker('3')).toThrow();
     });
   });
 

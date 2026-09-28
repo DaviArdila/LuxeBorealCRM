@@ -11,22 +11,36 @@ export const NOMBRE_PLANTILLA = 'plantilla_luxe';
 /** Nombre del bucket MinIO compartido entre los tests de integración (D9, T5). */
 export const NOMBRE_BUCKET_PRUEBA = 'luxeboreal-medios-prueba';
 
-const POOL_ID_VALIDO = /^\d+$/;
+const IDENTIFICADOR_VALIDO = /^[0-9]+_[0-9]+$/;
 
 /**
- * Arma el nombre de la base de datos del worker (`test_<poolId>`). El nombre de base se usa como
- * identificador dentro de SQL crudo (`CREATE DATABASE`, `DROP DATABASE`) que no admite
- * parámetros — por eso esta función MUST lanzar **antes** de que cualquier llamador arme esa
- * sentencia, ante cualquier `poolId` que no sea exactamente uno o más dígitos (matriz de amenazas
- * de `tasks.md`: subproceso/identificadores de `test/soporte`).
+ * Arma el identificador `<poolId>_<pid>` de este proceso de worker. Hallazgo real (Fase 05, nunca
+ * visto en local): `VITEST_POOL_ID` NO es único entre procesos concurrentes — confirmado en CI con
+ * dos PID distintos recibiendo el mismo poolId al mismo tiempo cuando el planificador de Vitest
+ * despachaba dos archivos nuevos casi simultáneamente, causando `CREATE DATABASE "test_<poolId>"`
+ * duplicado y, peor, dos archivos compartiendo la misma base en vivo. `process.pid` sí es único
+ * entre procesos del sistema operativo corriendo al mismo tiempo, así que combinarlo con el poolId
+ * elimina la colisión sin depender del comportamiento interno del planificador.
  */
-export function nombreBaseDeWorker(poolId: string): string {
-  if (!POOL_ID_VALIDO.test(poolId)) {
+export function identificadorDeWorker(poolId: string, pid: number): string {
+  return `${poolId}_${pid}`;
+}
+
+/**
+ * Arma el nombre de la base de datos del worker (`test_<identificador>`). El nombre de base se usa
+ * como identificador dentro de SQL crudo (`CREATE DATABASE`, `DROP DATABASE`) que no admite
+ * parámetros — por eso esta función MUST lanzar **antes** de que cualquier llamador arme esa
+ * sentencia, ante cualquier `identificador` que no sea exactamente `<dígitos>_<dígitos>` (matriz de
+ * amenazas de `tasks.md`: subproceso/identificadores de `test/soporte`).
+ */
+export function nombreBaseDeWorker(identificador: string): string {
+  if (!IDENTIFICADOR_VALIDO.test(identificador)) {
     throw new Error(
-      `poolId de Vitest inválido para nombrar una base de prueba: "${poolId}" (MUST cumplir ^\\d+$).`,
+      `Identificador de worker inválido para nombrar una base de prueba: "${identificador}" ` +
+        `(MUST cumplir ^[0-9]+_[0-9]+$).`,
     );
   }
-  return `test_${poolId}`;
+  return `test_${identificador}`;
 }
 
 /**
