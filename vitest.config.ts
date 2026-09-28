@@ -73,6 +73,19 @@ export default defineConfig({
           // y los procesos de Docker/Prisma agotaron timeouts bajo el paralelismo sin límite. El
           // tope de cuatro workers mantiene la contención dentro del presupuesto medido.
           maxWorkers: 4,
+          // Hallazgo real (Fase 05, no anticipado por D6): `maxWorkers` limita procesos del SO,
+          // pero Vitest igual puede interlazar varios archivos dentro del MISMO worker vía
+          // promesas (`maxConcurrency`, default 5) — el diseño de `base-por-worker.setup.ts`
+          // asume que un `VITEST_POOL_ID` procesa un archivo a la vez, de punta a punta. Sin este
+          // límite, dos archivos con el mismo poolId corren su `beforeAll` (`DROP DATABASE
+          // "test_<poolId>" WITH (FORCE)` + `CREATE DATABASE`) al mismo tiempo: confirmado en CI
+          // (nunca en local) con `duplicate key value violates unique constraint
+          // "pg_database_datname_index"` y, peor, un archivo activo recibiendo `Code: 57P01,
+          // terminating connection due to administrator command` — el DROP de un archivo hermano
+          // matando la conexión de otro a mitad de test. `maxConcurrency: 1` fuerza a Vitest a
+          // terminar un archivo completo (setup, tests y limpieza) antes de empezar el siguiente
+          // en el mismo worker, que es la garantía que D6 ya pretendía dar.
+          maxConcurrency: 1,
           // Vitest exige groupOrder distinto al de `unit` cuando los proyectos tienen distintos
           // maxWorkers; ejecutar integración después del unitario también evita competir por Docker.
           sequence: { groupOrder: 1 },
@@ -90,6 +103,10 @@ export default defineConfig({
           // T1 (D6): mismo arnés de base por worker que `integracion`.
           setupFiles: ['test/soporte/base-por-worker.setup.ts'],
           hookTimeout: 60_000,
+          // Mismo hallazgo que el proyecto `integracion` (ver ese comentario): sin este límite,
+          // Vitest puede interlazar archivos del mismo worker y hacerlos competir por
+          // `test_<poolId>`.
+          maxConcurrency: 1,
         },
       },
     ],

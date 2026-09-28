@@ -1,4 +1,4 @@
-import { BullModule, getQueueToken } from '@nestjs/bullmq';
+import { BullModule } from '@nestjs/bullmq';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -134,38 +134,13 @@ describe('Procesador del inbox (T4, integración, CAN4/R4/D6/D7)', () => {
       idExterno: 'mensaje:can4-1',
       payload: eventoDePrueba('can4-1'),
     });
-    // DIAGNOSTICO TEMPORAL — quitar tras identificar la causa del P2025 en CI (no local).
-    if (resultado.resultado !== 'nuevo') {
-      throw new Error(`DIAGNOSTICO: registrar() devolvió "${resultado.resultado}", no "nuevo".`);
-    }
-    const { id } = resultado;
+    const { id } = resultado as { resultado: 'nuevo'; id: string };
     await cola.encolar(id);
 
     await vi.waitFor(
       async () => {
-        try {
-          const fila = await prisma.eventoEntrante.findUniqueOrThrow({ where: { id } });
-          expect(fila.error).not.toBeNull();
-        } catch (error) {
-          // DIAGNOSTICO TEMPORAL — quitar tras identificar la causa del P2025 en CI (no local).
-          const [{ actual }] =
-            await prisma.$queryRaw<{ actual: string }[]>`SELECT current_database() as actual`;
-          const total = await prisma.eventoEntrante.count();
-          const colaBullmq = app!.get<{ getJob(id: string): Promise<unknown> }>(
-            getQueueToken(NOMBRE_COLA_INBOX),
-          );
-          const job = await colaBullmq.getJob(id);
-          const estadoJob =
-            job === undefined
-              ? 'sin-job'
-              : JSON.stringify(
-                  await (job as { getState(): Promise<string> }).getState().catch((e: Error) => e.message),
-                );
-          throw new Error(
-            `DIAGNOSTICO: poolId=${process.env.VITEST_POOL_ID} db=${actual} totalFilas=${total} ` +
-              `idBuscado=${id} estadoJob=${estadoJob} original=${(error as Error).message}`,
-          );
-        }
+        const fila = await prisma.eventoEntrante.findUniqueOrThrow({ where: { id } });
+        expect(fila.error).not.toBeNull();
       },
       { timeout: 15_000, interval: 250 },
     );
