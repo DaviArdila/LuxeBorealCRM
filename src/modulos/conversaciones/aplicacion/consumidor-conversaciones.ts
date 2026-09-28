@@ -72,9 +72,17 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
    * apagado, el rate limit se superó, o el estado ya no es `bot`.
    *
    * Guarda de idempotencia (judgment-day, `ConsumidorEventosCanal` MUST ser idempotente): justo
-   * después corre `MarcaMensajeProcesado`, antes de tocar el rate limit o el buffer, para que una
-   * reentrega del mismo `idMensaje` (entrega al menos una vez del inbox, o un reintento tras un
-   * `FalloCanal` transitorio de `obtenerTexto`) sea un no-op observable.
+   * después de `obtenerOCrear` se consulta `MarcaMensajeProcesado.estaProcesado` (lectura, no
+   * escribe nada) para el corto-circuito habitual de una reentrega ya completada con éxito. El
+   * trabajo real que la marca protege — interruptor, rate limit, aviso de espera y
+   * buffer/debounce — vive en `procesarTrasVerificaciones`, y la marca se crea recién con
+   * `marcarSiEsPrimeraVez` **después** de que ese trabajo termina sin lanzar (judgment-day ronda
+   * 2, corrige `ddb72d2`): esa ronda anterior marcaba antes de intentar el trabajo, así que un
+   * fallo transitorio de Redis/Postgres/BullMQ a mitad de turno dejaba la marca puesta sin que el
+   * mensaje se hubiera llegado a bufferizar ni a encolar — la reentrega posterior (reintento del
+   * inbox) se descartaba en silencio como si ya estuviera atendida, perdiendo el mensaje del
+   * cliente para siempre. Marcar solo tras el éxito acepta, a cambio, que un fallo a mitad de
+   * turno pueda contar el rate limit dos veces en el reintento — preferible a perder el mensaje.
    */
   private async manejarMensajeEntrante(evento: Extract<EventoCanal, { tipo: 'mensaje-entrante' }>): Promise<void> {
     const conversacion = await this.repositorio.obtenerOCrear(
@@ -83,9 +91,24 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
       evento.conversacion.canal,
     );
 
-    const esPrimeraVez = await this.marcaMensajeProcesado.marcarSiEsPrimeraVez(evento.idMensaje);
-    if (!esPrimeraVez) return;
+    const yaProcesado = await this.marcaMensajeProcesado.estaProcesado(evento.idMensaje);
+    if (yaProcesado) return;
 
+    await this.procesarTrasVerificaciones(conversacion, evento);
+    await this.marcaMensajeProcesado.marcarSiEsPrimeraVez(evento.idMensaje);
+  }
+
+  /**
+   * Trabajo protegido por la marca de idempotencia (judgment-day ronda 2): interruptor, rate
+   * limit, aviso único de espera en `handoff_pendiente` y buffer/debounce del turno. Retorna
+   * normalmente en cada uno de sus caminos de salida anticipada (CNV4, R13, CNV3, `estado !==
+   * 'bot'`) y solo lanza ante un fallo real de una dependencia; `manejarMensajeEntrante` solo
+   * marca el mensaje como procesado si esta llamada termina sin lanzar.
+   */
+  private async procesarTrasVerificaciones(
+    conversacion: Conversacion,
+    evento: Extract<EventoCanal, { tipo: 'mensaje-entrante' }>,
+  ): Promise<void> {
     const activo = await this.interruptor.estaActivo();
     if (!activo) return;
 

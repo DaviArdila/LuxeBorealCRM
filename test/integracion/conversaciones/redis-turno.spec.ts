@@ -7,6 +7,7 @@ import {
   CLAVE_INTERRUPTOR_GLOBAL,
   InterruptorGlobalRedis,
 } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
+import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import {
   CONFIGURACION,
   ConfiguracionModule,
@@ -38,6 +39,7 @@ async function crearContexto(): Promise<{
   lock: LockTurno;
   contador: ContadorRateLimit;
   interruptor: InterruptorGlobalRedis;
+  marcaMensajeProcesado: MarcaMensajeProcesado;
   redis: ClienteRedis;
   clock: ClockFalso;
 }> {
@@ -96,6 +98,7 @@ async function crearContexto(): Promise<{
     lock: new LockTurno(clienteRedis, configuracionDePrueba),
     contador: new ContadorRateLimit(clienteRedis, configuracionDePrueba, clock),
     interruptor: new InterruptorGlobalRedis(clienteRedis),
+    marcaMensajeProcesado: new MarcaMensajeProcesado(clienteRedis),
     redis: clienteRedis,
     clock,
   };
@@ -183,5 +186,27 @@ describe('InterruptorGlobalRedis (T3, integración, D14, CNV4)', () => {
     expect(await interruptor.estaActivo()).toBe(false);
 
     await cliente.del(CLAVE_INTERRUPTOR_GLOBAL);
+  });
+});
+
+describe('MarcaMensajeProcesado (judgment-day ronda 2, integración, ADR-0004)', () => {
+  it('estaProcesado es false antes de marcar y true después de marcarSiEsPrimeraVez', async () => {
+    const { marcaMensajeProcesado } = await crearContexto();
+    const idMensaje = idDePrueba();
+
+    expect(await marcaMensajeProcesado.estaProcesado(idMensaje)).toBe(false);
+
+    await marcaMensajeProcesado.marcarSiEsPrimeraVez(idMensaje);
+
+    expect(await marcaMensajeProcesado.estaProcesado(idMensaje)).toBe(true);
+  });
+
+  it('estaProcesado es una lectura pura: no crea la marca por sí sola', async () => {
+    const { marcaMensajeProcesado } = await crearContexto();
+    const idMensaje = idDePrueba();
+
+    await marcaMensajeProcesado.estaProcesado(idMensaje);
+
+    expect(await marcaMensajeProcesado.marcarSiEsPrimeraVez(idMensaje)).toBe(true); // seguía sin existir
   });
 });

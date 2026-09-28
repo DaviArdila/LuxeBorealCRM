@@ -55,6 +55,25 @@ class LectorMensajeCanalDoble implements LectorMensajeCanal {
   }
 }
 
+/**
+ * Judgment-day ronda 2: subclase de `BufferTurno` que lanza en su primer `push` (simula un fallo
+ * transitorio de Redis a mitad de turno) y funciona con normalidad desde el segundo intento en
+ * adelante. Prueba que la marca de idempotencia ya no se escribe antes de que el trabajo protegido
+ * termine con éxito: si se escribiera antes (como en `ddb72d2`), una reentrega tras este fallo
+ * encontraría la marca puesta y descartaría el mensaje en silencio para siempre.
+ */
+class BufferTurnoFallaUnaVez extends BufferTurno {
+  intentos = 0;
+
+  override async push(idConversacion: string, valor: string): Promise<void> {
+    this.intentos += 1;
+    if (this.intentos === 1) {
+      throw new Error('fallo simulado de Redis (judgment-day ronda 2)');
+    }
+    await super.push(idConversacion, valor);
+  }
+}
+
 /** Doble de `SALIDA_CANAL` (T8): registra las llamadas del aviso único de espera (CNV3). */
 class SalidaCanalDoble implements SalidaCanal {
   llamadas: SolicitudEnvioMensajes[] = [];
@@ -75,6 +94,7 @@ class SalidaCanalDoble implements SalidaCanal {
 
 async function crearAplicacion(
   configuracionParcial: Partial<Configuracion> = {},
+  claseBufferTurno: typeof BufferTurno = BufferTurno,
 ): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble; salidaCanal: SalidaCanalDoble }> {
   const configuracionDePrueba: Configuracion = {
     NODE_ENV: 'test',
@@ -122,7 +142,7 @@ async function crearAplicacion(
   const salida = new EnviarRespuestaTurnoDoble();
   const salidaCanal = new SalidaCanalDoble();
 
-  const modulo = await Test.createTestingModule({
+  let constructorModulo = Test.createTestingModule({
     imports: [
       ConfiguracionModule,
       RelojModule,
@@ -151,8 +171,11 @@ async function crearAplicacion(
     ],
   })
     .overrideProvider(CONFIGURACION)
-    .useValue(configuracionDePrueba)
-    .compile();
+    .useValue(configuracionDePrueba);
+  if (claseBufferTurno !== BufferTurno) {
+    constructorModulo = constructorModulo.overrideProvider(BufferTurno).useClass(claseBufferTurno);
+  }
+  const modulo = await constructorModulo.compile();
 
   const app = modulo.createNestApplication();
   await app.init();
@@ -375,5 +398,27 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
     await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm2'));
 
     expect(await buffer.tamano(id)).toBe(2);
+  });
+
+  it('judgment-day ronda 2 — un fallo transitorio en el trabajo protegido no pierde el mensaje en la reentrega', async () => {
+    const contexto = await crearAplicacion({}, BufferTurnoFallaUnaVez);
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const buffer = app.get<BufferTurno, BufferTurnoFallaUnaVez>(BufferTurno);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { id, chatwootConversationId } = await crearConversacion(prisma, 'bot');
+
+    // Primer intento: el push al buffer lanza (fallo simulado de Redis a mitad de turno). Si la
+    // marca de idempotencia se hubiera escrito ANTES de este trabajo (como en `ddb72d2`), la
+    // reentrega de abajo se descartaría en silencio y el mensaje se perdería para siempre.
+    await expect(consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'))).rejects.toThrow();
+    expect(await buffer.tamano(id)).toBe(0); // el fallo ocurrió antes de que el push tuviera éxito
+
+    // Reentrega del mismo idMensaje (redelivery del inbox tras el fallo transitorio): el segundo
+    // intento de push ya no lanza, así que el mensaje SÍ debe llegar al buffer esta vez.
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
+
+    expect(await buffer.tamano(id)).toBe(1);
+    expect(buffer.intentos).toBe(2);
   });
 });
