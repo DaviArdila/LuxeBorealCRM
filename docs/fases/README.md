@@ -61,7 +61,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | cerrada |
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | cerrada |
 | 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | cerrada |
-| 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | idea |
+| 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | en curso |
 | 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | idea |
 | 07 | Agente | Las 6 tools con efectos tipados, pipeline de políticas, prompts versionados, evals | Evals de los 3 casos de entrada en verde con LLM simulado; corrida manual con LLM real; set dorado de evals construido con conversaciones reales del prototipo (leídas de Chatwoot, anonimizadas): aserciones deterministas (tools esperadas, sin precios inventados, sin traspaso sin señal fuerte) con umbral explícito de aprobación antes de cualquier cambio de modelo o prompt | idea |
 | 08 | Leads y handoff | Escala determinista, derivación, captura fuera de horario, Telegram vía outbox, recordatorios | Tests 10-14 y 21 del prototipo reescritos; aviso real en Telegram | idea |
@@ -130,6 +130,16 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > Las demás fases siguen en `idea`. En cuanto una fase pase a `spec en revisión`, esta fila se anota
 > con su carpeta: `openspec/changes/fase-NN-<nombre>/` (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez
 > cerrada).
+>
+> **Fase 05 en `aprobada` → `en curso`** (2026-09-28): `proposal.md`, `specs/conversaciones/spec.md`
+> (R5-R8, R13 parcial, CNV1-CNV6, 20 escenarios), `design.md` y `tasks.md` (T1-T8) redactados en
+> `openspec/changes/fase-05-conversaciones/` — sin migración de esquema (la tabla `conversacion` de
+> la Fase 01 ya tiene todo lo necesario). El usuario aprobó los cuatro artefactos y las preguntas
+> Q1-Q3 de la proposal con la recomendación de cada una: Q1 `mensaje_espera_handoff` usa un
+> repositorio de parámetros propio de `conversaciones` (sin depender de `catalogo`); Q2 se mantienen
+> los valores de TTL/debounce/rate-limit del prototipo como default Zod; Q3 el "agente eco" reenvía
+> el texto del último mensaje del turno como único paso, sin `handoff`. `sdd-apply` arranca sobre
+> `tasks.md` (T1-T8, 0/8 completas).
 >
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
 > runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres
