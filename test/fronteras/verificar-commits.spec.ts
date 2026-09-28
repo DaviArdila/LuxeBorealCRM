@@ -49,6 +49,29 @@ describe('scripts/verificar-commits — resolverRangoDeCommits', () => {
     });
   });
 
+  it('CI9 — main solo existe como refs/remotes/origin/main (checkout de rama en CI) y el rango se calcula igual', async () => {
+    const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-commits-prueba-'));
+    execFileSync('git', ['init', '--quiet', '--initial-branch=trabajo'], { cwd: raiz });
+    execFileSync('git', ['config', 'user.email', 'prueba@luxeboreal.test'], { cwd: raiz });
+    execFileSync('git', ['config', 'user.name', 'Prueba'], { cwd: raiz });
+    const previo = process.env.LUXE_COMMITS_DESDE;
+    delete process.env.LUXE_COMMITS_DESDE;
+    try {
+      const c1 = commitear(raiz, 'chore: inicial');
+      execFileSync('git', ['update-ref', 'refs/remotes/origin/main', c1], { cwd: raiz });
+      const c2 = commitear(raiz, 'feat(x): segundo commit');
+
+      const rango = resolverRangoDeCommits(raiz);
+
+      expect(rango).toEqual([c2]);
+    } finally {
+      if (previo !== undefined) {
+        process.env.LUXE_COMMITS_DESDE = previo;
+      }
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+
   it('LUXE_COMMITS_DESDE fijado a un SHA conocido produce el rango esperado', async () => {
     const raiz = await crearRepositorioDePrueba();
     const previo = process.env.LUXE_COMMITS_DESDE;

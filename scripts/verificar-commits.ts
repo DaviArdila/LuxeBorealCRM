@@ -16,12 +16,37 @@ export interface ResultadoVerificacionCommits {
   readonly mensaje: string;
 }
 
+const RAMA_BASE = 'main';
+const REFS_RAMA_BASE = [`refs/heads/${RAMA_BASE}`, `refs/remotes/origin/${RAMA_BASE}`];
+
+/**
+ * `refs/heads/main` existe en un checkout local normal, pero `actions/checkout` (D8, `fetch-depth:
+ * 0`) sobre cualquier ref que no sea `main` (el caso normal de un push a rama de fase o un PR) deja
+ * `main` únicamente como `refs/remotes/origin/main`, sin crear la rama local — mismo problema que
+ * D11 resuelve en `comparar-contrato.ts`. Se intentan ambas referencias, en ese orden.
+ */
+function resolverRamaBase(raiz: string): string {
+  for (const ref of REFS_RAMA_BASE) {
+    try {
+      execFileSync('git', ['-C', raiz, 'rev-parse', '--verify', '--quiet', ref], {
+        encoding: 'utf8',
+      });
+      return ref;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(
+    `No se encontró ninguna referencia de ${RAMA_BASE} (se intentó: ${REFS_RAMA_BASE.join(', ')}).`,
+  );
+}
+
 function calcularDesde(raiz: string): string {
   const desdeVariable = process.env.LUXE_COMMITS_DESDE;
   if (desdeVariable !== undefined && desdeVariable.trim().length > 0) {
     return desdeVariable.trim();
   }
-  return execFileSync('git', ['-C', raiz, 'merge-base', 'main', 'HEAD'], {
+  return execFileSync('git', ['-C', raiz, 'merge-base', resolverRamaBase(raiz), 'HEAD'], {
     encoding: 'utf8',
   }).trim();
 }
