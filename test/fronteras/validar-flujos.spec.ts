@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { validarFlujos } from '../../scripts/validar-flujos.js';
@@ -10,9 +10,17 @@ import { validarFlujos } from '../../scripts/validar-flujos.js';
  * repositorio git hacia arriba desde el directorio montado; sin `.git/` falla con "no project was
  * found" en vez de analizar el YAML (RED real de esta tarea). Requiere Docker corriendo
  * (ADR-0009).
+ *
+ * `mkdtemp` crea el directorio con modo 0700 (solo el dueño puede entrar). La imagen
+ * `rhysd/actionlint` corre como el usuario no root `guest`: en Linux (runners de CI) ese usuario no
+ * puede atravesar el punto de montaje y actionlint reporta "no project was found" para cualquier
+ * workflow, bien o mal formado. En Windows con Docker Desktop el bind mount no aplica permisos Unix
+ * reales, por lo que el mismo test pasaba en local y solo fallaba en GitHub Actions. Se abre el
+ * directorio a 0755 para que cualquier usuario dentro del contenedor pueda leerlo.
  */
 async function crearDirectorioConWorkflow(contenido: string): Promise<string> {
   const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-flujos-prueba-'));
+  await chmod(raiz, 0o755);
   execFileSync('git', ['init', '--quiet'], { cwd: raiz });
   execFileSync('git', ['config', 'user.email', 'prueba@luxeboreal.test'], { cwd: raiz });
   execFileSync('git', ['config', 'user.name', 'Prueba'], { cwd: raiz });
