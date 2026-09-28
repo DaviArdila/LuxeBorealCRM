@@ -62,7 +62,7 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
     ProcesadorInbox,
     PublicarEfectoCanal,
   ],
-  exports: [SALIDA_CANAL, LECTOR_MENSAJE_CANAL],
+  exports: [SALIDA_CANAL, LECTOR_MENSAJE_CANAL, RegistroConsumidorEventosCanal],
 })
 export class CanalesModule implements OnModuleInit {
   constructor(

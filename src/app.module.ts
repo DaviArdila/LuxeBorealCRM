@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CanalesModule } from './modulos/canales/index.js';
+import { ConversacionesModule } from './modulos/conversaciones/index.js';
 import { ColasModule } from './plataforma/colas/index.js';
 import { ConfiguracionModule } from './plataforma/config/index.js';
 import { ErroresModule } from './plataforma/errores/index.js';
@@ -17,7 +18,10 @@ import { SaludModule } from './plataforma/salud/index.js';
  * cableado completo de arranque quede explícito aquí. `ErroresModule` (D5, T2 de la Fase 00b)
  * registra el filtro global `problem+json`. `ColasModule` (T4, D6) es la raíz de BullMQ: se
  * registra una sola vez, antes de `CanalesModule`, que registra su propia cola con
- * `BullModule.registerQueue`.
+ * `BullModule.registerQueue`. `ConversacionesModule` (Fase 05, T5) se registra después de
+ * `CanalesModule`: en su `onModuleInit` llama `RegistroConsumidorEventosCanal.registrar` para que
+ * `ConsumidorRegistrador` (el consumidor "de por defecto" de `canales`) deje de ser el consumidor
+ * real de eventos de canal.
  */
 @Module({
   imports: [
@@ -30,6 +34,7 @@ import { SaludModule } from './plataforma/salud/index.js';
     SaludModule,
     ColasModule,
     CanalesModule,
+    ConversacionesModule,
   ],
 })
 export class AppModule {}

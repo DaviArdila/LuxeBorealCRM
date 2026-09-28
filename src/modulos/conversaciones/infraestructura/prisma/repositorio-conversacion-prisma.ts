@@ -1,7 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
 import type { EstadoAtencion, OrigenTransicion } from '../../dominio/maquina-estados.js';
-import type { Conversacion, RepositorioConversacion } from '../../puertos/repositorio-conversacion.js';
+import type {
+  CanalConversacion,
+  Conversacion,
+  RepositorioConversacion,
+} from '../../puertos/repositorio-conversacion.js';
+
+/** Código de Prisma para "violación de restricción única" (mismo criterio que `canales`, R4). */
+const CODIGO_UNICO_VIOLADO = 'P2002';
+
+function esViolacionDeUnico(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { readonly code?: unknown }).code === CODIGO_UNICO_VIOLADO
+  );
+}
 
 interface FilaConversacion {
   readonly id: string;
@@ -60,6 +76,38 @@ export class RepositorioConversacionPrisma implements RepositorioConversacion {
         version
     `;
     return filas[0] ?? null;
+  }
+
+  async obtenerOCrear(
+    chatwootConversationId: number,
+    idContactoExterno: string | null,
+    canal: CanalConversacion,
+  ): Promise<Conversacion> {
+    const existente = await this.obtenerPorConversacionCanal(chatwootConversationId);
+    if (existente !== null) return existente;
+
+    const contacto =
+      idContactoExterno !== null
+        ? await this.prisma.contacto.upsert({
+            where: { chatwootContactId: Number(idContactoExterno) },
+            update: {},
+            create: { chatwootContactId: Number(idContactoExterno) },
+          })
+        : await this.prisma.contacto.create({ data: {} });
+
+    try {
+      const fila = await this.prisma.conversacion.create({
+        data: { contactoId: contacto.id, chatwootConversationId, canal, estado: 'bot' },
+      });
+      return mapear(fila);
+    } catch (error) {
+      if (!esViolacionDeUnico(error)) throw error;
+      // Dos eventos casi simultáneos de la misma conversación nueva (D5): la segunda creación
+      // pierde la carrera contra `chatwoot_conversation_id` único; releer es correcto y suficiente.
+      const creadaPorOtro = await this.obtenerPorConversacionCanal(chatwootConversationId);
+      if (creadaPorOtro === null) throw error;
+      return creadaPorOtro;
+    }
   }
 
   async listarVencidas(ahora: Date): Promise<readonly Conversacion[]> {

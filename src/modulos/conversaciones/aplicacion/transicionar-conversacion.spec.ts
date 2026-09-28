@@ -32,6 +32,10 @@ class RepositorioConversacionFalso implements RepositorioConversacion {
     throw new Error('no usado en este test');
   }
 
+  obtenerOCrear(): Promise<Conversacion> {
+    throw new Error('no usado en este test');
+  }
+
   obtenerPorId(): Promise<Conversacion | null> {
     return Promise.resolve(this.filaFresca);
   }

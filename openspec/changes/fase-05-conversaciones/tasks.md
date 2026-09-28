@@ -33,7 +33,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 - [x] T2 — Repositorio de `Conversacion` (Prisma) + orquestación de transición con reintento de versión (S(b1))
 - [x] T3 — Efímero en Redis: buffer, lock, contador de rate limit, interruptor global (S(b2)) — **desviación**: los tests de los cuatro *providers* quedaron en `test/integracion/conversaciones/redis-turno.spec.ts` (no colocados), porque necesitan Redis real y el proyecto `unit` de Vitest no levanta infraestructura; el comando de esta fila queda `npm run test:integracion -- redis-turno`, no `npm test -- .../redis`
 - [x] T4 — Debounce + lock + processor del turno + "agente eco" (S(d)) — incluye D16 (`LECTOR_MENSAJE_CANAL` en `canales`, decidido con el usuario durante `sdd-apply`)
-- [ ] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c))
+- [x] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c)) — ver desviaciones abajo
 - [ ] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e))
 - [ ] T7 — Barrido de vencimientos (S(f1))
 - [ ] T8 — Aviso único de espera en `handoff_pendiente` + cierre documental (S(f2))
@@ -388,6 +388,24 @@ la confirma.
 
 **Comando de test**: `npm run test:integracion -- consumidor-conversaciones`
 
+**Desviaciones reales encontradas al implementar (`sdd-apply`, 2026-09-28)**:
+1. `design.md` D2 asumía un `REPOSITORIO_CONTACTO` "ya resuelto por la Fase 01/04" — no existe en el
+   repositorio. Se agregó `RepositorioConversacion.obtenerOCrear` (resuelve/crea el `Contacto` por
+   `chatwootContactId` internamente); no se creó un puerto de `contactos` propio (regla 2, sin otro
+   consumidor que lo justifique).
+2. `ProcesarTurno` (T4) exige `ENVIAR_RESPUESTA_TURNO` para que Nest resuelva el árbol de
+   dependencias; sin él, `AppModule` no compila. Se adelantó `aplicacion/enviar-respuesta-turno.ts`
+   de T6 (la clase real, D10) — T6 ahora solo agrega la regla de fronteras y su test dedicado.
+3. Bug real encontrado en el primer arranque completo (`test/e2e/aplicacion.e2e-spec.ts`):
+   `CanalesModule` nunca exportaba `RegistroConsumidorEventosCanal` en su arreglo `exports` de
+   Nest (solo en el barril TS `index.ts`) — Nest no lo resolvía fuera del módulo. Corregido en
+   `canales.module.ts`.
+4. Regresión real en `test/e2e/canal-chatwoot.e2e-spec.ts` (Fase 04): ese test registra su propio
+   consumidor de prueba sobre `AppModule` completo; con `ConversacionesModule` ya registrado, su
+   `onModuleInit` se adelantaba y el segundo `registrar` lanzaba (D8: "dos módulos no pueden
+   competir"). Corregido con `.overrideModule(ConversacionesModule).useModule(ModuloVacio)` en ese
+   test — sigue probando `canales` en aislamiento, como pretendía.
+
 **Slice de PR**: S(c)
 
 **Review requerida**: RDD
@@ -403,12 +421,19 @@ la confirma.
 **Dependencias**: T2 (lectura de estado), T4 (para conectar el processor con la salida real en vez de
 un doble en el test de T4).
 
+**Nota (adelantado en T5)**: `puertos/salida-conversacion.ts` se creó en T4 (necesario para el
+contrato de `ProcesarTurno`) y `aplicacion/enviar-respuesta-turno.ts` se creó en T5 (Nest exige
+`ENVIAR_RESPUESTA_TURNO` resuelto para que `AppModule` compile con `ConversacionesModule`
+registrado). T6 parte de ahí: solo falta la regla de fronteras y el test dedicado de esta tarea.
+
 **Archivos** (`design.md`, tabla "File Changes", slice (e)):
-- `src/modulos/conversaciones/puertos/salida-conversacion.ts` (Create) — token + interfaz.
-- `src/modulos/conversaciones/aplicacion/enviar-respuesta-turno.ts` + spec (Create) — D10.
-- `.dependency-cruiser.cjs` (Modify) — regla nueva.
+- `src/modulos/conversaciones/puertos/salida-conversacion.ts` (Create) — token + interfaz. **Ya
+  creado en T4.**
+- `src/modulos/conversaciones/aplicacion/enviar-respuesta-turno.ts` + spec (Create) — D10. **Clase
+  ya creada en T5; falta su spec dedicado (unitario y/o el escenario propio de abajo).**
+- `.dependency-cruiser.cjs` (Modify) — regla nueva. **Pendiente.**
 - `test/integracion/conversaciones/enviar-respuesta-turno.spec.ts` (Create) — con un doble de
-  `SALIDA_CANAL` que registra las llamadas.
+  `SALIDA_CANAL` que registra las llamadas. **Pendiente.**
 
 **Escenarios cubiertos** (título exacto):
 - `R5 — El estado cambia a humano mientras se envía una secuencia de varios mensajes`
