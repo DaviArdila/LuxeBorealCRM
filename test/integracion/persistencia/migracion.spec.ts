@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, inject, it } from 'vitest';
@@ -146,7 +147,13 @@ describe('Migración inicial (T2, integración)', () => {
           const migraciones = await clienteBaseVacia.query<{ total: number }>(
             'SELECT COUNT(*)::int AS total FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL',
           );
-          expect(migraciones.rows[0]?.total).toBe(1);
+          // Cuenta las migraciones aplicadas, no un número fijo (Fase 04/T6 agregó la segunda,
+          // `outbox_clave_idempotencia`, sin tabla nueva): así este test no vuelve a quedar
+          // desactualizado la próxima vez que una fase agregue una migración aditiva.
+          const migracionesEnDisco = readdirSync(path.join(RAIZ_REPOSITORIO, 'prisma', 'migrations')).filter(
+            (entrada) => entrada !== 'migration_lock.toml',
+          );
+          expect(migraciones.rows[0]?.total).toBe(migracionesEnDisco.length);
         } finally {
           await clienteBaseVacia.end();
         }

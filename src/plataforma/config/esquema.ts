@@ -63,6 +63,15 @@ export const esquemaConfiguracion = z
     INBOX_MAX_INTENTOS: z.coerce.number().int().min(1).max(20).default(5),
     /** Barrido del inbox (D7): cada cuánto se reencolan filas pendientes sin `error`. */
     INBOX_BARRIDO_MS: z.coerce.number().int().min(1000).default(30000),
+    /** `plataforma/outbox` (Fase 04, T6, D10/D12): intentos antes de agotar y marcar `error`. */
+    OUTBOX_MAX_INTENTOS: z.coerce.number().int().min(1).max(20).default(5),
+    /** Backoff exponencial del publicador (Q1, D12): `min(base·2^(intentos−1), max)`. */
+    OUTBOX_BACKOFF_BASE_S: z.coerce.number().int().min(1).default(15),
+    OUTBOX_BACKOFF_MAX_S: z.coerce.number().int().min(1).default(300),
+    /** Barrido del outbox (D10): cada cuánto `publicarPendientes()` reintenta disparos perdidos. */
+    OUTBOX_BARRIDO_MS: z.coerce.number().int().min(500).default(5000),
+    /** Duración del *lease* de una fila reclamada (D10): tras vencer, vuelve a estar disponible. */
+    OUTBOX_LEASE_S: z.coerce.number().int().min(10).default(60),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {

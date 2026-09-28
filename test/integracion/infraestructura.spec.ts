@@ -47,6 +47,11 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       COLAS_TRABAJADORES: true,
       INBOX_MAX_INTENTOS: 5,
       INBOX_BARRIDO_MS: 30000,
+      OUTBOX_MAX_INTENTOS: 5,
+      OUTBOX_BACKOFF_BASE_S: 15,
+      OUTBOX_BACKOFF_MAX_S: 300,
+      OUTBOX_BARRIDO_MS: 5000,
+      OUTBOX_LEASE_S: 60,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -88,6 +93,11 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       COLAS_TRABAJADORES: true,
       INBOX_MAX_INTENTOS: 5,
       INBOX_BARRIDO_MS: 30000,
+      OUTBOX_MAX_INTENTOS: 5,
+      OUTBOX_BACKOFF_BASE_S: 15,
+      OUTBOX_BACKOFF_MAX_S: 300,
+      OUTBOX_BARRIDO_MS: 5000,
+      OUTBOX_LEASE_S: 60,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -137,6 +147,11 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       COLAS_TRABAJADORES: true,
       INBOX_MAX_INTENTOS: 5,
       INBOX_BARRIDO_MS: 30000,
+      OUTBOX_MAX_INTENTOS: 5,
+      OUTBOX_BACKOFF_BASE_S: 15,
+      OUTBOX_BACKOFF_MAX_S: 300,
+      OUTBOX_BARRIDO_MS: 5000,
+      OUTBOX_LEASE_S: 60,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

@@ -43,7 +43,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T3 — Webhook + inbox + dedupe (`WebhookChatwootController`) (S(b))
 - [x] T4 — `plataforma/colas` + procesador del inbox (S(c))
 - [x] T5 — Puerto de salida + adaptador Chatwoot (S(d))
-- [ ] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
+- [x] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
 - [ ] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
 - [ ] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
 - [ ] T9 — Cierre documental: doc 04 §3, skill de Meta, skill de arquitectura (S(f))
@@ -720,6 +720,75 @@ diff real la confirma.
 **Slice de PR**: S(e1)
 
 **Review requerida**: RDD
+
+### Resultado de la implementación (`sdd-apply`, 2026-09-27)
+
+Construido en `src/plataforma/outbox/` (D10): `tipos.ts` (`REGISTRO_OUTBOX`, `NuevaEntradaOutbox`,
+`EntradaOutbox`, `FalloPublicacion`, `ManejadorOutbox`, `PayloadOutbox`, constantes de cola/job),
+`backoff.ts` (`retrasoSegundos`, D12), `registro-manejadores.ts` (mismo patrón de inversión de
+dependencia que `RegistroConsumidorEventosCanal` de `canales`, D8, aplicado por `tipo`),
+`registro-outbox-prisma.ts` (`createMany({ skipDuplicates: true })` + disparo con el mismo "tope de
+200 ms" de `RegistrarEventoEntrante`, D5), `publicador-outbox.ts` (reclamo `$queryRaw` con
+`FOR UPDATE SKIP LOCKED` exactamente como D10, bucle ≤ 50 vueltas, clasificación
+transitorio/permanente/agotado/sin-manejador, cascada `'secuencia abortada'` sobre `datos.secuencia`)
+y `procesador-outbox.ts` (`WorkerHost` de BullMQ, mismo patrón de `ProcesadorInbox` de T4: job
+normal `'publicar'` + barrido repetible `'barrido-outbox'`, ambos llaman a
+`publicarPendientes()` — a diferencia del inbox, el barrido del outbox no necesita listar filas
+primero). Migración aditiva `prisma/migrations/20260927120000_outbox_clave_idempotencia/` (`ALTER
+TABLE ... ADD COLUMN clave_idempotencia TEXT NOT NULL` + `CREATE UNIQUE INDEX`, sin `[manual]`: sin
+escritor todavía, P7) y `prisma/schema.prisma`/`MODELO_DATOS.md` §7 actualizados en el mismo commit.
+`plataforma/outbox` no importa `canales` ni ningún otro módulo de negocio (regla de fronteras 7,
+confirmado por `npm run fronteras`); no se tocó `AppModule` ni `CanalesModule` (el `OutboxModule`
+queda sin registrar hasta que T7 lo importe desde `canales.module.ts`, tal como anticipa D16).
+
+**Cobertura de tests** (RED→GREEN observado en cada archivo antes de implementar): unitarios
+`backoff.spec.ts` (3 casos) y `registro-manejadores.spec.ts` (4 casos, sin infraestructura, mismo
+criterio que `registro-consumidor-eventos-canal.spec.ts` de T4); `cargar-configuracion.spec.ts`
+ganó una sección `OUTBOX_*` (4 casos: defaults, coerción, rechazo por debajo del mínimo);
+`test/integracion/outbox/publicador-outbox.spec.ts` (8 casos contra Postgres + Redis reales de
+Testcontainers, con un `ClockFalso` inyectado para controlar *lease* y backoff sin depender del
+reloj de pared): predecesor pendiente bloquea a su sucesor del mismo grupo (con backoff real de
+15 s), dos publicadores concurrentes no duplican una fila (`FOR UPDATE SKIP LOCKED`, ventana de
+carrera real de 100 ms), lease vencido vuelve a estar disponible, `efimero` desaparece al cerrar la
+fila (enviada y muerta), agota `OUTBOX_MAX_INTENTOS` y marca `'agotado: <causa>'`, un fallo
+permanente aborta el resto de la secuencia (`'secuencia abortada'`, D10 — sin escenario propio de
+`canales`, probado con un manejador y un `tipo` genéricos de prueba), sin manejador registrado
+muere con `'sin-manejador'`, `agregar` con la misma `clave_idempotencia` dos veces no duplica la
+fila (D11, `ON CONFLICT DO NOTHING`). Ninguno de estos títulos usa `R#`/`CAN#`: T6 no tiene
+escenario propio de `canales` (ver "Mapeo de escenarios por tarea" al inicio de este archivo), igual
+que `opciones-conexion.spec.ts` de `plataforma/colas` (T4).
+
+**Hallazgo real, no anticipado por `design.md` (documentado, no silencioso)**: el reclamo (`WITH
+candidatos AS (...) UPDATE ... FROM candidatos RETURNING ...`) no garantiza que Postgres devuelva
+las filas en el mismo orden en que la CTE las seleccionó (`ORDER BY o.creado, ...`) — el estándar
+SQL no ata el orden de un `UPDATE ... RETURNING` al de su CTE de origen. `PublicadorOutbox` reordena
+las filas reclamadas en la aplicación (`creado`, `orden`, `id`) antes de publicarlas, en vez de
+confiar en el orden físico de retorno de Postgres.
+
+**Hallazgo real adicional (de la propia suite de integración, no de `design.md`)**: el `ClockFalso`
+inyectado en la app de prueba MUST fijarse por delante del reloj de pared real (`new
+Date('2030-01-01T00:00:00.000Z')`, no una fecha de "hoy"): el default `proximo_intento =
+now()` de la columna lo pone Postgres con su propio reloj real al insertar la fila, y la condición
+de reclamo (`proximo_intento <= $ahora`) compara ese valor contra el `ClockFalso` inyectado — si el
+`ClockFalso` arranca en una fecha anterior o igual a la hora real de inserción, el primer reclamo
+nunca ve la fila como lista.
+
+**Tamaño**: el diff real de esta tarea es de **~1.198 líneas de autoría** (1.188 adiciones, 10
+eliminaciones — `git diff --cached --stat`), sobre el estimado de ~560 y muy por encima del
+presupuesto de 400. La mayor parte no es el mecanismo del outbox en sí (~596 líneas en
+`src/plataforma/outbox/` incluidos specs) sino la propagación mecánica de los cinco campos
+`OUTBOX_*` nuevos del esquema de configuración a los ~28 archivos que construyen un `Configuracion`
+literal para pruebas (mismo patrón ya visto en T3/T4 con `CHATWOOT_*`/`INBOX_*`), más el test de
+integración nuevo (342 líneas, 8 escenarios reales). **`size:exception` se aplica automáticamente**,
+citando la fila 4 de Risks de `proposal.md` ("presupuesto de ~400 líneas por slice con varios
+adaptadores e infraestructura nueva") y la "Nota de tamaño" de esta misma tarea ("migración + outbox
+genérico completo"), tal como anticipa la sección "Review Workload Forecast" de este archivo — sin
+pedir confirmación adicional. No se recortó ningún test, comentario ni documentación para acercarse
+al presupuesto.
+
+**Verificación completa** (`npm run lint`, `npm run typecheck`, `npm test`, `npm run test:integracion`,
+`npm run fronteras`, `npm run contrato:deriva`): todas en verde — ver el commit de esta tarea para la
+salida real.
 
 ---
 

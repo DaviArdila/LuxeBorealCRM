@@ -370,4 +370,47 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.INBOX_MAX_INTENTOS).toBe(3);
     });
   });
+
+  describe('Variables OUTBOX_* (fase-04-canal-chatwoot, T6, D10/D12)', () => {
+    it('usa los valores de desarrollo por defecto cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.OUTBOX_MAX_INTENTOS).toBe(5);
+      expect(configuracion.OUTBOX_BACKOFF_BASE_S).toBe(15);
+      expect(configuracion.OUTBOX_BACKOFF_MAX_S).toBe(300);
+      expect(configuracion.OUTBOX_BARRIDO_MS).toBe(5000);
+      expect(configuracion.OUTBOX_LEASE_S).toBe(60);
+    });
+
+    it('acepta OUTBOX_MAX_INTENTOS coercible a entero', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, OUTBOX_MAX_INTENTOS: '3' });
+
+      expect(configuracion.OUTBOX_MAX_INTENTOS).toBe(3);
+    });
+
+    it('acepta OUTBOX_BACKOFF_BASE_S y OUTBOX_BACKOFF_MAX_S coercibles a entero', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        OUTBOX_BACKOFF_BASE_S: '30',
+        OUTBOX_BACKOFF_MAX_S: '600',
+      });
+
+      expect(configuracion.OUTBOX_BACKOFF_BASE_S).toBe(30);
+      expect(configuracion.OUTBOX_BACKOFF_MAX_S).toBe(600);
+    });
+
+    it('rechaza OUTBOX_LEASE_S por debajo del mínimo (10 s)', () => {
+      const fuenteInvalida = { ...fuenteValida, OUTBOX_LEASE_S: '5' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'OUTBOX_LEASE_S',
+          problema: 'valor',
+        });
+      }
+    });
+  });
 });

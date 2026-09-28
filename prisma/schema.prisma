@@ -405,15 +405,24 @@ model EventoEntrante {
 
 /// Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004). `tipo` es `text`
 /// (D12 ajuste 8): sus valores los define la fase que escribe cada tipo de efecto, no el esquema.
+/// `claveIdempotencia` (D11 de `openspec/changes/fase-04-canal-chatwoot/design.md`): formato de
+/// dominio (`canal:mensaje:<conv>:<idRespuesta>:<nn>`, `canal:estado:...`, `canal:etiquetas:...`),
+/// construido por quien agrega la fila (`RegistroOutbox.agregar`, `ON CONFLICT DO NOTHING`), nunca
+/// por el esquema. `NOT NULL`, no nullable: todo efecto externo del outbox MUST ser idempotente
+/// (ADR-0004, "los consumidores de inbox y outbox son idempotentes"). `payload` puede llevar una
+/// clave efímera (`efimero`) con el contenido saliente mientras la fila está pendiente — ver la
+/// "Aclaración (Fase 04)" de `docs/adr/0004-inbox-outbox.md`: se borra al cerrar la fila (enviada
+/// o muerta), nunca queda en logs (R14 rige logging, no esta columna).
 model Outbox {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  tipo           String
-  payload        Json      @db.JsonB
-  creado         DateTime  @default(now()) @db.Timestamptz(3)
-  enviadoEn      DateTime? @map("enviado_en") @db.Timestamptz(3)
-  intentos       Int       @default(0)
-  proximoIntento DateTime  @default(now()) @map("proximo_intento") @db.Timestamptz(3)
-  error          String?
+  id                String    @id @default(uuid(7)) @db.Uuid
+  tipo              String
+  claveIdempotencia String    @unique @map("clave_idempotencia")
+  payload           Json      @db.JsonB
+  creado            DateTime  @default(now()) @db.Timestamptz(3)
+  enviadoEn         DateTime? @map("enviado_en") @db.Timestamptz(3)
+  intentos          Int       @default(0)
+  proximoIntento    DateTime  @default(now()) @map("proximo_intento") @db.Timestamptz(3)
+  error             String?
 
   @@map("outbox")
 }

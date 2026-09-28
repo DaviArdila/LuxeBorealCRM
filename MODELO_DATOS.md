@@ -286,7 +286,7 @@ confirmado por Interrapidísimo al despachar**, `direccion`, `localidad` (copias
 | Tabla | Columnas clave | Para qué |
 |---|---|---|
 | `evento_entrante` | `id`, `origen` text, `id_externo`, `payload` jsonb, `recibido_en`, `procesado_en?`, `intentos`, `error?`; único `(origen, id_externo)` | Inbox: ningún evento aceptado se pierde; el único es la deduplicación (ADR-0004). Se purga a los 30 días |
-| `outbox` | `id`, `tipo` text, `payload` jsonb, `creado`, `enviado_en?`, `intentos`, `proximo_intento`, `error?` | Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004) |
+| `outbox` | `id`, `tipo` text, `clave_idempotencia` text **único, NOT NULL** (Fase 04, D11), `payload` jsonb, `creado`, `enviado_en?`, `intentos`, `proximo_intento`, `error?` | Efectos externos (Telegram, status en Chatwoot) con reintento (ADR-0004); `clave_idempotencia` es la idempotencia por paso (B5) — inserción `ON CONFLICT DO NOTHING`, la construye el dominio que agrega la fila, nunca el esquema. `payload` puede llevar una clave efímera con el contenido saliente mientras la fila está pendiente (borrada al cerrar la fila; ver ADR-0004, "Aclaración (Fase 04)") |
 | `uso_llm` | `id`, `conversacion_id?`, `proveedor`, `modelo`, `tokens_entrada`, `tokens_salida`, `tokens_cache`, `costo_estimado_usd` `decimal(12,6)`, `latencia_ms`, `exito`, `creado` | Costo por turno y techo de gasto (P9) |
 
 `payload` de `evento_entrante` guarda el evento de Chatwoot **redactado** (P15): ids, tipo de evento y
@@ -316,6 +316,7 @@ historial.
 | 10 | `foto.clave_archivo`, `producto.clave_collage` | No atarse a disco local | revisión 2.7 |
 | 11 | `creado`/`actualizado` donde faltaban | Auditoría básica | revisión 2.8 |
 | 12 | `evento_entrante`, `outbox`, `uso_llm` | Inbox/outbox (A8) y costo por turno | ADR-0004, P9 |
+| 13 | `outbox.clave_idempotencia` (único, `NOT NULL`) | Idempotencia por paso (B5): un `idRespuesta`/`idOperacion` estable entre reintentos evita duplicar el efecto externo | Fase 04, D11, ADR-0004 |
 | — | Se conservan sin cambios | Dinero en `Int`, precio congelado en `venta_item`, ledger de inventario, `envio` separado, catálogo DANE, sin tabla de variantes, sin totales en `venta` | diseño del usuario |
 
 ## 10. Fuera a propósito
