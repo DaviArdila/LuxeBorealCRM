@@ -8,6 +8,7 @@ import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/pr
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
+import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
@@ -137,6 +138,7 @@ async function crearAplicacion(): Promise<{
       LockTurno,
       ContadorRateLimit,
       MarcaEsperaHandoff,
+      MarcaMensajeProcesado,
       ColaTurno,
       ProcesarTurno,
       TransicionarConversacion,
@@ -210,7 +212,7 @@ describe('Aviso único de espera en handoff_pendiente (T8, integración, CNV3, D
       new Date('2026-09-28T12:10:00Z'),
     );
 
-    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
+    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m1`));
 
     expect(contexto.salidaCanal.llamadas).toHaveLength(1);
     expect(contexto.salidaCanal.llamadas[0].mensajes).toHaveLength(1);
@@ -226,8 +228,8 @@ describe('Aviso único de espera en handoff_pendiente (T8, integración, CNV3, D
       new Date('2026-09-28T12:10:00Z'),
     );
 
-    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
-    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm2'));
+    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m1`));
+    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m2`));
 
     expect(contexto.salidaCanal.llamadas).toHaveLength(1);
   });
@@ -241,7 +243,7 @@ describe('Aviso único de espera en handoff_pendiente (T8, integración, CNV3, D
       new Date('2026-09-28T12:40:00Z'),
     );
 
-    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
+    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m1`));
 
     expect(contexto.salidaCanal.llamadas).toHaveLength(0);
   });
