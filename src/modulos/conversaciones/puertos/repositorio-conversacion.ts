@@ -20,6 +20,8 @@ export interface Conversacion {
 export interface RepositorioConversacion {
   /** Nunca busca por teléfono ni otro dato del contacto (P1). */
   obtenerPorConversacionCanal(chatwootConversationId: number): Promise<Conversacion | null>;
+  /** Relectura por id (D2): la usa `TransicionarConversacion` al reintentar tras un conflicto de versión. */
+  obtenerPorId(id: string): Promise<Conversacion | null>;
   /**
    * Bloqueo optimista (D2): `UPDATE ... WHERE version = $versionLeida`. Cero filas ⇒ conflicto de
    * versión ⇒ el llamador relee y reintenta una vez sobre el estado fresco.
