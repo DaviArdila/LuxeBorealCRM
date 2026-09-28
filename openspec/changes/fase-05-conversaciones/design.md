@@ -202,6 +202,30 @@ que los demás parámetros de negocio (**R15**).
 real (el endpoint es de la Fase 09), así que el espejo se agrega ahí, junto con el endpoint que
 escribe ambos. Los tests de esta fase escriben la clave de Redis directamente para probar **CNV4**.
 
+### D16 — `LECTOR_MENSAJE_CANAL`: de dónde sale el texto real para el agente eco (decidido en `sdd-apply`, 2026-09-28)
+
+Vacío detectado al implementar T4: `EventoCanal.mensaje-entrante` nunca trae el texto del mensaje
+(R14/CAN5, decisión ya cerrada de la Fase 04), pero D9 exige que el agente eco reenvíe
+`mensajes.at(-1)!.texto` (CNV6). Ninguna pieza existente resuelve esto. Decisión del usuario
+(pregunta bloqueante durante `sdd-apply`): `canales` gana un puerto nuevo, de solo lectura,
+**`LECTOR_MENSAJE_CANAL`** (`src/modulos/canales/puertos/lector-mensaje-canal.ts`):
+
+```ts
+interface LectorMensajeCanal {
+  obtenerTexto(idConversacion: string, idMensaje: string): Promise<string | null>;
+}
+```
+
+Adaptador `LectorMensajeCanalChatwoot` (`infraestructura/chatwoot/`): `ClienteChatwoot.get(idConversacion,
+'messages')` (mismo endpoint que ya usa `existeMensajeConMarca` de `AdaptadorCanalChatwoot`), filtra
+por `id` y devuelve `content`; `null` si no aparece o la respuesta no valida. Exportado del barril de
+`canales` (`index.ts`) y registrado en `canales.module.ts`. El consumidor de `conversaciones` (T5) lo
+inyecta y llama justo antes de empujar al buffer (D6): el buffer guarda el texto ya resuelto, nunca
+solo el `idMensaje` — así el processor (T4) no depende de Chatwoot en el momento de generar la
+respuesta, solo el consumidor al recibir el evento. El texto vive en memoria de proceso y en el
+buffer efímero de Redis (mismo trato que el resto del turno, nunca en Postgres ni en un log, R14
+sigue aplicando).
+
 ### D15 — Registro en `AppModule`
 
 `ConversacionesModule` se registra en `AppModule`, después de `CanalesModule` (para que

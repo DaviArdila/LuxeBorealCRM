@@ -57,6 +57,8 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -108,6 +110,8 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -167,6 +171,8 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

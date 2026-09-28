@@ -56,6 +56,8 @@ async function crearRepositorio(): Promise<RepositorioGeografia> {
     LOCK_TURNO_TTL_S: 30,
     RATE_LIMIT_POR_HORA: 20,
     RATE_LIMIT_POR_DIA: 60,
+    DEBOUNCE_MS: 3000,
+    CONVERSACIONES_CONCURRENCIA: 10,
   };
 
   modulo = await Test.createTestingModule({

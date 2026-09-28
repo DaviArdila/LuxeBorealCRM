@@ -61,6 +61,8 @@ async function crearRepositorio(): Promise<{ repositorio: RepositorioImportacion
     LOCK_TURNO_TTL_S: 30,
     RATE_LIMIT_POR_HORA: 20,
     RATE_LIMIT_POR_DIA: 60,
+    DEBOUNCE_MS: 3000,
+    CONVERSACIONES_CONCURRENCIA: 10,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })

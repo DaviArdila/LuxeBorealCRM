@@ -497,4 +497,33 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.RATE_LIMIT_POR_DIA).toBe(15);
     });
   });
+
+  describe('Variables DEBOUNCE_MS/CONVERSACIONES_CONCURRENCIA (fase-05-conversaciones, T4, D6/D7)', () => {
+    it('usa los valores calibrados del prototipo por defecto cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.DEBOUNCE_MS).toBe(3000);
+      expect(configuracion.CONVERSACIONES_CONCURRENCIA).toBe(10);
+    });
+
+    it('rechaza DEBOUNCE_MS por debajo del mínimo (500 ms)', () => {
+      const fuenteInvalida = { ...fuenteValida, DEBOUNCE_MS: '100' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'DEBOUNCE_MS',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta CONVERSACIONES_CONCURRENCIA coercible a entero', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, CONVERSACIONES_CONCURRENCIA: '3' });
+
+      expect(configuracion.CONVERSACIONES_CONCURRENCIA).toBe(3);
+    });
+  });
 });

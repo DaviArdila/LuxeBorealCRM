@@ -61,6 +61,8 @@ async function crearContexto(): Promise<{
     LOCK_TURNO_TTL_S: 30,
     RATE_LIMIT_POR_HORA: 20,
     RATE_LIMIT_POR_DIA: 60,
+    DEBOUNCE_MS: 3000,
+    CONVERSACIONES_CONCURRENCIA: 10,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -106,6 +108,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'bot', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -123,6 +127,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'pausado', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -140,6 +146,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     } as Configuracion);
 
     const resultado = await casoDeUso.ejecutar(conversacion, 'bot', 'chatwoot_resolved');
@@ -160,6 +168,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       LOCK_TURNO_TTL_S: 30,
       RATE_LIMIT_POR_HORA: 20,
       RATE_LIMIT_POR_DIA: 60,
+      DEBOUNCE_MS: 3000,
+      CONVERSACIONES_CONCURRENCIA: 10,
     } as Configuracion);
 
     const primerEco = await casoDeUso.ejecutar(conversacion, 'humano', 'eco_humano');

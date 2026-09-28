@@ -144,10 +144,15 @@ con LLM y herramientas es la Fase 07; esta fase no lo adelanta).
 
 ### Modified Capabilities
 
-- `canales`: sin delta de comportamiento; `conversaciones` pasa a ser el consumidor real de
-  `CONSUMIDOR_EVENTOS_CANAL` (antes `ConsumidorRegistrador`) y el único llamador de `SALIDA_CANAL`.
-  Si `sdd-design` decide una regla de fronteras nueva ("solo `conversaciones` importa `SALIDA_CANAL`",
-  prevista en D9 de la Fase 04), se declara ahí, sin tocar requisitos de `canales/spec.md`.
+- `canales`: `conversaciones` pasa a ser el consumidor real de `CONSUMIDOR_EVENTOS_CANAL` (antes
+  `ConsumidorRegistrador`) y el único llamador de `SALIDA_CANAL` (regla de fronteras nueva, D9 de la
+  Fase 04, sin tocar requisitos de `canales/spec.md`). **Delta nuevo, decidido el 2026-09-28 durante
+  `sdd-apply`** (no anticipado al aprobar la proposal): `canales` gana un puerto de solo lectura
+  `LECTOR_MENSAJE_CANAL` (`obtenerTexto(idConversacion, idMensaje): Promise<string | null>`) con un
+  adaptador Chatwoot (`GET .../messages`, filtra por `id`). Motivo: `EventoCanal` nunca trae el texto
+  del mensaje (R14/CAN5), pero el "agente eco" (D9 de `design.md`, CNV6) necesita el texto real del
+  último mensaje del turno para reenviarlo; sin este puerto, T4/T5 no tendrían de dónde tomarlo. El
+  texto se usa en memoria, nunca se persiste ni se loguea (R14 sigue aplicando). Ver `design.md` D16.
 
 ## Approach
 
