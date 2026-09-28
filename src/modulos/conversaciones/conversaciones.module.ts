@@ -8,6 +8,10 @@ import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones
 import { EnviarRespuestaTurno } from './aplicacion/enviar-respuesta-turno.js';
 import { ProcesarTurno } from './aplicacion/procesar-turno.js';
 import { TransicionarConversacion } from './aplicacion/transicionar-conversacion.js';
+import {
+  BarridoVencimientos,
+  NOMBRE_COLA_BARRIDO_VENCIMIENTOS,
+} from './infraestructura/colas/barrido-vencimientos.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from './infraestructura/colas/cola-turno.js';
 import { RepositorioConversacionPrisma } from './infraestructura/prisma/repositorio-conversacion-prisma.js';
 import { BufferTurno } from './infraestructura/redis/buffer-turno.js';
@@ -38,6 +42,7 @@ import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
     RedisModule,
     CanalesModule,
     BullModule.registerQueue({ name: NOMBRE_COLA_TURNO }),
+    BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
   ],
   providers: [
     { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
@@ -51,6 +56,7 @@ import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
     ProcesarTurno,
     TransicionarConversacion,
     ConsumidorConversaciones,
+    BarridoVencimientos,
   ],
 })
 export class ConversacionesModule implements OnModuleInit {

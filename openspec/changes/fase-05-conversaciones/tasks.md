@@ -35,7 +35,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 - [x] T4 — Debounce + lock + processor del turno + "agente eco" (S(d)) — incluye D16 (`LECTOR_MENSAJE_CANAL` en `canales`, decidido con el usuario durante `sdd-apply`)
 - [x] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c)) — ver desviaciones abajo
 - [x] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e)) — clase adelantada en T5, aquí solo la regla 13 y su test dedicado
-- [ ] T7 — Barrido de vencimientos (S(f1))
+- [x] T7 — Barrido de vencimientos (S(f1))
 - [ ] T8 — Aviso único de espera en `handoff_pendiente` + cierre documental (S(f2))
 
 ## Mapeo de escenarios por tarea (20 escenarios, R5+R6+R7+R8+R13+CNV1-CNV6)

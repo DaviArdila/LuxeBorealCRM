@@ -526,4 +526,26 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.CONVERSACIONES_CONCURRENCIA).toBe(3);
     });
   });
+
+  describe('Variable CONVERSACIONES_BARRIDO_MS (fase-05-conversaciones, T7, D11)', () => {
+    it('usa el valor calibrado del prototipo por defecto cuando la variable no viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.CONVERSACIONES_BARRIDO_MS).toBe(300000);
+    });
+
+    it('rechaza CONVERSACIONES_BARRIDO_MS por debajo del mínimo (10000 ms)', () => {
+      const fuenteInvalida = { ...fuenteValida, CONVERSACIONES_BARRIDO_MS: '1000' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'CONVERSACIONES_BARRIDO_MS',
+          problema: 'valor',
+        });
+      }
+    });
+  });
 });

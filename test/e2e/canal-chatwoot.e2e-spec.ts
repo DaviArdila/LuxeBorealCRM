@@ -92,6 +92,7 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     RATE_LIMIT_POR_DIA: 60,
     DEBOUNCE_MS: 3000,
     CONVERSACIONES_CONCURRENCIA: 10,
+    CONVERSACIONES_BARRIDO_MS: 300000,
   };
 }
 

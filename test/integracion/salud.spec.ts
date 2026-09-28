@@ -68,6 +68,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       RATE_LIMIT_POR_DIA: 60,
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
+      CONVERSACIONES_BARRIDO_MS: 300000,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -114,6 +115,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       RATE_LIMIT_POR_DIA: 60,
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
+      CONVERSACIONES_BARRIDO_MS: 300000,
     });
 
     const inicio = performance.now();
@@ -164,6 +166,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       RATE_LIMIT_POR_DIA: 60,
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
+      CONVERSACIONES_BARRIDO_MS: 300000,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -210,6 +213,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       RATE_LIMIT_POR_DIA: 60,
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
+      CONVERSACIONES_BARRIDO_MS: 300000,
     });
 
     const inicio = performance.now();
