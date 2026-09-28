@@ -38,15 +38,27 @@ async function crearBaseConReintento(cliente: Client, nombreBase: string): Promi
  * `plantilla_luxe` (ya migrada por `contenedores.global-setup.ts`), para que cada archivo empiece
  * con una base vacía que solo ve su propio worker.
  */
+// DIAGNOSTICO TEMPORAL — quitar junto con esta función tras confirmar si el poolId se reutiliza
+// en el borde unit→integracion de `test:cobertura` (fix/actionlint-temp-dir-permisos).
+function diag(fase: string, nombreBase: string): void {
+  // eslint-disable-next-line no-restricted-syntax -- diagnóstico temporal, no lógica de negocio
+  const t = Date.now();
+  // eslint-disable-next-line no-console -- diagnóstico temporal, se lee del log crudo de CI
+  console.error(`DIAG poolId=${process.env.VITEST_POOL_ID} pid=${process.pid} db=${nombreBase} t=${t} fase=${fase}`);
+}
+
 beforeAll(async () => {
   const urlAdmin = inject('urlPostgresAdmin');
   const nombreBase = nombreBaseDeWorker(process.env.VITEST_POOL_ID ?? '');
+  diag('inicio', nombreBase);
 
   const cliente = new Client({ connectionString: urlAdmin });
   await cliente.connect();
   try {
     await cliente.query(`DROP DATABASE IF EXISTS "${nombreBase}" WITH (FORCE)`);
+    diag('despues-drop', nombreBase);
     await crearBaseConReintento(cliente, nombreBase);
+    diag('despues-create', nombreBase);
   } finally {
     await cliente.end();
   }
