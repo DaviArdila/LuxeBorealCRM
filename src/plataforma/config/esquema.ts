@@ -72,6 +72,10 @@ export const esquemaConfiguracion = z
     OUTBOX_BARRIDO_MS: z.coerce.number().int().min(500).default(5000),
     /** Duración del *lease* de una fila reclamada (D10): tras vencer, vuelve a estar disponible. */
     OUTBOX_LEASE_S: z.coerce.number().int().min(10).default(60),
+    /** `modulos/conversaciones` (Fase 05, T1, D3/Q2): vencimiento de `humano` sin eco del asesor. */
+    HUMANO_TTL_HORAS: z.coerce.number().min(0.5).default(3),
+    /** Vencimiento de `handoff_pendiente` sin que nadie lo recoja (D3/Q2). */
+    HANDOFF_TTL_MIN: z.coerce.number().int().min(1).default(45),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {

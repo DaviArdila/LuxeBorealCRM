@@ -413,4 +413,53 @@ describe('cargarConfiguracion', () => {
       }
     });
   });
+
+  describe('Variables HUMANO_TTL_HORAS/HANDOFF_TTL_MIN (fase-05-conversaciones, T1, D3/Q2)', () => {
+    it('usa los valores calibrados del prototipo por defecto cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.HUMANO_TTL_HORAS).toBe(3);
+      expect(configuracion.HANDOFF_TTL_MIN).toBe(45);
+    });
+
+    it('acepta HUMANO_TTL_HORAS coercible a número, incluido un valor fraccionario', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, HUMANO_TTL_HORAS: '1.5' });
+
+      expect(configuracion.HUMANO_TTL_HORAS).toBe(1.5);
+    });
+
+    it('rechaza HUMANO_TTL_HORAS por debajo del mínimo (0.5 h)', () => {
+      const fuenteInvalida = { ...fuenteValida, HUMANO_TTL_HORAS: '0.1' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'HUMANO_TTL_HORAS',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta HANDOFF_TTL_MIN coercible a entero', () => {
+      const configuracion = cargarConfiguracion({ ...fuenteValida, HANDOFF_TTL_MIN: '60' });
+
+      expect(configuracion.HANDOFF_TTL_MIN).toBe(60);
+    });
+
+    it('rechaza HANDOFF_TTL_MIN por debajo del mínimo (1 min)', () => {
+      const fuenteInvalida = { ...fuenteValida, HANDOFF_TTL_MIN: '0' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'HANDOFF_TTL_MIN',
+          problema: 'valor',
+        });
+      }
+    });
+  });
 });

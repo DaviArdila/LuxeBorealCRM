@@ -61,6 +61,8 @@ describe('Indicadores de salud (T9, integración)', () => {
       OUTBOX_BACKOFF_MAX_S: 300,
       OUTBOX_BARRIDO_MS: 5000,
       OUTBOX_LEASE_S: 60,
+      HUMANO_TTL_HORAS: 3,
+      HANDOFF_TTL_MIN: 45,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -100,6 +102,8 @@ describe('Indicadores de salud (T9, integración)', () => {
       OUTBOX_BACKOFF_MAX_S: 300,
       OUTBOX_BARRIDO_MS: 5000,
       OUTBOX_LEASE_S: 60,
+      HUMANO_TTL_HORAS: 3,
+      HANDOFF_TTL_MIN: 45,
     });
 
     const inicio = performance.now();
@@ -143,6 +147,8 @@ describe('Indicadores de salud (T9, integración)', () => {
       OUTBOX_BACKOFF_MAX_S: 300,
       OUTBOX_BARRIDO_MS: 5000,
       OUTBOX_LEASE_S: 60,
+      HUMANO_TTL_HORAS: 3,
+      HANDOFF_TTL_MIN: 45,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -182,6 +188,8 @@ describe('Indicadores de salud (T9, integración)', () => {
       OUTBOX_BACKOFF_MAX_S: 300,
       OUTBOX_BARRIDO_MS: 5000,
       OUTBOX_LEASE_S: 60,
+      HUMANO_TTL_HORAS: 3,
+      HANDOFF_TTL_MIN: 45,
     });
 
     const inicio = performance.now();

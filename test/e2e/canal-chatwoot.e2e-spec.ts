@@ -75,6 +75,8 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     OUTBOX_BACKOFF_MAX_S: 1,
     OUTBOX_BARRIDO_MS: 500,
     OUTBOX_LEASE_S: 60,
+    HUMANO_TTL_HORAS: 3,
+    HANDOFF_TTL_MIN: 45,
   };
 }
 

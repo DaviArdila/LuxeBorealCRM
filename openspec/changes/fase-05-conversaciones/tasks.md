@@ -29,7 +29,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 
 ## Checklist
 
-- [ ] T1 — Dominio FSM puro (`calcularTransicion`, `OrigenTransicion`) (S(a))
+- [x] T1 — Dominio FSM puro (`calcularTransicion`, `OrigenTransicion`) (S(a))
 - [ ] T2 — Repositorio de `Conversacion` (Prisma) + orquestación de transición con reintento de versión (S(b1))
 - [ ] T3 — Efímero en Redis: buffer, lock, contador de rate limit, interruptor global (S(b2))
 - [ ] T4 — Debounce + lock + processor del turno + "agente eco" (S(d))

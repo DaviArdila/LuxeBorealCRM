@@ -45,6 +45,8 @@ function crearAlmacenamiento(): AlmacenamientoMinio {
     OUTBOX_BACKOFF_MAX_S: 300,
     OUTBOX_BARRIDO_MS: 5000,
     OUTBOX_LEASE_S: 60,
+    HUMANO_TTL_HORAS: 3,
+    HANDOFF_TTL_MIN: 45,
   };
 
   return new AlmacenamientoMinio(configuracion);
