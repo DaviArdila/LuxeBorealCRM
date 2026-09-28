@@ -34,10 +34,10 @@ Leyenda de decisión:
 | `catalogo/notificar.ts` | Posponer | `notificaciones/` | 08 | No migrado en esta fase; ver fila `telegram/*` |
 | `media/collage.ts` | Conservar | `medios/aplicacion/collage.ts` | 03 | **Migrado** — función pura, `sharp` igual (Fase 03, T3, commit `17d3abc`) |
 | `media/placeholder.ts` | Posponer | — | — | No migrado en esta fase (Q4 de `proposal.md`): el prototipo solo lo usa desde su script de semilla de datos de prueba, no desde el flujo de importación real; los fixtures de la Fase 03 usan fotos reales pequeñas en vez de generarlas |
-| `webhook/verifySignature.ts`, `parseEvent.ts` | Conservar | `canales/chatwoot/entrada` | 04 | Probado con Chatwoot real |
-| `webhook/router.ts`, `webhook/dedupe.ts` | Rediseñar | Controlador + inbox de eventos | 04 | A8 |
-| `chatwoot/enviarMensaje.ts`, `idempotencia.ts` | Rediseñar | `conversaciones/salida` (puerto) + adaptador Chatwoot | 04 | B5 se conserva; A9 |
-| `chatwoot/chatwootClient.*` | Conservar | `canales/chatwoot/infraestructura` | 04 | |
+| `webhook/verifySignature.ts`, `parseEvent.ts` | Conservar | `canales/infraestructura/chatwoot/{verificar-firma,traducir-evento}.ts` | 04 | **Migrado** — Probado con Chatwoot real (Fase 04, T2, commit ver `tasks.md` archivado) |
+| `webhook/router.ts`, `webhook/dedupe.ts` | Rediseñar | `canales/interfaz/webhook-chatwoot.controller.ts` + inbox `evento_entrante` | 04 | **Migrado** — A8: dedupe pasa a `UNIQUE(origen, id_externo)` de ADR-0004, sin marcar antes de procesar (Fase 04, T3) |
+| `chatwoot/enviarMensaje.ts`, `idempotencia.ts` | Rediseñar | `canales/puertos/salida-canal.ts` (puerto) + `AdaptadorCanalChatwoot` + `plataforma/outbox` | 04 | **Migrado** — B5 se conserva (idempotencia por paso, `clave_idempotencia`); A9 (el dominio no habla Chatwoot) (Fase 04, T5-T7) |
+| `chatwoot/chatwootClient.*` | Conservar | `canales/infraestructura/chatwoot/cliente-chatwoot.ts` | 04 | **Migrado** — cliente HTTP sin reintentos propios, clasificación de fallos por código HTTP (Fase 04, T5) |
 | `estado/maquinaEstados.ts`, `esperaHandoff.ts`, `estadoGlobal.ts` | Rediseñar | `conversaciones/dominio` (FSM) | 05 | A6: Postgres fuente de verdad, transición inválida lanza, eventos de dominio |
 | `estado/buffer.ts`, `lock.ts`, `contadorAudio.ts` | Conservar | `conversaciones/infraestructura/redis` | 05 | Efímero, correcto en Redis |
 | `estado/historial.ts` (últimos turnos para el LLM) | Rediseñar | Redis efímero o lectura desde la API de Chatwoot | 07 | Nunca en Postgres (P3); se decide midiendo latencia |
@@ -53,7 +53,7 @@ Leyenda de decisión:
 | `meta/indicadorEscribiendo.ts` | Conservar | `canales/whatsapp-meta` | 08 | Única llamada directa a Meta |
 | `admin/` (kill switch) | Conservar | `admin/` con guard de token | 09 | |
 | `scripts/backup.sh`, `restore.sh` | Conservar | `ops/` | 09 | Probado |
-| `scripts/chatwoot-*.sh`, `infra/chatwoot/` | Conservar | `infra/` | 04 | Entorno local; movido de 00a a 04 al cerrar 00a (N1 de `proposal.md`: 00a no integra canales) |
+| `scripts/chatwoot-*.sh`, `infra/chatwoot/` | Conservar | `infra/` | 04 | **Migrado (parcial)** — entorno local portado (Fase 04, T8); movido de 00a a 04 al cerrar 00a (N1 de `proposal.md`: 00a no integra canales). `infra/chatwoot/.env` real aún no copiado desde `../ChatLuxeCRM/infra/chatwoot/.env` — bloqueado por permisos de sandbox, pendiente de que el usuario lo copie a mano; `scripts/chatwoot-devolver-bot.sh` deliberadamente no portado (depende de la FSM bot/humano de la Fase 05) |
 | `panel/` (ya retirado, ADR-006) | Descartar | — | — | El back office es cliente aparte |
 | `queue/refrescoMediaQueue.ts` (stub, ya obsoleto) | Descartar | — | — | Chatwoot sube los medios |
 | `.kilo/worktrees/`, `data/sqlite/`, `db.sql` | Descartar | — | — | Restos |

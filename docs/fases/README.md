@@ -60,7 +60,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 01 | Persistencia | `PrismaService`, esquema de `MODELO_DATOS.md` v1 (UUID v7, sin teléfono como PK), migración inicial, semilla DANE, arnés de tests con base aislada | Migración aplicada desde cero; test de repositorio contra Postgres real; semilla DANE idempotente | cerrada |
 | 02 | Catálogo | Lectura de productos, ficha con dinero formateado, cobertura por exclusión + rango aproximado de envío (ciudad → departamento → nacional), horario de atención | Tests del cálculo de envío y del horario portados del prototipo; caché con invalidación por versión | cerrada |
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | cerrada |
-| 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | idea |
+| 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | cerrada |
 | 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | idea |
 | 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | idea |
 | 07 | Agente | Las 6 tools con efectos tipados, pipeline de políticas, prompts versionados, evals | Evals de los 3 casos de entrada en verde con LLM simulado; corrida manual con LLM real; set dorado de evals construido con conversaciones reales del prototipo (leídas de Chatwoot, anonimizadas): aserciones deterministas (tools esperadas, sin precios inventados, sin traspaso sin señal fuerte) con umbral explícito de aprobación antes de cualquier cambio de modelo o prompt | idea |
@@ -77,12 +77,13 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > catálogo se carga con la hoja de Sheets + importador (Fase 03). La primera pantalla podría ser una
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
 
-> Las Fases 00a, 00b, 01, 02 y 03 están cerradas y archivadas:
+> Las Fases 00a, 00b, 01, 02, 03 y 04 están cerradas y archivadas:
 > `openspec/changes/archive/2026-09-23-fase-00a-esqueleto/`,
 > `openspec/changes/archive/2026-09-25-fase-00b-ci-contrato-api/`,
 > `openspec/changes/archive/2026-09-25-fase-01-persistencia/`,
-> `openspec/changes/archive/2026-09-26-fase-02-catalogo/` y
-> `openspec/changes/archive/2026-09-26-fase-03-importador-medios/`. Los 14 requisitos (PER1-PER14, 30
+> `openspec/changes/archive/2026-09-26-fase-02-catalogo/`,
+> `openspec/changes/archive/2026-09-26-fase-03-importador-medios/` y
+> `openspec/changes/archive/2026-09-28-fase-04-canal-chatwoot/`. Los 14 requisitos (PER1-PER14, 30
 > escenarios) de la Fase 01 quedaron fusionados en `openspec/specs/persistencia/spec.md`; los 18
 > requisitos (CAT1-CAT11, HOR1-HOR7, 32 escenarios) de la Fase 02 quedaron fusionados en
 > `openspec/specs/catalogo/spec.md` y `openspec/specs/horario/spec.md` (dominios nuevos). Su
@@ -105,7 +106,22 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > quedan `activo=true` — hallazgo menor, ningún escenario depende de ese valor; (4) el escenario
 > combinado de IMP13 (error de validación + foto inaccesible en la misma corrida) no es alcanzable con
 > el contrato actual de `validarCatalogoCompleto` (aborta en el primer error de fila) — comportamiento
-> real y documentado por diseño (D6/D7), no un defecto. Las demás fases siguen en `idea`. En cuanto una
+> real y documentado por diseño (D6/D7), no un defecto. Los 8 requisitos nuevos (CAN1-CAN8, 13
+> escenarios) de la Fase 04 quedaron anexados a `openspec/specs/canales/spec.md` sin tocar R3/R4 del
+> esqueleto (`openspec/config.yaml`, `sdd-archive-compose`, diff vacío tras la fusión). `judgment-day`
+> aprobó la fase con un hallazgo CRITICAL (backoff de `Retry-After` sin acotar a
+> `OUTBOX_BACKOFF_MAX_S`) corregido y re-verificado en el código (commit `e38653a`). Su
+> `verify-report.md` dejó cinco hallazgos abiertos, no bloqueantes, para que el usuario los revise:
+> (1) posible condición de carrera entre `abortarSecuencia`/`marcarMuerta` y un segundo publicador
+> concurrente del outbox — solo relevante si se escala a más de un worker publicador, hoy el diseño
+> asume un solo proceso; (2) un adjunto de video de Chatwoot se mapea como `tipoContenido: 'imagen'`
+> en vez de tener su propia variante — cosmético; (3) `infra/chatwoot/.env` real aún no se copió desde
+> `../ChatLuxeCRM/infra/chatwoot/.env` a este repo — bloqueado por permisos de sandbox del
+> orquestador, pendiente de que el usuario lo copie a mano para completar la migración de la instancia
+> temporal de Chatwoot a la portada; (4) `scripts/chatwoot-devolver-bot.sh` deliberadamente no se
+> portó — depende de la máquina de estados bot/humano de la Fase 05; (5) dos escenarios (R3, R4) sin
+> un test con el título exacto de la spec — hallazgo de `sdd-verify`, cobertura funcional real
+> confirmada, solo trazabilidad de nomenclatura. Las demás fases siguen en `idea`. En cuanto una
 > fase pase a `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
 > (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
 

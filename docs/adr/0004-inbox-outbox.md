@@ -35,3 +35,15 @@ El envío de mensajes al cliente conserva su idempotencia por paso (B5 del anál
 - Un mecanismo único de reintento para todos los efectos externos.
 - Costo: dos tablas y un job; limpieza periódica de filas viejas.
 - Obligatorio: los consumidores de inbox y outbox son idempotentes.
+
+## Aclaración (Fase 04, 2026-09-26): contenido de mensaje en el outbox
+
+La redacción "nunca el texto del mensaje, adjuntos ni datos personales" (R14, P15) de la sección
+Decisión aplica al **inbox** (`evento_entrante`): ahí no hace falta el texto porque, al reprocesar,
+se relee de la API de Chatwoot. El **outbox** es distinto: para un mensaje saliente, Chatwoot todavía
+no tiene ese contenido, así que un reintento tras una caída necesita releerlo desde algún lado propio.
+El usuario decide (2026-09-26) aceptar que el outbox guarde el texto en una columna efímera mientras
+la fila está pendiente, borrada al enviarse o al fallar definitivamente — almacenamiento operativo
+necesario para el reintento, no un log (R14 rige logging, no esta tabla). Sin mitigación adicional
+(cifrado en reposo o purga forzada) por ahora; se puede revisitar si el volumen o el riesgo lo
+justifican.

@@ -1,55 +1,40 @@
-# Canales — Specification
+# Canales Specification
 
 ## Purpose
 
-Los eventos del cliente entran por el canal de mensajería (Chatwoot, que a su vez normaliza
-WhatsApp y otros canales) y las respuestas salen por el mismo canal. Este dominio cubre las
-garantías de seguridad y de entrega que valen para **todo** evento entrante y **todo** mensaje
-saliente, sin importar el canal de origen (`docs/analisis/05-multicanal.md`).
+Este delta expande el dominio `canales` (Fase 04, `docs/fases/README.md` fila 04) sobre el esqueleto
+existente (`openspec/specs/canales/spec.md`: R3 y R4, con escenarios genéricos marcados
+`Fase que lo implementa: 04`). **No modifica R3 ni R4**: agrega los requisitos concretos que le
+faltaban al esqueleto con el prefijo nuevo `CAN#`, cubriendo el flujo completo de entrada (ACK, firma
+ausente, evento desconocido, reintentos del procesador, redacción del payload) y de salida (puerto de
+canal de salida, adaptador Chatwoot, reintento del publicador del outbox según el código HTTP, perfil
+de capacidades) descrito en la proposal de esta fase. Usa el inbox/outbox de **ADR-0004** (tablas
+`evento_entrante`/`outbox`, ya migradas en la Fase 01) y el puerto de canal único de **ADR-0005**
+(Chatwoot como único adaptador de canal).
 
-## Requirements
+En esta fase el consumidor del inbox solo registra el evento normalizado (skill `luxeboreal-fases` §4:
+"primero la entrada con un procesador que solo registra"); la Fase 05 conecta la máquina de estados
+detrás del mismo puerto de consumo.
 
-### Requirement: R3 — Validación de firma antes de cualquier lógica
+Fuera de esta spec (ver proposal, Out of Scope): la máquina de estados bot/humano y la relectura del
+estado de la conversación antes de cada envío (parte de R5 que depende de la FSM de la Fase 05), la
+escritura de `contacto` a partir de `chatwoot_contact_id`, cualquier cambio al puerto `Horario`, la
+política de auto-resolución de Chatwoot, el indicador "escribiendo…"/plantillas y campañas de
+WhatsApp, las notificaciones a Telegram vía outbox, la purga de `evento_entrante` a los 30 días, y las
+columnas de canales distintos de WhatsApp en el perfil de capacidades.
 
-El sistema MUST validar la firma del evento entrante sobre el cuerpo (body) crudo antes de ejecutar
-cualquier lógica de negocio. Si la firma es inválida, el sistema MUST responder 401 sin registrar el
-payload.
+No se agrega delta a `conversaciones`/R5 en esta fase: sus dos escenarios dependen del estado de la
+conversación, y la máquina de estados que lo produce todavía no existe (Fase 05). Esta fase deja
+construido el punto único de salida (CAN6) que R5 reutilizará.
 
-Fase que lo implementa: 04
+## Nota de implementación
 
-#### Scenario: Evento con firma válida
+El título exacto de cada escenario **es** el criterio de aceptación, no un detalle de estilo. Cada test
+de esta fase MUST nombrarse `"<id del requisito> — <título del escenario>"`, usando el título exacto de
+los encabezados `#### Scenario:` de abajo, sin parafrasear.
 
-- Dado que llega un evento con firma válida,
-- Cuando se procesa el webhook,
-- Entonces se registra en el inbox de eventos y continúa el procesamiento.
+## ADDED Requirements
 
-#### Scenario: Evento con firma inválida
-
-- Dado que llega un evento con firma inválida,
-- Cuando se procesa el webhook,
-- Entonces el sistema responde 401 y el payload no se registra.
-
-### Requirement: R4 — Procesamiento y envío únicos
-
-Cada mensaje entrante MUST procesarse una sola vez y cada mensaje saliente MUST enviarse una sola
-vez, aunque haya reintentos del proveedor del canal o de la cola de trabajos.
-
-Fase que lo implementa: 04
-
-#### Scenario: Reintento del proveedor sobre un evento entrante
-
-- Dado que el mismo evento entrante llega dos veces (reintento del proveedor del canal),
-- Cuando se procesa,
-- Entonces la lógica de negocio se ejecuta una sola vez (deduplicación por identificador externo del
-  evento).
-
-#### Scenario: Reintento de un job de envío tras un fallo
-
-- Dado que un job de envío falla después de enviar el primer mensaje de una secuencia y se
-  reintenta,
-- Cuando se reanuda,
-- Entonces retoma desde el primer paso no marcado como enviado, sin duplicar el mensaje ya enviado
-  al cliente.
 ### Requirement: CAN1 — ACK del webhook en menos de 500 ms
 
 El sistema MUST responder al webhook de Chatwoot en menos de 500 ms, desde que llega la petición hasta
