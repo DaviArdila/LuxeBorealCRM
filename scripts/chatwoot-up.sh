@@ -5,7 +5,7 @@
 set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="$RAIZ/infra/chatwoot"
-COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name luxeborealcrm-chatwoot)
+COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name chatwoot-local)
 
 if [ "${1:-}" = "down" ]; then "${COMPOSE[@]}" down; exit 0; fi
 

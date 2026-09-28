@@ -6,7 +6,7 @@ set -euo pipefail
 EMAIL="${1:?Uso: bash scripts/chatwoot-crear-admin.sh <email> <password>}"
 PASS="${2:?falta password}"
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-docker compose -f "$RAIZ/infra/chatwoot/docker-compose.yml" --project-name luxeborealcrm-chatwoot exec -T rails \
+docker compose -f "$RAIZ/infra/chatwoot/docker-compose.yml" --project-name chatwoot-local exec -T rails \
   bundle exec rails runner "
     account = Account.find_or_create_by!(name: 'LuxeBorealCRM')
     user = User.find_by(email: '$EMAIL')

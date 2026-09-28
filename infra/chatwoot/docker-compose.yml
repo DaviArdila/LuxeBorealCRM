@@ -6,7 +6,7 @@
 # Portado de ../ChatLuxeCRM/infra/chatwoot/docker-compose.yml (docs/migracion/inventario.md línea 56):
 # mismo mecanismo, renombrado `chatluxecrm` → `luxeboreal` en el rol/bases del bot (ver init/).
 
-name: luxeborealcrm-chatwoot
+name: chatwoot-local
 
 x-base: &base
   image: chatwoot/chatwoot:v4.17.1
