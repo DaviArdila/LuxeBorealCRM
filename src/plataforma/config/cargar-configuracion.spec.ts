@@ -462,4 +462,39 @@ describe('cargarConfiguracion', () => {
       }
     });
   });
+
+  describe('Variables LOCK_TURNO_TTL_S/RATE_LIMIT_* (fase-05-conversaciones, T3, D7/R13)', () => {
+    it('usa los valores calibrados del prototipo por defecto cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.LOCK_TURNO_TTL_S).toBe(30);
+      expect(configuracion.RATE_LIMIT_POR_HORA).toBe(20);
+      expect(configuracion.RATE_LIMIT_POR_DIA).toBe(60);
+    });
+
+    it('rechaza LOCK_TURNO_TTL_S por debajo del mínimo (5 s)', () => {
+      const fuenteInvalida = { ...fuenteValida, LOCK_TURNO_TTL_S: '1' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'LOCK_TURNO_TTL_S',
+          problema: 'valor',
+        });
+      }
+    });
+
+    it('acepta RATE_LIMIT_POR_HORA/RATE_LIMIT_POR_DIA coercibles a entero', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        RATE_LIMIT_POR_HORA: '5',
+        RATE_LIMIT_POR_DIA: '15',
+      });
+
+      expect(configuracion.RATE_LIMIT_POR_HORA).toBe(5);
+      expect(configuracion.RATE_LIMIT_POR_DIA).toBe(15);
+    });
+  });
 });

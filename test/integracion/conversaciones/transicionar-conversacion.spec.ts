@@ -58,6 +58,9 @@ async function crearContexto(): Promise<{
     OUTBOX_LEASE_S: 60,
     HUMANO_TTL_HORAS: 3,
     HANDOFF_TTL_MIN: 45,
+    LOCK_TURNO_TTL_S: 30,
+    RATE_LIMIT_POR_HORA: 20,
+    RATE_LIMIT_POR_DIA: 60,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -100,6 +103,9 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
     const casoDeUso = new TransicionarConversacion(repositorio, clock, {
       HUMANO_TTL_HORAS: 3,
       HANDOFF_TTL_MIN: 45,
+      LOCK_TURNO_TTL_S: 30,
+      RATE_LIMIT_POR_HORA: 20,
+      RATE_LIMIT_POR_DIA: 60,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'bot', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -114,6 +120,9 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
     const casoDeUso = new TransicionarConversacion(repositorio, clock, {
       HUMANO_TTL_HORAS: 3,
       HANDOFF_TTL_MIN: 45,
+      LOCK_TURNO_TTL_S: 30,
+      RATE_LIMIT_POR_HORA: 20,
+      RATE_LIMIT_POR_DIA: 60,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'pausado', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -128,6 +137,9 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
     const casoDeUso = new TransicionarConversacion(repositorio, clock, {
       HUMANO_TTL_HORAS: 3,
       HANDOFF_TTL_MIN: 45,
+      LOCK_TURNO_TTL_S: 30,
+      RATE_LIMIT_POR_HORA: 20,
+      RATE_LIMIT_POR_DIA: 60,
     } as Configuracion);
 
     const resultado = await casoDeUso.ejecutar(conversacion, 'bot', 'chatwoot_resolved');
@@ -145,6 +157,9 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
     const casoDeUso = new TransicionarConversacion(repositorio, clock, {
       HUMANO_TTL_HORAS: 3,
       HANDOFF_TTL_MIN: 45,
+      LOCK_TURNO_TTL_S: 30,
+      RATE_LIMIT_POR_HORA: 20,
+      RATE_LIMIT_POR_DIA: 60,
     } as Configuracion);
 
     const primerEco = await casoDeUso.ejecutar(conversacion, 'humano', 'eco_humano');

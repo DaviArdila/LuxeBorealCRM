@@ -77,6 +77,9 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     OUTBOX_LEASE_S: 60,
     HUMANO_TTL_HORAS: 3,
     HANDOFF_TTL_MIN: 45,
+    LOCK_TURNO_TTL_S: 30,
+    RATE_LIMIT_POR_HORA: 20,
+    RATE_LIMIT_POR_DIA: 60,
   };
 }
 

@@ -31,7 +31,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 
 - [x] T1 — Dominio FSM puro (`calcularTransicion`, `OrigenTransicion`) (S(a))
 - [x] T2 — Repositorio de `Conversacion` (Prisma) + orquestación de transición con reintento de versión (S(b1))
-- [ ] T3 — Efímero en Redis: buffer, lock, contador de rate limit, interruptor global (S(b2))
+- [x] T3 — Efímero en Redis: buffer, lock, contador de rate limit, interruptor global (S(b2)) — **desviación**: los tests de los cuatro *providers* quedaron en `test/integracion/conversaciones/redis-turno.spec.ts` (no colocados), porque necesitan Redis real y el proyecto `unit` de Vitest no levanta infraestructura; el comando de esta fila queda `npm run test:integracion -- redis-turno`, no `npm test -- .../redis`
 - [ ] T4 — Debounce + lock + processor del turno + "agente eco" (S(d))
 - [ ] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c))
 - [ ] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e))

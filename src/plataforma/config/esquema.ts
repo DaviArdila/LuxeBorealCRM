@@ -76,6 +76,12 @@ export const esquemaConfiguracion = z
     HUMANO_TTL_HORAS: z.coerce.number().min(0.5).default(3),
     /** Vencimiento de `handoff_pendiente` sin que nadie lo recoja (D3/Q2). */
     HANDOFF_TTL_MIN: z.coerce.number().int().min(1).default(45),
+    /** `LockTurno` (Fase 05, T3, D7): TTL del lock `SET NX EX` por conversación. */
+    LOCK_TURNO_TTL_S: z.coerce.number().int().min(5).default(30),
+    /** `ContadorRateLimit` (T3, R13): tope de mensajes por contacto en la hora en curso. */
+    RATE_LIMIT_POR_HORA: z.coerce.number().int().min(1).default(20),
+    /** Tope de mensajes por contacto en el día en curso (R13). */
+    RATE_LIMIT_POR_DIA: z.coerce.number().int().min(1).default(60),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
