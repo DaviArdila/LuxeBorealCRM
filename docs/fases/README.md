@@ -121,9 +121,29 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > temporal de Chatwoot a la portada; (4) `scripts/chatwoot-devolver-bot.sh` deliberadamente no se
 > portó — depende de la máquina de estados bot/humano de la Fase 05; (5) dos escenarios (R3, R4) sin
 > un test con el título exacto de la spec — hallazgo de `sdd-verify`, cobertura funcional real
-> confirmada, solo trazabilidad de nomenclatura. Las demás fases siguen en `idea`. En cuanto una
-> fase pase a `spec en revisión`, esta fila se anota con su carpeta: `openspec/changes/fase-NN-<nombre>/`
-> (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez cerrada).
+> confirmada, solo trazabilidad de nomenclatura; (6) hallazgo del 2026-09-28, primera vez que
+> `npm run contrato:lint` corrió hasta el final en CI: Spectral marca `POST
+> /api/v1/webhooks/chatwoot` y `GET /health` con `operation-description` (sin `description`, solo
+> `summary: ""`) y `operation-tag-defined` (usan los tags `WebhookChatwoot`/`Salud`, no declarados en
+> `tags:` global de `openapi/openapi.interno.json`) — advertencias de Spectral, no bloquean `npm run
+> ci`, pendientes de que el usuario decida si se documentan esos dos endpoints o se declaran los tags.
+> Las demás fases siguen en `idea`. En cuanto una fase pase a `spec en revisión`, esta fila se anota
+> con su carpeta: `openspec/changes/fase-NN-<nombre>/` (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez
+> cerrada).
+>
+> **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
+> runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres
+> defectos de entorno nunca vistos en local, corregidos en la rama `fix/actionlint-temp-dir-permisos`
+> (mergeada a `main`): (1) la imagen `rhysd/actionlint` corre como usuario no root y no podía
+> atravesar el `0700` que `mkdtemp` deja por defecto en el fixture de `validar-flujos.spec.ts`; (2)
+> `verificar-commits.ts` asumía que `main` existe como rama local, pero `actions/checkout` sobre
+> cualquier otra rama solo deja `refs/remotes/origin/main` (mismo caso que D11 ya resolvía para
+> `contrato:diff`); (3) `VITEST_POOL_ID` no es único entre procesos concurrentes — el planificador de
+> Vitest puede asignar el mismo poolId a dos procesos hijos distintos, haciendo que dos archivos de
+> integración compitan por (o compartan en vivo) la misma base `test_<poolId>`; el arnés de
+> `test/soporte/` ahora identifica el worker con `<poolId>_<pid>` (`process.pid` sí es único).
+> Ninguno de los tres es específico de una fase — afectan el arnés compartido desde la Fase 01/00b —
+> así que quedan documentados aquí en vez de en el `verify-report.md` de una fase concreta.
 
 ## Prerrequisitos externos
 
