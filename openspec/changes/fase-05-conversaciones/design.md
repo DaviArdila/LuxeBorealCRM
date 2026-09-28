@@ -226,6 +226,22 @@ respuesta, solo el consumidor al recibir el evento. El texto vive en memoria de 
 buffer efímero de Redis (mismo trato que el resto del turno, nunca en Postgres ni en un log, R14
 sigue aplicando).
 
+### D17 — El aviso de espera no usa `ENVIAR_RESPUESTA_TURNO` (decidido en `sdd-apply`, 2026-09-28)
+
+Conflicto detectado al implementar T8: D12 decía enviar el aviso único de espera vía
+`ENVIAR_RESPUESTA_TURNO` (D10), pero ese punto de salida exige literalmente `estado === 'bot'` (R5)
+antes de encolar. La conversación sigue en `handoff_pendiente` — no `bot` — en el momento exacto en
+que corresponde el aviso, así que esa guardia bloquearía el envío siempre. R5 protege un peligro
+específico (el bot escribiendo con datos obsoletos después de que un humano tomó el control); el
+aviso de espera no es una respuesta del bot, es un mensaje de sistema deliberado mientras la
+conversación espera a un asesor — un peligro distinto, con su propia condición de corrección.
+
+Resuelto sin reabrir R5/T6 (ambos con tests ya verdes): `ConsumidorConversaciones` llama a
+`SALIDA_CANAL.enviarMensajes` directamente (permitido por la regla de fronteras de T6, que solo
+restringe módulos *fuera* de `conversaciones`), con su propia relectura del estado justo antes de
+enviar — misma disciplina de R5, pero con la guardia correcta para este mensaje:
+`estado === 'handoff_pendiente'`, no `'bot'`.
+
 ### D15 — Registro en `AppModule`
 
 `ConversacionesModule` se registra en `AppModule`, después de `CanalesModule` (para que

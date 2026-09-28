@@ -43,6 +43,7 @@ function configuracionDePrueba(parcial: Partial<Configuracion> = {}): Configurac
     DEBOUNCE_MS: 3000,
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
     ...parcial,
   };
 }

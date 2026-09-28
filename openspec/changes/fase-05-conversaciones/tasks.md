@@ -36,7 +36,7 @@ título exacto), igual que CAN2/CAN3/CAN5 en la Fase 04.
 - [x] T5 — Consumidor de `CONSUMIDOR_EVENTOS_CANAL` + registro en `AppModule` (S(c)) — ver desviaciones abajo
 - [x] T6 — Punto único de salida (`conversaciones/salida`) + regla de fronteras (S(e)) — clase adelantada en T5, aquí solo la regla 13 y su test dedicado
 - [x] T7 — Barrido de vencimientos (S(f1))
-- [ ] T8 — Aviso único de espera en `handoff_pendiente` + cierre documental (S(f2))
+- [x] T8 — Aviso único de espera en `handoff_pendiente` + cierre documental (S(f2)) — ver desviación de `EnviarRespuestaTurno`/R5 abajo
 
 ## Mapeo de escenarios por tarea (20 escenarios, R5+R6+R7+R8+R13+CNV1-CNV6)
 
@@ -538,6 +538,16 @@ Q1 de la proposal). Cierra la fase: `docs/migracion/inventario.md` y `docs/fases
    `handoff_pendiente` (revisar T2/T5); redactar el cierre de `docs/migracion/inventario.md` y
    `docs/fases/README.md` (fila 05 pasa a "spec en revisión" con la ruta del change, no a "cerrada"
    todavía — eso lo hace `sdd-archive`).
+
+**Desviación real encontrada al implementar (`sdd-apply`, 2026-09-28)**: D12 decía enviar el aviso
+vía `ENVIAR_RESPUESTA_TURNO` (T6), pero ese punto de salida exige `estado === 'bot'` de forma
+literal (R5) — la conversación sigue en `handoff_pendiente` cuando corresponde el aviso, así que esa
+condición sería siempre falsa y lo bloquearía por completo. `design.md` no anticipó este choque.
+Resuelto sin tocar el comportamiento ya probado de R5/T6: el aviso llama a `SALIDA_CANAL`
+directamente desde `ConsumidorConversaciones` (permitido por la regla de fronteras de T6, que solo
+restringe a módulos *fuera* de `conversaciones`), con su propia relectura justo antes de enviar —
+misma disciplina que R5, pero con la condición correcta para este mensaje: seguir en
+`handoff_pendiente`, no `bot`.
 
 **Hecho cuando**:
 - Los dos escenarios listados pasan, con el título exacto del escenario como nombre del test.

@@ -548,4 +548,26 @@ describe('cargarConfiguracion', () => {
       }
     });
   });
+
+  describe('Variable HANDOFF_ESPERA_MIN (fase-05-conversaciones, T8, D12)', () => {
+    it('usa el valor calibrado del prototipo por defecto cuando la variable no viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.HANDOFF_ESPERA_MIN).toBe(30);
+    });
+
+    it('rechaza HANDOFF_ESPERA_MIN por debajo del mínimo (1 min)', () => {
+      const fuenteInvalida = { ...fuenteValida, HANDOFF_ESPERA_MIN: '0' };
+
+      expect.assertions(1);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).variables).toContainEqual({
+          nombre: 'HANDOFF_ESPERA_MIN',
+          problema: 'valor',
+        });
+      }
+    });
+  });
 });

@@ -74,6 +74,7 @@ async function crearAplicacion(
     DEBOUNCE_MS: 500,
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
     ...configuracionParcial,
   };
 

@@ -65,6 +65,7 @@ function configuracionValida(): Configuracion {
     DEBOUNCE_MS: 3000,
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
   };
 }
 

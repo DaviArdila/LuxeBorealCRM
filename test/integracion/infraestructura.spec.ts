@@ -60,6 +60,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
+      HANDOFF_ESPERA_MIN: 30,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -114,6 +115,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
+      HANDOFF_ESPERA_MIN: 30,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })
@@ -176,6 +178,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       DEBOUNCE_MS: 3000,
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
+      HANDOFF_ESPERA_MIN: 30,
     };
 
     const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

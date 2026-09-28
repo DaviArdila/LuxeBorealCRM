@@ -14,12 +14,15 @@ import {
 } from './infraestructura/colas/barrido-vencimientos.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from './infraestructura/colas/cola-turno.js';
 import { RepositorioConversacionPrisma } from './infraestructura/prisma/repositorio-conversacion-prisma.js';
+import { RepositorioParametroConversacionesPrisma } from './infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import { BufferTurno } from './infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from './infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from './infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from './infraestructura/redis/lock-turno.js';
+import { MarcaEsperaHandoff } from './infraestructura/redis/marca-espera-handoff.js';
 import { GENERADOR_RESPUESTA } from './puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from './puertos/interruptor-global.js';
+import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from './puertos/repositorio-parametro-conversaciones.js';
 import { REPOSITORIO_CONVERSACION } from './puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
 
@@ -46,12 +49,14 @@ import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
   ],
   providers: [
     { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
+    { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
     { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
     { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
     { provide: ENVIAR_RESPUESTA_TURNO, useClass: EnviarRespuestaTurno },
     BufferTurno,
     LockTurno,
     ContadorRateLimit,
+    MarcaEsperaHandoff,
     ColaTurno,
     ProcesarTurno,
     TransicionarConversacion,

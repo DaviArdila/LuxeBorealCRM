@@ -11,16 +11,26 @@ import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
+import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
+import { RepositorioParametroConversacionesPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import { GENERADOR_RESPUESTA } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from '../../../src/modulos/conversaciones/puertos/interruptor-global.js';
+import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from '../../../src/modulos/conversaciones/puertos/repositorio-parametro-conversaciones.js';
 import { REPOSITORIO_CONVERSACION } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
 import {
   ENVIAR_RESPUESTA_TURNO,
   type EnviarRespuestaTurno,
   type PasoRespuesta,
 } from '../../../src/modulos/conversaciones/puertos/salida-conversacion.js';
-import { LECTOR_MENSAJE_CANAL, type EventoCanal, type LectorMensajeCanal } from '../../../src/modulos/canales/index.js';
+import {
+  LECTOR_MENSAJE_CANAL,
+  SALIDA_CANAL,
+  type EventoCanal,
+  type LectorMensajeCanal,
+  type SalidaCanal,
+  type SolicitudEnvioMensajes,
+} from '../../../src/modulos/canales/index.js';
 import { ColasModule } from '../../../src/plataforma/colas/index.js';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
@@ -44,9 +54,27 @@ class LectorMensajeCanalDoble implements LectorMensajeCanal {
   }
 }
 
+/** Doble de `SALIDA_CANAL` (T8): registra las llamadas del aviso único de espera (CNV3). */
+class SalidaCanalDoble implements SalidaCanal {
+  llamadas: SolicitudEnvioMensajes[] = [];
+
+  enviarMensajes(solicitud: SolicitudEnvioMensajes): Promise<void> {
+    this.llamadas.push(solicitud);
+    return Promise.resolve();
+  }
+
+  cambiarEstado(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  agregarEtiquetas(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 async function crearAplicacion(
   configuracionParcial: Partial<Configuracion> = {},
-): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble }> {
+): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble; salidaCanal: SalidaCanalDoble }> {
   const configuracionDePrueba: Configuracion = {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -86,10 +114,12 @@ async function crearAplicacion(
     DEBOUNCE_MS: 500,
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
     ...configuracionParcial,
   };
 
   const salida = new EnviarRespuestaTurnoDoble();
+  const salidaCanal = new SalidaCanalDoble();
 
   const modulo = await Test.createTestingModule({
     imports: [
@@ -102,13 +132,16 @@ async function crearAplicacion(
     ],
     providers: [
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
+      { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
       { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
       { provide: LECTOR_MENSAJE_CANAL, useClass: LectorMensajeCanalDoble },
+      { provide: SALIDA_CANAL, useValue: salidaCanal },
       { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: salida },
       BufferTurno,
       LockTurno,
       ContadorRateLimit,
+      MarcaEsperaHandoff,
       ColaTurno,
       ProcesarTurno,
       TransicionarConversacion,
@@ -121,7 +154,7 @@ async function crearAplicacion(
 
   const app = modulo.createNestApplication();
   await app.init();
-  return { app, salida };
+  return { app, salida, salidaCanal };
 }
 
 async function crearConversacion(

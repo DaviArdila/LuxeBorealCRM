@@ -77,6 +77,7 @@ async function crearContexto(): Promise<{
     DEBOUNCE_MS: 3000,
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
+    HANDOFF_ESPERA_MIN: 30,
   };
 
   const clock = new ClockFalso(new Date('2026-09-28T12:00:00Z'));

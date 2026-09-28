@@ -88,6 +88,8 @@ export const esquemaConfiguracion = z
     CONVERSACIONES_CONCURRENCIA: z.coerce.number().int().min(1).default(10),
     /** `BarridoVencimientos` (T7, D11): cada cuánto se devuelven a `bot` las filas vencidas. */
     CONVERSACIONES_BARRIDO_MS: z.coerce.number().int().min(10000).default(300000),
+    /** `MarcaEsperaHandoff` (T8, D12): minutos en `handoff_pendiente` antes del aviso único de espera. */
+    HANDOFF_ESPERA_MIN: z.coerce.number().int().min(1).default(30),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
