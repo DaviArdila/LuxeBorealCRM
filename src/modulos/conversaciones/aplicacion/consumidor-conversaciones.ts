@@ -13,6 +13,7 @@ import { ColaTurno } from '../infraestructura/colas/cola-turno.js';
 import { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from '../infraestructura/redis/contador-rate-limit.js';
 import { MarcaEsperaHandoff } from '../infraestructura/redis/marca-espera-handoff.js';
+import { MarcaMensajeProcesado } from '../infraestructura/redis/marca-mensaje-procesado.js';
 import type { MensajeTurno } from '../puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL, type InterruptorGlobal } from '../puertos/interruptor-global.js';
 import {
@@ -49,6 +50,7 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     private readonly buffer: BufferTurno,
     private readonly colaTurno: ColaTurno,
     private readonly marcaEsperaHandoff: MarcaEsperaHandoff,
+    private readonly marcaMensajeProcesado: MarcaMensajeProcesado,
     private readonly transicionarConversacion: TransicionarConversacion,
   ) {}
 
@@ -68,6 +70,11 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
    * `ObtenerOCrearConversacion` siempre corre primero (contacto/actividad quedan registrados
    * igual, CNV2/CNV4/R13); solo la generación de respuesta se salta si el interruptor está
    * apagado, el rate limit se superó, o el estado ya no es `bot`.
+   *
+   * Guarda de idempotencia (judgment-day, `ConsumidorEventosCanal` MUST ser idempotente): justo
+   * después corre `MarcaMensajeProcesado`, antes de tocar el rate limit o el buffer, para que una
+   * reentrega del mismo `idMensaje` (entrega al menos una vez del inbox, o un reintento tras un
+   * `FalloCanal` transitorio de `obtenerTexto`) sea un no-op observable.
    */
   private async manejarMensajeEntrante(evento: Extract<EventoCanal, { tipo: 'mensaje-entrante' }>): Promise<void> {
     const conversacion = await this.repositorio.obtenerOCrear(
@@ -75,6 +82,9 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
       evento.conversacion.idContactoExterno,
       evento.conversacion.canal,
     );
+
+    const esPrimeraVez = await this.marcaMensajeProcesado.marcarSiEsPrimeraVez(evento.idMensaje);
+    if (!esPrimeraVez) return;
 
     const activo = await this.interruptor.estaActivo();
     if (!activo) return;

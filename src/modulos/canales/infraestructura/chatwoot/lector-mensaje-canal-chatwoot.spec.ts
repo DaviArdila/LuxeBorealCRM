@@ -47,4 +47,15 @@ describe('LectorMensajeCanalChatwoot (unitario, D16 de la Fase 05)', () => {
 
     expect(await lector.obtenerTexto('42', '1')).toBeNull();
   });
+
+  it('devuelve null en vez de lanzar cuando el cliente Chatwoot falla (p. ej. FalloCanal)', async () => {
+    class ClienteChatwootQueFalla {
+      get(): Promise<unknown> {
+        return Promise.reject(new Error('FalloCanal: timeout'));
+      }
+    }
+    const lector = new LectorMensajeCanalChatwoot(new ClienteChatwootQueFalla() as unknown as ClienteChatwoot);
+
+    await expect(lector.obtenerTexto('42', '1')).resolves.toBeNull();
+  });
 });

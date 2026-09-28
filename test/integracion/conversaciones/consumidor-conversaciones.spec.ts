@@ -12,6 +12,7 @@ import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestr
 import { InterruptorGlobalRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
+import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
 import { RepositorioParametroConversacionesPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import { GENERADOR_RESPUESTA } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
@@ -142,6 +143,7 @@ async function crearAplicacion(
       LockTurno,
       ContadorRateLimit,
       MarcaEsperaHandoff,
+      MarcaMensajeProcesado,
       ColaTurno,
       ProcesarTurno,
       TransicionarConversacion,
@@ -169,7 +171,13 @@ async function crearConversacion(
   return { id: conversacion.id, chatwootConversationId };
 }
 
-function eventoMensajeEntrante(chatwootConversationId: number, idMensaje: string): EventoCanal {
+/**
+ * `idMensaje` es el id de mensaje de Chatwoot: único en toda la instancia, no solo dentro de una
+ * conversación (`traducir-evento.ts`, `ev.id`). Se compone con `chatwootConversationId` (aleatorio
+ * por test) para que los sufijos cortos y repetidos entre tests (`'m1'`, `'m2'`...) no colisionen en
+ * la marca de idempotencia de Redis, compartida entre los `it()` de este archivo.
+ */
+function eventoMensajeEntrante(chatwootConversationId: number, sufijoIdMensaje: string): EventoCanal {
   return {
     v: 1,
     eventoProveedor: 'message_created',
@@ -180,12 +188,12 @@ function eventoMensajeEntrante(chatwootConversationId: number, idMensaje: string
       canalProveedor: 'Channel::Whatsapp',
     },
     tipo: 'mensaje-entrante',
-    idMensaje,
+    idMensaje: `${chatwootConversationId}-${sufijoIdMensaje}`,
     tipoContenido: 'texto',
   };
 }
 
-function eventoMensajeHumano(chatwootConversationId: number, idMensaje: string): EventoCanal {
+function eventoMensajeHumano(chatwootConversationId: number, sufijoIdMensaje: string): EventoCanal {
   return {
     v: 1,
     eventoProveedor: 'message_created',
@@ -196,7 +204,7 @@ function eventoMensajeHumano(chatwootConversationId: number, idMensaje: string):
       canalProveedor: 'Channel::Whatsapp',
     },
     tipo: 'mensaje-humano',
-    idMensaje,
+    idMensaje: `${chatwootConversationId}-${sufijoIdMensaje}`,
   };
 }
 
@@ -343,5 +351,29 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
 
     const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id } });
     expect(fila.estado).toBe('humano');
+  });
+
+  it('judgment-day — la reentrega del mismo idMensaje es un no-op idempotente (rate limit y buffer)', async () => {
+    const contexto = await crearAplicacion({ RATE_LIMIT_POR_HORA: 2, RATE_LIMIT_POR_DIA: 100 });
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const buffer = app.get(BufferTurno);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { id, chatwootConversationId } = await crearConversacion(prisma, 'bot');
+
+    // Misma entrega repetida dos veces (simula la redelivery al-menos-una-vez del inbox de
+    // canales): el rate limit configurado a 2/hora solo debe contar la primera.
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
+    expect(await buffer.tamano(id)).toBe(1);
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm1'));
+    expect(await buffer.tamano(id)).toBe(1); // no se volvió a apilar
+
+    // Un mensaje nuevo (idMensaje distinto) todavía cabe dentro del cupo de 2/hora: prueba de que la
+    // reentrega de 'm1' no lo consumió dos veces (si lo hubiera hecho, el cupo ya estaría agotado y
+    // este mensaje se descartaría por R13 sin apilarse).
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'm2'));
+
+    expect(await buffer.tamano(id)).toBe(2);
   });
 });
