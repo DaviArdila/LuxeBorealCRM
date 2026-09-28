@@ -44,7 +44,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T4 — `plataforma/colas` + procesador del inbox (S(c))
 - [x] T5 — Puerto de salida + adaptador Chatwoot (S(d))
 - [x] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
-- [ ] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
+- [x] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
 - [ ] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
 - [ ] T9 — Cierre documental: doc 04 §3, skill de Meta, skill de arquitectura (S(f))
 
@@ -851,6 +851,71 @@ Risks; si el diff real supera significativamente el presupuesto, `sdd-apply` **M
 **Slice de PR**: S(e2)
 
 **Review requerida**: RDD
+
+### Resultado de la implementación (`sdd-apply`, 2026-09-27)
+
+Construido `SalidaCanalOutbox` (`aplicacion/salida-canal-outbox.ts`, D9): traduce cada método del
+puerto a una o más `NuevaEntradaOutbox` con `grupoConversacion`/`claveMensaje`/`claveEstado`/
+`claveEtiquetas` de `dominio/claves-idempotencia.ts` (T2) y llama `REGISTRO_OUTBOX.agregar` (T6). El
+texto de cada mensaje va solo en `efimero.texto` (D10); `datos` de `canal.mensaje` lleva
+`idConversacion`, `secuencia` (= `idRespuesta`, para la cascada de "secuencia abortada" de
+`PublicadorOutbox`), `paso` y `total`. Valida `1..MAX_PASOS_SECUENCIA` mensajes por secuencia antes
+de encolar. `PublicarEfectoCanal` (`aplicacion/publicar-efecto-canal.ts`, D10, D13) es el
+`ManejadorOutbox` que traduce cada fila a la llamada correspondiente de `ADAPTADOR_CANAL` (T5),
+traduciendo `FalloCanal` a `FalloPublicacion` (misma `naturaleza`/`causa`/`esperaSugeridaS`) para que
+`PublicadorOutbox` clasifique el reintento. **D13 (bifurcación de T1 confirmada)**: como T1 confirmó
+que `content_attributes` se persiste y es consultable por `GET`, se construyó la reconciliación
+completa — si `entrada.intento > 1`, primero `existeMensajeConMarca` y, si ya existe, la fila se
+marca entregada sin un segundo `POST`; si no, se reenvía. `canales.module.ts` importa `OutboxModule`
+y en `onModuleInit` registra la única instancia de `PublicarEfectoCanal` para los tres `tipo`
+(`canal.mensaje`, `canal.estado`, `canal.etiquetas`) en `RegistroManejadoresOutbox`; provee
+`SALIDA_CANAL` (`SalidaCanalOutbox`, exportado del barril, D9) y `ADAPTADOR_CANAL`
+(`AdaptadorCanalChatwoot`/`ClienteChatwoot` de T5, interno, no exportado).
+
+**Cobertura de tests** (RED→GREEN observado antes de implementar cada capa):
+- Unitarios (`salida-canal-outbox.spec.ts`, 5 casos; `publicar-efecto-canal.spec.ts`, 9 casos): sin
+  infraestructura, con dobles de `RegistroOutbox`/`AdaptadorCanal` (mismo patrón de clase doble sin
+  `vi.fn()` que `RepositorioEventoEntranteFalso`/`ClienteChatwootFalso`, evita
+  `@typescript-eslint/unbound-method`). RED confirmado de verdad: se deshabilitó momentáneamente la
+  rama `entrada.intento > 1` de `publicarMensaje` (D13) y los dos tests de reconciliación fallaron
+  exactamente como se esperaba (`existeMensajeConMarca` nunca se llamó, el mensaje se reenvió sin
+  consultar), antes de restaurar la implementación real y confirmar GREEN.
+- Integración (`test/integracion/canales/salida-outbox.spec.ts`, 3 casos: CAN7(2), R4 esc. 2) contra
+  `ChatwootFalso` real (T5) y Postgres real, con `ClockFalso` para el backoff (mismo patrón que
+  `publicador-outbox.spec.ts` de T6). **RED real encontrado y corregido**: la primera versión del
+  test asumía que una sola llamada a `publicarPendientes()` solo procesaba el primer mensaje de la
+  secuencia; en realidad el bucle de "vueltas" de `PublicadorOutbox` (D10) ya avanza al segundo
+  mensaje en la misma llamada (tras el éxito del primero) y lo intenta de inmediato — el test fallaba
+  porque esperaba una sola llamada HTTP cuando ya había dos. Corregido ajustando las aserciones a la
+  secuencia real de llamadas (uno → dos (falla) → [avanzar reloj] → dos (reintento, éxito) → tres),
+  con la aserción central de "cero duplicados": `mensaje uno` aparece exactamente una vez en todas
+  las llamadas HTTP registradas, sin importar cuántas veces se reintente `mensaje dos`.
+- E2E (`test/e2e/canal-chatwoot.e2e-spec.ts`, 1 caso, `COLAS_TRABAJADORES: true`, BullMQ real):
+  evento firmado real → webhook → inbox → un consumidor de prueba registrado vía
+  `RegistroConsumidorEventosCanal` dispara `SALIDA_CANAL.enviarMensajes` con una secuencia de dos
+  mensajes; el segundo falla una vez (500) y se reintenta solo, vía el barrido del outbox
+  (`OUTBOX_BARRIDO_MS` reducido a 500 ms y `OUTBOX_BACKOFF_BASE_S` a 1 s para no alargar el test con
+  el reloj de pared real, sin `ClockFalso` en un e2e con *workers* de verdad). Confirma de punta a
+  punta: el consumidor se llama exactamente una vez (R4/CAN4), las dos filas del outbox terminan
+  `enviado_en` sin `error`, y `mensaje uno` nunca se duplica pese al reintento de `mensaje dos` —
+  criterio de salida de la fila 04 de `docs/fases/README.md` ("envío con reintento → cero
+  duplicados").
+
+**Tamaño**: el diff real de esta tarea es de **932 líneas de autoría** (925 adiciones, 7
+eliminaciones — `git diff --cached --stat`), muy por encima del estimado de ~430 y del presupuesto
+de 400. Esta tarea es aplicación (`SalidaCanalOutbox`/`PublicarEfectoCanal`), no "infraestructura
+nueva" por nombre, así que la fila 4 de Risks de `proposal.md` no la anticipa automáticamente (ver
+"Nota de tamaño" de esta misma tarea, arriba). El usuario autorizó explícitamente, para toda la fase
+y por adelantado, aplicar cualquier exceso de las tareas T2/T7 sin detenerse a preguntar,
+documentándolo en el commit — instrucción recibida junto con el encargo de esta tarea. La mayor parte
+del exceso son los tres archivos de test nuevos (integración + e2e + specs unitarios: ~680 de las 932
+líneas) que cubren los tres niveles exigidos por `design.md` §"Testing Strategy" para esta tarea, no
+el mecanismo de aplicación en sí (~200 líneas en `salida-canal-outbox.ts`/`publicar-efecto-canal.ts`
+combinados). No se recortó ningún test, comentario ni documentación para acercarse al presupuesto.
+
+**Verificación completa** (`npm run lint`, `npm run typecheck`, `npm test`, `npm run test:integracion`,
+`npm run test:e2e -- canal-chatwoot`, `npm run fronteras`): todas en verde — ver el commit de esta
+tarea para la salida real.
 
 ---
 

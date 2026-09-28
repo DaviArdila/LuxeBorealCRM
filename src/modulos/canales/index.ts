@@ -2,10 +2,12 @@
  * Superficie pública de `modulos/canales` (design.md, tabla "Módulos y dependencias"). Nadie fuera
  * de este módulo importa rutas internas (`./dominio/...`, `./aplicacion/...`, `./puertos/...`,
  * `./infraestructura/...`, `./interfaz/...`) — regla de fronteras `sin-rutas-internas-de-modulo`.
- * `SALIDA_CANAL` (D9) se exporta cuando exista (T5). `CONSUMIDOR_EVENTOS_CANAL` y
- * `RegistroConsumidorEventosCanal` (D8, T4) sí se exportan desde ahora: la Fase 05 los necesita
- * para que `conversaciones` registre su propio consumidor desde `onModuleInit`, sin importar una
- * ruta interna de este módulo.
+ * `CONSUMIDOR_EVENTOS_CANAL` y `RegistroConsumidorEventosCanal` (D8, T4) se exportan desde ahora:
+ * la Fase 05 los necesita para que `conversaciones` registre su propio consumidor desde
+ * `onModuleInit`, sin importar una ruta interna de este módulo. `SALIDA_CANAL` (D9, T7) se exporta
+ * igual: la Fase 05 lo consume desde `conversaciones/salida`, que le agrega la relectura del
+ * estado de la FSM antes de cada envío; hasta entonces el único consumidor es el test.
+ * `ADAPTADOR_CANAL` (interno, D9) nunca se exporta: solo lo invoca `PublicarEfectoCanal`.
  */
 export { CanalesModule } from './canales.module.js';
 export { RegistroConsumidorEventosCanal } from './aplicacion/registro-consumidor-eventos-canal.js';
@@ -13,3 +15,12 @@ export {
   CONSUMIDOR_EVENTOS_CANAL,
   type ConsumidorEventosCanal,
 } from './puertos/consumidor-eventos-canal.js';
+export type { EventoCanal } from './dominio/evento-canal.js';
+export {
+  SALIDA_CANAL,
+  type MensajeSaliente,
+  type SalidaCanal,
+  type SolicitudCambioEstado,
+  type SolicitudEnvioMensajes,
+  type SolicitudEtiquetas,
+} from './puertos/salida-canal.js';
