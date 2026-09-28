@@ -46,10 +46,15 @@
 
 | Tema | Opciones | Pregunta |
 |---|---|---|
-| Horario semanal | Leerlo del horario por inbox de Chatwoot (API) vs tabla propia | P13. **?** si el horario de Chatwoot admite festivos y si se lee por API |
 | Timbre de leads | Telegram (ya funciona) vs push de la app de Chatwoot | P12 |
-| Auto-resolver por inactividad | Configuración de cuenta de Chatwoot; al resolver, el bot retoma (ADR-008 del prototipo) | **?** granularidad (horas/días) |
 | Historial corto para el LLM | Redis propio (hoy, últimos 6 turnos) vs leerlo de la API de Chatwoot en cada turno | Decidir en la Fase 07 midiendo la latencia |
+
+### Resuelto en la Fase 04 (canal Chatwoot, 2026-09-27)
+
+| Tema | Decisión | Dónde queda |
+|---|---|---|
+| Horario semanal (P13) | **Se mantiene la tabla propia** (`excepcion_horario`, Fase 02); no se delega a Chatwoot, que no tiene calendario de festivos fiable. El puerto `Horario` (`src/modulos/horario/puertos/horario.ts`) no se toca | Decisión del usuario, `openspec/changes/fase-04-canal-chatwoot/proposal.md` §"Decisiones ya tomadas" |
+| Auto-resolver por inactividad | **Queda apagado por defecto.** Su umbral único por cuenta y solo sobre `open` no sustituye los dos TTL de la máquina de estados bot/humano (Fase 05). Esta fase solo garantiza que `conversation_status_changed` (incluido un `resolved`) llegue limpio al inbox; no construye ninguna política de auto-resolución | `openspec/changes/fase-04-canal-chatwoot/proposal.md` §"Decisiones ya tomadas"; la Fase 05 decide la política sobre sus propios TTL |
 
 ## 4. Lo que queda prohibido
 

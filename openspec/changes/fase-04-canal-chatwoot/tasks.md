@@ -46,7 +46,7 @@ incluido) y anota la tarea de soporte donde también se confirma.
 - [x] T6 — `plataforma/outbox` genérico + migración `clave_idempotencia` (S(e1))
 - [x] T7 — `SalidaCanalOutbox` + reconciliación + e2e de cero duplicados (S(e2))
 - [x] T8 — Entorno local de Chatwoot portado (`infra/chatwoot/`) (S(f))
-- [ ] T9 — Cierre documental: doc 04 §3, skill de Meta, skill de arquitectura (S(f))
+- [x] T9 — Cierre documental: doc 04 §3, skill de Meta, skill de arquitectura (S(f))
 
 ## Mapeo de escenarios por tarea (17 escenarios, R3+R4+CAN1-CAN8)
 
@@ -1041,11 +1041,11 @@ anteriores (documenta el módulo `canales` completo).
 
 **Checklist de cierre de la skill `luxeboreal-arquitectura` §1** (a confirmar aquí, no solo en el
 chat):
-- [ ] Módulo `canales` registrado en la lista de módulos de la skill.
-- [ ] `plataforma/colas` y `plataforma/outbox` registrados como paquetes nuevos de plataforma.
-- [ ] Convención de body crudo (D2) documentada.
-- [ ] Patrón de registro de consumidor/manejador (D8/D10) documentado.
-- [ ] Flag `COLAS_TRABAJADORES` documentado.
+- [x] Módulo `canales` registrado en la lista de módulos de la skill.
+- [x] `plataforma/colas` y `plataforma/outbox` registrados como paquetes nuevos de plataforma.
+- [x] Convención de body crudo (D2) documentada.
+- [x] Patrón de registro de consumidor/manejador (D8/D10) documentado.
+- [x] Flag `COLAS_TRABAJADORES` documentado.
 
 **Hecho cuando**:
 - `docs/analisis/04-chatwoot-delegar-vs-construir.md` §3 no tiene ningún "?" pendiente de esta fase.
@@ -1057,6 +1057,38 @@ chat):
 **Slice de PR**: S(f)
 
 **Review requerida**: RDD
+
+### Resultado de la implementación (`sdd-apply`, 2026-09-27)
+
+- `docs/analisis/04-chatwoot-delegar-vs-construir.md` §3 ("Zona gris"): se retiraron de la tabla las
+  dos filas que esta fase cierra (Horario semanal/P13, Auto-resolver por inactividad) y se agregó una
+  subsección "Resuelto en la Fase 04" con la decisión exacta y su referencia
+  (`proposal.md` §"Decisiones ya tomadas"). Las dos filas que esta fase **no** toca (Timbre de leads/
+  P12, Historial corto para el LLM) siguen igual, sin marcarlas como resueltas. Los demás "?" del
+  documento (columna "Ver." de §1: plantillas/campañas de WhatsApp; fila de "escribiendo…"/leído en
+  §2) tampoco se tocaron — pertenecen a la Fase 08 (inventario, "Out of Scope" de `proposal.md`).
+- `.claude/skills/whatsapp-meta-conventions/SKILL.md` (Create): copiada byte a byte de
+  `../ChatLuxeCRM/.claude/skills/whatsapp-meta-conventions/SKILL.md` (única ubicación encontrada en
+  el prototipo), sin modificar el prototipo (solo lectura).
+- `.atl/skill-registry.md` (Modify): regenerado con `gentle-ai skill-registry refresh --force` (16 →
+  17 skills); la nueva skill queda listada con su trigger y ruta.
+- `.claude/skills/luxeboreal-arquitectura/SKILL.md` (Modify), §1: agregado el módulo `canales` a la
+  lista de `modulos/` (con su nota de Fase 04, igual que `catalogo`/`horario`/`medios`); agregado
+  `plataforma/colas` al árbol de `plataforma/` y actualizada la descripción de `plataforma/outbox`
+  (ya listada como "tabla outbox + publicador" desde antes de esta fase, ahora describe el mecanismo
+  genérico real: lease, orden por grupo, contenido efímero, registro de manejadores, regla de
+  fronteras 7). §4 ("Comunicación entre módulos"): ampliada la viñeta de "efecto externo que no se
+  puede perder" con el detalle de orden por grupo/backoff y agregada una viñeta nueva para el patrón
+  de registro de consumidor/manejador (D8/D10) con su regla de un solo sentido de dependencia. §10
+  ("API"): agregada la convención de body crudo (D2) — `OPCIONES_APLICACION`, límite de 1 MB,
+  `traducirErrorDeCuerpo`, por qué no `express.raw()` por ruta. Cabecera de estado de la skill
+  (0.5 → 0.6) actualizada citando el cierre de esta fase, mismo patrón que el cierre de la Fase 03.
+
+**Verificación**: `npm run lint`, `npm run typecheck`, `npm run fronteras` en verde — ningún archivo
+de `src/`, `prisma/` ni `test/` se tocó en esta tarea (solo Markdown), así que no se esperaba ningún
+cambio de comportamiento; se corrieron igual por disciplina (checklist de cierre de la skill, punto
+1). No aplica RED→GREEN→REFACTOR (documentación, sin lógica de producción, tal como anticipa esta
+misma tarea).
 
 ---
 

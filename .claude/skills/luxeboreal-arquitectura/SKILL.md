@@ -10,10 +10,10 @@ vigente por dominio) → el change activo en `openspec/changes/fase-NN-<nombre>/
 y tareas de la fase en curso) → `docs/adr/`. Esta skill traduce los principios a reglas concretas. Si
 una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skill.
 
-> Estado: 0.5 — ajustada al cerrar la Fase 03 (Importador y medios) con el módulo nuevo `medios`
-> (puerto `Almacenamiento` sobre MinIO, generación de collage) y la ampliación de `catalogo` con el
-> lado de escritura (dominio de validación/resolución de lugar, puertos `FuenteCatalogo`/
-> `RepositorioImportacionCatalogo`, orquestador todo-o-nada, comando CLI en `scripts/`).
+> Estado: 0.6 — ajustada al cerrar la Fase 04 (Canal Chatwoot) con el módulo nuevo `canales`
+> (entrada por webhook con inbox/dedupe, salida por outbox con adaptador Chatwoot, perfil de
+> capacidades) y los paquetes nuevos de plataforma `colas` (BullMQ) y `outbox` (mecanismo genérico
+> de efectos externos que no se pueden perder).
 
 ## 1. Estructura
 
@@ -27,13 +27,21 @@ src/
 │   ├── observabilidad/         logger, trazas
 │   ├── prisma/                 PrismaService (conexión y ciclo de vida)
 │   ├── redis/                  cliente Redis inyectable
+│   ├── colas/                  BullMQ sobre el REDIS_URL existente, conexiones propias
+│   │                           (maxRetriesPerRequest: null); arranque/cierre ordenado por
+│   │                           procesador (onApplicationBootstrap/beforeApplicationShutdown);
+│   │                           flag COLAS_TRABAJADORES (Fase 04, D6)
 │   ├── salud/                  GET /health con @nestjs/terminus (indicadores postgres/redis, D4/D13)
 │   ├── documentacion/          pipeline del contrato OpenAPI: construir/filtrar/ordenar/serializar
 │   │                           el documento, respuestaDesdeZod, montarDocumentacion (Scalar en
 │   │                           /docs, Fase 00b D1/D4/D7)
 │   ├── errores/                catálogo de códigos RFC 9457 + filtro global problem+json
 │   │                           (Fase 00b D5)
-│   └── outbox/                 tabla outbox + publicador
+│   └── outbox/                 outbox genérico para efectos externos que no se pueden perder:
+│                               reclamo con lease y FOR UPDATE SKIP LOCKED, orden estricto por
+│                               grupo, contenido efímero borrado al cerrar la fila, registro de
+│                               manejadores por tipo (Fase 04, D10). No importa ningún módulo de
+│                               negocio (regla de fronteras 7)
 ├── compartido/                 funciones puras sin dependencias: dinero, texto, número
 └── modulos/
     ├── geografia/                                 (Fase 01: solo lectura + guardarCatalogo,
@@ -50,7 +58,13 @@ src/
     │                                                generación de collage; capacidad genérica
     │                                                reutilizable por módulos futuros con archivos;
     │                                                aún sin registrar en AppModule)
-    ├── canales/  conversaciones/  llm/  agente/
+    ├── canales/                                   (Fase 04: webhook Chatwoot con body crudo +
+    │                                                guardia de firma + inbox con dedupe; procesador
+    │                                                BullMQ del inbox; SALIDA_CANAL sobre el outbox
+    │                                                genérico + adaptador Chatwoot; perfil de
+    │                                                capacidades por canal; primer módulo de negocio
+    │                                                registrado en AppModule)
+    ├── conversaciones/  llm/  agente/
     ├── leads/  notificaciones/  contactos/  admin/
     └── usuarios/  inventario/  ventas/            (fases 11+)
 ```
@@ -118,8 +132,16 @@ modulos/<m>/
 - **Consulta** (necesito una respuesta): llamada a un caso de uso exportado.
 - **Hecho** (esto pasó): evento de dominio en pasado (`ConversacionCedidaAHumano`,
   `LeadConfirmado`) emitido con `EventEmitter2`.
-- **Efecto externo que no se puede perder** (Telegram, status en Chatwoot): se escribe en `outbox`
-  **en la misma transacción** que el cambio de estado; lo publica un job con reintentos.
+- **Efecto externo que no se puede perder** (Telegram, status en Chatwoot): se escribe en
+  `plataforma/outbox` **en la misma transacción** que el cambio de estado; lo publica un job con
+  reintentos y backoff, en orden estricto dentro de un mismo `grupo` (Fase 04, D10).
+- **Entrada asíncrona por cola con registro de consumidor/manejador** (Fase 04, D8/D10): el módulo
+  de plataforma (`colas`, `outbox`) define el puerto y expone `registrar(consumidor)` /
+  `RegistroManejadoresOutbox`; el módulo de negocio (`canales`, y luego `conversaciones`) se registra
+  a sí mismo en `onModuleInit`. La dependencia va siempre en un solo sentido — el de abajo (BullMQ,
+  outbox) nunca importa al de arriba (negocio) — así se evita `forwardRef` y ciclos de módulos
+  cuando dos módulos de negocio necesitarían importarse entre sí para consumir el uno del otro. Si
+  nadie se registra, corre un consumidor/manejador por defecto que solo loguea (nunca contenido).
 
 ## 5. Datos
 
@@ -224,6 +246,16 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
   con `respuestaDesdeZod(esquema, opciones)` (`plataforma/documentacion`, Fase 00b D4) — nunca con
   `@ApiProperty` a mano.
 - Los DTO viven en `interfaz/` del módulo dueño, junto a los controllers que los usan.
+- **Body crudo para webhooks con firma** (Fase 04, D2): la app se crea con
+  `OPCIONES_APLICACION = { rawBody: true } as const` (`configurar-aplicacion.ts`, `main.ts` y el e2e
+  usan la misma constante) — vía nativa de NestJS 12, no `express.raw()` montado por ruta: un
+  parser por ruta llegaría después del parser JSON global y encontraría el stream ya consumido.
+  `configurarAplicacion` fija el límite global con `app.useBodyParser('json', { limit: '1mb' })` y
+  registra justo después el middleware `traducirErrorDeCuerpo`, que traduce los errores del parser
+  de body (`entity.too.large`, `entity.parse.failed`) a `application/problem+json` — esos errores
+  ocurren en middleware de Express, **antes** del enrutado de Nest, así que el `FiltroProblemJson`
+  global nunca los ve. Un controlador que valida firma sobre el body (guardia `CanActivate`, nunca
+  un pipe ni el propio controller) lee `req.rawBody: Buffer`, jamás `JSON.stringify(req.body)`.
 - Nadie escribe ni edita `openapi/openapi.json` ni `openapi/openapi.interno.json` a mano; ambos se
   generan desde una sola construcción del documento (`npm run contrato:generar`, ADR-0010, Fase
   00b D1): el **interno** tiene todo, el **público** es la función pura `filtrarDocumentoPublico`
