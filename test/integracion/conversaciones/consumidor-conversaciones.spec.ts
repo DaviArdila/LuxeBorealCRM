@@ -38,6 +38,7 @@ import {
   type EventoCanal,
   type LectorMensajeCanal,
   type SalidaCanal,
+  type SolicitudCambioEstado,
   type SolicitudEnvioMensajes,
 } from '../../../src/modulos/canales/index.js';
 import { ColasModule } from '../../../src/plataforma/colas/index.js';
@@ -105,13 +106,15 @@ class BufferTurnoFallaUnaVez extends BufferTurno {
 /** Doble de `SALIDA_CANAL` (T8): registra las llamadas del aviso único de espera (CNV3). */
 class SalidaCanalDoble implements SalidaCanal {
   llamadas: SolicitudEnvioMensajes[] = [];
+  estados: SolicitudCambioEstado[] = [];
 
   enviarMensajes(solicitud: SolicitudEnvioMensajes): Promise<void> {
     this.llamadas.push(solicitud);
     return Promise.resolve();
   }
 
-  cambiarEstado(): Promise<void> {
+  cambiarEstado(solicitud: SolicitudCambioEstado): Promise<void> {
+    this.estados.push(solicitud);
     return Promise.resolve();
   }
 
@@ -405,6 +408,47 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
 
     const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id } });
     expect(fila.estado).toBe('humano');
+  });
+
+  it('CNV8 — Una vuelta al bot que vino del canal no se espeja', async () => {
+    const contexto = await crearAplicacion();
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { id, chatwootConversationId } = await crearConversacion(prisma, 'humano');
+
+    await consumidor.consumir(eventoCambioEstado(chatwootConversationId, 'resuelta'));
+
+    const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id } });
+    expect(fila.estado).toBe('bot');
+    expect(contexto.salidaCanal.estados).toEqual([]);
+  });
+
+  it('CNV8 — Un eco humano sobre una conversación en bot se espeja como abierta', async () => {
+    const contexto = await crearAplicacion();
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { id, chatwootConversationId } = await crearConversacion(prisma, 'bot');
+
+    await consumidor.consumir(eventoMensajeHumano(chatwootConversationId, 'eco-1'));
+
+    expect(contexto.salidaCanal.estados).toEqual([{ idConversacion: id, idOperacion: 'espejo-v1', estado: 'abierta' }]);
+  });
+
+  it('CNV8 — El eco del espejo abierta no vuelve a transicionar', async () => {
+    const contexto = await crearAplicacion();
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { id, chatwootConversationId } = await crearConversacion(prisma, 'handoff_pendiente');
+
+    await consumidor.consumir(eventoCambioEstado(chatwootConversationId, 'abierta'));
+
+    const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id } });
+    expect(fila.estado).toBe('handoff_pendiente');
+    expect(fila.version).toBe(0); // ninguna transición nueva
+    expect(contexto.salidaCanal.estados).toEqual([]);
   });
 
   it('R13 — Se supera el límite de mensajes por hora', async () => {

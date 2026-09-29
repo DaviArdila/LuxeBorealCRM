@@ -3,12 +3,17 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
+import { SALIDA_CANAL, type SalidaCanal, type SolicitudCambioEstado } from '../../../src/modulos/canales/index.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
+import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
-import { GENERADOR_RESPUESTA } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
+import {
+  GENERADOR_RESPUESTA,
+  type GeneradorRespuesta,
+} from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
 import { REPOSITORIO_CONVERSACION } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
 import {
   ENVIAR_RESPUESTA_TURNO,
@@ -19,7 +24,7 @@ import { ColasModule } from '../../../src/plataforma/colas/index.js';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { RedisModule } from '../../../src/plataforma/redis/index.js';
-import { RelojModule } from '../../../src/plataforma/reloj/index.js';
+import { CLOCK, RelojModule, type Clock } from '../../../src/plataforma/reloj/index.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
@@ -33,9 +38,28 @@ class EnviarRespuestaTurnoDoble implements EnviarRespuestaTurno {
   }
 }
 
+/** Doble de `SALIDA_CANAL`: el espejo real por el outbox se prueba en `barrido-vencimientos.spec.ts`. */
+class SalidaCanalDoble implements SalidaCanal {
+  estados: SolicitudCambioEstado[] = [];
+
+  enviarMensajes(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  cambiarEstado(solicitud: SolicitudCambioEstado): Promise<void> {
+    this.estados.push(solicitud);
+    return Promise.resolve();
+  }
+
+  agregarEtiquetas(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 async function crearAplicacion(
   configuracionParcial: Partial<Configuracion> = {},
-): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble }> {
+  generador?: GeneradorRespuesta,
+): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble; salidaCanal: SalidaCanalDoble }> {
   const configuracionDePrueba: Configuracion = {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -81,6 +105,7 @@ async function crearAplicacion(
   };
 
   const salida = new EnviarRespuestaTurnoDoble();
+  const salidaCanal = new SalidaCanalDoble();
 
   const modulo = await Test.createTestingModule({
     imports: [
@@ -93,8 +118,12 @@ async function crearAplicacion(
     ],
     providers: [
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
-      { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
+      generador === undefined
+        ? { provide: GENERADOR_RESPUESTA, useClass: AgenteEco }
+        : { provide: GENERADOR_RESPUESTA, useValue: generador },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: salida },
+      { provide: SALIDA_CANAL, useValue: salidaCanal },
+      TransicionarConversacion,
       BufferTurno,
       LockTurno,
       ProcesarTurno,
@@ -107,7 +136,7 @@ async function crearAplicacion(
 
   const app = modulo.createNestApplication();
   await app.init();
-  return { app, salida };
+  return { app, salida, salidaCanal };
 }
 
 async function crearConversacion(
@@ -190,5 +219,37 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
     await new Promise((resolve) => setTimeout(resolve, 1000)); // ventana de debounce + margen
 
     expect(contexto.salida.llamadas).toHaveLength(0);
+  });
+
+  it('CNV8 — El generador pide handoff y la conversación queda esperando a un asesor', async () => {
+    const generador: GeneradorRespuesta = {
+      generar: () =>
+        Promise.resolve({
+          pasos: [{ paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' }],
+          handoff: { motivo: 'audio-repetido' },
+        }),
+    };
+    const contexto = await crearAplicacion({ HANDOFF_TTL_MIN: 45 }, generador);
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const buffer = app.get(BufferTurno);
+    const procesarTurno = app.get(ProcesarTurno);
+    const idConv = await crearConversacion(prisma, 'bot');
+    await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), tipoContenido: 'audio', texto: '' }));
+    const antes = app.get<Clock>(CLOCK).ahora().getTime();
+
+    await procesarTurno.ejecutar(idConv, 'job-handoff');
+
+    expect(contexto.salida.llamadas).toHaveLength(1);
+    expect(contexto.salida.llamadas[0].pasos).toEqual([{ paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' }]);
+    const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id: idConv } });
+    expect(fila.estado).toBe('handoff_pendiente');
+    expect(fila.version).toBe(1);
+    // El reloj es el del sistema en este arnés: la ventana es HANDOFF_TTL_MIN desde ahora (±1 min).
+    const ventanaMs = (fila.expiraControlEn?.getTime() ?? 0) - antes;
+    expect(ventanaMs).toBeGreaterThan(44 * 60_000);
+    expect(ventanaMs).toBeLessThan(46 * 60_000);
+    expect(contexto.salidaCanal.estados).toEqual([{ idConversacion: idConv, idOperacion: 'espejo-v1', estado: 'abierta' }]);
+    expect(await buffer.tamano(idConv)).toBe(0);
   });
 });

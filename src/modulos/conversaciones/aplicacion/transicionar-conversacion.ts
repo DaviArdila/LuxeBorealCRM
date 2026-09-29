@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { SALIDA_CANAL, type SalidaCanal } from '../../canales/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../plataforma/config/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
+import { espejoEstadoCanal } from '../dominio/espejo-estado-canal.js';
 import { calcularTransicion, type EstadoAtencion, type OrigenTransicion } from '../dominio/maquina-estados.js';
 import {
   REPOSITORIO_CONVERSACION,
@@ -23,6 +25,11 @@ export class ConflictoDeVersionPersistente extends Error {
  * estado; un segundo conflicto propaga {@link ConflictoDeVersionPersistente} (D2: el lock de D7 ya
  * reduce la probabilidad de dos escritores concurrentes, así que un segundo conflicto es una señal,
  * no algo para reintentar indefinidamente).
+ *
+ * Tras persistir, espeja el estado en el canal por el outbox (CNV8, D3 de la 07a; tabla en
+ * `espejoEstadoCanal`). El espejo se encola **después** de la escritura, no en la misma transacción
+ * (`RegistroOutbox.agregar` no acepta un cliente transaccional): una caída entre las dos escrituras
+ * pierde el espejo, y la clave por versión hace idempotente cualquier reintento.
  */
 @Injectable()
 export class TransicionarConversacion {
@@ -30,9 +37,20 @@ export class TransicionarConversacion {
     @Inject(REPOSITORIO_CONVERSACION) private readonly repositorio: RepositorioConversacion,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
+    @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
   ) {}
 
   async ejecutar(
+    conversacion: Conversacion,
+    destino: EstadoAtencion,
+    origen: OrigenTransicion,
+  ): Promise<Conversacion> {
+    const transicionada = await this.persistir(conversacion, destino, origen);
+    await this.espejar(transicionada, origen);
+    return transicionada;
+  }
+
+  private async persistir(
     conversacion: Conversacion,
     destino: EstadoAtencion,
     origen: OrigenTransicion,
@@ -50,6 +68,17 @@ export class TransicionarConversacion {
       throw new ConflictoDeVersionPersistente(conversacion.id);
     }
     return reintento;
+  }
+
+  private async espejar(transicionada: Conversacion, origen: OrigenTransicion): Promise<void> {
+    const estado = espejoEstadoCanal(transicionada.estado, origen);
+    if (estado === null) return;
+    // Sin ':' — `claveEstado` (canales) restringe `idOperacion` a `[A-Za-z0-9_-]`.
+    await this.salidaCanal.cambiarEstado({
+      idConversacion: transicionada.id,
+      idOperacion: `espejo-v${transicionada.version}`,
+      estado,
+    });
   }
 
   private async intentar(

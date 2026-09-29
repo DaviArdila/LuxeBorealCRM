@@ -1,4 +1,6 @@
 import { ProcesarTurno } from './procesar-turno.js';
+import type { EstadoAtencion, OrigenTransicion } from '../dominio/maquina-estados.js';
+import type { TransicionarConversacion } from './transicionar-conversacion.js';
 import type { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import type { LockTurno } from '../infraestructura/redis/lock-turno.js';
 import type {
@@ -92,6 +94,16 @@ class EnviarRespuestaTurnoFalso implements EnviarRespuestaTurno {
   }
 }
 
+/** Doble de `TransicionarConversacion`: registra las transiciones y el orden respecto del envío. */
+class TransicionarConversacionFalso {
+  llamadas: { conversacion: Conversacion; destino: EstadoAtencion; origen: OrigenTransicion }[] = [];
+
+  ejecutar(conversacion: Conversacion, destino: EstadoAtencion, origen: OrigenTransicion): Promise<Conversacion> {
+    this.llamadas.push({ conversacion, destino, origen });
+    return Promise.resolve({ ...conversacion, estado: destino });
+  }
+}
+
 function conversacionDePrueba(
   estado: Conversacion['estado'] = 'bot',
   sobrescribir: Partial<Conversacion> = {},
@@ -124,6 +136,7 @@ function crearProcesar(
     new RepositorioConversacionFalso(conversacion) as unknown as RepositorioConversacion,
     generador,
     salida,
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
   );
 }
 
@@ -139,7 +152,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       repositorio as unknown as RepositorioConversacion,
       generador,
       salida,
-    );
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+  );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
 
@@ -163,7 +177,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       repositorio as unknown as RepositorioConversacion,
       generador,
       salida,
-    );
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+  );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
 
@@ -183,7 +198,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       repositorio as unknown as RepositorioConversacion,
       new GeneradorRespuestaFalso(),
       new EnviarRespuestaTurnoFalso(),
-    );
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+  );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
 
@@ -201,7 +217,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       repositorio as unknown as RepositorioConversacion,
       generador,
       salida,
-    );
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+  );
 
     await procesar.ejecutar('conv-1', 'job-1');
 
@@ -223,7 +240,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       repositorio as unknown as RepositorioConversacion,
       generador,
       new EnviarRespuestaTurnoFalso(),
-    );
+    new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+  );
 
     await expect(procesar.ejecutar('conv-1', 'job-1')).rejects.toThrow('falla del generador');
     expect(lock.liberaciones).toEqual(['conv-1']);
@@ -302,5 +320,108 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
 
     expect(generador.llamadas).toHaveLength(1);
     expect(salida.llamadas).toHaveLength(0);
+  });
+
+  describe('CNV8 — handoff pedido por el generador', () => {
+    function armar(respuesta: RespuestaTurno, estado: Conversacion['estado'] = 'bot') {
+      const orden: string[] = [];
+      const buffer = new BufferTurnoFalso([mensaje('hola')]);
+      const repositorio = new RepositorioConversacionFalso(conversacionDePrueba(estado));
+      const generador = new GeneradorRespuestaFalso(respuesta);
+      const salida = new EnviarRespuestaTurnoFalso();
+      const transicionar = new TransicionarConversacionFalso();
+      const enviarOriginal = salida.enviar.bind(salida);
+      salida.enviar = (...args) => {
+        orden.push('enviar');
+        return enviarOriginal(...args);
+      };
+      const ejecutarOriginal = transicionar.ejecutar.bind(transicionar);
+      transicionar.ejecutar = (...args) => {
+        orden.push('transicionar');
+        return ejecutarOriginal(...args);
+      };
+      const procesar = new ProcesarTurno(
+        new LockTurnoFalso() as unknown as LockTurno,
+        buffer as unknown as BufferTurno,
+        repositorio as unknown as RepositorioConversacion,
+        generador,
+        salida,
+        transicionar as unknown as TransicionarConversacion,
+      );
+      return { procesar, buffer, repositorio, generador, salida, transicionar, orden };
+    }
+
+    const PASO: PasoRespuesta = { paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' };
+
+    it('CNV8 — El generador pide handoff y la conversación queda esperando a un asesor', async () => {
+      const { procesar, buffer, generador, salida, transicionar, orden } = armar({
+        pasos: [PASO],
+        handoff: { motivo: 'audio-repetido' },
+      });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(salida.llamadas[0].pasos).toEqual([PASO]);
+      expect(transicionar.llamadas).toHaveLength(1);
+      const { conversacion, destino, origen } = transicionar.llamadas[0];
+      expect({ id: conversacion.id, estado: conversacion.estado, destino, origen }).toEqual({
+        id: 'conv-1',
+        estado: 'bot',
+        destino: 'handoff_pendiente',
+        origen: 'regla_handoff_explicita',
+      });
+      expect(orden).toEqual(['enviar', 'transicionar']); // primero los pasos (R5), después la transición
+      expect(generador.llamadas).toHaveLength(1);
+      expect(await buffer.tamano()).toBe(0);
+    });
+
+    it('CNV8 — El motivo lead-caliente transiciona con origen lead_caliente', async () => {
+      const { procesar, transicionar } = armar({ pasos: [], handoff: { motivo: 'lead-caliente' } });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(transicionar.llamadas.map((l) => l.origen)).toEqual(['lead_caliente']);
+    });
+
+    it('CNV8 — Tras el handoff el turno sale del bucle aunque el buffer se haya llenado durante la generación', async () => {
+      const { procesar, buffer, generador, transicionar } = armar({ pasos: [], handoff: { motivo: 'tope-turnos' } });
+      const generarOriginal = generador.generar.bind(generador);
+      generador.generar = async (solicitud) => {
+        if (generador.llamadas.length >= 3) throw new Error('el bucle no salió tras el handoff');
+        await buffer.push('conv-1', mensaje('llegó mientras se generaba'));
+        return generarOriginal(solicitud);
+      };
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(generador.llamadas).toHaveLength(1);
+      expect(transicionar.llamadas).toHaveLength(1);
+      expect(await buffer.tamano()).toBe(0); // el mensaje tardío se descarta: ya lo atiende un asesor
+    });
+
+    it('CNV8 — Si la conversación ya salió de bot mientras se generaba, el handoff no la pisa', async () => {
+      const { procesar, generador, repositorio, transicionar, buffer } = armar({
+        pasos: [],
+        handoff: { motivo: 'audio-repetido' },
+      });
+      const generarOriginal = generador.generar.bind(generador);
+      generador.generar = (solicitud) => {
+        repositorio.cambiarEstado('humano'); // un asesor tomó la conversación durante la generación
+        return generarOriginal(solicitud);
+      };
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(transicionar.llamadas).toHaveLength(0);
+      expect(await buffer.tamano()).toBe(0);
+    });
+
+    it('CNV8 — Sin handoff no se transiciona', async () => {
+      const { procesar, transicionar } = armar({ pasos: [PASO] });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(transicionar.llamadas).toHaveLength(0);
+    });
   });
 });
