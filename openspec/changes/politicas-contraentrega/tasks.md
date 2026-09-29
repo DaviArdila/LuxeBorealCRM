@@ -24,7 +24,7 @@
 - [x] **T2 — Importador (IMP7).** Regla de prefijo `politica_` en `validar-catalogo.ts`. RED: 4
   escenarios nuevos (política válida sin advertencia y recortada; vacía → error; >1200 → error; tema
   inválido → error en `clave`).
-- [ ] **T3 — `ConsultarPolitica` (CAT12).** Puerto `RepositorioPolitica`, adaptador Prisma, caso de
+- [x] **T3 — `ConsultarPolitica` (CAT12).** Puerto `RepositorioPolitica`, adaptador Prisma, caso de
   uso y cableado en el módulo. RED: 4 escenarios de CAT12 (unitarios con doble en memoria) + prueba
   de integración del adaptador.
 - [ ] **T4 — Cotización y ficha (CAT10, CAT2, CMP1).** `politicaContraentregaTexto` solo con contra

@@ -3,6 +3,7 @@ import { GeografiaModule } from '../geografia/index.js';
 import { MediosModule } from '../medios/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
+import { ConsultarPolitica } from './aplicacion/consultar-politica.js';
 import { CotizarEnvio } from './aplicacion/cotizar-envio.js';
 import { ImportarCatalogo } from './aplicacion/importar-catalogo.js';
 import { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
@@ -14,11 +15,13 @@ import { CacheCatalogoRedis } from './infraestructura/cache-catalogo-redis.js';
 import { RepositorioEnvioPrisma } from './infraestructura/repositorio-envio-prisma.js';
 import { RepositorioImportacionPrisma } from './infraestructura/repositorio-importacion-prisma.js';
 import { RepositorioParametroCatalogoPrisma } from './infraestructura/repositorio-parametro-prisma.js';
+import { RepositorioPoliticaPrisma } from './infraestructura/repositorio-politica-prisma.js';
 import { RepositorioProductoPrisma } from './infraestructura/repositorio-producto-prisma.js';
 import { CACHE_CATALOGO } from './puertos/cache-catalogo.js';
 import { REPOSITORIO_ENVIO } from './puertos/repositorio-envio.js';
 import { REPOSITORIO_IMPORTACION_CATALOGO } from './puertos/repositorio-importacion.js';
 import { REPOSITORIO_PARAMETRO_CATALOGO } from './puertos/repositorio-parametro.js';
+import { REPOSITORIO_POLITICA } from './puertos/repositorio-politica.js';
 import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
 
 /**
@@ -47,16 +50,25 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     { provide: REPOSITORIO_PRODUCTO, useClass: RepositorioProductoPrisma },
     { provide: REPOSITORIO_ENVIO, useClass: RepositorioEnvioPrisma },
     { provide: REPOSITORIO_PARAMETRO_CATALOGO, useClass: RepositorioParametroCatalogoPrisma },
+    { provide: REPOSITORIO_POLITICA, useClass: RepositorioPoliticaPrisma },
     { provide: REPOSITORIO_IMPORTACION_CATALOGO, useClass: RepositorioImportacionPrisma },
     { provide: CACHE_CATALOGO, useClass: CacheCatalogoRedis },
     ObtenerFichaProducto,
     ListarProductosActivos,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
+    ConsultarPolitica,
     ResolverGeografiaImportacion,
     ProcesarFotos,
     ImportarCatalogo,
   ],
-  exports: [ObtenerFichaProducto, ListarProductosActivos, ObtenerCatalogoCompacto, CotizarEnvio, ImportarCatalogo],
+  exports: [
+    ObtenerFichaProducto,
+    ListarProductosActivos,
+    ObtenerCatalogoCompacto,
+    CotizarEnvio,
+    ConsultarPolitica,
+    ImportarCatalogo,
+  ],
 })
 export class CatalogoModule {}
