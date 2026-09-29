@@ -174,7 +174,9 @@ describe('BarridoVencimientos (T7, integración, R7, D11)', () => {
   it('CNV8 — La vuelta al bot por vencimiento se espeja como pendiente', async () => {
     const contexto = await crearContexto();
     app = contexto.app;
-    const idConv = await crearConversacion(contexto.prisma, 'humano', new Date('2026-09-28T11:00:00Z'));
+    const idInterno = await crearConversacion(contexto.prisma, 'humano', new Date('2026-09-28T11:00:00Z'));
+    const fila = await contexto.prisma.conversacion.findUniqueOrThrow({ where: { id: idInterno } });
+    const idConv = String(fila.chatwootConversationId); // el espejo viaja con el id del canal
 
     await contexto.barrido.ejecutarBarrido();
 

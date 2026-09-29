@@ -119,6 +119,7 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
   it('R5 — El estado sigue en bot durante todo el envío', async () => {
     const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
     const idConv = await crearConversacion(prisma, 'bot');
+    const { chatwootConversationId } = await prisma.conversacion.findUniqueOrThrow({ where: { id: idConv } });
 
     await enviarRespuestaTurno.enviar(idConv, 'resp-1', [
       { paso: 'p1', tipo: 'texto', texto: 'hola' },
@@ -127,7 +128,7 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
 
     expect(salidaCanal.llamadas).toHaveLength(1);
     expect(salidaCanal.llamadas[0]).toEqual({
-      idConversacion: idConv,
+      idConversacion: String(chatwootConversationId), // el id del canal, no el interno
       idRespuesta: 'resp-1',
       requiereEstado: 'bot', // CNV9: la guardia de canales relee el estado en cada paso
       mensajes: [
@@ -135,6 +136,15 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
         { tipo: 'texto', texto: 'mundo' },
       ],
     });
+  });
+
+  it('CNV8 — La respuesta de un handoff admite que la conversación pase a handoff_pendiente antes de publicarse', async () => {
+    const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarRespuestaTurno.enviar(idConv, 'resp-h', [{ paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' }], true);
+
+    expect(salidaCanal.llamadas[0]).toMatchObject({ requiereEstado: 'bot|handoff_pendiente' });
   });
 
   it('R5 — El estado cambia a humano mientras se envía una secuencia de varios mensajes', async () => {

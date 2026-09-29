@@ -86,10 +86,16 @@ class GeneradorRespuestaFalso implements GeneradorRespuesta {
 }
 
 class EnviarRespuestaTurnoFalso implements EnviarRespuestaTurno {
-  llamadas: { idConversacion: string; idRespuesta: string; pasos: readonly PasoRespuesta[] }[] = [];
+  llamadas: { idConversacion: string; idRespuesta: string; pasos: readonly PasoRespuesta[]; conHandoff: boolean }[] =
+    [];
 
-  enviar(idConversacion: string, idRespuesta: string, pasos: readonly PasoRespuesta[]): Promise<void> {
-    this.llamadas.push({ idConversacion, idRespuesta, pasos });
+  enviar(
+    idConversacion: string,
+    idRespuesta: string,
+    pasos: readonly PasoRespuesta[],
+    conHandoff = false,
+  ): Promise<void> {
+    this.llamadas.push({ idConversacion, idRespuesta, pasos, conHandoff });
     return Promise.resolve();
   }
 }
@@ -162,6 +168,23 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
     expect(generador.llamadas[0].mensajes).toHaveLength(4);
     expect(salida.llamadas).toHaveLength(1);
     expect(salida.llamadas[0].pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'cuatro' }]);
+  });
+
+  it('CNV8 — dos turnos de la misma conversación no comparten idRespuesta y el id cabe en el outbox', async () => {
+    const buffer = new BufferTurnoFalso([mensaje('uno')]);
+    const salida = new EnviarRespuestaTurnoFalso();
+    const procesar = crearProcesar(buffer, conversacionDePrueba('bot'), new GeneradorRespuestaFalso(), salida);
+    const idJob = 'turno-018f0a4e-7b2c-7c1a-9d3e-5a6b7c8d9e0f-respaldo-1a2b3c4d'; // el más largo (59)
+
+    await procesar.ejecutar('conv-1', idJob);
+    await buffer.push('conv-1', mensaje('dos'));
+    await procesar.ejecutar('conv-1', idJob);
+
+    const ids = salida.llamadas.map((llamada) => llamada.idRespuesta);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) {
+      expect(id).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+    }
   });
 
   it('R8 — dos procesamientos de la misma conversación no corren en paralelo: el segundo no adquiere el lock', async () => {
@@ -362,6 +385,8 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       await procesar.ejecutar('conv-1', 'job-1');
 
       expect(salida.llamadas[0].pasos).toEqual([PASO]);
+      // El mensaje de handoff sale después de la transición: su guardia debe admitir ese estado.
+      expect(salida.llamadas[0].conHandoff).toBe(true);
       expect(transicionar.llamadas).toHaveLength(1);
       const { conversacion, destino, origen } = transicionar.llamadas[0];
       expect({ id: conversacion.id, estado: conversacion.estado, destino, origen }).toEqual({

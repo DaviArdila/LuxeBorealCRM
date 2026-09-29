@@ -431,11 +431,13 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
     app = contexto.app;
     const prisma = app.get(PrismaService);
     const consumidor = app.get(ConsumidorConversaciones);
-    const { id, chatwootConversationId } = await crearConversacion(prisma, 'bot');
+    const { chatwootConversationId } = await crearConversacion(prisma, 'bot');
 
     await consumidor.consumir(eventoMensajeHumano(chatwootConversationId, 'eco-1'));
 
-    expect(contexto.salidaCanal.estados).toEqual([{ idConversacion: id, idOperacion: 'espejo-v1', estado: 'abierta' }]);
+    expect(contexto.salidaCanal.estados).toEqual([
+      { idConversacion: String(chatwootConversationId), idOperacion: 'espejo-v1', estado: 'abierta' },
+    ]);
   });
 
   it('CNV8 — El eco del espejo abierta no vuelve a transicionar', async () => {

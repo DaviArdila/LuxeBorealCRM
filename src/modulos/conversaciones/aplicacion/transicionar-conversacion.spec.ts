@@ -140,7 +140,7 @@ describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () =>
 
     await casoDeUso.ejecutar(conversacionDePrueba({ version: 3 }), 'bot', 'ttl');
 
-    expect(salida.estados).toEqual([{ idConversacion: 'conv-1', idOperacion: 'espejo-v4', estado: 'pendiente' }]);
+    expect(salida.estados).toEqual([{ idConversacion: '42', idOperacion: 'espejo-v4', estado: 'pendiente' }]);
   });
 
   it('CNV8 — Una vuelta al bot que vino del canal no se espeja', async () => {
@@ -162,7 +162,7 @@ describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () =>
 
     await casoDeUso.ejecutar(conversacionDePrueba({ estado: 'bot', version: 7 }), 'handoff_pendiente', 'regla_handoff_explicita');
 
-    expect(salida.estados).toEqual([{ idConversacion: 'conv-1', idOperacion: 'espejo-v8', estado: 'abierta' }]);
+    expect(salida.estados).toEqual([{ idConversacion: '42', idOperacion: 'espejo-v8', estado: 'abierta' }]);
   });
 
   it('un conflicto de versión persistente no espeja nada', async () => {

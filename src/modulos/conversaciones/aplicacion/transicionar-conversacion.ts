@@ -75,7 +75,7 @@ export class TransicionarConversacion {
     if (estado === null) return;
     // Sin ':' — `claveEstado` (canales) restringe `idOperacion` a `[A-Za-z0-9_-]`.
     await this.salidaCanal.cambiarEstado({
-      idConversacion: transicionada.id,
+      idConversacion: String(transicionada.chatwootConversationId),
       idOperacion: `espejo-v${transicionada.version}`,
       estado,
     });

@@ -251,7 +251,9 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
     const ventanaMs = (fila.expiraControlEn?.getTime() ?? 0) - antes;
     expect(ventanaMs).toBeGreaterThan(44 * 60_000);
     expect(ventanaMs).toBeLessThan(46 * 60_000);
-    expect(contexto.salidaCanal.estados).toEqual([{ idConversacion: idConv, idOperacion: 'espejo-v1', estado: 'abierta' }]);
+    expect(contexto.salidaCanal.estados).toEqual([
+      { idConversacion: String(fila.chatwootConversationId), idOperacion: 'espejo-v1', estado: 'abierta' },
+    ]);
     expect(await buffer.tamano(idConv)).toBe(0);
   });
 });

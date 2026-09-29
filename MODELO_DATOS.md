@@ -122,8 +122,16 @@ Claves conocidas: `horario_atencion`, `recargo_contraentrega_pct` (5), `factor_v
 `transportadoras`, `aviso_datos`, `nombre_asesor`, `mensaje_handoff`,
 `mensaje_handoff_fuera_horario`, `mensaje_cierre_captura_datos`, `mensaje_fuera_cobertura`,
 `mensaje_error_llm`, `mensaje_espera_handoff` (Fase 05), `mensaje_techo_gasto`,
+`mensaje_pedir_texto_audio` y `mensaje_imagen_no_procesada` (Fase 07a, R12),
 `llm_techo_mensual_usd` y `llm_estado_techo` (Fase 06; esta última la escribe el gateway, no el
 negocio).
+
+**Textos fijos del agente (Fase 07a, AGT3, R15).** `mensaje_pedir_texto_audio`,
+`mensaje_imagen_no_procesada`, `aviso_datos`, `mensaje_handoff` (dentro del horario de atención) y
+`mensaje_handoff_fuera_horario` (fuera de él) son texto plano que el agente envía sin pasar por el LLM.
+Si la fila no existe o está en blanco se usa un texto de respaldo (los del prototipo, P31) definido en
+un solo lugar, `agente/infraestructura/prisma/repositorio-parametro-agente-prisma.ts`; el negocio los
+reemplaza sin desplegar.
 
 **Políticas del negocio (`politica_<tema>`).** Cada fila `politica_<tema>` es una política editable
 (contra entrega, devoluciones, garantía…): el tema son minúsculas sin acentos, dígitos y guion bajo, y el

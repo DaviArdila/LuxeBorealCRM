@@ -121,17 +121,18 @@ async function crearContexto(): Promise<{
   };
 }
 
+/** Devuelve el id de la conversación en el canal: el que viaja por `SALIDA_CANAL` (y por la guardia). */
 async function crearConversacion(prisma: PrismaService, estado: EstadoAtencion): Promise<string> {
   const contacto = await prisma.contacto.create({ data: {} });
   const conversacion = await prisma.conversacion.create({
     data: {
       contactoId: contacto.id,
-      chatwootConversationId: Math.floor(Math.random() * 1_000_000_000),
+      chatwootConversationId: Math.floor(Math.random() * 1_000_000_000) + 1,
       canal: 'whatsapp',
       estado,
     },
   });
-  return conversacion.id;
+  return String(conversacion.chatwootConversationId);
 }
 
 function textos(...valores: string[]): { tipo: 'texto'; texto: string }[] {
@@ -170,7 +171,7 @@ describe('Guardia de envío por paso con outbox y publicador reales (T3, integra
     });
     // Un asesor toma la conversación justo después de que sale el primer paso.
     contexto.adaptador.despuesDelPrimerEnvio = async () => {
-      await contexto.prisma.conversacion.update({ where: { id: idConv }, data: { estado: 'humano' } });
+      await contexto.prisma.conversacion.update({ where: { chatwootConversationId: Number(idConv) }, data: { estado: 'humano' } });
     };
 
     await contexto.publicador.publicarPendientes();
