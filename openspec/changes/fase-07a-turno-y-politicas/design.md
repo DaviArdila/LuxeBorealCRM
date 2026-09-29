@@ -151,6 +151,8 @@ orquestador único (**A5**).
 **Rationale**: una respuesta por ráfaga (**R13**), bajo el lock (**R8**) y por el punto único de
 salida (**R5**); cada política se prueba sola.
 
+**Desviaciones de implementación (T6, anotadas al construir):** (1) `anteponerAviso` recibe la lista de pasos y el aviso, no la respuesta completa, y lo aplica `MotorTurno`, que ahora también inyecta `ContadoresSesion` y `RepositorioParametroAgente`. (2) El motor solo consulta el contador de turnos cuando `version === 0` y la respuesta trae pasos: una sesión posterior o una respuesta vacía no cuestan lectura de Redis ni de `parametro`. (3) La respuesta de `PoliticaTopeTurnos` no cuenta como turno (`cuentaTurno: false`): tras ella la conversación deja de estar en `bot`. (4) El tope se lee de `AGENTE_TOPE_TURNOS` inyectando solo ese campo de la configuración.
+
 ### Decision D7: relectura por paso con una guardia que conversaciones registra en canales
 
 **Choice**: `SolicitudEnvioMensajes` gana `requiereEstado?: string` (opaco para `canales`); la fila de
