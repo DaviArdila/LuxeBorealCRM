@@ -59,6 +59,24 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   CONVERSACIONES_CONCURRENCIA: 10,
   CONVERSACIONES_BARRIDO_MS: 300000,
   HANDOFF_ESPERA_MIN: 30,
+  // Fase 06, T3: `llm` aún no está en `AppModule`; los valores solo cumplen `esquemaConfiguracion`.
+  LLM_CONVERSACION_MODELOS: ['openai/gpt-5.6-luna'],
+  LLM_CONVERSACION_TIMEOUT_MS: 15000,
+  LLM_CONVERSACION_MAX_TOKENS: 400,
+  LLM_CONVERSACION_MAX_REINTENTOS: 2,
+  LLM_EVALS_MODELOS: ['openai/gpt-5.6-luna'],
+  LLM_EVALS_TIMEOUT_MS: 30000,
+  LLM_EVALS_MAX_TOKENS: 400,
+  LLM_EVALS_MAX_REINTENTOS: 2,
+  LLM_TECHO_MENSUAL_USD: 10,
+  LLM_UMBRAL_AVISO_PCT: 80,
+  LLM_PRECIOS_USD_JSON: { 'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
+  LLM_REINTENTO_BASE_MS: 500,
+  LLM_REINTENTO_MAX_MS: 2000,
+  LLM_CB_UMBRAL_FALLOS: 5,
+  LLM_CB_VENTANA_S: 60,
+  OPENROUTER_API_KEY: '',
+  OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
 };
 
 export interface DocumentosContrato {

@@ -16,6 +16,7 @@ import type {
   RepositorioImportacionCatalogo,
 } from '../../../src/modulos/catalogo/puertos/repositorio-importacion.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 let modulo: TestingModule | undefined;
 
@@ -65,6 +66,7 @@ async function crearRepositorio(): Promise<{ repositorio: RepositorioImportacion
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })

@@ -38,6 +38,7 @@ import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/inde
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 class EnviarRespuestaTurnoDoble implements EnviarRespuestaTurno {
   llamadas: { idConversacion: string; idRespuesta: string; pasos: readonly PasoRespuesta[] }[] = [];
@@ -136,6 +137,7 @@ async function crearAplicacion(
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
     ...configuracionParcial,
   };
 

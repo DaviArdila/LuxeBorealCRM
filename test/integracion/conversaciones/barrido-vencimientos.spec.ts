@@ -22,6 +22,7 @@ import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/inde
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 class EnviarRespuestaTurnoEspia implements PuertoEnviarRespuestaTurno {
   llamadas: { idConversacion: string; idRespuesta: string; pasos: readonly PasoRespuesta[] }[] = [];
@@ -78,6 +79,7 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   const clock = new ClockFalso(new Date('2026-09-28T12:00:00Z'));

@@ -6,6 +6,7 @@ import { AppModule } from '../../src/app.module.js';
 import { configurarAplicacion } from '../../src/configurar-aplicacion.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { ContratoFixtureModule } from './fixture/contrato-fixture.module.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Configuración literal para los tests de `test/contrato/` (D3 de `design.md`). Ninguna ruta del
@@ -56,6 +57,7 @@ export function configuracionDeContrato(): Configuracion {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 }
 

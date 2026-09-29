@@ -14,6 +14,7 @@ import {
   type Configuracion,
 } from '../../../src/plataforma/config/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 const RUTA_DIVIPOLA = path.join(import.meta.dirname, '../../../prisma/datos/divipola.json');
 const RUTA_PROCEDENCIA = path.join(
@@ -83,6 +84,7 @@ async function crearCasoDeUso(): Promise<SembrarGeografia> {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   const modulo = await Test.createTestingModule({

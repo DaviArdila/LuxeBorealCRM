@@ -9,6 +9,7 @@ import {
 } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 let modulo: TestingModule | undefined;
 
@@ -58,6 +59,7 @@ async function crearRepositorio(): Promise<{ repositorio: RepositorioEventoEntra
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })

@@ -6,6 +6,7 @@ import {
   credencialesMinioDePrueba,
   urlMinioDePrueba,
 } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Contra MinIO real vía Testcontainers (D9, MED1). El bucket de pruebas ya existe/se confirma en
@@ -54,6 +55,7 @@ function crearAlmacenamiento(): AlmacenamientoMinio {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   return new AlmacenamientoMinio(configuracion);

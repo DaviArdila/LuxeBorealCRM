@@ -31,6 +31,7 @@ import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Este e2e prueba `canales` de punta a punta con un consumidor propio (abajo); sin este
@@ -94,6 +95,7 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 }
 

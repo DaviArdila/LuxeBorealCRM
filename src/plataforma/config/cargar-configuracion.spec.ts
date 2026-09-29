@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cargarConfiguracion } from './cargar-configuracion.js';
-import { ConfiguracionInvalidaError } from './esquema.js';
+import { ConfiguracionInvalidaError, type VariableInvalida } from './esquema.js';
 
 const fuenteValida = {
   NODE_ENV: 'development',
@@ -188,6 +188,7 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        OPENROUTER_API_KEY: 'clave-real',
       });
 
       expect(configuracion.DOCS_HABILITADO).toBe(false);
@@ -328,6 +329,7 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        OPENROUTER_API_KEY: 'clave-real',
       };
 
       expect(() => cargarConfiguracion(fuenteValidaProduccion)).not.toThrow();
@@ -568,6 +570,161 @@ describe('cargarConfiguracion', () => {
           problema: 'valor',
         });
       }
+    });
+  });
+
+  describe('Variables LLM_*/OPENROUTER_* (fase-06-pasarela-llm, T3, D3/D12, R15)', () => {
+    function variablesRechazadas(
+      fuente: Readonly<Record<string, string | undefined>>,
+    ): readonly VariableInvalida[] {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) {
+          return error.variables;
+        }
+        throw error;
+      }
+      throw new Error('La configuración se aceptó y debía rechazarse');
+    }
+
+    it('usa los valores de D12 por defecto cuando ninguna variable LLM_* viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_TIMEOUT_MS).toBe(15000);
+      expect(configuracion.LLM_CONVERSACION_MAX_TOKENS).toBe(400);
+      expect(configuracion.LLM_CONVERSACION_MAX_REINTENTOS).toBe(2);
+      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_EVALS_TIMEOUT_MS).toBe(30000);
+      expect(configuracion.LLM_TECHO_MENSUAL_USD).toBe(10);
+      expect(configuracion.LLM_UMBRAL_AVISO_PCT).toBe(80);
+      expect(configuracion.LLM_REINTENTO_BASE_MS).toBe(500);
+      expect(configuracion.LLM_REINTENTO_MAX_MS).toBe(2000);
+      expect(configuracion.LLM_CB_UMBRAL_FALLOS).toBe(5);
+      expect(configuracion.LLM_CB_VENTANA_S).toBe(60);
+      expect(configuracion.OPENROUTER_API_KEY).toBe('');
+      expect(configuracion.OPENROUTER_BASE_URL).toBe('https://openrouter.ai/api/v1');
+      expect(configuracion.LLM_PRECIOS_USD_JSON).toEqual({
+        'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+      });
+    });
+
+    it('interpreta las listas de modelos como CSV en orden de prioridad, sin espacios sobrantes', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        LLM_CONVERSACION_MODELOS: ' modelo-a , modelo-b ',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'modelo-a': { entrada: 1, salida: 2, cache: 0 },
+          'modelo-b': { entrada: 3, salida: 4, cache: 0 },
+          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        }),
+      });
+
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['modelo-a', 'modelo-b']);
+    });
+
+    it('LLM3 — Timeout de conversación por debajo del TTL del lock de turno', () => {
+      const conDefectos = cargarConfiguracion(fuenteValida);
+      const justoDebajo = cargarConfiguracion({
+        ...fuenteValida,
+        LLM_CONVERSACION_TIMEOUT_MS: '29999',
+      });
+
+      expect(conDefectos.LLM_CONVERSACION_TIMEOUT_MS).toBeLessThan(
+        conDefectos.LOCK_TURNO_TTL_S * 1000,
+      );
+      expect(justoDebajo.LLM_CONVERSACION_TIMEOUT_MS).toBe(29999);
+      expect(
+        variablesRechazadas({ ...fuenteValida, LLM_CONVERSACION_TIMEOUT_MS: '30000' }),
+      ).toContainEqual({ nombre: 'LLM_CONVERSACION_TIMEOUT_MS', problema: 'valor' });
+      expect(
+        variablesRechazadas({ ...fuenteValida, LOCK_TURNO_TTL_S: '10' }),
+      ).toContainEqual({ nombre: 'LLM_CONVERSACION_TIMEOUT_MS', problema: 'valor' });
+    });
+
+    it('LLM12 — Configuración LLM inválida impide el arranque nombrando la variable', () => {
+      expect(variablesRechazadas({ ...fuenteValida, LLM_CONVERSACION_TIMEOUT_MS: '0' })).toContainEqual({
+        nombre: 'LLM_CONVERSACION_TIMEOUT_MS',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LLM_CONVERSACION_MODELOS: ' , ' })).toContainEqual({
+        nombre: 'LLM_CONVERSACION_MODELOS',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LLM_TECHO_MENSUAL_USD: '0' })).toContainEqual({
+        nombre: 'LLM_TECHO_MENSUAL_USD',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LLM_UMBRAL_AVISO_PCT: '100' })).toContainEqual({
+        nombre: 'LLM_UMBRAL_AVISO_PCT',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LLM_PRECIOS_USD_JSON: '{no es json' })).toContainEqual({
+        nombre: 'LLM_PRECIOS_USD_JSON',
+        problema: 'valor',
+      });
+      expect(
+        variablesRechazadas({
+          ...fuenteValida,
+          LLM_REINTENTO_BASE_MS: '3000',
+          LLM_REINTENTO_MAX_MS: '2000',
+        }),
+      ).toContainEqual({ nombre: 'LLM_REINTENTO_BASE_MS', problema: 'valor' });
+    });
+
+    it('LLM12 — un modelo de un perfil sin precio declarado impide el arranque sin imprimir su valor', () => {
+      const fuenteInvalida = {
+        ...fuenteValida,
+        LLM_EVALS_MODELOS: 'openai/gpt-5.6-luna,modelo-secreto-sin-precio',
+      };
+
+      expect(variablesRechazadas(fuenteInvalida)).toContainEqual({
+        nombre: 'LLM_EVALS_MODELOS',
+        problema: 'valor',
+      });
+      expect.assertions(3);
+      try {
+        cargarConfiguracion(fuenteInvalida);
+      } catch (error) {
+        expect((error as ConfiguracionInvalidaError).message).toContain('LLM_EVALS_MODELOS');
+        expect((error as ConfiguracionInvalidaError).message).not.toContain(
+          'modelo-secreto-sin-precio',
+        );
+      }
+    });
+
+    it('acepta dos perfiles que solo difieren en la lista de modelos (LLM12, R15)', () => {
+      const precios = JSON.stringify({
+        'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'otra/marca': { entrada: 0.5, salida: 2, cache: 0.05 },
+      });
+
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        LLM_PRECIOS_USD_JSON: precios,
+        LLM_EVALS_MODELOS: 'otra/marca',
+      });
+
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['otra/marca']);
+    });
+
+    it('OPENROUTER_API_KEY vacía en production lanza ConfiguracionInvalidaError', () => {
+      const fuenteProduccion = {
+        ...fuenteValida,
+        NODE_ENV: 'production',
+        CHATWOOT_BOT_TOKEN: 'token-real',
+        CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+      };
+
+      expect(variablesRechazadas(fuenteProduccion)).toContainEqual({
+        nombre: 'OPENROUTER_API_KEY',
+        problema: 'valor',
+      });
+      expect(() =>
+        cargarConfiguracion({ ...fuenteProduccion, OPENROUTER_API_KEY: 'clave-real' }),
+      ).not.toThrow();
     });
   });
 });

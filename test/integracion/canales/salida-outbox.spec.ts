@@ -11,6 +11,7 @@ import { PublicadorOutbox } from '../../../src/plataforma/outbox/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { ChatwootFalso } from '../../soporte/chatwoot-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Conecta `canales` con el outbox genérico contra un `ChatwootFalso` real (T7, D9/D10/D13, CAN7,
@@ -63,6 +64,7 @@ async function crearAplicacion(
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
     ...configuracionParcial,
   };
 

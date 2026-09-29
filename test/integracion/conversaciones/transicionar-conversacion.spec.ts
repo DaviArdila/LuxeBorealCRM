@@ -12,6 +12,7 @@ import {
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 let modulo: TestingModule | undefined;
 
@@ -65,6 +66,7 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
@@ -114,6 +116,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'bot', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -135,6 +138,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion);
 
     await expect(casoDeUso.ejecutar(conversacion, 'pausado', 'eco_humano')).rejects.toThrow(TransicionInvalida);
@@ -156,6 +160,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion);
 
     const resultado = await casoDeUso.ejecutar(conversacion, 'bot', 'chatwoot_resolved');
@@ -180,6 +185,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion);
 
     const primerEco = await casoDeUso.ejecutar(conversacion, 'humano', 'eco_humano');
