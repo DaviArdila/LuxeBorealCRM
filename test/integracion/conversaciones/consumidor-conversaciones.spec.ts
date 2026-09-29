@@ -1,7 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { ConsumidorConversaciones } from '../../../src/modulos/conversaciones/aplicacion/consumidor-conversaciones.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
@@ -15,7 +15,12 @@ import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraest
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
 import { RepositorioParametroConversacionesPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
-import { GENERADOR_RESPUESTA } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
+import {
+  GENERADOR_RESPUESTA,
+  type GeneradorRespuesta,
+  type RespuestaTurno,
+  type SolicitudTurno,
+} from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from '../../../src/modulos/conversaciones/puertos/interruptor-global.js';
 import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from '../../../src/modulos/conversaciones/puertos/repositorio-parametro-conversaciones.js';
 import { REPOSITORIO_CONVERSACION } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
@@ -51,8 +56,22 @@ class EnviarRespuestaTurnoDoble implements EnviarRespuestaTurno {
 
 /** Eco trivial: devuelve el propio `idMensaje` como texto (esta suite no depende de Chatwoot real). */
 class LectorMensajeCanalDoble implements LectorMensajeCanal {
+  /** Ids de mensaje leídos: CNV7 exige que un mensaje no textual no llegue a leerse. */
+  lecturas: string[] = [];
+
   obtenerTexto(_idConversacion: string, idMensaje: string): Promise<string | null> {
+    this.lecturas.push(idMensaje);
     return Promise.resolve(`texto-${idMensaje}`);
+  }
+}
+
+/** Generador que registra cada solicitud del turno y no responde nada (CNV8: sin pasos). */
+class GeneradorRegistrador implements GeneradorRespuesta {
+  solicitudes: SolicitudTurno[] = [];
+
+  generar(solicitud: SolicitudTurno): Promise<RespuestaTurno> {
+    this.solicitudes.push(solicitud);
+    return Promise.resolve({ pasos: [] });
   }
 }
 
@@ -96,7 +115,13 @@ class SalidaCanalDoble implements SalidaCanal {
 async function crearAplicacion(
   configuracionParcial: Partial<Configuracion> = {},
   claseBufferTurno: typeof BufferTurno = BufferTurno,
-): Promise<{ app: INestApplication; salida: EnviarRespuestaTurnoDoble; salidaCanal: SalidaCanalDoble }> {
+  generador?: GeneradorRespuesta,
+): Promise<{
+  app: INestApplication;
+  salida: EnviarRespuestaTurnoDoble;
+  salidaCanal: SalidaCanalDoble;
+  lector: LectorMensajeCanalDoble;
+}> {
   const configuracionDePrueba: Configuracion = {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -143,6 +168,7 @@ async function crearAplicacion(
 
   const salida = new EnviarRespuestaTurnoDoble();
   const salidaCanal = new SalidaCanalDoble();
+  const lector = new LectorMensajeCanalDoble();
 
   let constructorModulo = Test.createTestingModule({
     imports: [
@@ -157,9 +183,11 @@ async function crearAplicacion(
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
       { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
       { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
-      { provide: LECTOR_MENSAJE_CANAL, useClass: LectorMensajeCanalDoble },
+      { provide: LECTOR_MENSAJE_CANAL, useValue: lector },
       { provide: SALIDA_CANAL, useValue: salidaCanal },
-      { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
+      generador === undefined
+        ? { provide: GENERADOR_RESPUESTA, useClass: AgenteEco }
+        : { provide: GENERADOR_RESPUESTA, useValue: generador },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: salida },
       BufferTurno,
       LockTurno,
@@ -181,7 +209,7 @@ async function crearAplicacion(
 
   const app = modulo.createNestApplication();
   await app.init();
-  return { app, salida, salidaCanal };
+  return { app, salida, salidaCanal, lector };
 }
 
 async function crearConversacion(
@@ -202,7 +230,11 @@ async function crearConversacion(
  * por test) para que los sufijos cortos y repetidos entre tests (`'m1'`, `'m2'`...) no colisionen en
  * la marca de idempotencia de Redis, compartida entre los `it()` de este archivo.
  */
-function eventoMensajeEntrante(chatwootConversationId: number, sufijoIdMensaje: string): EventoCanal {
+function eventoMensajeEntrante(
+  chatwootConversationId: number,
+  sufijoIdMensaje: string,
+  tipoContenido: Extract<EventoCanal, { tipo: 'mensaje-entrante' }>['tipoContenido'] = 'texto',
+): EventoCanal {
   return {
     v: 1,
     eventoProveedor: 'message_created',
@@ -214,7 +246,7 @@ function eventoMensajeEntrante(chatwootConversationId: number, sufijoIdMensaje: 
     },
     tipo: 'mensaje-entrante',
     idMensaje: `${chatwootConversationId}-${sufijoIdMensaje}`,
-    tipoContenido: 'texto',
+    tipoContenido,
   };
 }
 
@@ -272,6 +304,52 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     expect(contexto.salida.llamadas).toHaveLength(0);
+  });
+
+  it('CNV7 — Un audio llega al generador con su tipo y sin leer texto de Chatwoot', async () => {
+    const generador = new GeneradorRegistrador();
+    const contexto = await crearAplicacion({}, BufferTurno, generador);
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { chatwootConversationId } = await crearConversacion(prisma, 'bot');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'audio-1', 'audio'));
+
+    await vi.waitFor(
+      () => {
+        expect(generador.solicitudes).toHaveLength(1);
+      },
+      { timeout: 10_000, interval: 100 },
+    );
+    expect(generador.solicitudes[0].mensajes).toEqual([
+      { idMensaje: `${chatwootConversationId}-audio-1`, tipoContenido: 'audio', texto: '' },
+    ]);
+    expect(contexto.lector.lecturas).toHaveLength(0);
+    expect(contexto.salida.llamadas).toHaveLength(0); // CNV8: sin pasos, nada sale
+  });
+
+  it('un mensaje de texto sí se lee de Chatwoot y viaja con su tipo', async () => {
+    const generador = new GeneradorRegistrador();
+    const contexto = await crearAplicacion({}, BufferTurno, generador);
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const { chatwootConversationId } = await crearConversacion(prisma, 'bot');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'texto-1'));
+
+    await vi.waitFor(
+      () => {
+        expect(generador.solicitudes).toHaveLength(1);
+      },
+      { timeout: 10_000, interval: 100 },
+    );
+    const idMensaje = `${chatwootConversationId}-texto-1`;
+    expect(generador.solicitudes[0].mensajes).toEqual([
+      { idMensaje, tipoContenido: 'texto', texto: `texto-${idMensaje}` },
+    ]);
+    expect(contexto.lector.lecturas).toEqual([idMensaje]);
   });
 
   it('CNV4 — Con el interruptor apagado, el mensaje se registra sin generar respuesta', async () => {

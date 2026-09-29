@@ -19,6 +19,7 @@ export {
   type ConsumidorEventosCanal,
 } from './puertos/consumidor-eventos-canal.js';
 export type { EventoCanal } from './dominio/evento-canal.js';
+export { perfilDeCapacidades, type PerfilCapacidades } from './dominio/perfil-capacidades.js';
 export { LECTOR_MENSAJE_CANAL, type LectorMensajeCanal } from './puertos/lector-mensaje-canal.js';
 export {
   SALIDA_CANAL,

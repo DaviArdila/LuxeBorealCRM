@@ -1,6 +1,8 @@
 /** Un paso de la respuesta generada, listo para enviar (D9/D10 de `design.md`). */
 export interface PasoRespuesta {
   readonly paso: string;
+  /** La 07b agrega `{ tipo: 'imagen'; claveObjeto; leyenda? }`. */
+  readonly tipo: 'texto';
   readonly texto: string;
 }
 

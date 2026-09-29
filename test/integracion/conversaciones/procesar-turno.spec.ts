@@ -143,7 +143,7 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
     const idConv = await crearConversacion(prisma, 'bot');
 
     for (const texto of ['uno', 'dos', 'tres', 'cuatro']) {
-      await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), texto }));
+      await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), tipoContenido: 'texto', texto }));
       await colaTurno.encolarConDebounce(idConv);
     }
 
@@ -154,7 +154,7 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
       { timeout: 10_000, interval: 100 },
     );
 
-    expect(contexto.salida.llamadas[0].pasos).toEqual([{ paso: 'eco-1', texto: 'cuatro' }]);
+    expect(contexto.salida.llamadas[0].pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'cuatro' }]);
   });
 
   it('R8 — dos jobs de la misma conversación no producen dos respuestas', async () => {
@@ -164,7 +164,7 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
     const buffer = app.get(BufferTurno);
     const procesarTurno = app.get(ProcesarTurno);
     const idConv = await crearConversacion(prisma, 'bot');
-    await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), texto: 'hola' }));
+    await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), tipoContenido: 'texto', texto: 'hola' }));
 
     // Dos llamadas concurrentes a `ejecutar` sobre la misma conversación (simula dos jobs a la vez).
     const [primero, segundo] = await Promise.all([
@@ -184,7 +184,7 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
     const buffer = app.get(BufferTurno);
     const colaTurno = app.get(ColaTurno);
     const idConv = await crearConversacion(prisma, 'humano');
-    await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), texto: 'hola' }));
+    await buffer.push(idConv, JSON.stringify({ idMensaje: crypto.randomUUID(), tipoContenido: 'texto', texto: 'hola' }));
 
     await colaTurno.encolarConDebounce(idConv);
     await new Promise((resolve) => setTimeout(resolve, 1000)); // ventana de debounce + margen

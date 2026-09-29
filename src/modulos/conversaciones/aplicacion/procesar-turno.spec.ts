@@ -1,7 +1,12 @@
 import { ProcesarTurno } from './procesar-turno.js';
 import type { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import type { LockTurno } from '../infraestructura/redis/lock-turno.js';
-import type { MensajeTurno, GeneradorRespuesta, RespuestaTurno } from '../puertos/generador-respuesta.js';
+import type {
+  GeneradorRespuesta,
+  MensajeTurno,
+  RespuestaTurno,
+  SolicitudTurno,
+} from '../puertos/generador-respuesta.js';
 import type { Conversacion, RepositorioConversacion } from '../puertos/repositorio-conversacion.js';
 import type { EnviarRespuestaTurno, PasoRespuesta } from '../puertos/salida-conversacion.js';
 
@@ -64,11 +69,17 @@ class RepositorioConversacionFalso implements Pick<RepositorioConversacion, 'obt
 }
 
 class GeneradorRespuestaFalso implements GeneradorRespuesta {
-  llamadas: MensajeTurno[][] = [];
+  llamadas: SolicitudTurno[] = [];
 
-  generar(mensajes: readonly MensajeTurno[]): Promise<RespuestaTurno> {
-    this.llamadas.push([...mensajes]);
-    return Promise.resolve({ pasos: [{ paso: 'eco-1', texto: mensajes.at(-1)?.texto ?? '' }] });
+  constructor(private readonly respuestaFija?: RespuestaTurno) {}
+
+  generar(solicitud: SolicitudTurno): Promise<RespuestaTurno> {
+    this.llamadas.push(solicitud);
+    return Promise.resolve(
+      this.respuestaFija ?? {
+        pasos: [{ paso: 'eco-1', tipo: 'texto', texto: solicitud.mensajes.at(-1)?.texto ?? '' }],
+      },
+    );
   }
 }
 
@@ -81,19 +92,39 @@ class EnviarRespuestaTurnoFalso implements EnviarRespuestaTurno {
   }
 }
 
-function conversacionDePrueba(estado: Conversacion['estado'] = 'bot'): Conversacion {
+function conversacionDePrueba(
+  estado: Conversacion['estado'] = 'bot',
+  sobrescribir: Partial<Conversacion> = {},
+): Conversacion {
   return {
     id: 'conv-1',
     contactoId: 'contacto-1',
     chatwootConversationId: 42,
+    canal: 'whatsapp',
     estado,
     expiraControlEn: null,
     version: 0,
+    ...sobrescribir,
   };
 }
 
-function mensaje(texto: string): string {
-  return JSON.stringify({ idMensaje: crypto.randomUUID(), texto } satisfies MensajeTurno);
+function mensaje(texto: string, tipoContenido: MensajeTurno['tipoContenido'] = 'texto'): string {
+  return JSON.stringify({ idMensaje: crypto.randomUUID(), tipoContenido, texto } satisfies MensajeTurno);
+}
+
+function crearProcesar(
+  buffer: BufferTurnoFalso,
+  conversacion: Conversacion,
+  generador: GeneradorRespuesta,
+  salida: EnviarRespuestaTurno,
+): ProcesarTurno {
+  return new ProcesarTurno(
+    new LockTurnoFalso() as unknown as LockTurno,
+    buffer as unknown as BufferTurno,
+    new RepositorioConversacionFalso(conversacion) as unknown as RepositorioConversacion,
+    generador,
+    salida,
+  );
 }
 
 describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
@@ -114,9 +145,9 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
 
     expect(resultado).toEqual({ reencolar: false });
     expect(generador.llamadas).toHaveLength(1);
-    expect(generador.llamadas[0]).toHaveLength(4);
+    expect(generador.llamadas[0].mensajes).toHaveLength(4);
     expect(salida.llamadas).toHaveLength(1);
-    expect(salida.llamadas[0].pasos).toEqual([{ paso: 'eco-1', texto: 'cuatro' }]);
+    expect(salida.llamadas[0].pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'cuatro' }]);
   });
 
   it('R8 — dos procesamientos de la misma conversación no corren en paralelo: el segundo no adquiere el lock', async () => {
@@ -196,5 +227,80 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
 
     await expect(procesar.ejecutar('conv-1', 'job-1')).rejects.toThrow('falla del generador');
     expect(lock.liberaciones).toEqual(['conv-1']);
+  });
+
+  it('CNV7 — El contexto del turno identifica la conversación, el contacto y la sesión', async () => {
+    const buffer = new BufferTurnoFalso([mensaje('hola')]);
+    const generador = new GeneradorRespuestaFalso();
+    const procesar = crearProcesar(
+      buffer,
+      conversacionDePrueba('bot', { version: 2, canal: 'whatsapp' }),
+      generador,
+      new EnviarRespuestaTurnoFalso(),
+    );
+
+    await procesar.ejecutar('conv-1', 'job-1');
+
+    expect(generador.llamadas[0].contexto).toEqual({
+      conversacionId: 'conv-1',
+      contactoId: 'contacto-1',
+      canal: 'whatsapp',
+      version: 2,
+      capacidades: { mensajeSalienteCuesta: true, admiteImagen: true },
+    });
+  });
+
+  it('CNV7 — Un canal sin perfil soportado recibe capacidades conservadoras', async () => {
+    const buffer = new BufferTurnoFalso([mensaje('hola')]);
+    const generador = new GeneradorRespuestaFalso();
+    const procesar = crearProcesar(
+      buffer,
+      conversacionDePrueba('bot', { canal: 'otro' }),
+      generador,
+      new EnviarRespuestaTurnoFalso(),
+    );
+
+    await procesar.ejecutar('conv-1', 'job-1');
+
+    expect(generador.llamadas[0].contexto.canal).toBe('otro');
+    expect(generador.llamadas[0].contexto.capacidades).toEqual({
+      mensajeSalienteCuesta: true,
+      admiteImagen: true,
+    });
+  });
+
+  it('un mensaje de audio del buffer llega al generador con su tipo y con el texto vacío', async () => {
+    const buffer = new BufferTurnoFalso([mensaje('', 'audio')]);
+    const generador = new GeneradorRespuestaFalso({ pasos: [] });
+    const procesar = crearProcesar(buffer, conversacionDePrueba('bot'), generador, new EnviarRespuestaTurnoFalso());
+
+    await procesar.ejecutar('conv-1', 'job-1');
+
+    expect(generador.llamadas[0].mensajes).toEqual([expect.objectContaining({ tipoContenido: 'audio', texto: '' })]);
+  });
+
+  it('un mensaje viejo del buffer sin tipoContenido se lee como texto', async () => {
+    const viejo = JSON.stringify({ idMensaje: 'viejo-1', texto: 'escrito antes del despliegue' });
+    const buffer = new BufferTurnoFalso([viejo]);
+    const generador = new GeneradorRespuestaFalso();
+    const procesar = crearProcesar(buffer, conversacionDePrueba('bot'), generador, new EnviarRespuestaTurnoFalso());
+
+    await procesar.ejecutar('conv-1', 'job-1');
+
+    expect(generador.llamadas[0].mensajes).toEqual([
+      { idMensaje: 'viejo-1', tipoContenido: 'texto', texto: 'escrito antes del despliegue' },
+    ]);
+  });
+
+  it('CNV8 — Una respuesta sin pasos no envía ningún mensaje', async () => {
+    const buffer = new BufferTurnoFalso([mensaje('hola')]);
+    const generador = new GeneradorRespuestaFalso({ pasos: [] });
+    const salida = new EnviarRespuestaTurnoFalso();
+    const procesar = crearProcesar(buffer, conversacionDePrueba('bot'), generador, salida);
+
+    await procesar.ejecutar('conv-1', 'job-1');
+
+    expect(generador.llamadas).toHaveLength(1);
+    expect(salida.llamadas).toHaveLength(0);
   });
 });

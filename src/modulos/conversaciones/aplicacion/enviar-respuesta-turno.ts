@@ -25,6 +25,7 @@ export class EnviarRespuestaTurno implements PuertoEnviarRespuestaTurno {
   ) {}
 
   async enviar(idConversacion: string, idRespuesta: string, pasos: readonly PasoRespuesta[]): Promise<void> {
+    if (pasos.length === 0) return; // CNV8: una respuesta sin pasos no encola nada
     const conversacion = await this.repositorio.obtenerPorId(idConversacion);
     if (conversacion === null || conversacion.estado !== 'bot') {
       return;

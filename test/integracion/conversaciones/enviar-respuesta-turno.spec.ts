@@ -119,8 +119,8 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
     const idConv = await crearConversacion(prisma, 'bot');
 
     await enviarRespuestaTurno.enviar(idConv, 'resp-1', [
-      { paso: 'p1', texto: 'hola' },
-      { paso: 'p2', texto: 'mundo' },
+      { paso: 'p1', tipo: 'texto', texto: 'hola' },
+      { paso: 'p2', tipo: 'texto', texto: 'mundo' },
     ]);
 
     expect(salidaCanal.llamadas).toHaveLength(1);
@@ -138,16 +138,25 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
     const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
     const idConv = await crearConversacion(prisma, 'humano'); // ya no es bot cuando se intenta enviar
 
-    await enviarRespuestaTurno.enviar(idConv, 'resp-2', [{ paso: 'p1', texto: 'hola' }]);
+    await enviarRespuestaTurno.enviar(idConv, 'resp-2', [{ paso: 'p1', tipo: 'texto', texto: 'hola' }]);
 
     expect(salidaCanal.llamadas).toHaveLength(0); // aborta el resto de la secuencia, no envía nada
+  });
+
+  it('CNV8 — sin pasos no encola nada aunque la conversación siga en bot', async () => {
+    const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarRespuestaTurno.enviar(idConv, 'resp-vacia', []);
+
+    expect(salidaCanal.llamadas).toHaveLength(0);
   });
 
   it('sin conversación (id inexistente), no envía nada y no lanza', async () => {
     const { enviarRespuestaTurno, salidaCanal } = await crearContexto();
 
     await expect(
-      enviarRespuestaTurno.enviar(crypto.randomUUID(), 'resp-3', [{ paso: 'p1', texto: 'hola' }]),
+      enviarRespuestaTurno.enviar(crypto.randomUUID(), 'resp-3', [{ paso: 'p1', tipo: 'texto', texto: 'hola' }]),
     ).resolves.toBeUndefined();
     expect(salidaCanal.llamadas).toHaveLength(0);
   });

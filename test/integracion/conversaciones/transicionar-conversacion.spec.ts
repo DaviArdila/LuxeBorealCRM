@@ -96,6 +96,7 @@ async function crearConversacion(
     id: fila.id,
     contactoId: fila.contactoId,
     chatwootConversationId: fila.chatwootConversationId,
+    canal: fila.canal,
     estado: fila.estado,
     expiraControlEn: fila.expiraControlEn,
     version: fila.version,
