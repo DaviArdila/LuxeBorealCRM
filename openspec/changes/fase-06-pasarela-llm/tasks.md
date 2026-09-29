@@ -45,7 +45,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 - [x] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
 - [x] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
 - [x] T8 — Techo mensual + aviso 80 % + parámetro mensaje_techo_gasto (S(d) parcial)
-- [ ] T9 — Módulo llm + redacción R14 + verificación 2 modelos + cierre documental (S(d) parcial)
+- [x] T9 — Módulo llm + redacción R14 + verificación 2 modelos + cierre documental (S(d) parcial)
 
 ## Mapeo de escenarios por tarea (27 primarios + 1 trazabilidad)
 
@@ -788,6 +788,28 @@ documental (`docs/migracion/inventario.md` fila `llm/*` → migrada con notas de
 **Slice de PR**: S(d) parcial → PR5 (con T8)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 3 escenarios con título exacto (LLM10 ×2, LLM12) + 4 tests de
+soporte (módulo sin registrar en `AppModule`, barril, `TemporizadorReal`); `npm run verify` en verde
+(126 archivos, 723 tests, `contrato:deriva` sin cambios). Hacer que el gateway loguee el prompt hace
+fallar `LLM10`. Decisiones y desviaciones:
+
+- **`TemporizadorReal`** (`setTimeout` / `Math.random`): la implementación de producción del puerto
+  interno `TemporizadorLlm` que T4 dejó pendiente.
+- **El barril exporta también `ErrorPasarelaLlm` y `CODIGOS_ERROR_PASARELA`** (además de `LlmModule`,
+  `LLM_PORT` y los tipos): sin la clase, un llamador no puede distinguir las causas de fallo (LLM1).
+- `LlmModule` solo exporta `LLM_PORT`. **Seguimiento para las Fases 07/08**: el texto
+  `mensaje_techo_gasto` se lee con `RepositorioParametroLlmPrisma`, que es interno; la fase que lo
+  consuma debe exportar un caso de uso o token para leerlo (no se adelantó: no hay consumidor todavía).
+- `LLM10` captura los logs con un `LoggerService` propio instalado **después** de `compile()` (el
+  módulo de testing de Nest reemplaza el logger al compilar) y exige que aparezcan `llm.fallo` y
+  `llm.techo-aviso`, para que la aserción de ausencia no sea vacía. Cubre éxito, herramientas, error
+  del proveedor con PII en su cuerpo, aviso del techo y bloqueo.
+- **`LLM12`** compila el módulo dos veces con perfiles que solo difieren en `LLM_CONVERSACION_MODELOS`
+  y comprueba el modelo que ve el simulador y el que queda en `uso_llm`.
+- Cierre documental: `docs/migracion/inventario.md` (fila `llm/*` → migrada) y `docs/fases/README.md`
+  (fila 06 `en curso` con la ruta del change; `cerrada` la pone `sdd-archive`).
+- **Pendiente de acceso** (heredado de T3): el bloque de `.env.example`.
 
 ---
 
