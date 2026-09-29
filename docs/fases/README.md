@@ -197,9 +197,10 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > un lock corto ya no aborta el primer intento; S2: el 408 se reintenta— en el commit `68f418d`;
 > `.env.example` documenta las 17 variables `LLM_*`/`OPENROUTER_*`; los precios de
 > `LLM_PRECIOS_USD_JSON` se verificaron contra la API pública de OpenRouter (0,20 / 1,20 / 0,02 USD por
-> millón de tokens) y el techo mensual de 10 USD quedó confirmado (P17). La deuda técnica que sigue
-> abierta está en `docs/PREGUNTAS_ABIERTAS.md`: P20 (costo de un intento abortado por timeout), P21
-> (techo que falla abierta), P22 (texto real de `mensaje_techo_gasto`) y P23 (atomicidad del techo).
+> millón de tokens) y el techo mensual de 10 USD quedó confirmado (P17). Las decisiones
+> que quedaban (P20-P23) se resolvieron el 2026-09-29 con criterio del proyecto y quedaron en
+> `docs/PREGUNTAS_ABIERTAS.md`; además, el techo mensual se puede subir sin reiniciar con el parámetro
+> `llm_techo_mensual_usd` (P25), lo que el spec ya pedía y la primera implementación no cumplía.
 > Entrega: el rango excede el presupuesto de 400 líneas por PR por naturaleza (TDD estricto: ~60 % son
 > tests) y se parte en 5 PRs apilados (`stacked-to-main`), cada uno con su `size:exception`
 > documentado. `LlmModule` **no** está registrado en `AppModule`: la Fase 07 lo cablea, reemplaza

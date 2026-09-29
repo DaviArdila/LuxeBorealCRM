@@ -220,6 +220,12 @@ Fase que lo implementa: 06
 - Cuando se pide una generación,
 - Entonces el gateway llama al LLM con normalidad y nunca devuelve `techo-alcanzado`.
 
+#### Scenario: LLM7 — El techo se puede subir desde el parámetro sin reiniciar
+
+- Dado un gasto mensual que alcanzó `LLM_TECHO_MENSUAL_USD` y un gateway que ya devolvió `techo-alcanzado`,
+- Cuando el negocio guarda un valor mayor en el parámetro `llm_techo_mensual_usd`,
+- Entonces la siguiente solicitud usa ese techo y el gateway vuelve a llamar al LLM sin reiniciar el proceso; un valor inválido (no numérico o no positivo) se ignora y rige `LLM_TECHO_MENSUAL_USD`.
+
 ### Requirement: LLM8 — Aviso al 80 % del techo (Q2)
 
 Al cruzar el **80 %** del techo mensual (`LLM_UMBRAL_AVISO_PCT`, aprobado en Q2), el gateway MUST
