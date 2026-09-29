@@ -17,6 +17,7 @@
  */
 export { CatalogoModule } from './catalogo.module.js';
 export { CotizarEnvio } from './aplicacion/cotizar-envio.js';
+export { ConsultarPolitica, type ResultadoPolitica } from './aplicacion/consultar-politica.js';
 export {
   ImportarCatalogo,
   type OpcionesImportacion,
