@@ -1,12 +1,27 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../infraestructura/redis/lock-turno.js';
-import { GENERADOR_RESPUESTA, type GeneradorRespuesta, type MensajeTurno } from '../puertos/generador-respuesta.js';
+import {
+  GENERADOR_RESPUESTA,
+  type ContextoTurno,
+  type GeneradorRespuesta,
+  type MensajeTurno,
+} from '../puertos/generador-respuesta.js';
 import {
   REPOSITORIO_CONVERSACION,
   type RepositorioConversacion,
 } from '../puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO, type EnviarRespuestaTurno } from '../puertos/salida-conversacion.js';
+import { capacidadesTurno } from './capacidades-turno.js';
+
+/**
+ * Un mensaje del buffer escrito antes de la 07a (Redis durante un despliegue) no trae
+ * `tipoContenido`: se lee como `texto`, que era lo único que el consumidor bufferizaba (D2).
+ */
+function leerMensajeDelBuffer(crudo: string): MensajeTurno {
+  const mensaje = JSON.parse(crudo) as Omit<MensajeTurno, 'tipoContenido'> & Partial<Pick<MensajeTurno, 'tipoContenido'>>;
+  return { ...mensaje, tipoContenido: mensaje.tipoContenido ?? 'texto' };
+}
 
 /** `reencolar: true` cuando no se pudo adquirir el lock y el buffer todavía tiene mensajes (D8). */
 export interface ResultadoProcesarTurno {
@@ -60,9 +75,18 @@ export class ProcesarTurno {
         return;
       }
 
-      const mensajes = crudos.map((crudo) => JSON.parse(crudo) as MensajeTurno);
-      const respuesta = await this.generador.generar(mensajes);
-      await this.enviarRespuestaTurno.enviar(idConversacion, idRespuesta, respuesta.pasos);
+      const mensajes = crudos.map(leerMensajeDelBuffer);
+      const contexto: ContextoTurno = {
+        conversacionId: conversacion.id,
+        contactoId: conversacion.contactoId,
+        canal: conversacion.canal,
+        version: conversacion.version,
+        capacidades: capacidadesTurno(conversacion.canal),
+      };
+      const respuesta = await this.generador.generar({ contexto, mensajes });
+      if (respuesta.pasos.length > 0) {
+        await this.enviarRespuestaTurno.enviar(idConversacion, idRespuesta, respuesta.pasos);
+      }
     }
   }
 }

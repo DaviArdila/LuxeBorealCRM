@@ -23,6 +23,7 @@ interface FilaConversacion {
   readonly id: string;
   readonly contactoId: string;
   readonly chatwootConversationId: number;
+  readonly canal: CanalConversacion;
   readonly estado: EstadoAtencion;
   readonly expiraControlEn: Date | null;
   readonly version: number;
@@ -71,6 +72,7 @@ export class RepositorioConversacionPrisma implements RepositorioConversacion {
         id,
         contacto_id AS "contactoId",
         chatwoot_conversation_id AS "chatwootConversationId",
+        canal,
         estado,
         expira_control_en AS "expiraControlEn",
         version
@@ -122,6 +124,7 @@ function mapear(fila: {
   id: string;
   contactoId: string;
   chatwootConversationId: number;
+  canal: string;
   estado: string;
   expiraControlEn: Date | null;
   version: number;
@@ -130,6 +133,7 @@ function mapear(fila: {
     id: fila.id,
     contactoId: fila.contactoId,
     chatwootConversationId: fila.chatwootConversationId,
+    canal: fila.canal as CanalConversacion,
     estado: fila.estado as EstadoAtencion,
     expiraControlEn: fila.expiraControlEn,
     version: fila.version,

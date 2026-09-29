@@ -11,6 +11,7 @@ function conversacionDePrueba(sobrescribir: Partial<Conversacion> = {}): Convers
     id: 'conv-1',
     contactoId: 'contacto-1',
     chatwootConversationId: 42,
+    canal: 'whatsapp',
     estado: 'humano',
     expiraControlEn: null,
     version: 1,

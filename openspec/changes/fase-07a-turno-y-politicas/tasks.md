@@ -16,7 +16,7 @@ Conventional Commits, sin atribución de IA.
 
 ## Checklist
 
-- [ ] T1 — Contrato ampliado del turno + consumidor con tipo de contenido
+- [x] T1 — Contrato ampliado del turno + consumidor con tipo de contenido
 - [ ] T2 — Handoff ejecutado por conversaciones + espejo del estado en el canal
 - [ ] T3 — Guardia de envío por paso (R5 literal)
 - [ ] T4 — Módulo agente: pipeline, composición por AppModule y regla de fronteras 15

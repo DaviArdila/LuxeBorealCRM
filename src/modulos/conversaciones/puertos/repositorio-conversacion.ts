@@ -10,6 +10,7 @@ export interface Conversacion {
   readonly id: string;
   readonly contactoId: string;
   readonly chatwootConversationId: number;
+  readonly canal: CanalConversacion;
   readonly estado: EstadoAtencion;
   readonly expiraControlEn: Date | null;
   readonly version: number;

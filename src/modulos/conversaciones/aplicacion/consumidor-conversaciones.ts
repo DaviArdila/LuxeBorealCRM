@@ -121,8 +121,17 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     }
     if (conversacion.estado !== 'bot') return;
 
-    const texto = await this.lectorMensaje.obtenerTexto(evento.conversacion.idExterno, evento.idMensaje);
-    const mensaje: MensajeTurno = { idMensaje: evento.idMensaje, texto: texto ?? '' };
+    // CNV7/D2: solo un mensaje de texto se lee de Chatwoot; para los demás tipos el texto va vacío y
+    // el tipo viaja en el buffer para que el generador decida qué hacer con él.
+    const texto =
+      evento.tipoContenido === 'texto'
+        ? await this.lectorMensaje.obtenerTexto(evento.conversacion.idExterno, evento.idMensaje)
+        : null;
+    const mensaje: MensajeTurno = {
+      idMensaje: evento.idMensaje,
+      tipoContenido: evento.tipoContenido,
+      texto: texto ?? '',
+    };
     await this.buffer.push(conversacion.id, JSON.stringify(mensaje));
     await this.colaTurno.encolarConDebounce(conversacion.id);
   }
