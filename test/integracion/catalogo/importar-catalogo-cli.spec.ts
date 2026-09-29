@@ -13,6 +13,7 @@ import {
   urlPostgresDePrueba,
   urlRedisDePrueba,
 } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Comando `catalogo:importar` de punta a punta (T10, criterio de salida de la fase,
@@ -67,6 +68,7 @@ function configuracionDePrueba(): Configuracion {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 }
 

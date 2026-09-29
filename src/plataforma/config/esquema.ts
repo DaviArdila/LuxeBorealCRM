@@ -1,5 +1,44 @@
 import { z } from 'zod';
 
+/** Precios por millón de tokens del modelo principal (ADR-0002); se refrescan al desplegar. */
+const PRECIOS_LLM_POR_DEFECTO = JSON.stringify({
+  'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+});
+
+/** Lista CSV en orden de prioridad (fallback nivel 1, ADR-0014); al menos un modelo. */
+function listaDeModelos(porDefecto: string) {
+  return z
+    .string()
+    .default(porDefecto)
+    .transform((texto) =>
+      texto
+        .split(',')
+        .map((modelo) => modelo.trim())
+        .filter((modelo) => modelo.length > 0),
+    )
+    .pipe(z.array(z.string()).min(1));
+}
+
+const esquemaPrecioModelo = z.object({
+  entrada: z.number().min(0),
+  salida: z.number().min(0),
+  cache: z.number().min(0),
+});
+
+/** `LLM_PRECIOS_USD_JSON` llega como JSON de texto y sale como `modelo → precios` ya validado. */
+const preciosLlm = z
+  .string()
+  .default(PRECIOS_LLM_POR_DEFECTO)
+  .transform((texto, ctx) => {
+    try {
+      return JSON.parse(texto) as unknown;
+    } catch {
+      ctx.addIssue({ code: 'custom', message: 'debe ser un JSON válido' });
+      return z.NEVER;
+    }
+  })
+  .pipe(z.record(z.string(), esquemaPrecioModelo));
+
 /**
  * Esquema Zod de las variables de entorno que necesita la aplicación (PLT1). Única fuente de
  * verdad de la forma de `Configuracion`; `process.env` MUST leerse solo en `plataforma/config`
@@ -90,6 +129,33 @@ export const esquemaConfiguracion = z
     CONVERSACIONES_BARRIDO_MS: z.coerce.number().int().min(10000).default(300000),
     /** `MarcaEsperaHandoff` (T8, D12): minutos en `handoff_pendiente` antes del aviso único de espera. */
     HANDOFF_ESPERA_MIN: z.coerce.number().int().min(1).default(30),
+    /** `modulos/llm` (Fase 06, T3, D12, R15): perfil `conversacion`; cambiar de modelo es cambiar datos. */
+    LLM_CONVERSACION_MODELOS: listaDeModelos('openai/gpt-5.6-luna'),
+    /** Por debajo de `LOCK_TURNO_TTL_S · 1000` (LLM3, `superRefine` abajo). */
+    LLM_CONVERSACION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(15000),
+    LLM_CONVERSACION_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
+    LLM_CONVERSACION_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),
+    /** Perfil `evals`: sin la presión del lock de turno, admite más tiempo. */
+    LLM_EVALS_MODELOS: listaDeModelos('openai/gpt-5.6-luna'),
+    LLM_EVALS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
+    LLM_EVALS_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
+    LLM_EVALS_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),
+    /** Techo mensual de gasto del LLM en USD dentro de los 20 USD de R13 (Q1, P17). */
+    LLM_TECHO_MENSUAL_USD: z.coerce.number().positive().default(10),
+    /** Porcentaje del techo al que se emite el aviso `warn` (Q2, LLM8). */
+    LLM_UMBRAL_AVISO_PCT: z.coerce.number().int().min(1).max(99).default(80),
+    /** Texto JSON en el entorno; ya parseado en `Configuracion`. Debe cubrir todos los modelos. */
+    LLM_PRECIOS_USD_JSON: preciosLlm,
+    /** Backoff del gateway (D4): `min(base · 2^n + jitter, max)`. */
+    LLM_REINTENTO_BASE_MS: z.coerce.number().int().min(1).default(500),
+    LLM_REINTENTO_MAX_MS: z.coerce.number().int().min(1).default(2000),
+    /** Circuit breaker por modelo (D5, ADR-0013): fallos consecutivos y ventana abierta. */
+    LLM_CB_UMBRAL_FALLOS: z.coerce.number().int().min(2).default(5),
+    LLM_CB_VENTANA_S: z.coerce.number().int().min(10).default(60),
+    /** Vacía por defecto; obligatoria no vacía en production (`superRefine` abajo). */
+    OPENROUTER_API_KEY: z.string().default(''),
+    /** Override hacia el simulador local en las pruebas (D11). */
+    OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
@@ -112,6 +178,40 @@ export const esquemaConfiguracion = z
         path: ['CHATWOOT_WEBHOOK_SECRETO'],
         message: 'CHATWOOT_WEBHOOK_SECRETO MUST NOT estar vacío cuando NODE_ENV es production (D3).',
       });
+    }
+    if (datos.NODE_ENV === 'production' && datos.OPENROUTER_API_KEY === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OPENROUTER_API_KEY'],
+        message: 'OPENROUTER_API_KEY MUST NOT estar vacía cuando NODE_ENV es production (D12).',
+      });
+    }
+    if (datos.LLM_CONVERSACION_TIMEOUT_MS >= datos.LOCK_TURNO_TTL_S * 1000) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['LLM_CONVERSACION_TIMEOUT_MS'],
+        message: 'LLM_CONVERSACION_TIMEOUT_MS MUST ser menor que LOCK_TURNO_TTL_S · 1000 (LLM3).',
+      });
+    }
+    if (datos.LLM_REINTENTO_BASE_MS > datos.LLM_REINTENTO_MAX_MS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['LLM_REINTENTO_BASE_MS'],
+        message: 'LLM_REINTENTO_BASE_MS MUST ser menor o igual que LLM_REINTENTO_MAX_MS (D4).',
+      });
+    }
+    const perfiles = [
+      ['LLM_CONVERSACION_MODELOS', datos.LLM_CONVERSACION_MODELOS],
+      ['LLM_EVALS_MODELOS', datos.LLM_EVALS_MODELOS],
+    ] as const;
+    for (const [variable, modelos] of perfiles) {
+      if (modelos.some((modelo) => !(modelo in datos.LLM_PRECIOS_USD_JSON))) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [variable],
+          message: `${variable} MUST listar solo modelos con precio en LLM_PRECIOS_USD_JSON (D6).`,
+        });
+      }
     }
   });
 

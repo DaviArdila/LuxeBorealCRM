@@ -16,6 +16,7 @@ import {
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Desviación reportada respecto a `tasks.md` T3 (no silenciosa, skill `luxeboreal-fases` §5): el
@@ -83,6 +84,7 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RedisModule] })

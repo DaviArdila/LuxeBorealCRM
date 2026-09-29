@@ -39,7 +39,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 
 - [x] T1 — Compatibilidad ai + provider OpenRouter con NestJS 12 ESM + simulador local (D11d)
 - [x] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
-- [ ] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
+- [x] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
 - [ ] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
 - [ ] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
 - [ ] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
@@ -332,6 +332,42 @@ violadora (patrón de las 12 reglas).
 **Slice de PR**: S(c) parcial → PR2
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 3 escenarios con título exacto + 6 tests de soporte;
+`npm run verify` en verde (119 archivos, 648 tests, `contrato:deriva` sin cambios). Desviaciones:
+
+- **La regla de fronteras es la 14, no la 13**: la 13 ya existe (`solo-conversaciones-importa-canales`,
+  Fase 05). Nombre `ai-solo-en-infraestructura-llm`, como en `design.md`.
+- **`Configuracion` gana 17 claves obligatorias** y ~32 archivos armaban el objeto completo a mano.
+  En vez de repetir 17 líneas en cada uno, `test/soporte/configuracion-llm-de-prueba.ts` exporta el
+  bloque y cada archivo lo expande con `...CONFIGURACION_LLM_DE_PRUEBA` (2 líneas por archivo;
+  `scripts/generar-contrato.ts` lo lleva inline para no importar de `test/`). Es la mayor parte de
+  las líneas cambiadas de esta tarea y es mecánica.
+- `LLM_PRECIOS_USD_JSON` llega como texto y `Configuracion.LLM_PRECIOS_USD_JSON` ya es el objeto
+  `modelo → { entrada, salida, cache }` parseado; las listas `*_MODELOS` salen como `string[]`.
+- **`.env.example` NO se actualizó**: el permiso de lectura del entorno deniega ese archivo (mismo
+  bloqueo que anotaron las Fases 03 y 04). Pendiente de que alguien con acceso agregue este bloque:
+
+  ```
+  # --- LLM (Fase 06): perfiles, reintento, circuit breaker, techo y OpenRouter ---
+  LLM_CONVERSACION_MODELOS=openai/gpt-5.6-luna      # CSV en orden de prioridad (fallback)
+  LLM_CONVERSACION_TIMEOUT_MS=15000                 # debe ser < LOCK_TURNO_TTL_S * 1000
+  LLM_CONVERSACION_MAX_TOKENS=400
+  LLM_CONVERSACION_MAX_REINTENTOS=2                 # 0-2
+  LLM_EVALS_MODELOS=openai/gpt-5.6-luna
+  LLM_EVALS_TIMEOUT_MS=30000
+  LLM_EVALS_MAX_TOKENS=400
+  LLM_EVALS_MAX_REINTENTOS=2
+  LLM_TECHO_MENSUAL_USD=10                          # techo mensual del LLM (R13)
+  LLM_UMBRAL_AVISO_PCT=80                           # aviso warn al cruzar este % del techo
+  LLM_PRECIOS_USD_JSON={"openai/gpt-5.6-luna":{"entrada":0.2,"salida":1.2,"cache":0.02}}
+  LLM_REINTENTO_BASE_MS=500
+  LLM_REINTENTO_MAX_MS=2000
+  LLM_CB_UMBRAL_FALLOS=5
+  LLM_CB_VENTANA_S=60
+  OPENROUTER_API_KEY=                               # obligatoria en production; nunca commitear
+  OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+  ```
 
 ---
 

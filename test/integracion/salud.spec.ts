@@ -5,6 +5,7 @@ import { SaludModule } from '../../src/plataforma/salud/index.js';
 import { IndicadorPostgres } from '../../src/plataforma/salud/indicador-postgres.js';
 import { IndicadorRedis } from '../../src/plataforma/salud/indicador-redis.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
  * Indicadores de salud de Postgres y Redis (T9, PLT4, D13): "up" contra los contenedores reales
@@ -70,6 +71,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -118,6 +120,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     });
 
     const inicio = performance.now();
@@ -170,6 +173,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -218,6 +222,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_LLM_DE_PRUEBA,
     });
 
     const inicio = performance.now();

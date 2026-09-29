@@ -4,6 +4,7 @@ import { ClienteChatwoot } from '../../../src/modulos/canales/infraestructura/ch
 import { FalloCanal } from '../../../src/modulos/canales/puertos/adaptador-canal.js';
 import type { Configuracion } from '../../../src/plataforma/config/index.js';
 import { ChatwootFalso } from '../../soporte/chatwoot-falso.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 const ID_CONVERSACION = '42';
 
@@ -48,6 +49,7 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso, parcial: Partial<Co
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
     ...parcial,
   };
 }

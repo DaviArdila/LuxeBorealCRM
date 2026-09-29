@@ -335,4 +335,35 @@ describe('fronteras — dependency-cruiser (D11)', () => {
       ),
     ).toBe(false);
   });
+
+  it('LLM11 — SDK del proveedor solo aparece en la infraestructura de llm', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'ai-solo-en-infraestructura-llm',
+        'src/modulos/pedidos/aplicacion/caso-uso-sdk-llm.ts',
+      ),
+    ).toBe(true);
+    expect(
+      tieneViolacion(
+        violaciones,
+        'ai-solo-en-infraestructura-llm',
+        'src/modulos/pedidos/aplicacion/caso-uso-provider-llm.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 14 — ai-solo-en-infraestructura-llm (permitido): la infraestructura de llm importa el SDK y el provider', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'ai-solo-en-infraestructura-llm',
+        'src/modulos/llm/infraestructura/adaptador-permitido.ts',
+      ),
+    ).toBe(false);
+  });
 });

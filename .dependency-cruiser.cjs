@@ -164,6 +164,24 @@ module.exports = {
       },
       to: { path: '^src/modulos/canales/index\\.ts$' },
     },
+    {
+      name: 'ai-solo-en-infraestructura-llm',
+      comment:
+        'ADR-0002 / LLM11 (Fase 06): el AI SDK (`ai`) y el provider de OpenRouter solo se ' +
+        'importan desde modulos/llm/infraestructura/, el único lugar que conoce a un proveedor. ' +
+        'Cubre el specifier bare y la ruta resuelta en node_modules (mismo criterio que la regla ' +
+        '4 con @prisma/client). Numerada 14 porque la 13 ya es solo-conversaciones-importa-canales.',
+      severity: 'error',
+      from: { pathNot: '^src/modulos/llm/infraestructura/' },
+      to: {
+        path: [
+          '^ai$',
+          '^@openrouter/',
+          '(^|/)node_modules/ai(/|$)',
+          '(^|/)node_modules/@openrouter/',
+        ],
+      },
+    },
   ],
   options: {
     // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros

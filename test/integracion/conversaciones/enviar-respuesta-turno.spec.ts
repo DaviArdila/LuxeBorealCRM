@@ -10,6 +10,7 @@ import {
 } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /** Doble de `SALIDA_CANAL` (T6): registra las llamadas para confirmar si se envió o no. */
 class SalidaCanalDoble implements SalidaCanal {
@@ -81,6 +82,7 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 
   modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
