@@ -121,7 +121,9 @@ tarifas estimadas), **atención** (contacto, conversación, lead, horario), **op
 Claves conocidas: `horario_atencion`, `recargo_contraentrega_pct` (5), `factor_volumetrico` (4000),
 `transportadoras`, `aviso_datos`, `nombre_asesor`, `mensaje_handoff`,
 `mensaje_handoff_fuera_horario`, `mensaje_cierre_captura_datos`, `mensaje_fuera_cobertura`,
-`mensaje_error_llm`.
+`mensaje_error_llm`, `mensaje_espera_handoff` (Fase 05), `mensaje_techo_gasto`,
+`llm_techo_mensual_usd` y `llm_estado_techo` (Fase 06; esta última la escribe el gateway, no el
+negocio).
 
 **Políticas del negocio (`politica_<tema>`).** Cada fila `politica_<tema>` es una política editable
 (contra entrega, devoluciones, garantía…): el tema son minúsculas sin acentos, dígitos y guion bajo, y el

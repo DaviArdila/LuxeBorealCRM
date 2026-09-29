@@ -3,7 +3,7 @@
 ## Purpose
 
 El agente LLM atiende al cliente por WhatsApp (vía Chatwoot): consulta el catálogo, cotiza envíos,
-manda fotos y califica el interés de compra. Solo puede tocar el mundo real a través de las 6
+manda fotos y califica el interés de compra. Solo puede tocar el mundo real a través de las 7
 herramientas tipadas que se le exponen; nunca hace cálculos de dinero ni accede a la base
 directamente. Este dominio cubre esas dos garantías y el manejo de mensajes que no son texto.
 
