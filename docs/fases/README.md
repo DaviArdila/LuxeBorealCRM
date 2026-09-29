@@ -208,6 +208,18 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > Mismo hook `PreToolUse:Agent` que en la Fase 05 rechazó `sdd-apply` (el usuario eligió implementar
 > inline); los agentes de `judgment-day` sí se delegaron sin problema.
 >
+> **Antes de la Fase 07 (2026-09-29):** cambio chico `politicas-contraentrega` (`openspec/changes/politicas-contraentrega/`):
+> las políticas del negocio pasan a filas `politica_<tema>` de la tabla `parametro` (la de contra entrega con el texto
+> aprobado por el usuario como respaldo), la cotización de envío con contra entrega las devuelve, la ficha deja de
+> citar el porcentaje del recargo al cliente (solo que «se suma al total»; el 5 % queda como dato interno para la
+> Fase 13) y el texto de respaldo de fuera de cobertura deja de prometer un contacto. La Fase 07 agrega la séptima
+> herramienta, `consultar_politica`, y la regla de cuándo citar cada política.
+>
+> **Requisitos para las Fases 11 y 14 (2026-09-29):** la carga y edición masiva pasa a archivo `.xlsx`/CSV con
+> exportación previa, control de versión por fila, vista previa e informe por pestaña, y Google Sheets se retira
+> cuando exista el reemplazo (ADR-0015, `propuesta`; detalle en `docs/analisis/06-cliente-back-office.md`). El
+> exportador por CLI es un cambio propio posterior a la Fase 07; la pantalla y sus endpoints, Fases 11 y 14.
+>
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
 > runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres
 > defectos de entorno nunca vistos en local, corregidos en la rama `fix/actionlint-temp-dir-permisos`

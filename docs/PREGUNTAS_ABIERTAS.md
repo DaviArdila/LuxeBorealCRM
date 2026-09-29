@@ -9,6 +9,7 @@ reflejada.
 |---|---|---|---|
 | P13 | Horario de atención semanal: ¿se toma del horario del inbox en Chatwoot o de nuestra tabla (`parametro.horario_atencion` + `excepcion_horario`)? | Fase 04 (decisión final) | **Decidido el camino (2026-09-23):** la Fase 02 usa la tabla propia detrás de un puerto `Horario`; la Fase 04 verifica si Chatwoot admite festivos y lectura por API. Si sí, se delega; si no, se queda la tabla |
 | P14 | ¿La primera pantalla del CRM es una Dashboard App dentro de Chatwoot (ficha del lead, crear venta al lado del chat), antes o en vez de un back office separado? | Fase 11 | **Se decide al inicio de la Fase 11** (acordado 2026-09-23); la API de la Fase 14 se diseña para ambas opciones. Recomendación de tecnología del cliente: `docs/analisis/06-cliente-back-office.md` |
+| P26 | ¿Se acepta el ADR-0015 (carga y edición masiva por archivo xlsx/CSV con exportación previa y control de versión; Google Sheets se retira cuando exista el reemplazo)? | Ninguna fase todavía: el exportador es un cambio propio posterior a la Fase 07; la interfaz, Fases 11 y 14 | **Aceptar** (2026-09-29, propuesto por acuerdo con el usuario): evita que una hoja con datos viejos pise ediciones hechas en el cliente, no depende de Google y se apoya en el puerto `FuenteCatalogo` que ya existe |
 
 ## Resueltas
 

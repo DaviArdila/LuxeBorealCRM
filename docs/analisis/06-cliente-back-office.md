@@ -95,3 +95,29 @@ separado. Una SPA estática generada desde el mismo contrato sirve para ambos ca
 API: se embebe como Dashboard App (iframe dentro de Chatwoot) o se sirve como aplicación
 independiente. La decisión entre las dos formas de presentarla se toma al inicio de la Fase 11,
 junto con P14.
+
+## Requisitos de importación, exportación y sincronización (2026-09-29)
+
+Registrados a pedido del usuario; **no autorizan construir nada** (ver ADR-0015, en `propuesta`).
+
+- **Dos vías que conviven.** El cliente edita registros puntuales de cualquier tabla; la carga y
+  edición masiva (productos, tarifas, cobertura, parámetros y políticas, festivos) se hace por
+  archivo. Todo lo que se puede administrar en el catálogo debe poder administrarse también desde el
+  cliente.
+- **Ida y vuelta por archivo.** Descargar el estado actual desde la base como `.xlsx` (o CSV), editar
+  y volver a subir. Reemplaza a Google Sheets; el archivo nace de la base, así que no puede estar
+  desactualizado al empezar a editar.
+- **Control de versión por fila.** Una fila que cambió en la base desde la exportación es un
+  conflicto: no se pisa y se informa. Un archivo incompleto nunca desactiva productos por ausencia;
+  se desactiva con una columna `activo` explícita.
+- **Recuperado del panel del prototipo** (`/panel`, retirado en su ADR-0006): una pantalla por
+  módulo/tabla, manejo de errores por pestaña, fila y columna, estado de la importación (qué se
+  cargó y si salió bien) y la garantía de que una importación con errores deja todo como estaba.
+  Además: **vista previa** antes de aplicar (crearía N, actualizaría M, rechazaría K) y una sola
+  importación a la vez.
+- **Endpoints previstos (Fase 14):** subir archivo, vista previa, aplicar, consultar el informe y
+  exportar por tabla; solo para el rol admin (Fase 11). El resultado también puede avisarse por
+  Telegram reutilizando lo de la Fase 08.
+- **Tecnología del cliente.** La recomendación de arriba (React + Vite) no es vinculante: el usuario
+  contempla Angular. Como el cliente se genera desde `openapi/openapi.json`, la API no cambia con
+  esa elección; se decide al inicio de la Fase 11.

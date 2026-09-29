@@ -20,6 +20,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0012](0012-minio-almacenamiento-de-objetos.md) | MinIO como almacenamiento de objetos para medios | aceptada | 2026-09-26 |
 | [0013](0013-cortacircuitos-en-memoria-pasarela-llm.md) | Circuit breaker de la pasarela LLM en memoria del proceso | aceptada | 2026-09-28 |
 | [0014](0014-fallback-llm-iterado-en-gateway.md) | Fallback nivel 1 de la pasarela LLM: iteración en el gateway, no el parámetro server-side de OpenRouter (matiza 0002) | aceptada | 2026-09-28 |
+| [0015](0015-importacion-por-archivo-con-exportacion-previa.md) | Carga y edición masiva por archivo (xlsx/CSV) con exportación previa y control de versión | propuesta | 2026-09-29 |
 
 ## Plantilla
 
