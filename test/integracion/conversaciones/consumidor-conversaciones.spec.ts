@@ -9,7 +9,10 @@ import { TransicionarConversacion } from '../../../src/modulos/conversaciones/ap
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
-import { InterruptorGlobalRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
+import {
+  CLAVE_INTERRUPTOR_GLOBAL_CONFIGURADA,
+  InterruptorGlobalRedis,
+} from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
@@ -42,7 +45,12 @@ import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../..
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { RelojModule } from '../../../src/plataforma/reloj/index.js';
-import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import {
+  claveInterruptorDePrueba,
+  prefijoRedisDePrueba,
+  urlPostgresDePrueba,
+  urlRedisDePrueba,
+} from '../../soporte/infraestructura.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 class EnviarRespuestaTurnoDoble implements EnviarRespuestaTurno {
@@ -182,6 +190,7 @@ async function crearAplicacion(
     providers: [
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
       { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
+      { provide: CLAVE_INTERRUPTOR_GLOBAL_CONFIGURADA, useValue: claveInterruptorDePrueba() },
       { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
       { provide: LECTOR_MENSAJE_CANAL, useValue: lector },
       { provide: SALIDA_CANAL, useValue: salidaCanal },
@@ -358,7 +367,7 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
     const prisma = app.get(PrismaService);
     const redis = app.get<ClienteRedis>(REDIS_CLIENTE);
     if (redis.status !== 'ready') await redis.connect();
-    await redis.set('bot:activo', 'false');
+    await redis.set(claveInterruptorDePrueba(), 'false');
     const consumidor = app.get(ConsumidorConversaciones);
     const { id, chatwootConversationId } = await crearConversacion(prisma, 'bot');
 
@@ -369,7 +378,7 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
     const fila = await prisma.conversacion.findUniqueOrThrow({ where: { id } });
     expect(fila.estado).toBe('bot'); // sigue existiendo/registrada, solo no generó respuesta
 
-    await redis.del('bot:activo');
+    await redis.del(claveInterruptorDePrueba());
   });
 
   it('CNV5 — Un evento de estado "pending" sobre una conversación en manos humanas la devuelve al bot', async () => {

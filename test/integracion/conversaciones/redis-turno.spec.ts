@@ -4,7 +4,6 @@ import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
 import {
-  CLAVE_INTERRUPTOR_GLOBAL,
   InterruptorGlobalRedis,
 } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
@@ -15,7 +14,7 @@ import {
 } from '../../../src/plataforma/config/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
-import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { claveInterruptorDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /**
@@ -99,7 +98,8 @@ async function crearContexto(): Promise<{
     buffer: new BufferTurno(clienteRedis),
     lock: new LockTurno(clienteRedis, configuracionDePrueba),
     contador: new ContadorRateLimit(clienteRedis, configuracionDePrueba, clock),
-    interruptor: new InterruptorGlobalRedis(clienteRedis),
+    // Clave propia por worker: la global `bot:activo` la comparten todos los archivos de integración.
+    interruptor: new InterruptorGlobalRedis(clienteRedis, claveInterruptorDePrueba()),
     marcaMensajeProcesado: new MarcaMensajeProcesado(clienteRedis),
     redis: clienteRedis,
     clock,
@@ -183,11 +183,11 @@ describe('InterruptorGlobalRedis (T3, integración, D14, CNV4)', () => {
   it('con la clave en "false", el interruptor está apagado', async () => {
     const { interruptor, redis: cliente } = await crearContexto();
     if (cliente.status !== 'ready') await cliente.connect();
-    await cliente.set(CLAVE_INTERRUPTOR_GLOBAL, 'false');
+    await cliente.set(claveInterruptorDePrueba(), 'false');
 
     expect(await interruptor.estaActivo()).toBe(false);
 
-    await cliente.del(CLAVE_INTERRUPTOR_GLOBAL);
+    await cliente.del(claveInterruptorDePrueba());
   });
 });
 
