@@ -40,7 +40,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 - [x] T1 — Compatibilidad ai + provider OpenRouter con NestJS 12 ESM + simulador local (D11d)
 - [x] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
 - [x] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
-- [ ] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
+- [x] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
 - [ ] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
 - [ ] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
 - [ ] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
@@ -417,6 +417,25 @@ y reintentos validados).
 **Slice de PR**: S(b) parcial → PR3 (con T5; `size:exception` automática citando fila 4 de Risks)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 3 escenarios con título exacto + 13 tests de soporte (16 en
+`llm-gateway.spec.ts`); mutaciones del backoff, del mínimo de 2 s y del tope de reintentos las
+detectan 6 tests. Decisiones y desviaciones (ninguna cambia el contrato de `design.md`):
+
+- **Puerto interno `TemporizadorLlm`** (`esperar`, `azar`, `programar`; token `TEMPORIZADOR_LLM`): el
+  backoff, el jitter y el aborto por timeout necesitan un borde que los tests puedan controlar. Su
+  implementación real (`setTimeout` / `Math.random`) se escribe en T9, junto con `LlmModule`.
+- El gateway impone el timeout con `Promise.race` contra la señal de aborto: aunque un adaptador
+  ignore `AbortSignal`, la llamada termina en `timeout` (LLM3).
+- Al agotar los reintentos: causa `timeout` → `timeout`; 429/5xx/sin respuesta → `proveedor-caido`;
+  4xx → `no-reintentable`. `design.md` dejaba implícito el caso 429/5xx agotado.
+- Un error que el adaptador no clasificó se trata como `no-reintentable` y solo se loguea el modelo.
+- La validación de llamadas de herramienta (D13) ya corre en el camino de éxito (LLM2), no en T5.
+- `uso_llm` no tiene columna de causa: el intento fallido queda con `exito=false`, tokens y costo en
+  cero; el código (`timeout`, `no-reintentable`…) viaja en el `ErrorPasarelaLlm` y en el log `warn`.
+- `ConfigGatewayLlm` es un `Pick<Configuracion, …>` para que los tests no armen las ~55 variables.
+- Dobles nuevos en `test/fakes/`: `FakeAdaptadorLlm`, `RepositorioUsoLlmEnMemoria`,
+  `TemporizadorLlmFalso` (sin spec propio: los ejercita `llm-gateway.spec.ts`).
 
 ---
 
