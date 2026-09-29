@@ -190,18 +190,20 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > (Fase 06). `judgment-day` (obligatorio para esta fase, regla 6) aprobó en la ronda 1 de 2: un
 > CRITICAL confirmado por ambos jueces (el circuit breaker se quedaba en `semiabierto` para siempre si
 > la sonda fallaba con un 4xx no reintentable, dejando el gateway muerto con el perfil de un solo
-> modelo) corregido y re-juzgado sin hallazgos. Se creó el ADR-0014 (fallback iterado en el gateway, no
-> con el parámetro `models` de OpenRouter; matiza ADR-0002) y el ADR-0013 (circuit breaker en memoria);
-> **ambos siguen en `propuesta`** hasta que el usuario los acepte. Su `verify-report.md` deja abiertos,
-> para que el usuario los revise: (1) `.env.example` sin las 17 variables `LLM_*`/`OPENROUTER_*` — el
-> permiso de lectura del entorno deniega ese archivo; el bloque listo para pegar está en `tasks.md` T3;
-> (2) el presupuesto de PR se excede por naturaleza (~4.000 líneas de autoría, ~60 % tests; T1+T2 solas
-> ~1.100): hace falta `size:exception` o partir la cadena; (3) el texto de `mensaje_techo_gasto` y los
-> precios de `LLM_PRECIOS_USD_JSON` son provisionales; (4) cinco hallazgos informativos de
-> `judgment-day` (W1 el backoff no se descuenta del presupuesto del lock; W2 un timeout registra costo 0
-> y puede subcontar el techo; S1 el techo falla abierta; S2 408/409 sin reintento; S3 el estado del
-> techo no es atómico bajo concurrencia). `LlmModule` **no** está registrado en `AppModule`: la Fase 07
-> lo cablea, reemplaza `GENERADOR_RESPUESTA` y exporta un caso de uso para leer `mensaje_techo_gasto`.
+> modelo) corregido y re-juzgado sin hallazgos. Se crearon y **aceptaron (2026-09-29)** el ADR-0014
+> (fallback iterado en el gateway, no con el parámetro `models` de OpenRouter; matiza ADR-0002) y el
+> ADR-0013 (circuit breaker en memoria). **Post-cierre (2026-09-29):** se corrigieron dos de los cinco
+> hallazgos informativos de `judgment-day` —W1: el backoff ahora se descuenta del presupuesto del lock y
+> un lock corto ya no aborta el primer intento; S2: el 408 se reintenta— en el commit `68f418d`;
+> `.env.example` documenta las 17 variables `LLM_*`/`OPENROUTER_*`; los precios de
+> `LLM_PRECIOS_USD_JSON` se verificaron contra la API pública de OpenRouter (0,20 / 1,20 / 0,02 USD por
+> millón de tokens) y el techo mensual de 10 USD quedó confirmado (P17). La deuda técnica que sigue
+> abierta está en `docs/PREGUNTAS_ABIERTAS.md`: P20 (costo de un intento abortado por timeout), P21
+> (techo que falla abierta), P22 (texto real de `mensaje_techo_gasto`) y P23 (atomicidad del techo).
+> Entrega: el rango excede el presupuesto de 400 líneas por PR por naturaleza (TDD estricto: ~60 % son
+> tests) y se parte en 5 PRs apilados (`stacked-to-main`), cada uno con su `size:exception`
+> documentado. `LlmModule` **no** está registrado en `AppModule`: la Fase 07 lo cablea, reemplaza
+> `GENERADOR_RESPUESTA` y exporta un caso de uso para leer `mensaje_techo_gasto`.
 > Mismo hook `PreToolUse:Agent` que en la Fase 05 rechazó `sdd-apply` (el usuario eligió implementar
 > inline); los agentes de `judgment-day` sí se delegaron sin problema.
 >
