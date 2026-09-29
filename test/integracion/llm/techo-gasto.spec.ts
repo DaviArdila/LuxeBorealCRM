@@ -46,7 +46,7 @@ async function preparar() {
   const prisma = modulo.get(PrismaService);
   await prisma.usoLlm.deleteMany();
   await prisma.parametro.deleteMany({
-    where: { clave: { in: ['llm_estado_techo', 'mensaje_techo_gasto'] } },
+    where: { clave: { in: ['llm_estado_techo', 'mensaje_techo_gasto', 'llm_techo_mensual_usd'] } },
   });
   const clock = new ClockFalso(new Date('2026-09-28T12:00:00.000Z'));
   const parametros = new RepositorioParametroLlmPrisma(prisma);
@@ -90,7 +90,7 @@ describe('llm — techo de gasto y parámetros (T8, integración)', () => {
     const enBlanco = await parametros.obtenerMensajeTechoGasto();
 
     expect(porDefecto).toBe(
-      'Estamos con alta demanda en este momento. Te derivo con un asesor que te atiende enseguida.',
+      'Gracias por escribirnos. En este momento te atiende directamente un asesor, que te responderá en breve.',
     );
     expect(actualizado).toBe('Texto nuevo del negocio.');
     expect(enBlanco).toBe(porDefecto);
@@ -113,6 +113,37 @@ describe('llm — techo de gasto y parámetros (T8, integración)', () => {
     await prisma.parametro.create({ data: { clave: 'llm_estado_techo', valor: { mes: 7 } } });
 
     expect(await parametros.leerEstadoTecho()).toBeNull();
+  });
+
+
+  it('el techo de configuración se puede reemplazar desde parametro y los valores inválidos se ignoran', async () => {
+    const { prisma, parametros } = await preparar();
+
+    const sinConfigurar = await parametros.obtenerTechoMensualUsd();
+    await prisma.parametro.create({ data: { clave: 'llm_techo_mensual_usd', valor: 25.5 } });
+    const configurado = await parametros.obtenerTechoMensualUsd();
+    await prisma.parametro.update({ where: { clave: 'llm_techo_mensual_usd' }, data: { valor: 'mucho' } });
+    const invalido = await parametros.obtenerTechoMensualUsd();
+
+    expect(sinConfigurar).toBeNull();
+    expect(configurado).toBe(25.5);
+    expect(invalido).toBeNull();
+  });
+
+  it('LLM7 — El techo se puede subir desde el parámetro sin reiniciar', async () => {
+    const { prisma, crearGateway } = await preparar();
+    await gastar(prisma, '12.000000', '2026-09-10T10:00:00.000Z');
+    const adaptador = new FakeAdaptadorLlm(new ClockFalso());
+    adaptador.programar(MODELO, { resultado: { texto: 'ok', uso: { tokensEntrada: 1, tokensSalida: 1, tokensCache: 0 } } });
+    const gateway = crearGateway(adaptador);
+
+    const bloqueado = await gateway.generar(SOLICITUD).catch((causa: unknown) => causa);
+    await prisma.parametro.create({ data: { clave: 'llm_techo_mensual_usd', valor: 20 } });
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect((bloqueado as ErrorPasarelaLlm).codigo).toBe('techo-alcanzado');
+    expect(respuesta.texto).toBe('ok');
+    expect(adaptador.llamadas).toHaveLength(1);
   });
 
   it('LLM8 — Cruce del 80 % emite aviso warn una vez por mes, también tras reiniciar', async () => {
