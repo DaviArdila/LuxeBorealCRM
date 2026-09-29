@@ -24,7 +24,12 @@ export class EnviarRespuestaTurno implements PuertoEnviarRespuestaTurno {
     @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
   ) {}
 
-  async enviar(idConversacion: string, idRespuesta: string, pasos: readonly PasoRespuesta[]): Promise<void> {
+  async enviar(
+    idConversacion: string,
+    idRespuesta: string,
+    pasos: readonly PasoRespuesta[],
+    conHandoff = false,
+  ): Promise<void> {
     if (pasos.length === 0) return; // CNV8: una respuesta sin pasos no encola nada
     const conversacion = await this.repositorio.obtenerPorId(idConversacion);
     if (conversacion === null || conversacion.estado !== 'bot') {
@@ -32,9 +37,11 @@ export class EnviarRespuestaTurno implements PuertoEnviarRespuestaTurno {
     }
 
     await this.salidaCanal.enviarMensajes({
-      idConversacion,
+      idConversacion: String(conversacion.chatwootConversationId),
       idRespuesta,
-      requiereEstado: 'bot', // CNV9: la guardia relee el estado antes de publicar cada paso
+      // CNV9: la guardia relee el estado antes de publicar cada paso. Un handoff transiciona a
+      // `handoff_pendiente` tras encolar: su propio mensaje no puede quedar bloqueado por eso.
+      requiereEstado: conHandoff ? 'bot|handoff_pendiente' : 'bot',
       mensajes: pasos.map((paso) => ({ tipo: 'texto' as const, texto: paso.texto })),
     });
   }

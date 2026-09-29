@@ -16,5 +16,14 @@ export const ENVIAR_RESPUESTA_TURNO = Symbol('ENVIAR_RESPUESTA_TURNO');
  * solo registra las llamadas para probar `ProcesarTurno` sin adelantar T6.
  */
 export interface EnviarRespuestaTurno {
-  enviar(idConversacion: string, idRespuesta: string, pasos: readonly PasoRespuesta[]): Promise<void>;
+  /**
+   * `conHandoff`: la respuesta pide pasar a un asesor. La transición a `handoff_pendiente` ocurre
+   * después de encolar y antes de publicar, así que sus pasos también se admiten en ese estado.
+   */
+  enviar(
+    idConversacion: string,
+    idRespuesta: string,
+    pasos: readonly PasoRespuesta[],
+    conHandoff?: boolean,
+  ): Promise<void>;
 }

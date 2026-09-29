@@ -165,7 +165,7 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
 
     const mensajeEspera = await this.repositorioParametro.obtenerMensajeEsperaHandoff();
     await this.salidaCanal.enviarMensajes({
-      idConversacion: conversacion.id,
+      idConversacion: String(conversacion.chatwootConversationId),
       idRespuesta: `espera-handoff-${conversacion.id}`,
       requiereEstado: 'handoff_pendiente', // CNV9: si un asesor la toma antes de publicarse, no sale
       mensajes: [{ tipo: 'texto', texto: mensajeEspera }],

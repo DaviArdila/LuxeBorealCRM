@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../infraestructura/redis/lock-turno.js';
@@ -29,6 +30,17 @@ function leerMensajeDelBuffer(crudo: string): MensajeTurno {
 /** CNV8: `lead-caliente` es el único motivo con origen propio; el resto es una regla de handoff explícita. */
 function origenDelHandoff(motivo: MotivoHandoff): OrigenTransicion {
   return motivo === 'lead-caliente' ? 'lead_caliente' : 'regla_handoff_explicita';
+}
+
+/**
+ * Id de la respuesta a una ráfaga (D11 de la Fase 04): el outbox deduplica por `idRespuesta`, así que
+ * el id del job (`turno-<conversación>`, igual en todos los turnos) haría que solo la primera respuesta
+ * de una conversación saliera. Se deriva del job y del primer mensaje de la ráfaga: distinto por turno,
+ * estable ante el mismo turno y dentro de `[A-Za-z0-9_-]{1,64}` aunque el id del job sea el de respaldo.
+ */
+function idRespuestaDeRafaga(idJob: string, mensajes: readonly MensajeTurno[]): string {
+  const huella = createHash('sha256').update(`${idJob}|${mensajes[0]?.idMensaje ?? ''}`).digest('hex');
+  return `turno-${huella.slice(0, 32)}`;
 }
 
 /** `reencolar: true` cuando no se pudo adquirir el lock y el buffer todavía tiene mensajes (D8). */
@@ -98,7 +110,12 @@ export class ProcesarTurno {
       };
       const respuesta = await this.generador.generar({ contexto, mensajes });
       if (respuesta.pasos.length > 0) {
-        await this.enviarRespuestaTurno.enviar(idConversacion, idRespuesta, respuesta.pasos);
+        await this.enviarRespuestaTurno.enviar(
+          idConversacion,
+          idRespuestaDeRafaga(idRespuesta, mensajes),
+          respuesta.pasos,
+          respuesta.handoff !== undefined,
+        );
       }
       if (respuesta.handoff !== undefined) {
         await this.ejecutarHandoff(idConversacion, respuesta.handoff.motivo);

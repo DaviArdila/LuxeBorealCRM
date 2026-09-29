@@ -81,6 +81,16 @@ export class ChatwootFalso {
     this.mensajesPorConversacion.set(idConversacion, lista);
   }
 
+  /**
+   * Simula el mensaje entrante del cliente con su texto (D16 de la Fase 05): lo que el consumidor de
+   * `conversaciones` lee con `GET .../messages` cuando el tipo de contenido es `texto`.
+   */
+  programarTextoDeMensaje(idConversacion: string, idMensaje: number, texto: string): void {
+    const lista = this.mensajesPorConversacion.get(idConversacion) ?? [];
+    lista.push({ id: idMensaje, content: texto });
+    this.mensajesPorConversacion.set(idConversacion, lista);
+  }
+
   /** Simula etiquetas ya puestas por un asesor (D15): lo que devuelve `GET .../labels`. */
   programarEtiquetasExistentes(idConversacion: string, etiquetas: readonly string[]): void {
     this.etiquetasPorConversacion.set(idConversacion, [...etiquetas]);

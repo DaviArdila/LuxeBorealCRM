@@ -22,7 +22,7 @@ Conventional Commits, sin atribución de IA.
 - [x] T4 — Módulo agente: pipeline, composición por AppModule y regla de fronteras 15
 - [x] T5 — Política de mensajes no textuales (R12) + contador de audios + textos del agente
 - [x] T6 — Tope de turnos por sesión (R13) + aviso de datos (R14)
-- [ ] T7 — E2E por webhook + cierre documental
+- [x] T7 — E2E por webhook + cierre documental
 
 ## Mapeo de escenarios por tarea (29)
 
