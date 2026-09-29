@@ -27,11 +27,11 @@
 - [x] **T3 — `ConsultarPolitica` (CAT12).** Puerto `RepositorioPolitica`, adaptador Prisma, caso de
   uso y cableado en el módulo. RED: 4 escenarios de CAT12 (unitarios con doble en memoria) + prueba
   de integración del adaptador.
-- [ ] **T4 — Cotización y ficha (CAT10, CAT2, CMP1).** `politicaContraentregaTexto` solo con contra
+- [x] **T4 — Cotización y ficha (CAT10, CAT2, CMP1).** `politicaContraentregaTexto` solo con contra
   entrega; ficha sin recargo; retiro de `obtenerRecargoContraentregaPct` y de
   `formatearRecargoContraentrega`. Verificar con `rg` que no queden consumidores. RED: escenarios
   CAT10 (3), CAT2 (recargo ausente) y ausencia del escenario de recargo en CMP1.
-- [ ] **T5 — Fuera de cobertura y docs (CAT11).** Nuevo texto por defecto sin promesa; `MODELO_DATOS.md`
+- [x] **T5 — Fuera de cobertura y docs (CAT11).** Nuevo texto por defecto sin promesa; `MODELO_DATOS.md`
   (convención `politica_*`, recargo como dato interno) e inventario. RED: escenario CAT11 sin promesa.
 
 ## Cierre

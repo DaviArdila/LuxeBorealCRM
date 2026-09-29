@@ -4,7 +4,7 @@
  * texto del catálogo compacto sin precios (CAT4). Solo importa `compartido/dinero`, permitido por
  * la regla `dominio-aislado` (skill `luxeboreal-arquitectura` §2); nunca NestJS ni Prisma.
  */
-import { formatearCop, formatearRecargoContraentrega } from '../../../compartido/dinero/index.js';
+import { formatearCop } from '../../../compartido/dinero/index.js';
 
 /** Resumen de producto sin dinero: lo que expone el listado y el catálogo compacto (CAT1, CAT4). */
 export interface ProductoResumen {
@@ -33,7 +33,6 @@ export interface FichaProducto {
   readonly nombre: string;
   readonly descripcionLarga: string;
   readonly precioTexto: string;
-  readonly recargoContraentregaTexto: string;
   readonly tieneFotos: boolean;
 }
 
@@ -47,18 +46,16 @@ export class ProductoNoDisponible extends Error {
 
 /**
  * Arma la ficha de un producto con el dinero ya formateado (CAT2, D6): nunca calcula ni redondea
- * ningún valor, solo llama a los formateadores de `compartido/dinero`. El porcentaje de recargo
- * contraentrega llega ya leído del parámetro editable `recargo_contraentrega_pct` (R15) por la
- * capa de aplicación; esta función no lo lee ni lo asume.
+ * ningún valor, solo llama a los formateadores de `compartido/dinero`. La ficha no expone el recargo
+ * contra entrega (CAT2): lo que el cliente debe saber lo entrega la política `contra_entrega`.
  */
-export function armarFicha(producto: Producto, recargoContraentregaPct: number): FichaProducto {
+export function armarFicha(producto: Producto): FichaProducto {
   return {
     id: producto.id,
     sku: producto.sku,
     nombre: producto.nombre,
     descripcionLarga: producto.descripcionLarga,
     precioTexto: formatearCop(producto.precioCop),
-    recargoContraentregaTexto: formatearRecargoContraentrega(recargoContraentregaPct),
     tieneFotos: producto.tieneFotos,
   };
 }

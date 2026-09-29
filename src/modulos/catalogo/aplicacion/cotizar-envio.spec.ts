@@ -1,8 +1,12 @@
+import { formatearDias, formatearRangoCop } from '../../../compartido/dinero/index.js';
 import type { CandidataExclusion, CandidataTarifa, DestinoEnvio } from '../dominio/envio.js';
 import type { Producto } from '../dominio/producto.js';
 import type { NuevoEventoFueraCobertura, RepositorioEnvio } from '../puertos/repositorio-envio.js';
+import { POLITICA_CONTRAENTREGA_POR_DEFECTO } from '../dominio/politica.js';
 import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
+import type { RepositorioPolitica } from '../puertos/repositorio-politica.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
+import { ConsultarPolitica } from './consultar-politica.js';
 import { CotizarEnvio } from './cotizar-envio.js';
 
 const PRODUCTO: Producto = {
@@ -41,13 +45,24 @@ class RepositorioParametroFalso implements RepositorioParametroCatalogo {
   obtenerFactorVolumetrico(): Promise<number> {
     return Promise.resolve(this.factorVolumetrico);
   }
-  obtenerRecargoContraentregaPct(): Promise<number> {
-    throw new Error('no usado por CotizarEnvio');
-  }
   obtenerMensajeFueraCobertura(): Promise<string> {
     this.mensajeSolicitado = true;
     return Promise.resolve(this.mensajeFueraCobertura);
   }
+}
+
+class RepositorioPoliticaFalso implements RepositorioPolitica {
+  constructor(private readonly politicas: Readonly<Record<string, string>> = {}) {}
+  obtener(tema: string): Promise<string | null> {
+    return Promise.resolve(this.politicas[tema] ?? null);
+  }
+  listarTemas(): Promise<string[]> {
+    return Promise.resolve(Object.keys(this.politicas));
+  }
+}
+
+function politicas(configuradas: Readonly<Record<string, string>> = {}): ConsultarPolitica {
+  return new ConsultarPolitica(new RepositorioPoliticaFalso(configuradas));
 }
 
 class RepositorioEnvioFalso implements RepositorioEnvio {
@@ -74,6 +89,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000, 'sin cobertura'),
       new RepositorioEnvioFalso([], []), // sin exclusiones, sin ninguna tarifa que aplique
+      politicas(),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -88,6 +104,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000, 'sin cobertura'),
       repositorioEnvio,
+      politicas(),
     );
 
     await caso.ejecutar('SKU-1', DESTINO);
@@ -106,6 +123,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000, 'Mensaje configurado del negocio'),
       new RepositorioEnvioFalso([], []),
+      politicas(),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -123,6 +141,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000, 'sin cobertura por exclusión'),
       repositorioEnvio,
+      politicas(),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -153,12 +172,61 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     };
     const repositorioEnvio = new RepositorioEnvioFalso([], [tarifaQueAplica]);
     const repositorioParametro = new RepositorioParametroFalso(4000, 'no debería usarse');
-    const caso = new CotizarEnvio(new RepositorioProductoFalso(PRODUCTO), repositorioParametro, repositorioEnvio);
+    const caso = new CotizarEnvio(new RepositorioProductoFalso(PRODUCTO), repositorioParametro, repositorioEnvio, politicas());
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
 
     expect(resultado.cobertura).toBe(true);
     expect(repositorioEnvio.eventoRegistrado).toBeUndefined();
     expect(repositorioParametro.mensajeSolicitado).toBe(false);
+  });
+
+  const TARIFA_CON_CONTRAENTREGA: CandidataTarifa = {
+    id: 't1',
+    departamentoNombre: 'Amazonas',
+    ciudadNombre: 'Leticia',
+    pesoMinG: 0,
+    pesoMaxG: null,
+    rangoMinCop: 30000,
+    rangoMaxCop: 40000,
+    diasMin: 2,
+    diasMax: 4,
+    contraentregaDisponible: true,
+    creado: new Date('2026-01-01'),
+  };
+
+  function cotizador(tarifa: CandidataTarifa, configuradas: Readonly<Record<string, string>> = {}): CotizarEnvio {
+    return new CotizarEnvio(
+      new RepositorioProductoFalso(PRODUCTO),
+      new RepositorioParametroFalso(4000, 'sin cobertura'),
+      new RepositorioEnvioFalso([], [tarifa]),
+      politicas(configuradas),
+    );
+  }
+
+  it('CAT10 — Cotización con cobertura devuelve el rango y los días ya formateados de la tarifa elegida', async () => {
+    const resultado = await cotizador(TARIFA_CON_CONTRAENTREGA).ejecutar('SKU-1', DESTINO);
+
+    expect(resultado).toEqual({
+      cobertura: true,
+      rangoTexto: formatearRangoCop(30000, 40000),
+      diasTexto: formatearDias(2, 4),
+      contraentregaDisponible: true,
+      politicaContraentregaTexto: POLITICA_CONTRAENTREGA_POR_DEFECTO,
+    });
+  });
+
+  it('CAT10 — Cotización con cobertura sin contra entrega no incluye la política', async () => {
+    const resultado = await cotizador({ ...TARIFA_CON_CONTRAENTREGA, contraentregaDisponible: false }).ejecutar('SKU-1', DESTINO);
+
+    expect(resultado.cobertura).toBe(true);
+    expect(resultado).toMatchObject({ contraentregaDisponible: false });
+    expect(resultado).not.toHaveProperty('politicaContraentregaTexto');
+  });
+
+  it('CAT10 — La política de contra entrega configurada por el negocio reemplaza al texto de respaldo', async () => {
+    const resultado = await cotizador(TARIFA_CON_CONTRAENTREGA, { contra_entrega: 'Texto del negocio.' }).ejecutar('SKU-1', DESTINO);
+
+    expect(resultado).toMatchObject({ politicaContraentregaTexto: 'Texto del negocio.' });
   });
 });

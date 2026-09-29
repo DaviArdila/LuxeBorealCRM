@@ -1,7 +1,6 @@
-import { formatearCop, formatearRecargoContraentrega } from '../../../compartido/dinero/index.js';
+import { formatearCop } from '../../../compartido/dinero/index.js';
 import type { Producto } from '../dominio/producto.js';
 import { ProductoNoDisponible } from '../dominio/producto.js';
-import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
 import { ObtenerFichaProducto } from './obtener-ficha-producto.js';
 
@@ -31,24 +30,10 @@ class RepositorioProductoFalso implements RepositorioProducto {
   }
 }
 
-/** Doble de {@link RepositorioParametroCatalogo}: solo el recargo contraentrega importa aquí. */
-class RepositorioParametroFalso implements RepositorioParametroCatalogo {
-  constructor(private readonly recargoContraentregaPct: number) {}
-  obtenerFactorVolumetrico(): Promise<number> {
-    throw new Error('no usado por ObtenerFichaProducto');
-  }
-  obtenerRecargoContraentregaPct(): Promise<number> {
-    return Promise.resolve(this.recargoContraentregaPct);
-  }
-  obtenerMensajeFueraCobertura(): Promise<string> {
-    throw new Error('no usado por ObtenerFichaProducto');
-  }
-}
-
 describe('modulos/catalogo/aplicacion/ObtenerFichaProducto', () => {
   it('CAT3 — Ficha de un producto inactivo se rechaza', async () => {
     const inactivo: Producto = { ...PRODUCTO_ACTIVO, activo: false };
-    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(inactivo), new RepositorioParametroFalso(5));
+    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(inactivo));
 
     const promesa = caso.ejecutar('SKU-1');
 
@@ -61,13 +46,13 @@ describe('modulos/catalogo/aplicacion/ObtenerFichaProducto', () => {
   });
 
   it('CAT3 — Ficha de un producto inexistente se rechaza', async () => {
-    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(null), new RepositorioParametroFalso(5));
+    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(null));
 
     await expect(caso.ejecutar('inexistente')).rejects.toBeInstanceOf(ProductoNoDisponible);
   });
 
-  it('arma la ficha de un producto activo con el recargo leído del parámetro del negocio', async () => {
-    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(PRODUCTO_ACTIVO), new RepositorioParametroFalso(5));
+  it('CAT2 — arma la ficha de un producto activo sin ningún dato del recargo contra entrega', async () => {
+    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(PRODUCTO_ACTIVO));
 
     const ficha = await caso.ejecutar('SKU-1');
 
@@ -77,7 +62,6 @@ describe('modulos/catalogo/aplicacion/ObtenerFichaProducto', () => {
       nombre: 'Producto Uno',
       descripcionLarga: 'larga',
       precioTexto: formatearCop(123456),
-      recargoContraentregaTexto: formatearRecargoContraentrega(5),
       tieneFotos: true,
     });
   });

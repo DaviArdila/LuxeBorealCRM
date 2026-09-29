@@ -123,6 +123,15 @@ Claves conocidas: `horario_atencion`, `recargo_contraentrega_pct` (5), `factor_v
 `mensaje_handoff_fuera_horario`, `mensaje_cierre_captura_datos`, `mensaje_fuera_cobertura`,
 `mensaje_error_llm`.
 
+**Políticas del negocio (`politica_<tema>`).** Cada fila `politica_<tema>` es una política editable
+(contra entrega, devoluciones, garantía…): el tema son minúsculas sin acentos, dígitos y guion bajo, y el
+valor es un texto de hasta 1.200 caracteres. Agregar un tema es agregar una fila, sin tocar el código.
+`politica_contra_entrega` tiene un texto de respaldo aprobado si no está configurada. Las consulta
+`ConsultarPolitica` (CAT12); la Fase 07 la expone como la herramienta `consultar_politica`.
+
+**`recargo_contraentrega_pct` es un dato interno** (Fase 13, total de la venta): el bot nunca dice el
+porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (política de contra entrega).
+
 ## 4. Envíos (rediseñado con el usuario, P4)
 
 Cómo funciona el negocio: se envía a **casi todo el país**; el precio del envío **no es fijo** —

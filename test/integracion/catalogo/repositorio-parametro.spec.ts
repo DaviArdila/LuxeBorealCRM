@@ -90,24 +90,6 @@ describe('Repositorio de parámetro de catálogo (T5, integración)', () => {
     expect(await repositorio.obtenerFactorVolumetrico()).toBe(4000);
   });
 
-  it('obtenerRecargoContraentregaPct lee el valor guardado en parametro', async () => {
-    const { repositorio, prisma } = await crearRepositorio();
-    await prisma.parametro.upsert({
-      where: { clave: 'recargo_contraentrega_pct' },
-      create: { clave: 'recargo_contraentrega_pct', valor: 3.5 },
-      update: { valor: 3.5 },
-    });
-
-    expect(await repositorio.obtenerRecargoContraentregaPct()).toBe(3.5);
-  });
-
-  it('obtenerRecargoContraentregaPct sin el parámetro configurado asume 0 (sin recargo)', async () => {
-    const { repositorio, prisma } = await crearRepositorio();
-    await prisma.parametro.deleteMany({ where: { clave: 'recargo_contraentrega_pct' } });
-
-    expect(await repositorio.obtenerRecargoContraentregaPct()).toBe(0);
-  });
-
   it('obtenerMensajeFueraCobertura lee el texto guardado en parametro', async () => {
     const { repositorio, prisma } = await crearRepositorio();
     await prisma.parametro.upsert({
@@ -127,5 +109,7 @@ describe('Repositorio de parámetro de catálogo (T5, integración)', () => {
 
     expect(typeof mensaje).toBe('string');
     expect(mensaje.length).toBeGreaterThan(0);
+    // CAT11: el texto por defecto no promete ningún contacto (eso depende de la Fase 08).
+    expect(mensaje).not.toMatch(/asesor|contactar/i);
   });
 });
