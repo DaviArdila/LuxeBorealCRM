@@ -1,6 +1,6 @@
 # 0013. Circuit breaker de la pasarela LLM en memoria del proceso
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-28
 
 ## Contexto
@@ -23,6 +23,12 @@ singleton en el módulo `llm`; Redis ya está disponible (Fase 05 lo usa para lo
 En memoria del proceso (alternativa 1). Con una sola instancia no hay nada que compartir y perder el
 estado al reiniciar es benigno (el costo de redescubrir es ≤ 5 llamadas fallidas, cada una acotada
 por el timeout D3).
+
+La sonda del estado semi-abierto siempre se resuelve: un éxito o cualquier respuesta 4xx no
+reintentable del proveedor cierran el circuito (el proveedor respondió; un 4xx nunca cuenta como
+fallo), y un fallo reintentable lo reabre otros 60 s. Una sonda que nunca reporta (proceso
+interrumpido a mitad de la llamada) se reemplaza por una nueva pasada otra ventana; sin esto el
+modelo quedaba bloqueado hasta reiniciar (hallazgo C1 de `judgment-day`, Fase 06).
 
 ## Consecuencias
 

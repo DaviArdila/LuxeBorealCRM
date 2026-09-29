@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { CONFIGURACION } from '../../../plataforma/config/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
-import { calcularCostoEstimado, microUsdAUsd } from '../dominio/calcular-costo.js';
+import { calcularCostoEstimado, inicioMesUTC, microUsdAUsd } from '../dominio/calcular-costo.js';
 import {
   ErrorPasarelaLlm,
   type CodigoErrorPasarela,
@@ -29,6 +29,10 @@ import {
 } from '../puertos/adaptador-llm.js';
 import type { LlmPort } from '../puertos/llm-port.js';
 import {
+  REPOSITORIO_PARAMETRO_LLM,
+  type RepositorioParametroLlm,
+} from '../puertos/repositorio-parametro-llm.js';
+import {
   REPOSITORIO_USO_LLM,
   type FilaUsoLlm,
   type RepositorioUsoLlm,
@@ -41,6 +45,7 @@ const PROVEEDOR = 'openrouter';
 // Las filas de intentos que nunca llegaron al proveedor (D9) usan este pseudo-proveedor.
 const PROVEEDOR_PASARELA = 'pasarela';
 const MODELO_CIRCUITO_ABIERTO = 'circuito-abierto';
+const MODELO_TECHO_ALCANZADO = 'techo-alcanzado';
 // D3: el presupuesto total deja 5 s del lock de turno para el INSERT en `uso_llm` y la liberación.
 const MARGEN_DEL_LOCK_MS = 5_000;
 // D3: con 2 s o menos de presupuesto no vale la pena lanzar otro intento.
@@ -102,6 +107,7 @@ export class LlmGateway implements LlmPort {
   constructor(
     @Inject(ADAPTADOR_LLM) private readonly adaptador: AdaptadorLlm,
     @Inject(REPOSITORIO_USO_LLM) private readonly repositorioUso: RepositorioUsoLlm,
+    @Inject(REPOSITORIO_PARAMETRO_LLM) private readonly repositorioParametro: RepositorioParametroLlm,
     @Inject(TEMPORIZADOR_LLM) private readonly temporizador: TemporizadorLlm,
     @Inject(CONFIGURACION) private readonly configuracion: ConfigGatewayLlm,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -109,9 +115,14 @@ export class LlmGateway implements LlmPort {
   ) {}
 
   async generar(solicitud: SolicitudGeneracion): Promise<RespuestaGeneracion> {
+    await this.verificarTecho(solicitud);
     const perfil = this.perfil(solicitud.perfil);
     const inicio = this.clock.ahora().getTime();
-    const presupuestoMs = this.configuracion.LOCK_TURNO_TTL_S * 1000 - MARGEN_DEL_LOCK_MS;
+    // Con un lock corto el primer intento igual recibe el timeout completo del perfil.
+    const presupuestoMs = Math.max(
+      this.configuracion.LOCK_TURNO_TTL_S * 1000 - MARGEN_DEL_LOCK_MS,
+      perfil.timeoutMs,
+    );
     const restanteMs = () => presupuestoMs - (this.clock.ahora().getTime() - inicio);
 
     const fallos: FalloDeModelo[] = [];
@@ -134,6 +145,69 @@ export class LlmGateway implements LlmPort {
       return this.ultimoRecurso.generar(solicitud);
     }
     throw error;
+  }
+
+  // D7/D9: un agregado del mes por llamada (sin caché: una caché vieja deja gastar de más) y, solo al
+  // cruzar el umbral, el estado durable del techo. En `test` el techo no aplica (LLM7).
+  private async verificarTecho(solicitud: SolicitudGeneracion): Promise<void> {
+    const c = this.configuracion;
+    if (c.NODE_ENV === 'test') {
+      return;
+    }
+    const desde = inicioMesUTC(this.clock.ahora());
+    let gastoUsd: number;
+    try {
+      gastoUsd = await this.repositorioUso.gastoMensual(desde);
+    } catch (error) {
+      // Si no se puede medir el gasto no se bloquea al cliente por un fallo de contabilidad.
+      this.logger.error({ evento: 'llm.techo-no-verificado', error: this.nombreDe(error) });
+      return;
+    }
+
+    const techoUsd = c.LLM_TECHO_MENSUAL_USD;
+    if (gastoUsd < (techoUsd * c.LLM_UMBRAL_AVISO_PCT) / 100) {
+      return;
+    }
+    const bloquea = gastoUsd >= techoUsd;
+    await this.actualizarEstadoDelTecho(desde.toISOString().slice(0, 7), gastoUsd, techoUsd, bloquea);
+    if (bloquea) {
+      await this.registrarFilaDePasarela(MODELO_TECHO_ALCANZADO, solicitud);
+      throw new ErrorPasarelaLlm('techo-alcanzado');
+    }
+  }
+
+  // El aviso sale una vez por mes y el estado queda en `parametro` para sobrevivir a un reinicio.
+  private async actualizarEstadoDelTecho(
+    mes: string,
+    gastoUsd: number,
+    techoUsd: number,
+    bloquea: boolean,
+  ): Promise<void> {
+    try {
+      const previo = await this.repositorioParametro.leerEstadoTecho();
+      const estado = previo?.mes === mes ? previo : null;
+      const avisar = estado === null || !estado.avisoEmitido;
+      if (avisar) {
+        this.logger.warn({ evento: 'llm.techo-aviso', mes, gastoUsd, techoUsd });
+      }
+      const yaBloqueado = estado?.bloqueado ?? false;
+      if (avisar || (bloquea && !yaBloqueado)) {
+        await this.repositorioParametro.guardarEstadoTecho({
+          mes,
+          gastoUsd,
+          techoUsd,
+          avisoEmitido: true,
+          bloqueado: bloquea || yaBloqueado,
+        });
+      }
+    } catch (error) {
+      this.logger.error({ evento: 'llm.techo-estado-no-guardado', error: this.nombreDe(error) });
+    }
+  }
+
+  // R14: de un error solo se loguea su tipo; el mensaje puede traer valores de la fila.
+  private nombreDe(error: unknown): string {
+    return error instanceof Error ? error.name : 'desconocido';
   }
 
   private perfil(perfil: PerfilLlm): ConfigPerfil {
@@ -166,7 +240,8 @@ export class LlmGateway implements LlmPort {
         if (ultimoError !== undefined) {
           return { tipo: 'fallo', error: ultimoError };
         }
-        await this.registrarBloqueoDeCircuito(modelo, solicitud);
+        this.logger.warn({ evento: 'llm.circuito-bloquea', modelo });
+        await this.registrarFilaDePasarela(MODELO_CIRCUITO_ABIERTO, solicitud);
         return { tipo: 'circuito-abierto' };
       }
 
@@ -181,15 +256,20 @@ export class LlmGateway implements LlmPort {
       // Un 4xx no reintentable no es un fallo del proveedor: no cuenta para el circuito (D5).
       if (ultimoError.clase === 'reintentable') {
         this.registrarFalloDeCircuito(modelo);
+      } else if (this.circuitos.get(modelo)?.fase === 'semiabierto') {
+        // La sonda obtuvo respuesta del proveedor (un 4xx): sin resolverla el circuito quedaría
+        // semiabierto para siempre.
+        this.circuitos.set(modelo, registrarExito());
       }
-      const sinReintentos =
-        ultimoError.clase === 'no-reintentable' ||
-        reintentos >= perfil.maxReintentos ||
-        restanteMs() <= RESTANTE_MINIMO_PARA_REINTENTAR_MS;
-      if (sinReintentos) {
+      if (ultimoError.clase === 'no-reintentable' || reintentos >= perfil.maxReintentos) {
         return { tipo: 'fallo', error: ultimoError };
       }
-      await this.temporizador.esperar(this.backoffMs(reintentos));
+      // La espera del backoff también consume el presupuesto: se descuenta antes de decidir.
+      const esperaMs = this.backoffMs(reintentos);
+      if (restanteMs() - esperaMs <= RESTANTE_MINIMO_PARA_REINTENTAR_MS) {
+        return { tipo: 'fallo', error: ultimoError };
+      }
+      await this.temporizador.esperar(esperaMs);
     }
   }
 
@@ -259,14 +339,14 @@ export class LlmGateway implements LlmPort {
     }
   }
 
-  private async registrarBloqueoDeCircuito(
+  // Fila de un intento que nunca llegó al proveedor (D9): techo alcanzado o circuito abierto.
+  private async registrarFilaDePasarela(
     modelo: string,
     solicitud: SolicitudGeneracion,
   ): Promise<void> {
-    this.logger.warn({ evento: 'llm.circuito-bloquea', modelo });
     await this.repositorioUso.registrarUso({
       proveedor: PROVEEDOR_PASARELA,
-      modelo: MODELO_CIRCUITO_ABIERTO,
+      modelo,
       tokensEntrada: 0,
       tokensSalida: 0,
       tokensCache: 0,

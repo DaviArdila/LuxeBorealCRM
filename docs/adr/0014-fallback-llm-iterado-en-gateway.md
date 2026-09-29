@@ -1,6 +1,6 @@
 # 0014. Fallback nivel 1 de la pasarela LLM: iteración en el gateway, no el parámetro server-side de OpenRouter
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-28
 
 ## Contexto

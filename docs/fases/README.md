@@ -62,7 +62,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | cerrada |
 | 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | cerrada |
 | 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | cerrada |
-| 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | idea |
+| 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | cerrada |
 | 07 | Agente | Las 6 tools con efectos tipados, pipeline de políticas, prompts versionados, evals | Evals de los 3 casos de entrada en verde con LLM simulado; corrida manual con LLM real; set dorado de evals construido con conversaciones reales del prototipo (leídas de Chatwoot, anonimizadas): aserciones deterministas (tools esperadas, sin precios inventados, sin traspaso sin señal fuerte) con umbral explícito de aprobación antes de cualquier cambio de modelo o prompt | idea |
 | 08 | Leads y handoff | Escala determinista, derivación, captura fuera de horario, Telegram vía outbox, recordatorios | Tests 10-14 y 21 del prototipo reescritos; aviso real en Telegram | idea |
 | 09 | Operación | Kill switch, observabilidad mínima (logs JSON con rotación, Sentry, Uptime Kuma), backups, imagen Docker de producción, despliegue en Dokploy | Stack de producción arriba en el VPS; restore de backup probado | idea |
@@ -131,15 +131,81 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > con su carpeta: `openspec/changes/fase-NN-<nombre>/` (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez
 > cerrada).
 >
-> **Fase 05 en `aprobada` → `en curso`** (2026-09-28): `proposal.md`, `specs/conversaciones/spec.md`
-> (R5-R8, R13 parcial, CNV1-CNV6, 20 escenarios), `design.md` y `tasks.md` (T1-T8) redactados en
-> `openspec/changes/fase-05-conversaciones/` — sin migración de esquema (la tabla `conversacion` de
-> la Fase 01 ya tiene todo lo necesario). El usuario aprobó los cuatro artefactos y las preguntas
-> Q1-Q3 de la proposal con la recomendación de cada una: Q1 `mensaje_espera_handoff` usa un
-> repositorio de parámetros propio de `conversaciones` (sin depender de `catalogo`); Q2 se mantienen
-> los valores de TTL/debounce/rate-limit del prototipo como default Zod; Q3 el "agente eco" reenvía
-> el texto del último mensaje del turno como único paso, sin `handoff`. `sdd-apply` arranca sobre
-> `tasks.md` (T1-T8, 0/8 completas).
+> Las Fases 00a-04 están cerradas y archivadas (ver sus notas más abajo y sus carpetas en
+> `openspec/changes/archive/`).
+>
+> **Fase 05 (Conversaciones) cerrada y archivada** (2026-09-28):
+> `openspec/changes/archive/2026-09-28-fase-05-conversaciones/`. El usuario aprobó los cuatro
+> artefactos (`proposal.md`, `specs/conversaciones/spec.md`, `design.md`, `tasks.md`) y las
+> preguntas Q1-Q3 de la proposal con la recomendación de cada una: Q1 `mensaje_espera_handoff` usa
+> un repositorio de parámetros propio de `conversaciones` (sin depender de `catalogo`); Q2 se
+> mantienen los valores de TTL/debounce/rate-limit del prototipo como default Zod; Q3 el "agente
+> eco" reenvía el texto del último mensaje del turno como único paso, sin `handoff`. Las 8 tareas
+> (T1-T8) quedaron completas, cada una con su commit de unidad de trabajo, más 3 commits de
+> corrección de `judgment-day` y 1 de cierre documental (13 commits totales en la rama
+> `fase-05-conversaciones`, rango `9b9416d`..`151949f`). `judgment-day` (obligatorio para esta
+> fase, regla 6 de arriba) corrió 2 rondas de corrección (el máximo del protocolo):
+> **JUDGMENT: APPROVED ✅**. Ronda 1: ambos jueces confirmaron un CRITICAL —
+> `ConsumidorConversaciones.manejarMensajeEntrante` no era idempotente ante la reentrega del mismo
+> evento (`ContadorRateLimit.verificarLimite` incrementaba sin deduplicar por `idMensaje`) —
+> corregido junto con un hallazgo relacionado (`LectorMensajeCanalChatwoot.obtenerTexto` no cumplía
+> de verdad su contrato "nunca lanza"). El re-juicio de esa corrección encontró un CRITICAL nuevo,
+> causado por el propio fix: la marca de idempotencia se creaba *antes* de que el trabajo real
+> terminara, así que una falla transitoria a mitad de turno perdía el mensaje del cliente en
+> silencio — corregido en la ronda 2 (marcar "procesado" solo tras el éxito, nunca antes). El
+> re-juicio final no encontró ningún CRITICAL. Quedan 8 hallazgos WARNING/SUGGESTION documentados,
+> no bloqueantes (relectura por lote en vez de por mensaje en el punto único de salida, pérdida del
+> buffer si el generador falla a mitad de turno, sin *heartbeat* en el lock del turno, sin
+> validación cruzada de los TTL de `handoff_pendiente`, eco de texto vacío si Chatwoot falla al
+> resolver un mensaje, una condición de carrera menor en la marca de aviso de espera, y dos
+> hallazgos de la ronda 2 de judgment-day: posible duplicado de buffer en una ventana estrecha, y
+> pérdida de atomicidad de la guarda de idempotencia si se escala a más de un *worker* de inbox —
+> no explotable hoy, `concurrency: 1`). Desviaciones reales encontradas durante `sdd-apply`
+> (D16/D17 de `design.md`, detalladas en `tasks.md` y `verify-report.md` del change archivado):
+> `canales` ganó un puerto nuevo de solo lectura `LECTOR_MENSAJE_CANAL` porque `EventoCanal` nunca
+> trae texto (R14/CAN5); `RepositorioConversacion.obtenerOCrear` porque `design.md` asumía un
+> `REPOSITORIO_CONTACTO` que no existía; un bug real de `CanalesModule` que no exportaba
+> `RegistroConsumidorEventosCanal` en Nest (solo en el barril TS), y el aviso de espera de T8 no
+> puede pasar por el punto único de salida porque exige `estado === 'bot'` de forma literal (R5).
+> Filas 41-46, 54 (parcial) y 61 de `docs/migracion/inventario.md` marcadas **Migrado**. Los 20
+> requisitos (R5-R8, R13 parcial ampliado con las nuevas escenarios por hora/día, CNV1-CNV6, 20
+> escenarios) quedaron fusionados en `openspec/specs/conversaciones/spec.md` — R5/R6/R8 se
+> reemplazaron por las versiones más precisas de esta fase; R7 y R13 conservaron los escenarios del
+> esqueleto todavía no implementados (el asesor resuelve la conversación; agrupación de mensajes,
+> collage, tope de turnos y costo por llamada al LLM — Fases 06/07) y solo se les agregaron los
+> escenarios nuevos, sin borrar contenido de fases futuras.
+>
+> Nota de proceso, repetida en tres puntos de esta fase (`sdd-explore`, `sdd-apply`, `sdd-verify`/
+> `sdd-archive`): un hook del entorno (`PreToolUse:Agent`) rechazó la delegación a cualquier agente
+> `sdd-*` con "SDD child dispatch refused", pese a confirmar el preflight canónico repetidamente con
+> `AskUserQuestion`. El usuario autorizó implementar/verificar/archivar la fase directamente en cada
+> caso. Los agentes de `judgment-day` (`jd-judge-a/b`, `jd-fix-agent`) sí se delegaron sin problema.
+>
+> **Fase 06 (Pasarela LLM) cerrada y archivada** (2026-09-29):
+> `openspec/changes/archive/2026-09-29-fase-06-pasarela-llm/`. Las 9 tareas (T1-T9) quedaron completas,
+> cada una con su commit de unidad de trabajo, más 1 commit de corrección de `judgment-day` y los de
+> documentación (rama `fase-06-pasarela-llm`, rango `d3b4d6e`..`90307b5`). Los 13 requisitos
+> (LLM1-LLM13, 27 escenarios) quedaron en el dominio nuevo `openspec/specs/llm/spec.md` y R13 de
+> `openspec/specs/conversaciones/spec.md` pasó a reflejar que el costo por llamada lo escribe el gateway
+> (Fase 06). `judgment-day` (obligatorio para esta fase, regla 6) aprobó en la ronda 1 de 2: un
+> CRITICAL confirmado por ambos jueces (el circuit breaker se quedaba en `semiabierto` para siempre si
+> la sonda fallaba con un 4xx no reintentable, dejando el gateway muerto con el perfil de un solo
+> modelo) corregido y re-juzgado sin hallazgos. Se crearon y **aceptaron (2026-09-29)** el ADR-0014
+> (fallback iterado en el gateway, no con el parámetro `models` de OpenRouter; matiza ADR-0002) y el
+> ADR-0013 (circuit breaker en memoria). **Post-cierre (2026-09-29):** se corrigieron dos de los cinco
+> hallazgos informativos de `judgment-day` —W1: el backoff ahora se descuenta del presupuesto del lock y
+> un lock corto ya no aborta el primer intento; S2: el 408 se reintenta— en el commit `68f418d`;
+> `.env.example` documenta las 17 variables `LLM_*`/`OPENROUTER_*`; los precios de
+> `LLM_PRECIOS_USD_JSON` se verificaron contra la API pública de OpenRouter (0,20 / 1,20 / 0,02 USD por
+> millón de tokens) y el techo mensual de 10 USD quedó confirmado (P17). La deuda técnica que sigue
+> abierta está en `docs/PREGUNTAS_ABIERTAS.md`: P20 (costo de un intento abortado por timeout), P21
+> (techo que falla abierta), P22 (texto real de `mensaje_techo_gasto`) y P23 (atomicidad del techo).
+> Entrega: el rango excede el presupuesto de 400 líneas por PR por naturaleza (TDD estricto: ~60 % son
+> tests) y se parte en 5 PRs apilados (`stacked-to-main`), cada uno con su `size:exception`
+> documentado. `LlmModule` **no** está registrado en `AppModule`: la Fase 07 lo cablea, reemplaza
+> `GENERADOR_RESPUESTA` y exporta un caso de uso para leer `mensaje_techo_gasto`.
+> Mismo hook `PreToolUse:Agent` que en la Fase 05 rechazó `sdd-apply` (el usuario eligió implementar
+> inline); los agentes de `judgment-day` sí se delegaron sin problema.
 >
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
 > runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres

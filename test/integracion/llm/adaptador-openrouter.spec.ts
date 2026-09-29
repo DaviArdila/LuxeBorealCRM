@@ -75,15 +75,18 @@ describe('llm — AdaptadorOpenRouter contra el simulador', () => {
       expect(simulador.intentos - antes).toBe(1);
     });
 
-    it('un 5xx también es reintentable y tampoco se reintenta dentro del adaptador', async () => {
-      simulador.responderError(503);
-      const antes = simulador.intentos;
+    it.each([408, 503])(
+      'un %i también es reintentable y tampoco se reintenta dentro del adaptador',
+      async (estado) => {
+        simulador.responderError(estado);
+        const antes = simulador.intentos;
 
-      const error = await errorAdaptador(adaptador.generarConModelo(MODELO, SOLICITUD, limite()));
+        const error = await errorAdaptador(adaptador.generarConModelo(MODELO, SOLICITUD, limite()));
 
-      expect(error).toMatchObject({ clase: 'reintentable', causa: 'http', estadoHttp: 503 });
-      expect(simulador.intentos - antes).toBe(1);
-    });
+        expect(error).toMatchObject({ clase: 'reintentable', causa: 'http', estadoHttp: estado });
+        expect(simulador.intentos - antes).toBe(1);
+      },
+    );
 
     it.each([400, 401, 403, 404, 422])('un %i no es reintentable', async (estado) => {
       simulador.responderError(estado);
