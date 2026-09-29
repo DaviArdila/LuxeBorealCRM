@@ -98,7 +98,7 @@ junto con P14.
 
 ## Requisitos de importación, exportación y sincronización (2026-09-29)
 
-Registrados a pedido del usuario; **no autorizan construir nada** (ver ADR-0015, en `propuesta`).
+Registrados a pedido del usuario; **no autorizan construir nada** (ver ADR-0015, aceptada; el exportador es un cambio propio posterior a la Fase 07).
 
 - **Dos vías que conviven.** El cliente edita registros puntuales de cualquier tabla; la carga y
   edición masiva (productos, tarifas, cobertura, parámetros y políticas, festivos) se hace por

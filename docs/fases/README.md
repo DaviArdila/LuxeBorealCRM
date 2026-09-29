@@ -217,7 +217,7 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 >
 > **Requisitos para las Fases 11 y 14 (2026-09-29):** la carga y edición masiva pasa a archivo `.xlsx`/CSV con
 > exportación previa, control de versión por fila, vista previa e informe por pestaña, y Google Sheets se retira
-> cuando exista el reemplazo (ADR-0015, `propuesta`; detalle en `docs/analisis/06-cliente-back-office.md`). El
+> cuando exista el reemplazo (ADR-0015, aceptada; detalle en `docs/analisis/06-cliente-back-office.md`). El
 > exportador por CLI es un cambio propio posterior a la Fase 07; la pantalla y sus endpoints, Fases 11 y 14.
 >
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
