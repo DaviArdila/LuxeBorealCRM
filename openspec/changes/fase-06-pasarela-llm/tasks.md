@@ -41,7 +41,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 - [x] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
 - [x] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
 - [x] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
-- [ ] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
+- [x] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
 - [ ] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
 - [ ] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
 - [ ] T8 — Techo mensual + aviso 80 % + parámetro mensaje_techo_gasto (S(d) parcial)
@@ -490,6 +490,27 @@ tipado).
 **Slice de PR**: S(b) parcial → PR3 (con T4; `size:exception` automática citando fila 4 de Risks)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 4 escenarios con título exacto + 10 tests de soporte (30 en
+`llm-gateway.spec.ts`); `npm run verify` en verde (120 archivos, 678 tests). Cuatro mutaciones
+(un 4xx cuenta para el circuito, el éxito no reinicia, precedencia invertida, circuito que siempre
+permite) las detectan de 1 a 10 tests. Decisiones y desviaciones:
+
+- **El circuito cuenta por intento fallido** de proveedor (no por generación) y se consulta antes de
+  cada intento: si se abre a mitad de los reintentos, ese modelo deja de probarse. Un 4xx no
+  reintentable no cuenta ni reinicia.
+- **Fila de un modelo saltado por circuito abierto** (hallazgo MENOR de la revisión de artefactos:
+  `design.md` no la fijaba): `proveedor='pasarela'`, `modelo='circuito-abierto'`, tokens/costo/latencia
+  en cero, `exito=false` — igual que la de `techo-alcanzado` (D9). El log `warn` lleva el modelo.
+- El presupuesto total (D3) se comparte entre modelos: tras un fallo, si quedan ≤ 2 s no se prueba
+  el siguiente.
+- Precedencia implementada: ningún modelo probado → `circuito-abierto`; todos los probados
+  `proveedor-caido` → `proveedor-caido`; si no, la última causa concreta (`timeout` /
+  `no-reintentable`). `ErrorPasarelaLlm.modelo` es el último modelo probado.
+- **`LLM1 — Error tipado distingue cada causa de fallo`** prueba las cuatro causas que el gateway
+  produce hoy; `techo-alcanzado` lo produce T8 y queda verificado por `LLM9 — Gasto al 100 % …`.
+- Punto de extensión del nivel 2 (Q4): puerto `ULTIMO_RECURSO_LLM` (`@Optional()`); el gateway lo
+  invoca solo ante `proveedor-caido` y solo si alguien lo registra. Esta fase no registra ninguno.
 
 ---
 
