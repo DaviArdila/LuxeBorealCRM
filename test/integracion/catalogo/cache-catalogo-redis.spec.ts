@@ -10,6 +10,7 @@ import { CacheCatalogoRedis } from '../../../src/modulos/catalogo/infraestructur
 import type { ProductoResumen } from '../../../src/modulos/catalogo/dominio/producto.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 const CLAVE_VERSION = 'catalogo:version';
@@ -62,6 +63,7 @@ async function crearCliente(): Promise<ClienteRedis> {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 

@@ -727,4 +727,47 @@ describe('cargarConfiguracion', () => {
       ).not.toThrow();
     });
   });
+
+  describe('Variables AGENTE_TOPE_TURNOS/AGENTE_SESION_TTL_H (fase-07a-turno-y-politicas, T4, D10)', () => {
+    function variablesRechazadas(
+      fuente: Readonly<Record<string, string | undefined>>,
+    ): readonly VariableInvalida[] {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) {
+          return error.variables;
+        }
+        throw error;
+      }
+      throw new Error('La configuración se aceptó y debía rechazarse');
+    }
+
+    it('usa el tope del prototipo (12 turnos) y 168 h de vida de sesión por defecto', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.AGENTE_TOPE_TURNOS).toBe(12);
+      expect(configuracion.AGENTE_SESION_TTL_H).toBe(168);
+    });
+
+    it('rechaza AGENTE_TOPE_TURNOS menor que 1 o no entero', () => {
+      expect(variablesRechazadas({ ...fuenteValida, AGENTE_TOPE_TURNOS: '0' })).toContainEqual({
+        nombre: 'AGENTE_TOPE_TURNOS',
+        problema: 'valor',
+      });
+      expect(
+        variablesRechazadas({ ...fuenteValida, AGENTE_TOPE_TURNOS: '2.5' }).map((variable) => variable.nombre),
+      ).toContain('AGENTE_TOPE_TURNOS');
+    });
+
+    it('rechaza AGENTE_SESION_TTL_H fuera del rango 1-720', () => {
+      for (const valor of ['0', '721']) {
+        expect(variablesRechazadas({ ...fuenteValida, AGENTE_SESION_TTL_H: valor })).toContainEqual({
+          nombre: 'AGENTE_SESION_TTL_H',
+          problema: 'valor',
+        });
+      }
+      expect(cargarConfiguracion({ ...fuenteValida, AGENTE_SESION_TTL_H: '720' }).AGENTE_SESION_TTL_H).toBe(720);
+    });
+  });
 });

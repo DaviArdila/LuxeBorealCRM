@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AgenteModule } from './modulos/agente/index.js';
 import { CanalesModule } from './modulos/canales/index.js';
 import { ConversacionesModule } from './modulos/conversaciones/index.js';
 import { ColasModule } from './plataforma/colas/index.js';
@@ -21,7 +22,9 @@ import { SaludModule } from './plataforma/salud/index.js';
  * `BullModule.registerQueue`. `ConversacionesModule` (Fase 05, T5) se registra después de
  * `CanalesModule`: en su `onModuleInit` llama `RegistroConsumidorEventosCanal.registrar` para que
  * `ConsumidorRegistrador` (el consumidor "de por defecto" de `canales`) deje de ser el consumidor
- * real de eventos de canal.
+ * real de eventos de canal. `AgenteModule` (Fase 07a, ADR-0016) implementa el puerto
+ * `GENERADOR_RESPUESTA` de `conversaciones` y se compone aquí con `conGenerador`, el único lugar que
+ * conoce a los dos; el módulo de la pasarela LLM no se cablea hasta la 07b.
  */
 @Module({
   imports: [
@@ -34,7 +37,7 @@ import { SaludModule } from './plataforma/salud/index.js';
     SaludModule,
     ColasModule,
     CanalesModule,
-    ConversacionesModule,
+    ConversacionesModule.conGenerador(AgenteModule),
   ],
 })
 export class AppModule {}
