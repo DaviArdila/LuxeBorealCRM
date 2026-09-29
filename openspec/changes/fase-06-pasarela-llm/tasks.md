@@ -38,7 +38,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 ## Checklist
 
 - [x] T1 — Compatibilidad ai + provider OpenRouter con NestJS 12 ESM + simulador local (D11d)
-- [ ] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
+- [x] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
 - [ ] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
 - [ ] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
 - [ ] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
@@ -265,6 +265,24 @@ pero la secuencia garantiza que el contrato no se escribe sobre una base incompa
 **Slice de PR**: S(a) → PR1 (con T1)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 4 escenarios con título exacto + 31 tests de soporte en verde;
+`npm run verify` en verde (119 archivos, 639 tests). Desviaciones menores respecto de `design.md`,
+todas por la regla de fronteras 3 o por necesidad del código, ninguna cambia el contrato observable:
+
+- Los tipos del contrato viven en `dominio/tipos-llm.ts` (no en `puertos/llm-port.ts`): `dominio/`
+  no puede importar de `puertos/`. `llm-port.ts` los re-exporta, así que el llamador sigue
+  importando todo del puerto.
+- `DefinicionHerramienta.esquema` es la interfaz estructural `EsquemaArgumentos` (`safeParse`) en
+  vez de `z.ZodType<unknown>`: `dominio/` tampoco puede importar `zod`. Un esquema Zod la satisface.
+- `AdaptadorLlmError` lleva `clase`, `causa` (`timeout` | `http` | `sin-respuesta`) y `estadoHttp?`:
+  el gateway (T4/T5) necesita distinguir `timeout` de `proveedor-caido` sin inspeccionar mensajes.
+- `registrarExito()` no recibe el estado: un éxito siempre deja el circuito en su estado inicial.
+- Una llamada a una herramienta que no está en las definiciones se devuelve como inválida (D13 no
+  lo decía; pasarla como válida dejaría llegar argumentos sin validar).
+- Fórmula de costo idéntica a D6. Observación para T6: `prompt_tokens` de OpenRouter incluye los
+  tokens de caché, así que sumar `tokensCache` aparte sobreestima ligeramente (lado seguro para un
+  techo). El adaptador puede restar la caché de `tokensEntrada` al mapear.
 
 ---
 
