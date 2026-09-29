@@ -2,10 +2,11 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
-import { CanalesModule, RegistroConsumidorEventosCanal } from '../canales/index.js';
+import { CanalesModule, RegistroConsumidorEventosCanal, RegistroGuardiaEnvioCanal } from '../canales/index.js';
 import { AgenteEco } from './aplicacion/agente-eco.js';
 import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones.js';
 import { EnviarRespuestaTurno } from './aplicacion/enviar-respuesta-turno.js';
+import { GuardiaEnvioConversaciones } from './aplicacion/guardia-envio-conversaciones.js';
 import { ProcesarTurno } from './aplicacion/procesar-turno.js';
 import { TransicionarConversacion } from './aplicacion/transicionar-conversacion.js';
 import {
@@ -63,6 +64,7 @@ import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
     ProcesarTurno,
     TransicionarConversacion,
     ConsumidorConversaciones,
+    GuardiaEnvioConversaciones,
     BarridoVencimientos,
   ],
 })
@@ -70,9 +72,12 @@ export class ConversacionesModule implements OnModuleInit {
   constructor(
     private readonly registro: RegistroConsumidorEventosCanal,
     private readonly consumidorConversaciones: ConsumidorConversaciones,
+    private readonly registroGuardia: RegistroGuardiaEnvioCanal,
+    private readonly guardiaEnvio: GuardiaEnvioConversaciones,
   ) {}
 
   onModuleInit(): void {
     this.registro.registrar(this.consumidorConversaciones);
+    this.registroGuardia.registrar(this.guardiaEnvio); // CNV9: releer el estado antes de cada paso
   }
 }
