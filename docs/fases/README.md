@@ -131,15 +131,55 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > con su carpeta: `openspec/changes/fase-NN-<nombre>/` (`archive/YYYY-MM-DD-fase-NN-<nombre>/` una vez
 > cerrada).
 >
-> **Fase 05 en `aprobada` → `en curso`** (2026-09-28): `proposal.md`, `specs/conversaciones/spec.md`
-> (R5-R8, R13 parcial, CNV1-CNV6, 20 escenarios), `design.md` y `tasks.md` (T1-T8) redactados en
-> `openspec/changes/fase-05-conversaciones/` — sin migración de esquema (la tabla `conversacion` de
-> la Fase 01 ya tiene todo lo necesario). El usuario aprobó los cuatro artefactos y las preguntas
-> Q1-Q3 de la proposal con la recomendación de cada una: Q1 `mensaje_espera_handoff` usa un
-> repositorio de parámetros propio de `conversaciones` (sin depender de `catalogo`); Q2 se mantienen
-> los valores de TTL/debounce/rate-limit del prototipo como default Zod; Q3 el "agente eco" reenvía
-> el texto del último mensaje del turno como único paso, sin `handoff`. `sdd-apply` arranca sobre
-> `tasks.md` (T1-T8, 0/8 completas).
+> Las Fases 00a-04 están cerradas y archivadas (ver sus notas más abajo y sus carpetas en
+> `openspec/changes/archive/`).
+>
+> **Fase 05 (Conversaciones) cerrada y archivada** (2026-09-28):
+> `openspec/changes/archive/2026-09-28-fase-05-conversaciones/`. El usuario aprobó los cuatro
+> artefactos (`proposal.md`, `specs/conversaciones/spec.md`, `design.md`, `tasks.md`) y las
+> preguntas Q1-Q3 de la proposal con la recomendación de cada una: Q1 `mensaje_espera_handoff` usa
+> un repositorio de parámetros propio de `conversaciones` (sin depender de `catalogo`); Q2 se
+> mantienen los valores de TTL/debounce/rate-limit del prototipo como default Zod; Q3 el "agente
+> eco" reenvía el texto del último mensaje del turno como único paso, sin `handoff`. Las 8 tareas
+> (T1-T8) quedaron completas, cada una con su commit de unidad de trabajo, más 3 commits de
+> corrección de `judgment-day` y 1 de cierre documental (13 commits totales en la rama
+> `fase-05-conversaciones`, rango `9b9416d`..`151949f`). `judgment-day` (obligatorio para esta
+> fase, regla 6 de arriba) corrió 2 rondas de corrección (el máximo del protocolo):
+> **JUDGMENT: APPROVED ✅**. Ronda 1: ambos jueces confirmaron un CRITICAL —
+> `ConsumidorConversaciones.manejarMensajeEntrante` no era idempotente ante la reentrega del mismo
+> evento (`ContadorRateLimit.verificarLimite` incrementaba sin deduplicar por `idMensaje`) —
+> corregido junto con un hallazgo relacionado (`LectorMensajeCanalChatwoot.obtenerTexto` no cumplía
+> de verdad su contrato "nunca lanza"). El re-juicio de esa corrección encontró un CRITICAL nuevo,
+> causado por el propio fix: la marca de idempotencia se creaba *antes* de que el trabajo real
+> terminara, así que una falla transitoria a mitad de turno perdía el mensaje del cliente en
+> silencio — corregido en la ronda 2 (marcar "procesado" solo tras el éxito, nunca antes). El
+> re-juicio final no encontró ningún CRITICAL. Quedan 8 hallazgos WARNING/SUGGESTION documentados,
+> no bloqueantes (relectura por lote en vez de por mensaje en el punto único de salida, pérdida del
+> buffer si el generador falla a mitad de turno, sin *heartbeat* en el lock del turno, sin
+> validación cruzada de los TTL de `handoff_pendiente`, eco de texto vacío si Chatwoot falla al
+> resolver un mensaje, una condición de carrera menor en la marca de aviso de espera, y dos
+> hallazgos de la ronda 2 de judgment-day: posible duplicado de buffer en una ventana estrecha, y
+> pérdida de atomicidad de la guarda de idempotencia si se escala a más de un *worker* de inbox —
+> no explotable hoy, `concurrency: 1`). Desviaciones reales encontradas durante `sdd-apply`
+> (D16/D17 de `design.md`, detalladas en `tasks.md` y `verify-report.md` del change archivado):
+> `canales` ganó un puerto nuevo de solo lectura `LECTOR_MENSAJE_CANAL` porque `EventoCanal` nunca
+> trae texto (R14/CAN5); `RepositorioConversacion.obtenerOCrear` porque `design.md` asumía un
+> `REPOSITORIO_CONTACTO` que no existía; un bug real de `CanalesModule` que no exportaba
+> `RegistroConsumidorEventosCanal` en Nest (solo en el barril TS), y el aviso de espera de T8 no
+> puede pasar por el punto único de salida porque exige `estado === 'bot'` de forma literal (R5).
+> Filas 41-46, 54 (parcial) y 61 de `docs/migracion/inventario.md` marcadas **Migrado**. Los 20
+> requisitos (R5-R8, R13 parcial ampliado con las nuevas escenarios por hora/día, CNV1-CNV6, 20
+> escenarios) quedaron fusionados en `openspec/specs/conversaciones/spec.md` — R5/R6/R8 se
+> reemplazaron por las versiones más precisas de esta fase; R7 y R13 conservaron los escenarios del
+> esqueleto todavía no implementados (el asesor resuelve la conversación; agrupación de mensajes,
+> collage, tope de turnos y costo por llamada al LLM — Fases 06/07) y solo se les agregaron los
+> escenarios nuevos, sin borrar contenido de fases futuras.
+>
+> Nota de proceso, repetida en tres puntos de esta fase (`sdd-explore`, `sdd-apply`, `sdd-verify`/
+> `sdd-archive`): un hook del entorno (`PreToolUse:Agent`) rechazó la delegación a cualquier agente
+> `sdd-*` con "SDD child dispatch refused", pese a confirmar el preflight canónico repetidamente con
+> `AskUserQuestion`. El usuario autorizó implementar/verificar/archivar la fase directamente en cada
+> caso. Los agentes de `judgment-day` (`jd-judge-a/b`, `jd-fix-agent`) sí se delegaron sin problema.
 >
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
 > runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres
