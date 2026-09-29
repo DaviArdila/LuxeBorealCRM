@@ -265,6 +265,41 @@ describe('catalogo/dominio/validar-catalogo', () => {
       expect(r.advertencias.some((a) => a.mensaje.includes('color_favorito'))).toBe(true);
       expect(r.datos?.parametros[0]).toEqual({ clave: 'color_favorito', valor: 'azul' });
     });
+
+    it('IMP7 — Una política válida se guarda como cadena sin advertencia', () => {
+      const r = validarCatalogoCompleto(crudo({ parametros: [{ clave: 'politica_devoluciones', valor: '  Puedes devolver el producto.  ' }] }), lugares(), HOY);
+
+      expect(r.errores).toEqual([]);
+      expect(r.advertencias).toEqual([]);
+      expect(r.datos?.parametros[0]).toEqual({ clave: 'politica_devoluciones', valor: 'Puedes devolver el producto.' });
+    });
+
+    it('IMP7 — Una política vacía es un error', () => {
+      const r = validarCatalogoCompleto(crudo({ parametros: [{ clave: 'politica_garantia', valor: '   ' }] }), lugares(), HOY);
+
+      expect(errorEn(r, 'valor')).toBeDefined();
+    });
+
+    it('IMP7 — Una política de más de 1200 caracteres es un error', () => {
+      const r = validarCatalogoCompleto(crudo({ parametros: [{ clave: 'politica_garantia', valor: 'a'.repeat(1201) }] }), lugares(), HOY);
+
+      expect(errorEn(r, 'valor')).toBeDefined();
+    });
+
+    it('IMP7 — Un tema de política con mayúsculas o espacios es un error', () => {
+      const r = validarCatalogoCompleto(
+        crudo({
+          parametros: [
+            { clave: 'politica_Devoluciones', valor: 'texto' },
+            { clave: 'politica_cambio de talla', valor: 'texto' },
+          ],
+        }),
+        lugares(),
+        HOY,
+      );
+
+      expect(r.errores.filter((e) => e.columna === 'clave')).toHaveLength(2);
+    });
   });
 
   describe('IMP8 — fecha de excepción de horario parseable', () => {

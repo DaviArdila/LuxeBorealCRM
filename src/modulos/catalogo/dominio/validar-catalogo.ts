@@ -25,6 +25,7 @@
  * producto desactivar); T9 decide cómo lo traslada al puerto real.
  */
 
+import { esClavePolitica, temaDeClave, validarTemaPolitica, validarTextoPolitica } from './politica.js';
 import { resolverLugar, type CatalogoLugares } from './resolver-lugar.js';
 
 export type NombrePestana = 'productos' | 'tarifas' | 'cobertura' | 'parametros' | 'excepciones_horario';
@@ -483,6 +484,21 @@ function validarParametros(
 
     if (clave === '') {
       err(errores, 'parametros', numeroFila, 'clave', 'la clave está vacía');
+      return;
+    }
+
+    if (esClavePolitica(clave)) {
+      const errorTema = validarTemaPolitica(temaDeClave(clave));
+      if (errorTema !== null) {
+        err(errores, 'parametros', numeroFila, 'clave', errorTema);
+        return;
+      }
+      const politica = validarTextoPolitica(valorCrudo);
+      if ('error' in politica) {
+        err(errores, 'parametros', numeroFila, 'valor', politica.error);
+        return;
+      }
+      parametros.push({ clave, valor: politica.texto });
       return;
     }
 
