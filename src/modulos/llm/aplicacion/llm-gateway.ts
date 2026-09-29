@@ -118,7 +118,11 @@ export class LlmGateway implements LlmPort {
     await this.verificarTecho(solicitud);
     const perfil = this.perfil(solicitud.perfil);
     const inicio = this.clock.ahora().getTime();
-    const presupuestoMs = this.configuracion.LOCK_TURNO_TTL_S * 1000 - MARGEN_DEL_LOCK_MS;
+    // Con un lock corto el primer intento igual recibe el timeout completo del perfil.
+    const presupuestoMs = Math.max(
+      this.configuracion.LOCK_TURNO_TTL_S * 1000 - MARGEN_DEL_LOCK_MS,
+      perfil.timeoutMs,
+    );
     const restanteMs = () => presupuestoMs - (this.clock.ahora().getTime() - inicio);
 
     const fallos: FalloDeModelo[] = [];
@@ -257,14 +261,15 @@ export class LlmGateway implements LlmPort {
         // semiabierto para siempre.
         this.circuitos.set(modelo, registrarExito());
       }
-      const sinReintentos =
-        ultimoError.clase === 'no-reintentable' ||
-        reintentos >= perfil.maxReintentos ||
-        restanteMs() <= RESTANTE_MINIMO_PARA_REINTENTAR_MS;
-      if (sinReintentos) {
+      if (ultimoError.clase === 'no-reintentable' || reintentos >= perfil.maxReintentos) {
         return { tipo: 'fallo', error: ultimoError };
       }
-      await this.temporizador.esperar(this.backoffMs(reintentos));
+      // La espera del backoff también consume el presupuesto: se descuenta antes de decidir.
+      const esperaMs = this.backoffMs(reintentos);
+      if (restanteMs() - esperaMs <= RESTANTE_MINIMO_PARA_REINTENTAR_MS) {
+        return { tipo: 'fallo', error: ultimoError };
+      }
+      await this.temporizador.esperar(esperaMs);
     }
   }
 

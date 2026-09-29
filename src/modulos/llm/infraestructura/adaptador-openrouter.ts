@@ -178,7 +178,8 @@ export class AdaptadorOpenRouter implements AdaptadorLlm {
       if (estado === undefined) {
         return new AdaptadorLlmError('reintentable', 'sin-respuesta');
       }
-      const reintentable = estado === 429 || estado >= 500;
+      // 408 (el proveedor agotó su propia espera) es transitorio como un 429 o un 5xx.
+      const reintentable = estado === 408 || estado === 429 || estado >= 500;
       return new AdaptadorLlmError(reintentable ? 'reintentable' : 'no-reintentable', 'http', estado);
     }
     if (TypeValidationError.isInstance(error) || NoSuchModelError.isInstance(error)) {

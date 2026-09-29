@@ -356,6 +356,43 @@ describe('modulos/llm/aplicacion — LlmGateway v1: presupuesto total derivado d
 
     expect(temporizador.programaciones).toEqual([15_000, 15_000]);
   });
+
+  it('no reintenta si tras la espera del backoff quedarían 2 segundos o menos de presupuesto', async () => {
+    const { gateway, adaptador, temporizador } = crearGateway();
+    adaptador.programar(MODELO, { error: TIMEOUT, tardaMs: 22_900 }, { resultado: OK });
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.codigo).toBe('timeout');
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(temporizador.esperas).toEqual([]);
+  });
+
+  it('un backoff largo no se come el presupuesto: se descuenta antes de decidir reintentar', async () => {
+    const { gateway, adaptador, temporizador } = crearGateway({
+      LLM_REINTENTO_BASE_MS: 9_000,
+      LLM_REINTENTO_MAX_MS: 9_000,
+    });
+    adaptador.programar(MODELO, { error: TIMEOUT, tardaMs: 14_000 }, { resultado: OK });
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.codigo).toBe('timeout');
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(temporizador.esperas).toEqual([]);
+  });
+
+  it('con un lock corto el primer intento conserva el timeout completo del perfil', async () => {
+    const { gateway, adaptador, temporizador } = crearGateway({
+      LOCK_TURNO_TTL_S: 5,
+      LLM_CONVERSACION_TIMEOUT_MS: 4_000,
+    });
+    adaptador.programar(MODELO, { resultado: OK });
+
+    await gateway.generar(SOLICITUD);
+
+    expect(temporizador.programaciones).toEqual([4_000]);
+  });
 });
 
 describe('modulos/llm/aplicacion — LlmGateway v2: fallback nivel 1 iterado (LLM5, ADR-0014)', () => {
