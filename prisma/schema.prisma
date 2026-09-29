@@ -442,6 +442,7 @@ model UsoLlm {
   creado           DateTime      @default(now()) @db.Timestamptz(3)
   conversacion     Conversacion? @relation(fields: [conversacionId], references: [id], onDelete: SetNull)
 
+  @@index([creado])
   @@map("uso_llm")
 }
 

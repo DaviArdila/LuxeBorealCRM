@@ -43,7 +43,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 - [x] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
 - [x] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
 - [x] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
-- [ ] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
+- [x] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
 - [ ] T8 — Techo mensual + aviso 80 % + parámetro mensaje_techo_gasto (S(d) parcial)
 - [ ] T9 — Módulo llm + redacción R14 + verificación 2 modelos + cierre documental (S(d) parcial)
 
@@ -635,6 +635,25 @@ la fila `pasarela/techo-alcanzado` y `pasarela/circuito-abierto` (D9) también p
 **Slice de PR**: S(d) parcial → PR4 (con T6)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 4 escenarios con título exacto (LLM6 ×2, LLM13 ×2) + 2 tests de
+soporte contra Postgres real; `MODELO_DATOS.md` §7 actualizado primero. Quitar el filtro por `creado`
+o el `try/catch` hace fallar de 1 a 2 tests. Decisiones:
+
+- **Migración `20260929053810_uso_llm_indice_creado`**: solo `CREATE INDEX "uso_llm_creado_idx"`,
+  generada con `prisma migrate dev --create-only` contra un Postgres temporal (revisada; no toca los
+  objetos `[manual]`).
+- El fallo de escritura de LLM13 se prueba con un fallo real de Postgres (FK a una conversación
+  inexistente), sin mocks. El log de error lleva proveedor, modelo y el *nombre* de la clase del
+  error, nunca su mensaje ni el id (R14).
+- Los agregados usan `SUM`/`GROUP BY` de Prisma sobre `Decimal(12,6)`: no hay deriva de coma
+  flotante (`0.000123 + 0.000456 = 0.000579`). El desglose se ordena por proveedor y modelo.
+- Los intentos que nunca llegaron al proveedor (`pasarela/techo-alcanzado`, `pasarela/circuito-abierto`)
+  entran en el desglose con costo 0.
+- **`registrarUso` con una `conversacionId` inexistente pierde la fila** (la FK falla y se loguea):
+  la Fase 07 debe pasar siempre el id de una conversación real o ninguno.
+- Observación: `PER10` (aislamiento de bases por worker) agotó su timeout de 20 s una vez dentro de
+  `npm run verify` por contención de Docker; pasa sola y en `npm run test:integracion` completo.
 
 ---
 
