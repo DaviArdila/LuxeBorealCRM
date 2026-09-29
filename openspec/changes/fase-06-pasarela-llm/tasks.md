@@ -37,7 +37,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 
 ## Checklist
 
-- [ ] T1 — Compatibilidad ai + provider OpenRouter con NestJS 12 ESM + simulador local (D11d)
+- [x] T1 — Compatibilidad ai + provider OpenRouter con NestJS 12 ESM + simulador local (D11d)
 - [ ] T2 — Puerto LlmPort + dominio puro + puertos internos + FakePuertoLlm (S(a))
 - [ ] T3 — Configuración por perfil validada con Zod + fronteras regla 13 (S(c) parcial)
 - [ ] T4 — Gateway v1: timeout + presupuesto total + reintento acotado, un modelo (S(b) parcial)
@@ -192,6 +192,18 @@ Fase 05); habilita LLM11/LLM12.
 **Slice de PR**: S(a) → PR1 (con T2)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — compatible, sin fallback:
+
+| Paquete | Versión fijada (`--save-exact`) | `peerDependencies` | Resultado |
+|---|---|---|---|
+| `ai` | `7.0.122` | `zod ^3.25.76 \|\| ^4.1.8` (proyecto: `4.6.5`) | `npm install` sin `ERESOLVE`; `nest build` y `tsc` en verde con `import from 'ai'` bajo `"type": "module"` |
+| `@openrouter/ai-sdk-provider` | `3.1.0` | `ai ^7.0.0`, `zod ^3.25.76 \|\| ^4.1.8` | `createOpenRouter({ baseURL })` funciona contra el simulador local, sin API key real |
+
+Hallazgos que T6 debe respetar: el provider serializa el `system` como partes
+`[{ type: 'text', text }]` y el mensaje de usuario como string plano; `usage.inputTokens` /
+`outputTokens` de `generateText` salen de `usage.prompt_tokens` / `completion_tokens` del cuerpo
+`chat/completions`. `npm run auditoria` sin vulnerabilidades ≥ high tras la instalación.
 
 ---
 
