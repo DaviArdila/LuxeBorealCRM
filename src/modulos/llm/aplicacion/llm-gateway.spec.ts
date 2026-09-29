@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { FakeAdaptadorLlm } from '../../../../test/fakes/adaptador-llm-falso.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
+import { RepositorioParametroLlmEnMemoria } from '../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
 import { RepositorioUsoLlmEnMemoria } from '../../../../test/fakes/repositorio-uso-llm-en-memoria.js';
 import { TemporizadorLlmFalso } from '../../../../test/fakes/temporizador-llm-falso.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../../../test/soporte/configuracion-llm-de-prueba.js';
@@ -56,6 +57,7 @@ function crearGateway(
   const clock = new ClockFalso(INICIO);
   const adaptador = new FakeAdaptadorLlm(clock);
   const uso = new RepositorioUsoLlmEnMemoria();
+  const parametros = new RepositorioParametroLlmEnMemoria();
   const temporizador = new TemporizadorLlmFalso(clock);
   const configuracion: ConfigGatewayLlm = {
     ...CONFIGURACION_LLM_DE_PRUEBA,
@@ -63,8 +65,16 @@ function crearGateway(
     LOCK_TURNO_TTL_S: 30,
     ...sobrescribir,
   };
-  const gateway = new LlmGateway(adaptador, uso, temporizador, configuracion, clock, ultimoRecurso);
-  return { gateway, adaptador, uso, temporizador, clock };
+  const gateway = new LlmGateway(
+    adaptador,
+    uso,
+    parametros,
+    temporizador,
+    configuracion,
+    clock,
+    ultimoRecurso,
+  );
+  return { gateway, adaptador, uso, parametros, temporizador, clock };
 }
 
 async function fallo(promesa: Promise<unknown>): Promise<ErrorPasarelaLlm> {
@@ -610,5 +620,177 @@ describe('modulos/llm/aplicacion — LlmGateway v2: error tipado y nivel 2 pospu
       expect(error.codigo).toBe(esperado);
       expect(error.modelo).toBe(MODELO_B);
     }
+  });
+});
+
+describe('modulos/llm/aplicacion — LlmGateway v3: techo mensual de gasto (LLM7-LLM9, D7, D9)', () => {
+  // Techo 10 USD y aviso al 80 % (8 USD): valores aprobados en Q1 y Q2. `NODE_ENV=development`
+  // porque en `test` el techo está desactivado (LLM7).
+  const CON_TECHO: Partial<ConfigGatewayLlm> = { NODE_ENV: 'development' };
+
+  it('LLM7 — Gasto bajo el techo permite la llamada con normalidad', async () => {
+    const { gateway, adaptador, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 2;
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect(respuesta.texto).toBe('respuesta');
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(uso.filas).toHaveLength(1);
+    expect(uso.filas[0]?.exito).toBe(true);
+    expect(parametros.lecturasDeEstado).toBe(0);
+    expect(uso.consultas.map((desde) => desde.toISOString())).toEqual(['2026-09-01T00:00:00.000Z']);
+  });
+
+  it('LLM7 — Techo desactivado en entorno de pruebas', async () => {
+    const { gateway, adaptador, uso } = crearGateway({ NODE_ENV: 'test' });
+    uso.gastoMensualUsd = 50;
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect(respuesta.texto).toBe('respuesta');
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(uso.consultas).toEqual([]);
+  });
+
+  it('LLM8 — Cruce del 80 % emite aviso warn una vez por mes', async () => {
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { gateway, adaptador, uso, parametros, clock } = crearGateway(CON_TECHO);
+    adaptador.programar(MODELO, { resultado: OK }, { resultado: OK }, { resultado: OK });
+    const avisosDelTecho = () =>
+      aviso.mock.calls.filter(([mensaje]) => (mensaje as { evento?: string }).evento === 'llm.techo-aviso');
+
+    uso.gastoMensualUsd = 7.99;
+    await gateway.generar(SOLICITUD);
+    expect(avisosDelTecho()).toHaveLength(0);
+
+    uso.gastoMensualUsd = 8.5;
+    await gateway.generar(SOLICITUD);
+    await gateway.generar(SOLICITUD);
+
+    expect(avisosDelTecho()).toEqual([
+      [{ evento: 'llm.techo-aviso', mes: '2026-09', gastoUsd: 8.5, techoUsd: 10 }],
+    ]);
+    expect(parametros.guardados).toEqual([
+      { mes: '2026-09', gastoUsd: 8.5, techoUsd: 10, avisoEmitido: true, bloqueado: false },
+    ]);
+
+    clock.avanzar(5 * 24 * 60 * 60 * 1000);
+    adaptador.programar(MODELO, { resultado: OK });
+    await gateway.generar(SOLICITUD);
+
+    expect(avisosDelTecho()).toHaveLength(2);
+    expect(avisosDelTecho()[1]?.[0]).toMatchObject({ mes: '2026-10' });
+    aviso.mockRestore();
+  });
+
+  it('el aviso del mes no se repite tras reiniciar el proceso porque el estado es durable', async () => {
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const primero = crearGateway(CON_TECHO);
+    primero.uso.gastoMensualUsd = 8.5;
+    primero.adaptador.programar(MODELO, { resultado: OK });
+    await primero.gateway.generar(SOLICITUD);
+    const segundo = crearGateway(CON_TECHO);
+    segundo.parametros.estado = primero.parametros.estado;
+    segundo.uso.gastoMensualUsd = 8.7;
+    segundo.adaptador.programar(MODELO, { resultado: OK });
+
+    await segundo.gateway.generar(SOLICITUD);
+
+    const avisos = aviso.mock.calls.filter(
+      ([mensaje]) => (mensaje as { evento?: string }).evento === 'llm.techo-aviso',
+    );
+    expect(avisos).toHaveLength(1);
+    expect(segundo.parametros.guardados).toEqual([]);
+    aviso.mockRestore();
+  });
+
+  it('LLM9 — Gasto al 100 % no llama al LLM y devuelve techo-alcanzado', async () => {
+    const { gateway, adaptador, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 10;
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const error = await fallo(gateway.generar({ ...SOLICITUD, conversacionId: 'conv-1' }));
+
+    expect(error.codigo).toBe('techo-alcanzado');
+    expect(error.modelo).toBeUndefined();
+    expect(adaptador.llamadas).toEqual([]);
+    expect(uso.filas).toEqual([
+      {
+        proveedor: 'pasarela',
+        modelo: 'techo-alcanzado',
+        tokensEntrada: 0,
+        tokensSalida: 0,
+        tokensCache: 0,
+        costoEstimadoUsd: 0,
+        latenciaMs: 0,
+        exito: false,
+        conversacionId: 'conv-1',
+      },
+    ]);
+    expect(parametros.estado).toEqual({
+      mes: '2026-09',
+      gastoUsd: 10,
+      techoUsd: 10,
+      avisoEmitido: true,
+      bloqueado: true,
+    });
+  });
+
+  it('justo por debajo del techo todavía llama y por encima bloquea cada solicitud sin repetir el estado', async () => {
+    const { gateway, adaptador, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 9.999999;
+    adaptador.programar(MODELO, { resultado: OK });
+    await gateway.generar(SOLICITUD);
+    uso.gastoMensualUsd = 10.5;
+
+    const primera = await fallo(gateway.generar(SOLICITUD));
+    const segunda = await fallo(gateway.generar(SOLICITUD));
+
+    expect([primera.codigo, segunda.codigo]).toEqual(['techo-alcanzado', 'techo-alcanzado']);
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(uso.filas.filter((fila) => fila.modelo === 'techo-alcanzado')).toHaveLength(2);
+    expect(parametros.guardados).toHaveLength(2);
+  });
+
+  it('un salto directo de menos del 80 % al 100 % avisa una sola vez y bloquea', async () => {
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { gateway, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 12;
+
+    await fallo(gateway.generar(SOLICITUD));
+
+    const avisos = aviso.mock.calls.filter(
+      ([mensaje]) => (mensaje as { evento?: string }).evento === 'llm.techo-aviso',
+    );
+    expect(avisos).toHaveLength(1);
+    expect(parametros.guardados).toHaveLength(1);
+    expect(parametros.guardados[0]).toMatchObject({ avisoEmitido: true, bloqueado: true });
+    aviso.mockRestore();
+  });
+
+  it('el gateway nunca trae un texto propio para el techo: el mensaje lo lee otra fase del parámetro', async () => {
+    const { gateway, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 10;
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.message).toBe('Pasarela LLM: techo-alcanzado');
+    expect(parametros.lecturasDeMensaje).toBe(0);
+  });
+
+  it('si no puede verificar el gasto avisa con un error y deja pasar la llamada', async () => {
+    const errorLog = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { gateway, adaptador, uso } = crearGateway(CON_TECHO);
+    uso.fallaElGasto = true;
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect(respuesta.texto).toBe('respuesta');
+    expect(errorLog).toHaveBeenCalledWith({ evento: 'llm.techo-no-verificado', error: 'Error' });
+    errorLog.mockRestore();
   });
 });

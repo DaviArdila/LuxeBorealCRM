@@ -44,7 +44,7 @@ y se prueba como primario en T9 (necesita gateway + adaptador + config cableados
 - [x] T5 — Gateway v2: fallback nivel 1 iterado + circuit breaker + error tipado (S(b) parcial)
 - [x] T6 — Adaptador OpenRouter AI SDK sin reintentos propios (S(c) parcial)
 - [x] T7 — Repositorio uso_llm Prisma + índice aditivo + agregado mensual (S(d) parcial)
-- [ ] T8 — Techo mensual + aviso 80 % + parámetro mensaje_techo_gasto (S(d) parcial)
+- [x] T8 — Techo mensual + aviso 80 % + parámetro mensaje_techo_gasto (S(d) parcial)
 - [ ] T9 — Módulo llm + redacción R14 + verificación 2 modelos + cierre documental (S(d) parcial)
 
 ## Mapeo de escenarios por tarea (27 primarios + 1 trazabilidad)
@@ -711,6 +711,26 @@ sin desplegar).
 **Slice de PR**: S(d) parcial → PR5 (con T9)
 
 **Review requerida**: RDD
+
+**Resultado (apply, 2026-09-29)** — 5 escenarios con título exacto (LLM7 ×2, LLM8, LLM9 ×2; LLM8 y
+LLM9 se prueban a los dos niveles) + 6 tests de soporte; `npm run verify` en verde (123 archivos, 713
+tests). Cuatro mutaciones (`>=` por `>`, aviso siempre, techo también en `test`, umbral en 100 %) las
+detectan de 1 a 3 tests. Decisiones y desviaciones:
+
+- **El techo corre antes de cualquier proveedor** y con un solo agregado por llamada; el estado de
+  `parametro` solo se lee al cruzar el 80 % (el camino feliz no paga una query extra).
+- **Estado durable** `llm_estado_techo` (`mes`, `gastoUsd`, `techoUsd`, `avisoEmitido`, `bloqueado`):
+  se guarda solo en las transiciones (primer aviso del mes; primer bloqueo del mes), así el aviso no se
+  repite entre solicitudes ni tras un reinicio, y vuelve a salir al cambiar de mes (mes en UTC).
+- Un salto directo de < 80 % a ≥ 100 % emite el aviso y bloquea en la misma solicitud.
+- **Falla abierta** (no estaba en `design.md`): si el gasto no se puede medir, o el estado del techo no
+  se puede leer/guardar, se loguea un error (`llm.techo-no-verificado` / `llm.techo-estado-no-guardado`,
+  solo el tipo del error, R14) y la llamada sigue. Bloquear al cliente por un fallo de contabilidad
+  perdería turnos; el techo de la consola del proveedor (Fase 09) es el segundo freno.
+- El gateway no lee `mensaje_techo_gasto`: `RepositorioParametroLlmPrisma.obtenerMensajeTechoGasto`
+  existe para que las Fases 07/08 lo consuman; sin valor (o en blanco) cae al default provisional.
+- El constructor de `LlmGateway` gana `REPOSITORIO_PARAMETRO_LLM` (tercer parámetro).
+- Los intentos bloqueados por techo o por circuito comparten `registrarFilaDePasarela`.
 
 ---
 
