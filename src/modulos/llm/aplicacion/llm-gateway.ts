@@ -164,7 +164,7 @@ export class LlmGateway implements LlmPort {
       return;
     }
 
-    const techoUsd = c.LLM_TECHO_MENSUAL_USD;
+    const techoUsd = await this.techoEfectivoUsd();
     if (gastoUsd < (techoUsd * c.LLM_UMBRAL_AVISO_PCT) / 100) {
       return;
     }
@@ -174,6 +174,20 @@ export class LlmGateway implements LlmPort {
       await this.registrarFilaDePasarela(MODELO_TECHO_ALCANZADO, solicitud);
       throw new ErrorPasarelaLlm('techo-alcanzado');
     }
+  }
+
+  // R15: el negocio sube o baja el techo en `parametro` sin reiniciar; el del entorno es el valor por
+  // defecto. Un valor inválido o una lectura fallida nunca dejan al gateway sin techo.
+  private async techoEfectivoUsd(): Promise<number> {
+    try {
+      const guardado = await this.repositorioParametro.obtenerTechoMensualUsd();
+      if (guardado !== null && Number.isFinite(guardado) && guardado > 0) {
+        return guardado;
+      }
+    } catch (error) {
+      this.logger.error({ evento: 'llm.techo-parametro-no-leido', error: this.nombreDe(error) });
+    }
+    return this.configuracion.LLM_TECHO_MENSUAL_USD;
   }
 
   // El aviso sale una vez por mes y el estado queda en `parametro` para sobrevivir a un reinicio.

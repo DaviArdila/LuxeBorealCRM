@@ -7,13 +7,14 @@ import type {
 
 const CLAVE_MENSAJE_TECHO_GASTO = 'mensaje_techo_gasto';
 const CLAVE_ESTADO_TECHO = 'llm_estado_techo';
+const CLAVE_TECHO_MENSUAL_USD = 'llm_techo_mensual_usd';
 
 /**
- * Sin texto real de negocio todavía (pendiente de que el usuario lo cargue, R15; mismo criterio que
- * `mensaje_espera_handoff`): el negocio lo cambia en `parametro` sin desplegar.
+ * Texto por defecto (P22): neutro, no revela el límite de gasto y no promete una hora de respuesta.
+ * El negocio lo reemplaza en `parametro.mensaje_techo_gasto` sin desplegar (R15).
  */
 const MENSAJE_TECHO_GASTO_POR_DEFECTO =
-  'Estamos con alta demanda en este momento. Te derivo con un asesor que te atiende enseguida.';
+  'Gracias por escribirnos. En este momento te atiende directamente un asesor, que te responderá en breve.';
 
 function esEstadoTecho(valor: unknown): valor is EstadoTecho {
   if (typeof valor !== 'object' || valor === null) {
@@ -41,6 +42,11 @@ export class RepositorioParametroLlmPrisma implements RepositorioParametroLlm {
     const fila = await this.prisma.parametro.findUnique({ where: { clave: CLAVE_MENSAJE_TECHO_GASTO } });
     const valor = fila?.valor;
     return typeof valor === 'string' && valor.trim().length > 0 ? valor : MENSAJE_TECHO_GASTO_POR_DEFECTO;
+  }
+
+  async obtenerTechoMensualUsd(): Promise<number | null> {
+    const fila = await this.prisma.parametro.findUnique({ where: { clave: CLAVE_TECHO_MENSUAL_USD } });
+    return typeof fila?.valor === 'number' ? fila.valor : null;
   }
 
   async leerEstadoTecho(): Promise<EstadoTecho | null> {

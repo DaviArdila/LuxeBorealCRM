@@ -849,4 +849,66 @@ describe('modulos/llm/aplicacion — LlmGateway v3: techo mensual de gasto (LLM7
     expect(errorLog).toHaveBeenCalledWith({ evento: 'llm.techo-no-verificado', error: 'Error' });
     errorLog.mockRestore();
   });
+
+  it('LLM7 — El techo se puede subir desde el parámetro sin reiniciar', async () => {
+    const { gateway, adaptador, uso, parametros } = crearGateway(CON_TECHO);
+    uso.gastoMensualUsd = 12;
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const conTechoDeConfiguracion = await fallo(gateway.generar(SOLICITUD));
+    parametros.techoMensualUsd = 20;
+    const conTechoSubido = await gateway.generar(SOLICITUD);
+
+    expect(conTechoDeConfiguracion.codigo).toBe('techo-alcanzado');
+    expect(conTechoSubido.texto).toBe('respuesta');
+    expect(adaptador.llamadas).toHaveLength(1);
+  });
+
+  it('el parámetro también puede bajar el techo, y el aviso del 80 % y el estado usan el techo efectivo', async () => {
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { gateway, adaptador, uso, parametros } = crearGateway(CON_TECHO);
+    adaptador.programar(MODELO, { resultado: OK });
+    parametros.techoMensualUsd = 5;
+    uso.gastoMensualUsd = 4.2;
+    await gateway.generar(SOLICITUD);
+    uso.gastoMensualUsd = 5;
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.codigo).toBe('techo-alcanzado');
+    expect(aviso).toHaveBeenCalledWith({
+      evento: 'llm.techo-aviso',
+      mes: '2026-09',
+      gastoUsd: 4.2,
+      techoUsd: 5,
+    });
+    aviso.mockRestore();
+  });
+
+  it.each([0, -3, Number.NaN, Number.POSITIVE_INFINITY])(
+    'un parámetro de techo inválido (%s) se ignora y rige el de configuración',
+    async (invalido) => {
+      const { gateway, uso, parametros } = crearGateway(CON_TECHO);
+      parametros.techoMensualUsd = invalido;
+      uso.gastoMensualUsd = 10;
+
+      const error = await fallo(gateway.generar(SOLICITUD));
+
+      expect(error.codigo).toBe('techo-alcanzado');
+      expect(parametros.estado?.techoUsd).toBe(10);
+    },
+  );
+
+  it('si no puede leer el parámetro del techo usa el de configuración y lo deja en un log de error', async () => {
+    const errorLog = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { gateway, uso, parametros } = crearGateway(CON_TECHO);
+    parametros.fallaElTecho = true;
+    uso.gastoMensualUsd = 10;
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.codigo).toBe('techo-alcanzado');
+    expect(errorLog).toHaveBeenCalledWith({ evento: 'llm.techo-parametro-no-leido', error: 'Error' });
+    errorLog.mockRestore();
+  });
 });
