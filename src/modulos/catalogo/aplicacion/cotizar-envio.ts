@@ -8,6 +8,7 @@ import {
   type LineaPeso,
   type ResultadoCotizacion,
 } from '../dominio/envio.js';
+import { ConsultarPolitica } from './consultar-politica.js';
 import { REPOSITORIO_ENVIO, type RepositorioEnvio } from '../puertos/repositorio-envio.js';
 import { REPOSITORIO_PARAMETRO_CATALOGO, type RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
 import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repositorio-producto.js';
@@ -18,7 +19,8 @@ import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repos
  * elegir tarifa (CAT8, D3, prioridad ya fijada por el dominio), y arma la cotización. Sin
  * cobertura — por exclusión o por ausencia de tarifa que aplique — registra el evento (CAT9, D7:
  * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve el mensaje leído del
- * parámetro del negocio, sin ningún rango (CAT11). Un producto no encontrado no rechaza: cotiza
+ * parámetro del negocio, sin ningún rango (CAT11). Con cobertura y contra entrega disponible añade la
+ * política `contra_entrega` (CAT10, CAT12). Un producto no encontrado no rechaza: cotiza
  * con peso cero (ninguna línea de peso), igual que un producto sin peso ni medidas (CAT6).
  */
 @Injectable()
@@ -27,6 +29,7 @@ export class CotizarEnvio {
     @Inject(REPOSITORIO_PRODUCTO) private readonly repositorioProducto: RepositorioProducto,
     @Inject(REPOSITORIO_PARAMETRO_CATALOGO) private readonly repositorioParametro: RepositorioParametroCatalogo,
     @Inject(REPOSITORIO_ENVIO) private readonly repositorioEnvio: RepositorioEnvio,
+    private readonly consultarPolitica: ConsultarPolitica,
   ) {}
 
   async ejecutar(idOSku: string, destino: DestinoEnvio, cantidad = 1): Promise<ResultadoCotizacion> {
@@ -57,7 +60,12 @@ export class CotizarEnvio {
       return this.registrarSinCobertura(producto?.id ?? null, destino);
     }
 
-    return armarCotizacionConCobertura(tarifa);
+    const cotizacion = armarCotizacionConCobertura(tarifa);
+    if (!tarifa.contraentregaDisponible) return cotizacion;
+
+    // CAT10: con contra entrega el bot cita la política literal; nunca el porcentaje del recargo.
+    const politica = await this.consultarPolitica.ejecutar('contra_entrega');
+    return politica.encontrada ? { ...cotizacion, politicaContraentregaTexto: politica.texto } : cotizacion;
   }
 
   private async registrarSinCobertura(productoId: string | null, destino: DestinoEnvio): Promise<ResultadoCotizacion> {

@@ -19,10 +19,6 @@ export function formatearRangoCop(minCop: number, maxCop: number): string {
   return `entre ${formatearCop(minCop)} y ${formatearCop(maxCop)}`;
 }
 
-export function formatearRecargoContraentrega(porcentaje: number): string {
-  return `${porcentaje}% adicional si pagas contra entrega`;
-}
-
 export function formatearDias(diasMin: number, diasMax: number): string {
   if (diasMin === diasMax) return `${diasMin} día${diasMin === 1 ? '' : 's'}`;
   return `entre ${diasMin} y ${diasMax} días`;

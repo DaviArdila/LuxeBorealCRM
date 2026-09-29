@@ -6,5 +6,4 @@ export {
   formatearCop,
   formatearDias,
   formatearRangoCop,
-  formatearRecargoContraentrega,
 } from './dinero.js';

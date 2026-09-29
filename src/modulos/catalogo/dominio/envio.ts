@@ -151,7 +151,7 @@ export function elegirTarifa(
 }
 
 export type ResultadoCotizacion =
-  | { readonly cobertura: true; readonly rangoTexto: string; readonly diasTexto: string; readonly contraentregaDisponible: boolean }
+  | { readonly cobertura: true; readonly rangoTexto: string; readonly diasTexto: string; readonly contraentregaDisponible: boolean; readonly politicaContraentregaTexto?: string }
   | { readonly cobertura: false; readonly mensaje: string };
 
 /**
@@ -160,7 +160,7 @@ export type ResultadoCotizacion =
  * rama `cobertura: false` de `ResultadoCotizacion` la construye el servicio de aplicación
  * `CotizarEnvio` (T8), no esta función de dominio.
  */
-export function armarCotizacionConCobertura(tarifa: CandidataTarifa): ResultadoCotizacion {
+export function armarCotizacionConCobertura(tarifa: CandidataTarifa): Extract<ResultadoCotizacion, { cobertura: true }> {
   return {
     cobertura: true,
     rangoTexto: formatearRangoCop(tarifa.rangoMinCop, tarifa.rangoMaxCop),

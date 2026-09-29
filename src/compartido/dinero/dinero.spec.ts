@@ -2,7 +2,6 @@ import {
   formatearCop,
   formatearDias,
   formatearRangoCop,
-  formatearRecargoContraentrega,
 } from './dinero.js';
 
 // CMP1 — Formato de dinero en pesos colombianos. Nombres de escenario tomados literalmente de
@@ -17,13 +16,6 @@ describe('compartido/dinero', () => {
     expect(formatearRangoCop(15000, 25000)).toBe(
       `entre ${formatearCop(15000)} y ${formatearCop(25000)}`,
     );
-  });
-
-  it('CMP1 — Formatear un recargo contraentrega incluye el porcentaje y su explicación', () => {
-    const resultado = formatearRecargoContraentrega(3);
-
-    expect(resultado).toContain('3%');
-    expect(resultado).toContain('contra entrega');
   });
 
   it('CMP1 — Formatear días de entrega con el mismo mínimo y máximo produce un solo valor', () => {

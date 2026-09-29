@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatearCop, formatearRecargoContraentrega } from '../../../compartido/dinero/index.js';
+import { formatearCop } from '../../../compartido/dinero/index.js';
 import { armarCatalogoCompacto, armarFicha, type Producto, type ProductoResumen } from './producto.js';
 
 function producto(sobrescribir: Partial<Producto> = {}): Producto {
@@ -23,19 +23,20 @@ function producto(sobrescribir: Partial<Producto> = {}): Producto {
 describe('catalogo/dominio/producto', () => {
   describe('armarFicha', () => {
     it('CAT2 — La ficha expone el precio como texto formateado', () => {
-      const ficha = armarFicha(producto({ precioCop: 123456 }), 0);
+      const ficha = armarFicha(producto({ precioCop: 123456 }));
 
       expect(ficha.precioTexto).toBe(formatearCop(123456));
     });
 
-    it('CAT2 — La ficha expone el recargo contraentrega leído del parámetro del negocio', () => {
-      const ficha = armarFicha(producto(), 5);
+    it('CAT2 — La ficha no expone ningún dato del recargo contra entrega', () => {
+      const ficha = armarFicha(producto());
 
-      expect(ficha.recargoContraentregaTexto).toBe(formatearRecargoContraentrega(5));
+      expect(Object.keys(ficha).join(' ')).not.toMatch(/recargo/i);
+      expect(JSON.stringify(ficha)).not.toContain('%');
     });
 
     it('CAT2 — La ficha indica si el producto tiene fotos', () => {
-      const ficha = armarFicha(producto({ tieneFotos: true }), 0);
+      const ficha = armarFicha(producto({ tieneFotos: true }));
 
       expect(ficha.tieneFotos).toBe(true);
     });
