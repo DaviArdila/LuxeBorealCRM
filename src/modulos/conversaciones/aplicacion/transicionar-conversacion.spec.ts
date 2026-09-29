@@ -1,3 +1,4 @@
+import type { SalidaCanal, SolicitudCambioEstado } from '../../canales/index.js';
 import type { Configuracion } from '../../../plataforma/config/index.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { TransicionInvalida } from '../dominio/maquina-estados.js';
@@ -52,8 +53,30 @@ class RepositorioConversacionFalso implements RepositorioConversacion {
   }
 }
 
-function crearCasoDeUso(repositorio: RepositorioConversacionFalso, clock: ClockFalso) {
-  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA);
+/** Doble de {@link SalidaCanal}: solo interesa el espejo del estado (CNV8). */
+class SalidaCanalFalsa implements SalidaCanal {
+  estados: SolicitudCambioEstado[] = [];
+
+  enviarMensajes(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  cambiarEstado(solicitud: SolicitudCambioEstado): Promise<void> {
+    this.estados.push(solicitud);
+    return Promise.resolve();
+  }
+
+  agregarEtiquetas(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+function crearCasoDeUso(
+  repositorio: RepositorioConversacionFalso,
+  clock: ClockFalso,
+  salida: SalidaCanal = new SalidaCanalFalsa(),
+) {
+  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA, salida);
 }
 
 describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () => {
@@ -107,5 +130,50 @@ describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () =>
 
     await expect(casoDeUso.ejecutar(conversacion, 'pausado', 'eco_humano')).rejects.toThrow(TransicionInvalida);
     expect(repositorio.llamadasATransicionar).toHaveLength(0);
+  });
+
+  it('CNV8 — La vuelta al bot por vencimiento se espeja como pendiente', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: 'bot', version: 4 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await casoDeUso.ejecutar(conversacionDePrueba({ version: 3 }), 'bot', 'ttl');
+
+    expect(salida.estados).toEqual([{ idConversacion: 'conv-1', idOperacion: 'espejo-v4', estado: 'pendiente' }]);
+  });
+
+  it('CNV8 — Una vuelta al bot que vino del canal no se espeja', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: 'bot', version: 2 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await casoDeUso.ejecutar(conversacionDePrueba(), 'bot', 'chatwoot_resolved');
+
+    expect(salida.estados).toEqual([]);
+  });
+
+  it('CNV8 — Pasar a handoff_pendiente se espeja como abierta con la versión nueva en la clave', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: 'handoff_pendiente', version: 8 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await casoDeUso.ejecutar(conversacionDePrueba({ estado: 'bot', version: 7 }), 'handoff_pendiente', 'regla_handoff_explicita');
+
+    expect(salida.estados).toEqual([{ idConversacion: 'conv-1', idOperacion: 'espejo-v8', estado: 'abierta' }]);
+  });
+
+  it('un conflicto de versión persistente no espeja nada', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.filaFresca = conversacionDePrueba({ version: 2 });
+    repositorio.programarRespuestas(null, null);
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await expect(casoDeUso.ejecutar(conversacionDePrueba(), 'humano', 'eco_humano')).rejects.toThrow();
+
+    expect(salida.estados).toEqual([]);
   });
 });

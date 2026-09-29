@@ -11,11 +11,17 @@
  * (T1 confirmó contra Chatwoot v4.17.1 real que `content_attributes` se persiste y es consultable
  * por `GET`, y que Chatwoot no deduplica esto por sí mismo). Cambiar de estado y agregar etiquetas
  * son idempotentes por naturaleza (D13) y no necesitan esta consulta.
+ *
+ * CAN9 (D7 de la 07a): un mensaje que declara `datos.requiereEstado` consulta la guardia registrada
+ * justo antes de enviarse; si niega, el paso falla como `permanente` y el outbox aborta el resto de
+ * la secuencia. Sin `requiereEstado` o sin guardia registrada se envía como antes. La guardia va
+ * después de la reconciliación de D13: un paso que ya salió no debe marcarse como fallido.
  */
 import { Inject, Injectable } from '@nestjs/common';
 import type { EstadoConversacionCanal } from '../dominio/evento-canal.js';
 import { FalloPublicacion, type EntradaOutbox, type ManejadorOutbox } from '../../../plataforma/outbox/index.js';
 import { ADAPTADOR_CANAL, FalloCanal, type AdaptadorCanal } from '../puertos/adaptador-canal.js';
+import { RegistroGuardiaEnvioCanal } from './registro-guardia-envio-canal.js';
 import { TIPO_OUTBOX_ESTADO, TIPO_OUTBOX_ETIQUETAS, TIPO_OUTBOX_MENSAJE } from './salida-canal-outbox.js';
 
 function idConversacionDeDatos(datos: Readonly<Record<string, unknown>>, tipo: string): string {
@@ -52,7 +58,10 @@ function etiquetasDeDatos(datos: Readonly<Record<string, unknown>>): readonly st
 
 @Injectable()
 export class PublicarEfectoCanal implements ManejadorOutbox {
-  constructor(@Inject(ADAPTADOR_CANAL) private readonly adaptador: AdaptadorCanal) {}
+  constructor(
+    @Inject(ADAPTADOR_CANAL) private readonly adaptador: AdaptadorCanal,
+    private readonly registroGuardia: RegistroGuardiaEnvioCanal,
+  ) {}
 
   async publicar(entrada: EntradaOutbox): Promise<void> {
     switch (entrada.tipo) {
@@ -88,10 +97,22 @@ export class PublicarEfectoCanal implements ManejadorOutbox {
       }
     }
 
+    await this.consultarGuardia(idConversacion, entrada.datos);
+
     const texto = textoEfimero(entrada.efimero);
     await this.conFalloPublicacion(() =>
       this.adaptador.enviarTexto(idConversacion, texto, entrada.claveIdempotencia),
     );
+  }
+
+  private async consultarGuardia(idConversacion: string, datos: Readonly<Record<string, unknown>>): Promise<void> {
+    const requiereEstado = datos.requiereEstado;
+    if (typeof requiereEstado !== 'string') return;
+    const guardia = this.registroGuardia.obtener();
+    if (guardia === undefined) return;
+    if (!(await guardia.puedeEnviar(idConversacion, requiereEstado))) {
+      throw new FalloPublicacion('permanente', 'estado-cambio');
+    }
   }
 
   private async publicarEstado(entrada: EntradaOutbox): Promise<void> {

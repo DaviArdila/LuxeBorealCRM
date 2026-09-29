@@ -7,6 +7,7 @@ import { ProcesarEventoEntrante } from './aplicacion/procesar-evento-entrante.js
 import { PublicarEfectoCanal } from './aplicacion/publicar-efecto-canal.js';
 import { RegistrarEventoEntrante } from './aplicacion/registrar-evento-entrante.js';
 import { RegistroConsumidorEventosCanal } from './aplicacion/registro-consumidor-eventos-canal.js';
+import { RegistroGuardiaEnvioCanal } from './aplicacion/registro-guardia-envio-canal.js';
 import { SalidaCanalOutbox, TIPO_OUTBOX_ESTADO, TIPO_OUTBOX_ETIQUETAS, TIPO_OUTBOX_MENSAJE } from './aplicacion/salida-canal-outbox.js';
 import {
   ColaEventosEntrantesBullmq,
@@ -44,6 +45,9 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
  * exportado). En `onModuleInit` registra la única instancia de `PublicarEfectoCanal` para los tres
  * `tipo` de outbox que `SalidaCanalOutbox` produce — mismo patrón de registro por `tipo` que D8,
  * aplicado aquí a `RegistroManejadoresOutbox` de `plataforma/outbox`.
+ *
+ * CAN9 (07a): `RegistroGuardiaEnvioCanal` se exporta para que `conversaciones` registre su guardia de
+ * envío por paso desde `onModuleInit`, igual que hace con el consumidor de eventos.
  */
 @Module({
   imports: [PrismaModule, OutboxModule, BullModule.registerQueue({ name: NOMBRE_COLA_INBOX })],
@@ -58,11 +62,12 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
     ClienteChatwoot,
     RegistrarEventoEntrante,
     RegistroConsumidorEventosCanal,
+    RegistroGuardiaEnvioCanal,
     ProcesarEventoEntrante,
     ProcesadorInbox,
     PublicarEfectoCanal,
   ],
-  exports: [SALIDA_CANAL, LECTOR_MENSAJE_CANAL, RegistroConsumidorEventosCanal],
+  exports: [SALIDA_CANAL, LECTOR_MENSAJE_CANAL, RegistroConsumidorEventosCanal, RegistroGuardiaEnvioCanal],
 })
 export class CanalesModule implements OnModuleInit {
   constructor(

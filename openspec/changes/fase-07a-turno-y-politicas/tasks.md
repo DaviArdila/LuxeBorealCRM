@@ -17,8 +17,8 @@ Conventional Commits, sin atribución de IA.
 ## Checklist
 
 - [x] T1 — Contrato ampliado del turno + consumidor con tipo de contenido
-- [ ] T2 — Handoff ejecutado por conversaciones + espejo del estado en el canal
-- [ ] T3 — Guardia de envío por paso (R5 literal)
+- [x] T2 — Handoff ejecutado por conversaciones + espejo del estado en el canal
+- [x] T3 — Guardia de envío por paso (R5 literal)
 - [ ] T4 — Módulo agente: pipeline, composición por AppModule y regla de fronteras 15
 - [ ] T5 — Política de mensajes no textuales (R12) + contador de audios + textos del agente
 - [ ] T6 — Tope de turnos por sesión (R13) + aviso de datos (R14)

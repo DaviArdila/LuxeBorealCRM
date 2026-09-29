@@ -50,7 +50,7 @@ Fase 05).
 conversación y llama `TransicionarConversacion.ejecutar(conv, 'handoff_pendiente', origen)` con
 `origen = motivo === 'lead-caliente' ? 'lead_caliente' : 'regla_handoff_explicita'`, luego vacía el
 buffer y sale del bucle de drenado. (2) `TransicionarConversacion`, después de persistir, encola el
-espejo con `SALIDA_CANAL.cambiarEstado` según la tabla; `idOperacion = espejo:v<versionNueva>`.
+espejo con `SALIDA_CANAL.cambiarEstado` según la tabla; `idOperacion = espejo-v<versionNueva>` (con `:` el outbox lanza: `claveEstado` solo acepta `[A-Za-z0-9_-]{1,64}`).
 
 | Destino | Origen | Espejo |
 |---|---|---|
@@ -70,6 +70,10 @@ de salida exige `bot` y bloquearía el propio mensaje de handoff).
 ADR-0004: el espejo se encola **después** de la transición, no en la misma transacción, porque
 `RegistroOutbox.agregar` no acepta un cliente transaccional; la ventana de pérdida es una caída entre
 dos escrituras seguidas y la clave por versión hace idempotente cualquier reintento. Queda en Risks.
+
+**Desviaciones de implementación (T2, anotadas al construir):** (1) `ProcesarTurno` **no** cancela el job diferido: `ColaTurno` inyecta `ProcesarTurno`, así que inyectar la cola en el caso de uso crearía un ciclo de DI; un job de respaldo posterior ve `estado !== 'bot'` y solo vacía el buffer. (2) Tras enviar, `ProcesarTurno` relee la conversación y transiciona solo si sigue en `bot`: si un asesor la tomó durante la generación, no se la pisa. (3) Cada transición a `humano` (p. ej. cada eco de asesor) encola un `abierta`; es idempotente en Chatwoot pero genera una fila de outbox por mensaje del asesor. Omitir `humano → humano` queda como optimización posible, fuera de la spec.
+
+**Corrección lateral (T3):** el aviso de espera de CNV3 usaba `idRespuesta = "espera-handoff:<id>"` y el id del job de respaldo de `ColaTurno` medía 86 caracteres; ambos violaban el formato del outbox y lanzarían con el outbox real. Ahora son `espera-handoff-<id>` y `turno-<uuid>-respaldo-<8 caracteres>` (59), con test.
 
 ### Decision D4: agente → conversaciones; AppModule compone con un módulo dinámico (ADR-0016)
 

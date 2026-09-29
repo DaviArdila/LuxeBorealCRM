@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
+import type { SalidaCanal } from '../../../src/modulos/canales/index.js';
 import { TransicionInvalida } from '../../../src/modulos/conversaciones/dominio/maquina-estados.js';
 import type { Conversacion } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
 import {
@@ -15,6 +16,13 @@ import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestruc
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 let modulo: TestingModule | undefined;
+
+/** Estas pruebas son de la máquina de estados (R6/R7): el espejo en el canal (CNV8) se prueba aparte. */
+const salidaCanalNula: SalidaCanal = {
+  enviarMensajes: () => Promise.resolve(),
+  cambiarEstado: () => Promise.resolve(),
+  agregarEtiquetas: () => Promise.resolve(),
+};
 
 afterEach(async () => {
   await modulo?.close();
@@ -118,7 +126,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
       ...CONFIGURACION_LLM_DE_PRUEBA,
-    } as Configuracion);
+    } as Configuracion, salidaCanalNula);
 
     await expect(casoDeUso.ejecutar(conversacion, 'bot', 'eco_humano')).rejects.toThrow(TransicionInvalida);
     const filaSinCambios = await prisma.conversacion.findUniqueOrThrow({ where: { id: conversacion.id } });
@@ -140,7 +148,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
       ...CONFIGURACION_LLM_DE_PRUEBA,
-    } as Configuracion);
+    } as Configuracion, salidaCanalNula);
 
     await expect(casoDeUso.ejecutar(conversacion, 'pausado', 'eco_humano')).rejects.toThrow(TransicionInvalida);
     const filaSinCambios = await prisma.conversacion.findUniqueOrThrow({ where: { id: conversacion.id } });
@@ -162,7 +170,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
       ...CONFIGURACION_LLM_DE_PRUEBA,
-    } as Configuracion);
+    } as Configuracion, salidaCanalNula);
 
     const resultado = await casoDeUso.ejecutar(conversacion, 'bot', 'chatwoot_resolved');
 
@@ -187,7 +195,7 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
       ...CONFIGURACION_LLM_DE_PRUEBA,
-    } as Configuracion);
+    } as Configuracion, salidaCanalNula);
 
     const primerEco = await casoDeUso.ejecutar(conversacion, 'humano', 'eco_humano');
     expect(primerEco.expiraControlEn).toEqual(new Date('2026-09-28T15:00:00Z'));

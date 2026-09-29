@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
+import { CanalesModule } from '../../../src/modulos/canales/index.js';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import {
@@ -91,6 +92,7 @@ async function crearContexto(): Promise<{
       RelojModule,
       PrismaModule,
       ColasModule,
+      CanalesModule, // SALIDA_CANAL real: el espejo de CNV8 queda en el outbox de Postgres
       BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
     ],
     providers: [
@@ -165,6 +167,23 @@ describe('BarridoVencimientos (T7, integración, R7, D11)', () => {
     const fila = await contexto.prisma.conversacion.findUniqueOrThrow({ where: { id: idConv } });
     expect(fila.estado).toBe('bot');
     expect(contexto.espia.llamadas).toHaveLength(0);
+  });
+
+  it('CNV8 — La vuelta al bot por vencimiento se espeja como pendiente', async () => {
+    const contexto = await crearContexto();
+    app = contexto.app;
+    const idConv = await crearConversacion(contexto.prisma, 'humano', new Date('2026-09-28T11:00:00Z'));
+
+    await contexto.barrido.ejecutarBarrido();
+
+    const filas = await contexto.prisma.outbox.findMany({
+      where: { claveIdempotencia: { startsWith: `canal:estado:${idConv}:` } },
+    });
+    expect(filas).toHaveLength(1);
+    expect(filas[0].claveIdempotencia).toBe(`canal:estado:${idConv}:espejo-v1`);
+    expect(filas[0].tipo).toBe('canal.estado');
+    expect(filas[0].payload).toMatchObject({ datos: { idConversacion: idConv, estado: 'pendiente' } });
+    expect(filas[0].enviadoEn).toBeNull(); // encolado, no publicado: los trabajadores están apagados
   });
 
   it('una conversación aún no vencida no se toca', async () => {

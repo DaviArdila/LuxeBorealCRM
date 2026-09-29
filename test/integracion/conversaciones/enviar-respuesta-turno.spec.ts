@@ -127,6 +127,7 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
     expect(salidaCanal.llamadas[0]).toEqual({
       idConversacion: idConv,
       idRespuesta: 'resp-1',
+      requiereEstado: 'bot', // CNV9: la guardia de canales relee el estado en cada paso
       mensajes: [
         { tipo: 'texto', texto: 'hola' },
         { tipo: 'texto', texto: 'mundo' },
