@@ -18,11 +18,12 @@ como texto listo para mostrar al cliente, a partir de valores enteros de entrada
 MUST NOT aceptar ni producir valores de dinero en punto flotante. Formatear un valor entero de COP
 MUST producir un texto con símbolo de moneda y separador de miles, sin parte decimal (por ejemplo,
 `389000` → `$389.000`). Formatear un rango de dos valores de COP MUST producir un texto que una
-ambos extremos formateados con la forma "entre {mínimo} y {máximo}". Formatear un porcentaje de
-recargo contraentrega MUST producir un texto que incluya el porcentaje y la frase explicativa del
-recargo. Formatear un rango de días de entrega MUST producir un solo valor singular o plural cuando
-el mínimo y el máximo coinciden, y un texto con la forma "entre {mínimo} y {máximo} días" cuando
-difieren.
+ambos extremos formateados con la forma "entre {mínimo} y {máximo}". Formatear un rango de días de
+entrega MUST producir un solo valor singular o plural cuando el mínimo y el máximo coinciden, y un
+texto con la forma "entre {mínimo} y {máximo} días" cuando difieren.
+
+(Previously: también exigía formatear un porcentaje de recargo contra entrega con su frase
+explicativa; el recargo ya no se cita como porcentaje al cliente.)
 
 Fase que lo implementa: 00a
 
@@ -39,13 +40,6 @@ Fase que lo implementa: 00a
 - Cuando se formatea como rango,
 - Entonces el resultado es el texto "entre {mínimo formateado} y {máximo formateado}", con cada
   extremo en el mismo formato que un valor individual.
-
-#### Scenario: Formatear un recargo contraentrega incluye el porcentaje y su explicación
-
-- Dado un porcentaje de recargo, por ejemplo `3`,
-- Cuando se formatea como texto de recargo contraentrega,
-- Entonces el resultado incluye ese porcentaje seguido de la frase que explica que aplica al pago
-  contra entrega.
 
 #### Scenario: Formatear días de entrega con el mismo mínimo y máximo produce un solo valor
 

@@ -40,12 +40,14 @@ catálogo compacto. El listado MUST excluir los productos inactivos.
 
 ### Requirement: CAT2 — Ficha de producto con dinero ya formateado
 
-El sistema MUST construir la ficha de un producto con `precio_texto` y
-`recargo_contraentrega_texto` como texto ya formateado, reutilizando las funciones de
-`compartido/dinero` (`formatearCop`, `formatearRecargoContraentrega`) sin reimplementar lógica de
-formateo propia (R2: el LLM nunca calcula dinero, solo cita lo que el backend ya formateó). El
-porcentaje de recargo contraentrega MUST leerse del parámetro editable `recargo_contraentrega_pct`
-(R15), nunca de una constante en código. La ficha MUST indicar si el producto tiene fotos.
+El sistema MUST construir la ficha de un producto con `precio_texto` como texto ya formateado,
+reutilizando `formatearCop` de `compartido/dinero` sin reimplementar lógica de formateo propia (R2:
+el LLM nunca calcula dinero, solo cita lo que el backend ya formateó). La ficha MUST NOT exponer el
+recargo contra entrega ni su porcentaje: lo que el cliente debe saber de la contra entrega lo entrega
+la política `contra_entrega` (CAT12). La ficha MUST indicar si el producto tiene fotos.
+
+(Previously: la ficha exponía `recargo_contraentrega_texto`, armado con
+`formatearRecargoContraentrega` y el porcentaje leído de `recargo_contraentrega_pct`.)
 
 #### Scenario: La ficha expone el precio como texto formateado
 
@@ -54,11 +56,12 @@ porcentaje de recargo contraentrega MUST leerse del parámetro editable `recargo
 - Entonces `precio_texto` es el resultado de `formatearCop(123456)`, sin ningún cálculo adicional
   sobre el valor.
 
-#### Scenario: La ficha expone el recargo contraentrega leído del parámetro del negocio
+#### Scenario: La ficha no expone ningún dato del recargo contra entrega
 
-- Dado el parámetro `recargo_contraentrega_pct` con valor `5`,
-- Cuando se obtiene la ficha de un producto activo,
-- Entonces `recargo_contraentrega_texto` es el resultado de `formatearRecargoContraentrega(5)`.
+- Dado un producto activo y el parámetro `recargo_contraentrega_pct` con valor `5`,
+- Cuando se obtiene la ficha del producto,
+- Entonces la ficha no incluye ningún campo de recargo y ningún texto de la ficha contiene el
+  símbolo de porcentaje.
 
 #### Scenario: La ficha indica si el producto tiene fotos
 
@@ -250,7 +253,12 @@ Cuando hay cobertura, el servicio de cotización de envío MUST devolver `cobert
 `rango_texto` (resultado de `formatearRangoCop` sobre `rango_min_cop`/`rango_max_cop` de la tarifa
 elegida), `dias_texto` (resultado de `formatearDias` sobre `dias_min`/`dias_max`) y
 `contraentrega_disponible` tomado de la tarifa elegida, sin que el LLM (Fase 07) tenga que calcular
-ni redondear nada (R2).
+ni redondear nada (R2). Cuando `contraentrega_disponible` es `true`, MUST devolver además
+`politica_contraentrega_texto` con el texto de la política `contra_entrega` (CAT12), para que el bot
+lo cite literal; cuando es `false`, MUST NOT incluirlo.
+
+(Previously: la cotización no devolvía ninguna política; el bot no tenía dónde apoyarse para explicar
+la contra entrega.)
 
 #### Scenario: Cotización con cobertura devuelve el rango y los días ya formateados de la tarifa elegida
 
@@ -258,14 +266,33 @@ ni redondear nada (R2).
   `dias_max = 4` y `contraentrega_disponible = true`,
 - Cuando se cotiza el envío a un destino que resuelve esa tarifa,
 - Entonces el resultado es `cobertura: true` con `rango_texto` igual a
-  `formatearRangoCop(30000, 40000)`, `dias_texto` igual a `formatearDias(2, 4)` y
-  `contraentrega_disponible: true`.
+  `formatearRangoCop(30000, 40000)`, `dias_texto` igual a `formatearDias(2, 4)`,
+  `contraentrega_disponible: true` y `politica_contraentrega_texto` igual al texto de la política
+  `contra_entrega`.
+
+#### Scenario: Cotización con cobertura sin contra entrega no incluye la política
+
+- Dada una tarifa elegida con `contraentrega_disponible = false`,
+- Cuando se cotiza el envío a un destino que resuelve esa tarifa,
+- Entonces el resultado es `cobertura: true` con `contraentrega_disponible: false` y no incluye
+  `politica_contraentrega_texto`.
+
+#### Scenario: La política de contra entrega configurada por el negocio reemplaza al texto de respaldo
+
+- Dado el parámetro `politica_contra_entrega` con un texto configurado y una tarifa elegida con
+  `contraentrega_disponible = true`,
+- Cuando se cotiza el envío a un destino que resuelve esa tarifa,
+- Entonces `politica_contraentrega_texto` es ese texto configurado, sin modificar.
 
 ### Requirement: CAT11 — Cotización de envío sin cobertura devuelve un mensaje configurable y ningún rango
 
 Cuando no hay cobertura, el servicio de cotización de envío MUST devolver `cobertura: false` junto
 con un mensaje leído del parámetro editable `mensaje_fuera_cobertura` (R15), y MUST NOT incluir
-`rango_texto`, `dias_texto` ni `contraentrega_disponible`.
+`rango_texto`, `dias_texto` ni `contraentrega_disponible`. Si `mensaje_fuera_cobertura` no está
+configurado, MUST usar un texto por defecto que informe la falta de cobertura y no prometa ningún
+contacto ni seguimiento (esa promesa depende de la Fase 08).
+
+(Previously: el texto por defecto prometía «Un asesor revisará tu caso y te contactará».)
 
 #### Scenario: Sin cobertura se devuelve el mensaje del parámetro del negocio, sin ningún rango
 
@@ -274,6 +301,14 @@ con un mensaje leído del parámetro editable `mensaje_fuera_cobertura` (R15), y
 - Cuando se cotiza el envío a ese destino,
 - Entonces el resultado es `cobertura: false` con ese mensaje, y no incluye `rango_texto` ni
   `dias_texto`.
+
+#### Scenario: Sin parámetro configurado el mensaje por defecto no promete ningún contacto
+
+- Dado que el parámetro `mensaje_fuera_cobertura` no existe, y un destino excluido de la cobertura,
+- Cuando se cotiza el envío a ese destino,
+- Entonces el resultado es `cobertura: false` con un mensaje que informa la falta de cobertura y que
+  no contiene una promesa de contacto de un asesor.
+
 ### Requirement: IMP1 — Lectura de las pestañas del catálogo desde Sheets o desde un directorio local
 
 El sistema MUST exponer un puerto `FuenteCatalogo` que lee cinco pestañas — `productos`, `tarifas`,
@@ -434,9 +469,16 @@ El sistema MUST validar y serializar `parametro.valor` a `jsonb` según un parse
 conocida (Q3, R15: el negocio edita estos valores desde la hoja, nunca son constantes en código):
 `horario_atencion` MUST validarse como JSON de un objeto cuyos valores son `null` o una cadena
 `"HH:MM-HH:MM"`, y guardarse como ese objeto; `recargo_contraentrega_pct` y `factor_volumetrico` MUST
-validarse y guardarse como un número jsonb. Una clave que no está en el registro de claves conocidas
-MUST NOT producir un error — MUST producir una advertencia y guardarse tal cual, como valor jsonb de
-tipo cadena.
+validarse y guardarse como un número jsonb. Una clave cuyo nombre empieza por `politica_` MUST
+validarse como una política del negocio (CAT12): el tema (lo que sigue al prefijo) MUST ser no vacío y
+estar formado solo por letras minúsculas sin acentos, dígitos y guion bajo; el valor MUST ser un texto
+no vacío tras recortar espacios y de hasta 1.200 caracteres, y se guarda como una cadena jsonb; una
+clave `politica_*` inválida MUST producir un error de validación, no una advertencia. Una clave que no
+está en el registro de claves conocidas ni sigue el patrón de política MUST NOT producir un error —
+MUST producir una advertencia y guardarse tal cual, como valor jsonb de tipo cadena.
+
+(Previously: una clave `politica_*` era una clave desconocida, con advertencia y sin validar su
+contenido.)
 
 #### Scenario: horario_atencion con JSON válido se guarda como objeto jsonb
 
@@ -472,6 +514,33 @@ tipo cadena.
 - Entonces el resultado no incluye ningún error por esa fila, incluye una advertencia que nombra la
   clave `color_favorito`, y `parametro.valor` para esa clave queda guardado tal cual, como valor jsonb
   de tipo cadena.
+
+#### Scenario: Una política válida se guarda como cadena sin advertencia
+
+- Dado un parámetro con la clave `politica_devoluciones` y un texto de política con espacios al
+  principio y al final,
+- Cuando se valida y serializa el catálogo,
+- Entonces el resultado no incluye ningún error ni advertencia por esa fila, y `parametro.valor` queda
+  guardado como el texto recortado, como cadena jsonb.
+
+#### Scenario: Una política vacía es un error
+
+- Dado un parámetro con la clave `politica_garantia` y un valor en blanco,
+- Cuando se valida el catálogo,
+- Entonces el resultado incluye un error de validación en la columna `valor` de esa fila.
+
+#### Scenario: Una política de más de 1200 caracteres es un error
+
+- Dado un parámetro con la clave `politica_garantia` y un texto de 1201 caracteres,
+- Cuando se valida el catálogo,
+- Entonces el resultado incluye un error de validación en la columna `valor` de esa fila.
+
+#### Scenario: Un tema de política con mayúsculas o espacios es un error
+
+- Dadas las claves `politica_Devoluciones` y `politica_cambio de talla` con un texto válido,
+- Cuando se valida el catálogo,
+- Entonces el resultado incluye un error de validación en la columna `clave` de cada una de esas
+  filas.
 
 ### Requirement: IMP8 — Fecha de excepción de horario parseable
 
@@ -655,3 +724,45 @@ válido para importar.
 - Dado ningún `--sheet-id` ni `--dir` en los argumentos del comando,
 - Cuando se ejecuta el comando `catalogo:importar`,
 - Entonces el comando falla con un error que indica que se debe pasar exactamente uno de los dos.
+
+### Requirement: CAT12 — Políticas del negocio como parámetros politica_<tema>
+
+El sistema MUST tratar como políticas del negocio las filas de `parametro` cuya clave sigue el patrón
+`politica_<tema>` (R15: son datos editables, nunca constantes en código). Un caso de uso de consulta
+MUST devolver, para un tema, el texto de la política tal cual está guardado, sin interpretarlo ni
+reescribirlo (R1, R2). Si el tema es `contra_entrega` y no tiene fila, MUST devolver el texto de
+respaldo aprobado por el negocio: «Tu pedido se envía contra entrega: pagas cuando lo recibes. El
+recargo por contra entrega se suma al total de tu compra. Te enviaremos la evidencia del despacho
+(guía y foto del paquete). Al recibirlo tienes derecho a abrirlo y revisarlo: verifica que sea
+exactamente lo que pediste y, si presenta cualquier novedad, puedes devolverlo de inmediato.». Si el
+tema no existe, MUST indicar que no fue encontrado junto con los temas disponibles, sin inventar ningún
+texto. Los temas disponibles MUST ser la unión, ordenada alfabéticamente y sin repetir, de los
+configurados en `parametro` y los de respaldo.
+
+Fase que lo implementa: este cambio (`politicas-contraentrega`); 07 (herramienta `consultar_politica`)
+
+#### Scenario: Una política configurada se devuelve tal cual
+
+- Dado el parámetro `politica_devoluciones` con un texto configurado,
+- Cuando se consulta el tema `devoluciones`,
+- Entonces el resultado es `encontrada: true` con ese texto exacto, sin ninguna modificación.
+
+#### Scenario: La política de contra entrega sin configurar usa el texto aprobado por el negocio
+
+- Dado que no existe el parámetro `politica_contra_entrega`,
+- Cuando se consulta el tema `contra_entrega`,
+- Entonces el resultado es `encontrada: true` con el texto de respaldo aprobado por el negocio.
+
+#### Scenario: Un tema sin política devuelve los temas disponibles y no inventa texto
+
+- Dado que no existe el parámetro `politica_garantia` y sí existe `politica_devoluciones`,
+- Cuando se consulta el tema `garantia`,
+- Entonces el resultado es `encontrada: false` con la lista de temas disponibles
+  (`contra_entrega`, `devoluciones`) y ningún texto de política.
+
+#### Scenario: Los temas disponibles unen los configurados y los de respaldo sin repetirse
+
+- Dados los parámetros `politica_contra_entrega` y `politica_devoluciones` configurados,
+- Cuando se listan los temas disponibles,
+- Entonces el resultado es `contra_entrega` y `devoluciones`, ordenados alfabéticamente y sin que
+  `contra_entrega` aparezca dos veces.
