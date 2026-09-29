@@ -1,6 +1,6 @@
 # 0016. El agente implementa el puerto de conversaciones; AppModule compone los dos módulos
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-29
 
 ## Contexto

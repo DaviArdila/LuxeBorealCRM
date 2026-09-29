@@ -1,6 +1,6 @@
 # 0018. Presupuesto de tiempo del turno del agente: plazo compartido y tope de vueltas
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-29
 
 ## Contexto

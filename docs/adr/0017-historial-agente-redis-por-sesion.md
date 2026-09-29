@@ -1,6 +1,6 @@
 # 0017. Historial corto del agente en Redis, por sesión bot
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-29
 
 ## Contexto
