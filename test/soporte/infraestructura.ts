@@ -36,6 +36,15 @@ export function prefijoRedisDePrueba(): string {
   return `test:${identificador}:`;
 }
 
+/**
+ * Clave del interruptor global del bot (`bot:activo`) con el prefijo del worker. La clave real es una
+ * sola para todo el sistema, así que dos archivos de integración que la escriban en paralelo se
+ * pisan (el bot aparecía apagado para el otro archivo); los tests usan esta clave propia.
+ */
+export function claveInterruptorDePrueba(): string {
+  return `${prefijoRedisDePrueba()}bot:activo`;
+}
+
 /** URL de administración del contenedor MinIO de prueba (D9, T5 de fase-03-importador-medios). */
 export function urlMinioDePrueba(): string {
   return inject('urlMinioAdmin');
