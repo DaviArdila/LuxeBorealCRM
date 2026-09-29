@@ -1,6 +1,10 @@
 import type { SolicitudTurno } from '../../conversaciones/index.js';
 import type { DecisionPolitica, PoliticaTurno } from '../dominio/politica-turno.js';
+import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
+import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
 import { MotorTurno } from './motor-turno.js';
+import { PoliticaNoTextuales } from './politicas/politica-no-textuales.js';
+import { TextoHandoff } from './texto-handoff.js';
 import { ContenidoEcoProvisional } from './politicas/contenido-eco-provisional.js';
 
 function solicitudDeTexto(texto: string): SolicitudTurno {
@@ -52,6 +56,29 @@ describe('MotorTurno', () => {
 
     expect(respuesta.pasos).toEqual([{ paso: 'previa-1', tipo: 'texto', texto: 'respuesta previa' }]);
     expect(siguiente.consultas).toBe(0);
+  });
+
+  it('AGT1 — Una política que responde corta el resto del pipeline', async () => {
+    const parametros = new RepositorioParametroAgenteEnMemoria();
+    const noTextuales = new PoliticaNoTextuales(
+      new ContadoresSesionEnMemoria(),
+      parametros,
+      new TextoHandoff({ estaDentroDeHorario: () => Promise.resolve(true) }, parametros),
+    );
+    const tope = new PoliticaEspia({ decision: 'seguir' });
+    const contenido = new PoliticaEspia({ decision: 'seguir' });
+    const motor = new MotorTurno([noTextuales, tope, contenido]);
+    const solicitud = solicitudDeTexto('');
+    const soloAudio: SolicitudTurno = {
+      ...solicitud,
+      mensajes: [{ idMensaje: 'm1', tipoContenido: 'audio', texto: '' }],
+    };
+
+    const respuesta = await motor.generar(soloAudio);
+
+    expect(respuesta.pasos).toEqual([{ paso: 'audio-1', tipo: 'texto', texto: '[mensaje_pedir_texto_audio]' }]);
+    expect(tope.consultas).toBe(0);
+    expect(contenido.consultas).toBe(0);
   });
 
   it('AGT1 — un turno que ninguna política responde termina sin pasos', async () => {
