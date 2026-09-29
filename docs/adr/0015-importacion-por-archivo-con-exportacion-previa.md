@@ -1,6 +1,6 @@
 # 0015. Carga y edición masiva por archivo (xlsx/CSV) con exportación previa y control de versión
 
-- Estado: propuesta
+- Estado: aceptada (2026-09-29)
 - Fecha: 2026-09-29
 
 ## Contexto
