@@ -46,6 +46,29 @@ describe('modulos/canales/aplicacion/SalidaCanalOutbox (D9, D10, D11)', () => {
     ]);
   });
 
+  it('CAN9 — enviarMensajes con requiereEstado lo guarda en datos de cada paso', async () => {
+    const registro = new RegistroOutboxFalso();
+    const salida = new SalidaCanalOutbox(registro);
+
+    await salida.enviarMensajes({
+      idConversacion: '42',
+      idRespuesta: 'r1',
+      requiereEstado: 'bot',
+      mensajes: [{ tipo: 'texto', texto: 'hola' }, { tipo: 'texto', texto: 'adiós' }],
+    });
+
+    expect(registro.llamadas[0].map((e) => e.datos.requiereEstado)).toEqual(['bot', 'bot']);
+  });
+
+  it('enviarMensajes sin requiereEstado no agrega la clave a datos', async () => {
+    const registro = new RegistroOutboxFalso();
+    const salida = new SalidaCanalOutbox(registro);
+
+    await salida.enviarMensajes({ idConversacion: '42', idRespuesta: 'r1', mensajes: [{ tipo: 'texto', texto: 'hola' }] });
+
+    expect('requiereEstado' in registro.llamadas[0][0].datos).toBe(false);
+  });
+
   it('enviarMensajes con una lista vacía lanza (contrato: 1..MAX_PASOS_SECUENCIA)', async () => {
     const salida = new SalidaCanalOutbox(new RegistroOutboxFalso());
 

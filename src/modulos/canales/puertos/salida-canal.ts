@@ -21,10 +21,13 @@ export type MensajeSaliente = { readonly tipo: 'texto'; readonly texto: string }
 /**
  * `idRespuesta` MUST ser estable entre reintentos de quien llama (D11): identifica una secuencia
  * inmutable de hasta {@link MAX_PASOS_SECUENCIA} pasos ante la clave de idempotencia del outbox.
+ * `requiereEstado` es opaco para `canales` (CAN9): si viene, cada paso solo se publica cuando la
+ * guardia registrada por el módulo que encola confirma que sigue en ese estado.
  */
 export interface SolicitudEnvioMensajes {
   readonly idConversacion: string;
   readonly idRespuesta: string;
+  readonly requiereEstado?: string;
   readonly mensajes: readonly MensajeSaliente[];
 }
 

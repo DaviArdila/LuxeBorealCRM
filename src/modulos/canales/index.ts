@@ -14,6 +14,8 @@
  */
 export { CanalesModule } from './canales.module.js';
 export { RegistroConsumidorEventosCanal } from './aplicacion/registro-consumidor-eventos-canal.js';
+export { RegistroGuardiaEnvioCanal } from './aplicacion/registro-guardia-envio-canal.js';
+export type { GuardiaEnvioCanal } from './puertos/guardia-envio-canal.js';
 export {
   CONSUMIDOR_EVENTOS_CANAL,
   type ConsumidorEventosCanal,

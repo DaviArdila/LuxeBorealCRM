@@ -50,6 +50,8 @@ export class SalidaCanalOutbox implements SalidaCanal {
         secuencia: solicitud.idRespuesta,
         paso,
         total,
+        // Opaco para `canales`: solo la guardia registrada sabe leerlo (CAN9).
+        ...(solicitud.requiereEstado === undefined ? {} : { requiereEstado: solicitud.requiereEstado }),
       },
       efimero: { texto: mensaje.texto },
     }));
