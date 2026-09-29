@@ -252,6 +252,10 @@ export class LlmGateway implements LlmPort {
       // Un 4xx no reintentable no es un fallo del proveedor: no cuenta para el circuito (D5).
       if (ultimoError.clase === 'reintentable') {
         this.registrarFalloDeCircuito(modelo);
+      } else if (this.circuitos.get(modelo)?.fase === 'semiabierto') {
+        // La sonda obtuvo respuesta del proveedor (un 4xx): sin resolverla el circuito quedaría
+        // semiabierto para siempre.
+        this.circuitos.set(modelo, registrarExito());
       }
       const sinReintentos =
         ultimoError.clase === 'no-reintentable' ||

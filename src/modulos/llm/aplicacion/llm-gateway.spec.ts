@@ -496,6 +496,25 @@ describe('modulos/llm/aplicacion — LlmGateway v2: circuit breaker por modelo (
     expect(adaptador.llamadas).toHaveLength(llamadasAntes);
   });
 
+  it.each([
+    ['un 401 no reintentable', () => http(401, 'no-reintentable')],
+    ['un error sin clasificar', () => new Error('inesperado')],
+  ])('%s en la sonda cierra el circuito: la siguiente solicitud llega al proveedor', async (_nombre, crearError) => {
+    const { gateway, adaptador, clock } = crearGateway(UN_MODELO_SIN_REINTENTOS);
+    await abrirCircuito(gateway, adaptador, MODELO_A, 5);
+    clock.avanzar(60_000);
+    adaptador.programar(MODELO_A, { error: crearError() });
+    const error = await fallo(gateway.generar(SOLICITUD));
+    expect(error.codigo).toBe('no-reintentable');
+    const llamadasAntes = adaptador.llamadas.length;
+    adaptador.programar(MODELO_A, { resultado: OK });
+
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect(respuesta.texto).toBe('respuesta');
+    expect(adaptador.llamadas).toHaveLength(llamadasAntes + 1);
+  });
+
   it('un 4xx no reintentable no cuenta como fallo del proveedor y no abre el circuito', async () => {
     const { gateway, adaptador } = crearGateway(UN_MODELO_SIN_REINTENTOS);
     for (let i = 0; i < 6; i += 1) {

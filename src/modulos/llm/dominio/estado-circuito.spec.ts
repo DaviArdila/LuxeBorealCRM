@@ -67,6 +67,30 @@ describe('modulos/llm/dominio — máquina del circuit breaker (D5, ADR-0013)', 
     expect(segunda.estado.fase).toBe('semiabierto');
   });
 
+  it('una sonda perdida sigue bloqueando dentro de la ventana', () => {
+    const instanteSonda = new Date(T0.getTime() + 60_000);
+    const sonda = debeLlamar(conFallos(5), instanteSonda, CONFIG);
+
+    const decision = debeLlamar(sonda.estado, new Date(instanteSonda.getTime() + 59_999), CONFIG);
+
+    expect(decision.llamar).toBe(false);
+    expect(decision.estado.fase).toBe('semiabierto');
+  });
+
+  it('una sonda perdida deja una nueva sonda pasada la ventana y bloquea de nuevo después', () => {
+    const instanteSonda = new Date(T0.getTime() + 60_000);
+    const sonda = debeLlamar(conFallos(5), instanteSonda, CONFIG);
+    const nuevoInstante = new Date(instanteSonda.getTime() + 60_000);
+
+    const nueva = debeLlamar(sonda.estado, nuevoInstante, CONFIG);
+    const siguiente = debeLlamar(nueva.estado, nuevoInstante, CONFIG);
+
+    expect(nueva.llamar).toBe(true);
+    expect(nueva.estado.fase).toBe('semiabierto');
+    expect(nueva.estado.abiertoDesde).toEqual(nuevoInstante);
+    expect(siguiente.llamar).toBe(false);
+  });
+
   it('una sonda exitosa cierra el circuito', () => {
     const sonda = debeLlamar(conFallos(5), new Date(T0.getTime() + 60_000), CONFIG);
 

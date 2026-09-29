@@ -23,7 +23,8 @@ export const CIRCUITO_INICIAL: EstadoCircuito = {
 };
 
 // Pasada la ventana entra en `semiabierto` y deja una sola sonda: mientras esa sonda no reporte,
-// el resto de las llamadas se bloquea (D5, ADR-0013).
+// el resto de las llamadas se bloquea (D5, ADR-0013). En `semiabierto`, `abiertoDesde` es el
+// instante de la sonda: si nunca reporta, pasada otra ventana se concede una nueva.
 export function debeLlamar(
   estado: EstadoCircuito,
   ahora: Date,
@@ -32,12 +33,9 @@ export function debeLlamar(
   if (estado.fase === 'cerrado') {
     return { llamar: true, estado };
   }
-  if (estado.fase === 'semiabierto') {
-    return { llamar: false, estado };
-  }
   const abiertoDesde = estado.abiertoDesde;
   if (abiertoDesde !== null && ahora.getTime() - abiertoDesde.getTime() >= config.ventanaMs) {
-    return { llamar: true, estado: { ...estado, fase: 'semiabierto' } };
+    return { llamar: true, estado: { ...estado, fase: 'semiabierto', abiertoDesde: ahora } };
   }
   return { llamar: false, estado };
 }
