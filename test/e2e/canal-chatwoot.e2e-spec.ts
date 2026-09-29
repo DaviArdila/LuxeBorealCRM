@@ -19,28 +19,49 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { configurarAplicacion, OPCIONES_APLICACION } from '../../src/configurar-aplicacion.js';
 import {
+  CanalesModule,
   RegistroConsumidorEventosCanal,
   SALIDA_CANAL,
   type ConsumidorEventosCanal,
   type EventoCanal,
   type SalidaCanal,
 } from '../../src/modulos/canales/index.js';
-import { ConversacionesModule } from '../../src/modulos/conversaciones/index.js';
-import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
-import { PrismaService } from '../../src/plataforma/prisma/index.js';
+import { ColasModule } from '../../src/plataforma/colas/index.js';
+import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../src/plataforma/config/index.js';
+import { ErroresModule } from '../../src/plataforma/errores/index.js';
+import { ObservabilidadModule } from '../../src/plataforma/observabilidad/index.js';
+import { PrismaModule, PrismaService } from '../../src/plataforma/prisma/index.js';
+import { RedisModule } from '../../src/plataforma/redis/index.js';
+import { RelojModule } from '../../src/plataforma/reloj/index.js';
+import { SaludModule } from '../../src/plataforma/salud/index.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
- * Este e2e prueba `canales` de punta a punta con un consumidor propio (abajo); sin este
- * reemplazo, `ConversacionesModule` (Fase 05) se registraría primero en su `onModuleInit` y
- * `RegistroConsumidorEventosCanal.registrar` rechazaría el segundo consumidor (D8: "dos módulos no
- * pueden competir por el mismo evento").
+ * Raíz de composición del e2e: la de `AppModule` sin `ConversacionesModule`. Este e2e prueba
+ * `canales` de punta a punta con un consumidor propio (abajo); con `conversaciones` en el grafo, su
+ * `onModuleInit` registraría primero el consumidor real y `RegistroConsumidorEventosCanal.registrar`
+ * rechazaría el segundo (D8: "dos módulos no pueden competir por el mismo evento"). No se usa
+ * `overrideModule` porque `AppModule` importa `ConversacionesModule.conGenerador(...)`, un módulo
+ * dinámico que solo se puede reemplazar por identidad de objeto.
  */
-@Module({})
-class ModuloConversacionesVacio {}
+@Module({
+  imports: [
+    ConfiguracionModule,
+    RelojModule,
+    ObservabilidadModule,
+    ErroresModule,
+    PrismaModule,
+    RedisModule,
+    SaludModule,
+    ColasModule,
+    CanalesModule,
+  ],
+})
+class RaizSinConversaciones {}
 
 const SECRETO_DE_PRUEBA = 'secreto-e2e-canal-chatwoot';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -95,15 +116,13 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 }
 
 async function crearAplicacion(chatwootFalso: ChatwootFalso): Promise<INestApplication> {
-  const { AppModule } = await import('../../src/app.module.js');
-  const modulo = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideModule(ConversacionesModule)
-    .useModule(ModuloConversacionesVacio)
+  const modulo = await Test.createTestingModule({ imports: [RaizSinConversaciones] })
     .overrideProvider(CONFIGURACION)
     .useValue(configuracionDePrueba(chatwootFalso))
     .compile();

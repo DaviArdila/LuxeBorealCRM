@@ -182,6 +182,16 @@ module.exports = {
         ],
       },
     },
+    {
+      name: 'conversaciones-no-conoce-agente',
+      comment:
+        'ADR-0016 / D4 de la Fase 07a: conversaciones es dueña del puerto GENERADOR_RESPUESTA y no ' +
+        'depende de su implementación; agente importa el barril de conversaciones (token y tipos) y ' +
+        'AppModule los compone con ConversacionesModule.conGenerador(AgenteModule). Numerada 15.',
+      severity: 'error',
+      from: { path: '^src/modulos/conversaciones/' },
+      to: { path: '^src/modulos/agente/' },
+    },
   ],
   options: {
     // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros

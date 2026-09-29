@@ -10,6 +10,7 @@ import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/inde
 import { PublicadorOutbox } from '../../../src/plataforma/outbox/index.js';
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
@@ -93,6 +94,7 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
   };
   const adaptador = new AdaptadorCanalFalso();

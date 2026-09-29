@@ -35,6 +35,7 @@ import { RedisModule } from '../../../src/plataforma/redis/index.js';
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 class SalidaCanalDoble implements SalidaCanal {
@@ -113,6 +114,7 @@ async function crearAplicacion(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
   };
 

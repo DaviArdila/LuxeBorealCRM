@@ -6,6 +6,7 @@ import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { RepositorioParametroLlmEnMemoria } from '../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
 import { RepositorioUsoLlmEnMemoria } from '../../../../test/fakes/repositorio-uso-llm-en-memoria.js';
 import { TemporizadorLlmFalso } from '../../../../test/fakes/temporizador-llm-falso.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../../../test/soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../../../test/soporte/configuracion-llm-de-prueba.js';
 import { ErrorPasarelaLlm } from '../dominio/error-pasarela-llm.js';
 import type { SolicitudGeneracion } from '../dominio/tipos-llm.js';
@@ -60,6 +61,7 @@ function crearGateway(
   const parametros = new RepositorioParametroLlmEnMemoria();
   const temporizador = new TemporizadorLlmFalso(clock);
   const configuracion: ConfigGatewayLlm = {
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
     NODE_ENV: 'test',
     LOCK_TURNO_TTL_S: 30,

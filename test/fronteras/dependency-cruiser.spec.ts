@@ -366,4 +366,28 @@ describe('fronteras — dependency-cruiser (D11)', () => {
       ),
     ).toBe(false);
   });
+
+  it('regla 15 — conversaciones-no-conoce-agente: conversaciones importando el barril de agente viola la regla', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'conversaciones-no-conoce-agente',
+        'src/modulos/conversaciones/importa-agente.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 15 — conversaciones-no-conoce-agente (permitido): agente importa el barril de conversaciones', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'conversaciones-no-conoce-agente',
+        'src/modulos/agente/importa-conversaciones.ts',
+      ),
+    ).toBe(false);
+  });
 });

@@ -93,6 +93,26 @@ a depender del agente, y el agente, del catálogo y del LLM.
 **Rationale**: el puerto queda en su dueño, la dependencia va en un solo sentido y se verifica con una
 regla; la composición es explícita en un único lugar. Decisión con consecuencia duradera → ADR-0016.
 
+**Desviaciones de implementación (T4, anotadas al construir):** (1) `conGenerador` no devuelve
+`{ module: ConversacionesModule, … }`: Nest fusiona los `providers` del decorador con los del módulo
+dinámico y el `AgenteEco` estático seguiría registrado. Devuelve una clase interna
+`ConversacionesConGenerador` (metadatos propios vacíos) que comparte con la estática el arranque
+(`ConversacionesBase`) y las listas `IMPORTS`/`PROVIDERS`; la estática solo agrega `AgenteEco`.
+(2) `dominio/politica-turno.ts` importa del barril de `conversaciones` los tipos del contrato; la regla
+3 (`dominio-aislado`) no lo marca porque solo mira dependencias compiladas y son `import type`.
+(3) T4 declara los puertos `ContadoresSesion` y `RepositorioParametroAgente` pero no sus adaptadores ni
+dobles: nada los consume hasta T5, y un proveedor sin uso sería código sin test.
+
+**Desviaciones de implementación (T5, anotadas al construir):** (1) `decidirNoTextuales(tipos)` no
+recibe la cuenta de audios: devuelve la clase de la ráfaga (`seguir`, `audio`, `imagen`, `ignorar`) y
+una segunda función pura, `decidirAudio(cuenta)`, decide entre pedir texto y derivar; así el contador se
+incrementa solo cuando el último mensaje es un audio. (2) Las respuestas de audio e imagen cuentan
+como turno (`cuentaTurno: true`); solo sticker, documento y otros no (D6 no lo precisaba). (3) Los
+textos de respaldo son los de `docs/plantilla-catalogo/parametros.csv` del prototipo con tildes, y
+`mensaje_handoff` dice «un asesor» en vez del nombre de la asesora, que es dato del negocio.
+(4) `AgenteModule` importa `HorarioModule`; el comentario de ese módulo («AppModule MUST NOT
+importarlo todavía») queda superado: lo compone el agente, no `AppModule` directamente.
+
 ### Decision D5: capacidades del turno calculadas en conversaciones desde el perfil del canal
 
 **Choice**: `canales` exporta `perfilDeCapacidades` y `PerfilCapacidades` en su barril (solo lo

@@ -5,6 +5,7 @@ import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../sr
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { PrismaModule, PrismaService } from '../../src/plataforma/prisma/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
@@ -62,6 +63,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     };
 
@@ -118,6 +120,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     };
 
@@ -182,6 +185,7 @@ describe('Infraestructura Prisma + Redis (T8, integración)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     };
 

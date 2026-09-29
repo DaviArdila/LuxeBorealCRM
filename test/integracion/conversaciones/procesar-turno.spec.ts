@@ -26,6 +26,7 @@ import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/inde
 import { RedisModule } from '../../../src/plataforma/redis/index.js';
 import { CLOCK, RelojModule, type Clock } from '../../../src/plataforma/reloj/index.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /** Doble en memoria de `EnviarRespuestaTurno`, registrado como provider real (T4: sin T6 todavía). */
@@ -100,6 +101,7 @@ async function crearAplicacion(
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
     ...configuracionParcial,
   };
