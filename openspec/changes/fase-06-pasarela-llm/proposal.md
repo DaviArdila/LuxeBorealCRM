@@ -43,7 +43,7 @@ directamente contra `LlmPort`, sin pasar todavía por el pipeline de turnos.
 |---|---|---|
 | Capas | `LlmPort` (tipos propios) → `LlmGateway` (timeout, reintento, circuit breaker, uso/costo, trazas) → adaptador AI SDK + `@openrouter/ai-sdk-provider` | ADR-0002 (aceptada) |
 | Modelo principal | `openai/gpt-5.6-luna` (0,20/1,20 USD por M; caché lectura 0,02) | ADR-0002; P6 resuelta |
-| Respaldo nivel 1 | OpenRouter, parámetro `models` en orden de prioridad | ADR-0002 |
+| Respaldo nivel 1 | Gateway itera los modelos del perfil en orden, una llamada por modelo (no el parámetro server-side `models` de OpenRouter — corregido 2026-09-28, ver nota) | ADR-0014 (propuesta), matiza ADR-0002 |
 | Respaldo nivel 2 (proveedor directo último recurso) | **Opcional; se decide en esta fase** → ver Q4 | ADR-0002 |
 | Respaldos concretos | Se eligen en la Fase 07 con las evals (un modelo de otra empresa como segundo) | ADR-0002 |
 | Configuración por perfil | `conversacion` / `evals`: lista de modelos, timeout, `max_tokens`, reintentos; cambiar de modelo = cambiar config + correr evals | ADR-0002; skill `luxeboreal-arquitectura` §6 |
@@ -56,6 +56,13 @@ directamente contra `LlmPort`, sin pasar todavía por el pipeline de turnos.
 | Registro de costo | Se escribe **siempre** (éxito y error); ante duda, mejor fila duplicada auditable que turno sin costo (nunca-perder > nunca-duplicar) | *Learned* del `verify-report.md` de la Fase 05 |
 | Entrega | `auto-chain`, cadena `stacked-to-main`, slices de ~400 líneas | Preflight de esta sesión |
 | Review | RDD por commit **y `judgment-day` obligatorio antes de cerrar** (06 está en la lista 04/05/06/10) | Regla 6 de `docs/fases/README.md` |
+
+> **Nota (2026-09-28)**: la fila "Respaldo nivel 1" de esta tabla decía originalmente "OpenRouter,
+> parámetro `models` en orden de prioridad" citando solo ADR-0002. `sdd-design` (Decision D2)
+> encontró que ese mecanismo no puede cumplir LLM5/LLM6 (fila por intento en `uso_llm`) y decidió
+> que el gateway itera los modelos en vez de delegar en `models`. La fila de esta tabla se corrigió
+> para reflejar esa decisión real; el resto de "Decisiones ya tomadas" no cambia. Detalle:
+> `docs/adr/0014-fallback-llm-iterado-en-gateway.md` (propuesta).
 
 ## Scope
 
@@ -229,7 +236,7 @@ diseño avanza igual.
 | Q1 | **(P17)** ¿Cuál es el techo mensual de gasto de LLM en USD? Nótese que R13 fija 20 USD/mes para VPS+LLM+Meta juntos, no la porción del LLM | **10 USD/mes** como sub-presupuesto del LLM dentro de esos 20, configurable sin desplegar (`LLM_TECHO_MENSUAL_USD` + parámetro editable, **R15**); en `NODE_ENV=test` el techo se desactiva | El gateway compara el gasto mensual sumado de `uso_llm` contra este valor |
 | Q2 | **(P17)** ¿A qué umbral se avisa al equipo, y por qué vía? | **80 %**, vía **log estructurado de severidad `warn` + fila observable** (el aviso a Telegram llega con `notificaciones/` en la Fase 08; no se adelanta) | El gateway emite el aviso una vez por mes al cruzar el umbral |
 | Q3 | **(P17)** ¿Con qué texto se deriva a humano al llegar al 100 %, y con qué clave de parámetro? | Clave **`mensaje_techo_gasto`**, texto a definir por el negocio (default provisional: aviso de alta demanda + derivación a un asesor, editable sin desplegar, **R15**) | El gateway devuelve `techo-alcanzado` sin llamar al LLM; la Fase 07/08 lo consume con ese texto |
-| Q4 | **(ADR-0002, nivel 2)** ¿Se implementa ahora un proveedor directo como último recurso ante caída total de OpenRouter, o se pospone dejando el punto de extensión? | **Posponer**: una sola clave/factura, el nivel 1 (`models`) ya cubre caídas de proveedores individuales; ante caída total, error tipado → handoff en la Fase 07 | Alcance cerrado sin segundo proveedor; el gateway deja la interfaz del último recurso lista |
+| Q4 | **(ADR-0002, nivel 2)** ¿Se implementa ahora un proveedor directo como último recurso ante caída total de OpenRouter, o se pospone dejando el punto de extensión? | **Posponer**: una sola clave/factura, el nivel 1 iterado en el gateway (ADR-0014) ya cubre caídas de proveedores individuales; ante caída total, error tipado → handoff en la Fase 07 | Alcance cerrado sin segundo proveedor; el gateway deja la interfaz del último recurso lista |
 | Q5 | (No bloqueante, para `sdd-design`) ¿Timeout por defecto del perfil `conversacion`? El prototipo documenta 15 s (`SPEC.md` §3.6) pero el `.env` real usa 30 s, y el lock de turno de la Fase 05 expira a los 30 s | **15 s** (el valor documentado), con `max_tokens` y reintentos heredados del prototipo salvo que las evals de la Fase 07 digan otra cosa | El timeout MUST quedar por debajo de `LOCK_TURNO_TTL_S`; `sdd-design` lo fija con números |
 
 ## Success Criteria
@@ -237,8 +244,8 @@ diseño avanza igual.
 - [ ] `LlmPort` existe con tipos propios; ningún SDK de proveedor fuera de
   `modulos/llm/infraestructura` (verificado por `npm run fronteras`).
 - [ ] Misma conversación contra 2 modelos cambiando solo configuración (perfil), sin tocar código.
-- [ ] Fallback nivel 1 probado: cae el primer modelo de `models`, responde el siguiente, sin
-  intervención del llamador.
+- [ ] Fallback nivel 1 probado: cae el primer modelo del perfil, el gateway responde con el
+  siguiente sin intervención del llamador (ADR-0014).
 - [ ] Cada llamada (éxito y error) deja su fila en `uso_llm` con proveedor, modelo, tokens,
   costo estimado, latencia y resultado — **R13**.
 - [ ] Ante 429/5xx/timeout hay como máximo 2 reintentos con backoff; ante 4xx (salvo 429) no hay

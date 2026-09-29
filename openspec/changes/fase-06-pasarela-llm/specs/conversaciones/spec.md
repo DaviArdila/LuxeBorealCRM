@@ -25,7 +25,7 @@ al alcanzar el techo desde el código está pendiente de decisión (P17).
 
 Fase que lo implementa: 05 (parcial: rate limit por contacto), 06 (costo por llamada al LLM
 registrado por el gateway — escenario «Costo de cada llamada al LLM registrado»), 07 (agrupación
-de mensajes, collage, tope de turnos, costo por llamada al LLM)
+de mensajes, collage, tope de turnos)
 
 #### Scenario: Respuesta agrupada en el mínimo de mensajes
 

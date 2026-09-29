@@ -5,7 +5,8 @@
   `warn`, clave `mensaje_techo_gasto`, nivel 2 directo pospuesto)
 - Specs: `specs/llm/spec.md` (LLM1–LLM13, 27 escenarios) + `specs/conversaciones/spec.md` (delta R13)
 - ADRs: [0001](docs/adr/0001-monolito-modular-nestjs.md) (aceptada), [0002](docs/adr/0002-pasarela-llm.md)
-  (aceptada), [0013](docs/adr/0013-cortacircuitos-en-memoria-pasarela-llm.md) (propuesta, D5)
+  (aceptada), [0013](docs/adr/0013-cortacircuitos-en-memoria-pasarela-llm.md) (propuesta, D5),
+  [0014](docs/adr/0014-fallback-llm-iterado-en-gateway.md) (propuesta, D2 — matiza 0002)
 
 ## Technical Approach
 
@@ -58,10 +59,11 @@ y haciendo una sola llamada (lo que ADR-0002 describe como nivel 1).
 registra el intento fallido y el exitoso») y LLM6 (fila por llamada con su modelo) **exigen**
 observabilidad por intento (**R13**). Con fallback server-side, un intento fallido interno de
 OpenRouter es invisible para el gateway: no hay fila auditable ni atribución de costo por modelo.
-La iteración en el gateway además hace el fallback determinista y testeable sin gastar (D11). No es
-un ADR nuevo porque no contradice ADR-0002 (el gateway sigue siendo el dueño de la resiliencia,
-skill §6) y la spec ya fuerza la observabilidad por intento; queda registrado aquí como
-aclaración de diseño.
+La iteración en el gateway además hace el fallback determinista y testeable sin gastar (D11). Esta
+decisión matiza la fila "Respaldo nivel 1" de ADR-0002 (que describía el parámetro `models`); el
+gateway sigue siendo el dueño de la resiliencia (skill §6) y el resto de ADR-0002 no cambia. Queda
+registrada como [ADR-0014](../../../docs/adr/0014-fallback-llm-iterado-en-gateway.md) (propuesta),
+no como una reescritura de ADR-0002.
 
 ### Decision D3: timeout del perfil conversacion 15 s + presupuesto total derivado del lock (Q5)
 
