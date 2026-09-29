@@ -18,10 +18,10 @@
 
 ## Tareas
 
-- [ ] **T1 — Dominio `politica.ts`.** Helpers (`esClavePolitica`, `temaDeClave`, `claveDeTema`,
+- [x] **T1 — Dominio `politica.ts`.** Helpers (`esClavePolitica`, `temaDeClave`, `claveDeTema`,
   `validarTextoPolitica`), constantes (tope 1.200, texto de respaldo de contra entrega). RED: tests
   de cada helper y de los límites. Escenarios de apoyo de IMP7/CAT12.
-- [ ] **T2 — Importador (IMP7).** Regla de prefijo `politica_` en `validar-catalogo.ts`. RED: 4
+- [x] **T2 — Importador (IMP7).** Regla de prefijo `politica_` en `validar-catalogo.ts`. RED: 4
   escenarios nuevos (política válida sin advertencia y recortada; vacía → error; >1200 → error; tema
   inválido → error en `clave`).
 - [ ] **T3 — `ConsultarPolitica` (CAT12).** Puerto `RepositorioPolitica`, adaptador Prisma, caso de
