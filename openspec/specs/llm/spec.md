@@ -23,7 +23,7 @@ tipado). El timeout exacto del perfil `conversacion` lo fija `sdd-design` (recom
 restricción de que MUST quedar por debajo de `LOCK_TURNO_TTL_S` (heredado de la Fase 05).
 
 Fuera de esta spec (ver proposal, Out of Scope): el motor real (política, bucle de herramientas),
-las 6 herramientas con efectos, los prompts versionados, el historial de turnos para el LLM, los
+las 7 herramientas con efectos, los prompts versionados, el historial de turnos para el LLM, los
 modelos de respaldo concretos (los elige la Fase 07 con las evals), el consumo del error tipado
 (handoff + texto de cortesía, Fases 07/08) y el resto de R13 (agrupación de mensajes, collage, tope
 de turnos). El *binding* `GENERADOR_RESPUESTA → AgenteEco` (CNV6) queda intacto en esta fase.

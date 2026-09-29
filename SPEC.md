@@ -74,7 +74,7 @@ la spec de cada dominio).
 
 | # | Regla (una línea) | Spec |
 |---|---|---|
-| R1 | El LLM solo accede a datos por las 6 herramientas definidas; nunca consultas libres | `openspec/specs/agente/spec.md` |
+| R1 | El LLM solo accede a datos por las 7 herramientas definidas; nunca consultas libres | `openspec/specs/agente/spec.md` |
 | R2 | El LLM nunca calcula dinero: precios, envíos y recargos llegan formateados; el envío se cita siempre como rango aproximado | `openspec/specs/agente/spec.md` |
 | R3 | Todo evento entrante se valida por firma sobre el body crudo antes de cualquier lógica | `openspec/specs/canales/spec.md` |
 | R4 | Cada mensaje entrante se procesa una sola vez y cada saliente se envía una sola vez | `openspec/specs/canales/spec.md` |
