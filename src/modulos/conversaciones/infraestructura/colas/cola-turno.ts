@@ -17,8 +17,17 @@ export const NOMBRE_COLA_TURNO = 'conversaciones-turno';
 export const NOMBRE_JOB_TURNO = 'procesar-turno';
 
 /** BullMQ rechaza `:` en un `jobId` (`Job.validateOptions`), a diferencia de las claves de Redis. */
-function idJobTurno(idConversacion: string): string {
+export function idJobTurno(idConversacion: string): string {
   return `turno-${idConversacion}`;
+}
+
+/**
+ * Id del job de respaldo. `ProcesarTurno` lo recibe como `idRespuesta` y el outbox de `canales` solo
+ * acepta `[A-Za-z0-9_-]{1,64}`: el sufijo aleatorio usa 8 caracteres de un UUID (no el UUID entero) para
+ * que `turno-<uuid>-respaldo-<sufijo>` (59 caracteres) quepa. La unicidad la da el azar, no el largo.
+ */
+export function idJobRespaldo(jobId: string): string {
+  return `${jobId}-respaldo-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 /**
@@ -60,7 +69,7 @@ export class ColaTurno extends WorkerHost implements OnApplicationBootstrap, Bef
     const existente = await this.cola.getJob(jobId);
 
     if (existente !== undefined && (await existente.isActive())) {
-      await this.agregar(`${jobId}-respaldo-${crypto.randomUUID()}`, idConversacion);
+      await this.agregar(idJobRespaldo(jobId), idConversacion);
       return;
     }
     if (existente !== undefined) {
