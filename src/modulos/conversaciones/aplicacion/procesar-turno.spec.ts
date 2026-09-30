@@ -1,3 +1,4 @@
+import { RegistroObservadoresHandoff, type EventoHandoff } from './registro-observadores-handoff.js';
 import { ProcesarTurno } from './procesar-turno.js';
 import type { EstadoAtencion, OrigenTransicion } from '../dominio/maquina-estados.js';
 import type { TransicionarConversacion } from './transicionar-conversacion.js';
@@ -143,6 +144,7 @@ function crearProcesar(
     generador,
     salida,
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 }
 
@@ -159,6 +161,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       generador,
       salida,
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
@@ -201,6 +204,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       generador,
       salida,
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
@@ -222,6 +226,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       new GeneradorRespuestaFalso(),
       new EnviarRespuestaTurnoFalso(),
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 
     const resultado = await procesar.ejecutar('conv-1', 'job-1');
@@ -241,6 +246,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       generador,
       salida,
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 
     await procesar.ejecutar('conv-1', 'job-1');
@@ -264,6 +270,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       generador,
       new EnviarRespuestaTurnoFalso(),
     new TransicionarConversacionFalso() as unknown as TransicionarConversacion,
+    new RegistroObservadoresHandoff(),
   );
 
     await expect(procesar.ejecutar('conv-1', 'job-1')).rejects.toThrow('falla del generador');
@@ -363,6 +370,15 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
         orden.push('transicionar');
         return ejecutarOriginal(...args);
       };
+      const observadores = new RegistroObservadoresHandoff();
+      const eventos: EventoHandoff[] = [];
+      observadores.registrar({
+        alConfirmarHandoff: (evento) => {
+          orden.push('observar');
+          eventos.push(evento);
+          return Promise.resolve();
+        },
+      });
       const procesar = new ProcesarTurno(
         new LockTurnoFalso() as unknown as LockTurno,
         buffer as unknown as BufferTurno,
@@ -370,8 +386,9 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
         generador,
         salida,
         transicionar as unknown as TransicionarConversacion,
+        observadores,
       );
-      return { procesar, buffer, repositorio, generador, salida, transicionar, orden };
+      return { procesar, buffer, repositorio, generador, salida, transicionar, orden, observadores, eventos };
     }
 
     const PASO: PasoRespuesta = { paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' };
@@ -395,7 +412,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
         destino: 'handoff_pendiente',
         origen: 'regla_handoff_explicita',
       });
-      expect(orden).toEqual(['enviar', 'transicionar']); // primero los pasos (R5), después la transición
+      expect(orden).toEqual(['enviar', 'transicionar', 'observar']); // primero los pasos (R5), después la transición y los observadores
       expect(generador.llamadas).toHaveLength(1);
       expect(await buffer.tamano()).toBe(0);
     });
@@ -409,6 +426,33 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       expect(transicionar.llamadas.map((l) => [l.destino, l.origen])).toEqual([
         ['handoff_pendiente', 'regla_handoff_explicita'],
       ]);
+    });
+
+    it('CNV11 — El aviso solo se encola tras confirmar la transición: los observadores corren después', async () => {
+      const { procesar, orden, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'lead-caliente' } });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(orden).toEqual(['enviar', 'transicionar', 'observar']);
+      expect(eventos).toEqual([{ conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'lead-caliente' }]);
+    });
+
+    it('CNV11 — Si la conversación ya no está en bot la transición no ocurre y no se avisa a nadie', async () => {
+      const { procesar, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'lead-caliente' } }, 'humano');
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(eventos).toEqual([]);
+    });
+
+    it('CNV11 — Un observador que falla no revierte el handoff ni el vaciado del buffer', async () => {
+      const { procesar, transicionar, buffer, observadores } = armar({ pasos: [], handoff: { motivo: 'lead-caliente' } });
+      observadores.registrar({ alConfirmarHandoff: () => Promise.reject(new Error('fallo')) });
+
+      await expect(procesar.ejecutar('conv-1', 'job-1')).resolves.toBeDefined();
+
+      expect(transicionar.llamadas).toHaveLength(1);
+      expect(await buffer.tamano()).toBe(0);
     });
 
     it('CNV8 — El motivo lead-caliente transiciona con origen lead_caliente', async () => {

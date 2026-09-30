@@ -16,6 +16,7 @@ import { crearGuardarDatosContacto } from '../herramientas/guardar-datos-contact
 import { CargadorPrompts } from '../../infraestructura/prompts/cargador-prompts.js';
 import { BucleHerramientas } from '../bucle-herramientas.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
+import { TextoHandoff } from '../texto-handoff.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
 import { ContenidoLlm } from './contenido-llm.js';
 
@@ -77,6 +78,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     new ObtenerMensajeTechoGasto(parametrosLlm),
     historial,
     { AGENTE_HISTORIAL_TURNOS: historialTurnos },
+    new TextoHandoff({ estaDentroDeHorario: () => Promise.resolve(true) }, parametros),
   );
   return { llm, politica, historial, contactos };
 }
@@ -307,5 +309,46 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     for (const valor of ['Laura Gómez Pérez', '3001234567', 'Calle 45 # 12-34', 'Chapinero']) {
       expect(volcado).not.toContain(valor);
     }
+  });
+
+  it('AGT11 — La propuesta confirmada por la escala deriva: el turno termina en handoff lead-caliente con el texto de handoff', async () => {
+    const derivar: Herramienta = {
+      definicion: { nombre: 'marcar', descripcion: 'x', esquema: { safeParse: () => ({ success: true }) }, esquemaJson: {} },
+      ejecutar: () => Promise.resolve({ paraElModelo: { derivado: true }, efectos: [{ tipo: 'lead-derivado', leadId: 'lead-1' }] }),
+    };
+    const { llm, politica, historial } = crear([derivar]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'marcar', argumentos: {} }] } },
+      { respuesta: { texto: 'Perfecto, ya te ayudo con eso' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toEqual({
+      decision: 'responder',
+      respuesta: {
+        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: '[mensaje_handoff]' }],
+        handoff: { motivo: 'lead-caliente' },
+      },
+      cuentaTurno: false,
+    });
+    // Un turno derivado no entra al historial: la sesión termina aquí.
+    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toEqual([]);
+  });
+
+  it('un lead propuesto que no se deriva no cambia la respuesta del modelo', async () => {
+    const proponer: Herramienta = {
+      definicion: { nombre: 'marcar', descripcion: 'x', esquema: { safeParse: () => ({ success: true }) }, esquemaJson: {} },
+      ejecutar: () => Promise.resolve({ paraElModelo: { derivado: false }, efectos: [{ tipo: 'lead-propuesto', temperatura: 'tibio' }] }),
+    };
+    const { llm, politica } = crear([proponer]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'marcar', argumentos: {} }] } },
+      { respuesta: { texto: 'Sigo atendiéndote' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: 'Sigo atendiéndote' }] }, cuentaTurno: true });
   });
 });

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { SALIDA_CANAL, type SalidaCanal, type SolicitudCambioEstado } from '../../../src/modulos/canales/index.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
+import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
@@ -129,6 +130,7 @@ async function crearAplicacion(
       BufferTurno,
       LockTurno,
       ProcesarTurno,
+      RegistroObservadoresHandoff,
       ColaTurno,
     ],
   })

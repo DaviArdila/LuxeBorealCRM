@@ -1,4 +1,4 @@
-import type { SalidaCanal, SolicitudCambioEstado } from '../../canales/index.js';
+import type { SalidaCanal, SolicitudCambioEstado, SolicitudEtiquetas } from '../../canales/index.js';
 import type { Configuracion } from '../../../plataforma/config/index.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { TransicionInvalida } from '../dominio/maquina-estados.js';
@@ -56,6 +56,7 @@ class RepositorioConversacionFalso implements RepositorioConversacion {
 /** Doble de {@link SalidaCanal}: solo interesa el espejo del estado (CNV8). */
 class SalidaCanalFalsa implements SalidaCanal {
   estados: SolicitudCambioEstado[] = [];
+  etiquetas: SolicitudEtiquetas[] = [];
 
   enviarMensajes(): Promise<void> {
     return Promise.resolve();
@@ -66,7 +67,8 @@ class SalidaCanalFalsa implements SalidaCanal {
     return Promise.resolve();
   }
 
-  agregarEtiquetas(): Promise<void> {
+  agregarEtiquetas(solicitud: SolicitudEtiquetas): Promise<void> {
+    this.etiquetas.push(solicitud);
     return Promise.resolve();
   }
 }
@@ -175,5 +177,29 @@ describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () =>
     await expect(casoDeUso.ejecutar(conversacionDePrueba(), 'humano', 'eco_humano')).rejects.toThrow();
 
     expect(salida.estados).toEqual([]);
+  });
+
+  it('CNV11 — Lead caliente agrega su etiqueta en el canal', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: 'handoff_pendiente', version: 5 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await casoDeUso.ejecutar(conversacionDePrueba({ estado: 'bot', version: 4 }), 'handoff_pendiente', 'lead_caliente');
+
+    expect(salida.etiquetas).toEqual([
+      { idConversacion: '42', idOperacion: 'etiqueta-lead-v5', etiquetas: ['lead-caliente'] },
+    ]);
+  });
+
+  it('otro origen de handoff no agrega la etiqueta de lead', async () => {
+    const repositorio = new RepositorioConversacionFalso();
+    const salida = new SalidaCanalFalsa();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: 'handoff_pendiente', version: 5 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(new Date('2026-09-28T12:00:00Z')), salida);
+
+    await casoDeUso.ejecutar(conversacionDePrueba({ estado: 'bot', version: 4 }), 'handoff_pendiente', 'regla_handoff_explicita');
+
+    expect(salida.etiquetas).toEqual([]);
   });
 });

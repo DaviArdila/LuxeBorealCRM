@@ -4,6 +4,12 @@
  * `ConversacionesModule`; el módulo `agente` (Fase 07a, ADR-0016) importa `GENERADOR_RESPUESTA` y los
  * tipos del contrato del turno para implementar el puerto sin que `conversaciones` lo conozca.
  */
+export {
+  RegistroObservadoresHandoff,
+  type EventoHandoff,
+  type ObservadorHandoff,
+} from './aplicacion/registro-observadores-handoff.js';
+export { ObservadoresHandoffModule } from './observadores-handoff.module.js';
 export { ConversacionesModule } from './conversaciones.module.js';
 export {
   GENERADOR_RESPUESTA,
