@@ -1,7 +1,7 @@
 # Design: Proveedores de LLM configurables
 
-- Change: `proveedores-llm-configurables` · Fecha: 2026-09-30 · Estado: spec en revisión
-- ADR: `docs/adr/0019-proveedores-llm-configurables.md` (propuesta). Referencias: ADR-0002, ADR-0013,
+- Change: `proveedores-llm-configurables` · Fecha: 2026-09-30 · Estado: aprobada (2026-09-30)
+- ADR: `docs/adr/0019-proveedores-llm-configurables.md` (aceptada). Referencias: ADR-0002, ADR-0013,
   ADR-0014, R1, R2, R13, R14, R15.
 - Módulos tocados: `llm` (todo el cambio), `plataforma/config`. Ningún otro módulo importa nada nuevo:
   el barril `modulos/llm/index.ts` no cambia.
@@ -63,8 +63,9 @@ registrar en tiempo de ejecución es imposible: la config ya lo rechazó al arra
 | `GOOGLE_API_KEY` | Proveedor `google` (nombre exacto del env del SDK: a verificar en T1) | Ídem |
 | `LLM_COMPATIBLE_API_KEY`, `LLM_COMPATIBLE_BASE_URL` | Proveedor `compatible` (endpoint tipo OpenAI) | Ídem; la URL es obligatoria si se usa |
 
-Los nombres de variable se confirman con P37 (solo existen las de los proveedores que el usuario
-elija). `LLM_*_MODELOS` y `LLM_PRECIOS_USD_JSON` mantienen su forma; cambian los ids (con prefijo). En
+Los nombres de variable se confirman en T1/T2 (solo existen las de los proveedores implementados:
+hoy OpenRouter y OpenAI; `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` y las `LLM_COMPATIBLE_*` quedan
+pospuestas con T5-T7). `LLM_*_MODELOS` y `LLM_PRECIOS_USD_JSON` mantienen su forma; cambian los ids (con prefijo). En
 `esquema.ts` el `superRefine` existente gana: (1) prefijos válidos (LLM16), (2) clave por proveedor
 usado en producción (LLM17), (3) precio para cada modelo de perfil (ya existe, LLM19). `process.env`
 sigue leyéndose solo en `plataforma/config`.
@@ -90,9 +91,9 @@ ADR-0018). No se cambia aquí; si molesta, se abre un ADR aparte (circuito por p
 ### D7 — Qué proveedores se implementan
 
 **Alternativas:** implementar OpenAI, Anthropic y Google nativos + genérico; o solo el genérico
-(alternativa C del ADR). **Se decide con P37.** El plan asume el híbrido (D del ADR): cada proveedor
-elegido es una tarea (T4-T7) y solo se ejecuta si el usuario lo incluye. El paquete de cada uno se
-instala con versión exacta y su API se verifica en T1/T4-T7 contra la documentación y la versión
+(alternativa C del ADR). **Decidido con P37 (2026-09-30): solo OpenAI por ahora.** El plan asume el híbrido (D del ADR): OpenAI
+es T4; Anthropic, Google y compatible (T5-T7) quedan pospuestos. El paquete de cada uno se
+instala con versión exacta y su API se verifica en T1/T4 contra la documentación y la versión
 instalada (`ai` 7.0.122); los nombres `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google` y
 `@ai-sdk/openai-compatible` son la expectativa y **se confirman en T1** (no se dan por sabidos).
 

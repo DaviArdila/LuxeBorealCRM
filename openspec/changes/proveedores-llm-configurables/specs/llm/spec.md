@@ -4,7 +4,7 @@
 
 La pasarela deja de hablar solo con OpenRouter: cada modelo del perfil puede llevar un prefijo de
 proveedor y conectarse directo con la clave de ese proveedor (`docs/adr/0019-proveedores-llm-configurables.md`,
-**propuesta**). Sin prefijo el proveedor es OpenRouter, así que el comportamiento vigente no cambia sin
+**aceptada** el 2026-09-30; primer proveedor directo: OpenAI). Sin prefijo el proveedor es OpenRouter, así que el comportamiento vigente no cambia sin
 configuración nueva. El puerto `LlmPort`, el gateway (timeout, reintento, circuito, techo) y **R1/R2/R14**
 no cambian. Los proveedores concretos los elige el usuario (P37); esta spec fija el contrato, no la lista.
 

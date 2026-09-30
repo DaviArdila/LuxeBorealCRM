@@ -1,7 +1,12 @@
 # 0019. Proveedores de LLM configurables: conexión directa además de OpenRouter
 
-- Estado: propuesta
+- Estado: aceptada
 - Fecha: 2026-09-30
+
+> **Aceptada el 2026-09-30, con alcance inicial OpenAI.** El usuario aprobó el diseño híbrido
+> (alternativa D) y eligió **OpenAI** como primer y único proveedor directo por ahora. Anthropic,
+> Google y el genérico compatible quedan **pospuestos, no descartados**: se suman después sin tocar
+> el gateway. OpenRouter sigue como valor por defecto y respaldo, y las claves viven en el `.env`.
 
 ## Resumen
 
@@ -37,7 +42,7 @@ hasta que el usuario configure algo nuevo**. Recomendación: **alternativa D** (
 | C | Un solo adaptador «compatible con OpenAI» con `baseURL` y clave configurables | Lo más barato de construir; sirve a OpenAI y a muchos otros que exponen ese formato | Pierde lo propio de cada proveedor (p. ej. caché explícita de Anthropic, firmas de razonamiento de Gemini); el reporte de caché depende de cada servicio |
 | D | B + C: adaptadores nativos para los proveedores elegidos y el genérico para el resto | Directo donde importa, genérico donde basta; se agrega un proveedor sin tocar el gateway | Un poco más de superficie que C solo |
 
-## Decisión (propuesta: alternativa D)
+## Decisión (alternativa D)
 
 1. **Un registro de proveedores** en `modulos/llm/infraestructura/`. Cada proveedor es un archivo que
    es el único que importa su SDK (extiende LLM11). El mapeo de mensajes y herramientas, el
@@ -73,7 +78,7 @@ Los proveedores y modelos concretos, si OpenRouter queda como respaldo y dónde 
 
 | Tema | Efecto |
 |---|---|
-| Caché y uso | Cada proveedor reporta la caché a su manera; cada adaptador la normaliza a `UsoReportado` (`tokensEntrada` sin la caché, `tokensSalida`, `tokensCache`). Cómo la expone cada SDK: **a verificar en T1/T4-T7** |
+| Caché y uso | Cada proveedor reporta la caché a su manera; cada adaptador la normaliza a `UsoReportado` (`tokensEntrada` sin la caché, `tokensSalida`, `tokensCache`). Cómo la expone cada SDK: **a verificar en T1/T4** (los demás proveedores, al retomarlos) |
 | Precios | Hay que cargar el precio de cada modelo nuevo en `LLM_PRECIOS_USD_JSON`; ya es obligatorio para arrancar. Los precios no se inventan: los pone el usuario |
 | Prefijo | Ver Decisión, punto 2. Los ids de OpenRouter existentes no se tocan |
 | Secretos | Una clave por proveedor usado; nunca en logs; sin clave del proveedor usado no se arranca en producción |
