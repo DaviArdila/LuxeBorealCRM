@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Herramienta } from '../../dominio/herramienta.js';
+import type { CapturaLead } from '../../puertos/captura-lead.js';
 import type { RepositorioContactoAgente } from '../../puertos/repositorio-contacto-agente.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
@@ -20,9 +21,9 @@ const esquema = z.object({
  * `guardar_datos_contacto` (AGT10): guarda en el contacto de la conversación lo que el cliente dio
  * para el despacho. El contacto sale del contexto del turno, nunca de los argumentos del modelo; un
  * teléfono con menos de 7 dígitos no se guarda como alterno; y ningún valor va al log ni de vuelta al
- * modelo (R14).
+ * modelo (R14). Con una captura pendiente fuera de horario la cierra (LDS4).
  */
-export function crearGuardarDatosContacto(contactos: RepositorioContactoAgente): Herramienta {
+export function crearGuardarDatosContacto(contactos: RepositorioContactoAgente, captura: CapturaLead): Herramienta {
   return definirHerramienta(
     'guardar_datos_contacto',
     'Guarda los datos de despacho que el cliente dio: nombre completo, teléfono de contacto, dirección y localidad. Úsala solo cuando el cliente ya los dio todos.',
@@ -35,6 +36,9 @@ export function crearGuardarDatosContacto(contactos: RepositorioContactoAgente):
         direccion: direccion.trim(),
         localidad: localidad.trim(),
       });
+      // LDS4: si había una captura pendiente fuera de horario, con los datos ya guardados el lead queda
+      // capturado. Si esto falla, los datos ya están a salvo y el turno no se pierde.
+      await captura.completar(ctx.sesion.conversacionId).catch(() => undefined);
       return { paraElModelo: { guardado: true }, efectos: [{ tipo: 'datos-contacto-guardados' }] };
     },
   );

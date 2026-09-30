@@ -9,6 +9,8 @@ export {
   type EntradaPropuesta,
   type ResultadoPropuesta,
 } from './aplicacion/evaluar-propuesta-lead.js';
+export { CompletarCaptura } from './aplicacion/completar-captura.js';
+export { ObtenerCapturaPendiente } from './aplicacion/obtener-captura-pendiente.js';
 export {
   RegistrarPidePersona,
   type EntradaPidePersona,

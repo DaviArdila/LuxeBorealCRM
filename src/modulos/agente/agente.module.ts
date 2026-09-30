@@ -34,12 +34,14 @@ import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
+import { CapturaLeadDeLeads } from './infraestructura/leads/captura-lead-de-leads.js';
 import { EvaluadorLeadDeLeads } from './infraestructura/leads/evaluador-lead-de-leads.js';
 import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
 import { CargadorPrompts } from './infraestructura/prompts/cargador-prompts.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
 import { CONTADORES_SESION, type ContadoresSesion } from './puertos/contadores-sesion.js';
+import { CAPTURA_LEAD, type CapturaLead } from './puertos/captura-lead.js';
 import { EVALUADOR_LEAD, type EvaluadorLead } from './puertos/evaluador-lead.js';
 import { HISTORIAL_CONVERSACION } from './puertos/historial-conversacion.js';
 import {
@@ -69,6 +71,7 @@ const TOTAL_HERRAMIENTAS = 7;
     { provide: REPOSITORIO_CONTACTO_AGENTE, useClass: RepositorioContactoAgentePrisma },
     // Fase 08: la escala determinista y el guardado del lead viven en `leads` (R9).
     { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadDeLeads },
+    { provide: CAPTURA_LEAD, useClass: CapturaLeadDeLeads },
     ArmarContextoInicial,
     { provide: REPOSITORIO_PARAMETRO_AGENTE, useClass: RepositorioParametroAgentePrisma },
     TextoHandoff,
@@ -92,13 +95,14 @@ const TOTAL_HERRAMIENTAS = 7;
         configuracion: Configuracion,
         contactos: RepositorioContactoAgente,
         evaluador: EvaluadorLead,
+        captura: CapturaLead,
       ): readonly Herramienta[] => [
         crearBuscarProducto(buscar),
         crearObtenerFicha(ficha),
         crearCotizarEnvio(cotizar),
         crearConsultarPolitica(politicas),
         crearEnviarFotos(fotos, contadores, configuracion),
-        crearGuardarDatosContacto(contactos),
+        crearGuardarDatosContacto(contactos, captura),
         crearMarcarLeadCaliente(evaluador),
       ],
       inject: [
@@ -111,6 +115,7 @@ const TOTAL_HERRAMIENTAS = 7;
         CONFIGURACION,
         REPOSITORIO_CONTACTO_AGENTE,
         EVALUADOR_LEAD,
+        CAPTURA_LEAD,
       ],
     },
     {

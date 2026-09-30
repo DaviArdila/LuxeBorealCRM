@@ -17,6 +17,9 @@ const TEXTOS_DE_RESPALDO: Readonly<Record<ClaveTextoAgente, string>> = {
     'En este momento no hay un asesor disponible; apenas abramos te escribimos para cerrar los detalles.',
   // P31: el texto del prototipo, que ya está en uso real.
   mensaje_error_llm: 'Ya te respondemos en un momento.',
+  // P34: texto de cierre de la captura fuera de horario; el negocio lo cambia en `parametro` sin desplegar (R15).
+  mensaje_captura_completa:
+    'Listo, ya tengo tus datos. Un asesor te contactará apenas abramos para cerrar los detalles.',
 };
 
 /**
