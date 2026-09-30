@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CONFIGURACION, type Configuracion } from '../../plataforma/config/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
 import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
@@ -8,12 +9,14 @@ import {
   ConsultarPolitica,
   CotizarEnvio,
   ObtenerFichaProducto,
+  ObtenerFotosProducto,
 } from '../catalogo/index.js';
 import { HorarioModule } from '../horario/index.js';
 import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
 import { crearConsultarPolitica } from './aplicacion/herramientas/consultar-politica.js';
 import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
+import { crearEnviarFotos } from './aplicacion/herramientas/enviar-fotos.js';
 import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
@@ -28,7 +31,7 @@ import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
-import { CONTADORES_SESION } from './puertos/contadores-sesion.js';
+import { CONTADORES_SESION, type ContadoresSesion } from './puertos/contadores-sesion.js';
 import { HISTORIAL_CONVERSACION } from './puertos/historial-conversacion.js';
 import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
 
@@ -62,13 +65,25 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
         ficha: ObtenerFichaProducto,
         cotizar: CotizarEnvio,
         politicas: ConsultarPolitica,
+        fotos: ObtenerFotosProducto,
+        contadores: ContadoresSesion,
+        configuracion: Configuracion,
       ): readonly Herramienta[] => [
         crearBuscarProducto(buscar),
         crearObtenerFicha(ficha),
         crearCotizarEnvio(cotizar),
         crearConsultarPolitica(politicas),
+        crearEnviarFotos(fotos, contadores, configuracion),
       ],
-      inject: [BuscarProductos, ObtenerFichaProducto, CotizarEnvio, ConsultarPolitica],
+      inject: [
+        BuscarProductos,
+        ObtenerFichaProducto,
+        CotizarEnvio,
+        ConsultarPolitica,
+        ObtenerFotosProducto,
+        CONTADORES_SESION,
+        CONFIGURACION,
+      ],
     },
     {
       provide: RegistroHerramientas,

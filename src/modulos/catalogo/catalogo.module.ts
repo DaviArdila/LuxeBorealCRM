@@ -9,6 +9,7 @@ import { CotizarEnvio } from './aplicacion/cotizar-envio.js';
 import { ImportarCatalogo } from './aplicacion/importar-catalogo.js';
 import { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
 import { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
+import { ObtenerFotosProducto } from './aplicacion/obtener-fotos-producto.js';
 import { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
 import { ProcesarFotos } from './aplicacion/procesar-fotos.js';
 import { ResolverGeografiaImportacion } from './aplicacion/resolver-geografia-importacion.js';
@@ -57,6 +58,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     ObtenerFichaProducto,
     ListarProductosActivos,
     BuscarProductos,
+    ObtenerFotosProducto,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
     ConsultarPolitica,
@@ -68,6 +70,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     ObtenerFichaProducto,
     ListarProductosActivos,
     BuscarProductos,
+    ObtenerFotosProducto,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
     ConsultarPolitica,

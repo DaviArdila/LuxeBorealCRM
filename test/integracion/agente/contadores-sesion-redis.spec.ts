@@ -63,4 +63,19 @@ describe('ContadoresSesionRedis (T5, integración, D8)', () => {
       expect(ttl).toBeLessThanOrEqual(2 * 3600);
     }
   });
+
+  it('AGT9 — cuenta las fotos individuales de la sesión con TTL y sin mezclar versiones', async () => {
+    const { contadores, redis } = await crearContexto(2);
+    const sesion = { conversacionId: crypto.randomUUID(), version: 1 };
+
+    expect(await contadores.fotosIndividuales(sesion)).toBe(0);
+    await contadores.sumarFotosIndividuales(sesion, 3);
+    await contadores.sumarFotosIndividuales(sesion, 1);
+
+    expect(await contadores.fotosIndividuales(sesion)).toBe(4);
+    expect(await contadores.fotosIndividuales({ ...sesion, version: 2 })).toBe(0);
+    const ttl = await redis.ttl(`agente:${sesion.conversacionId}:v1:fotos`);
+    expect(ttl).toBeGreaterThan(2 * 3600 - 60);
+    expect(ttl).toBeLessThanOrEqual(2 * 3600);
+  });
 });

@@ -19,7 +19,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 - [x] T3 — Historial corto por sesión en Redis + ubicación como marcador
 - [x] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
-- [ ] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
+- [x] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
 - [ ] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
 - [ ] T8 — Prompt versionado con prefijo estable + assets en el build
 - [ ] T9 — E2E con LLM falso + cierre documental
@@ -198,6 +198,13 @@ GREEN; REFACTOR: el mapeo a snake_case del contrato con el modelo vive en un sol
 GREEN; REFACTOR: integración de `listarFotos` (portada primero) contra Postgres.
 
 **Hecho cuando**: 6 escenarios en verde.
+
+**Estado (cerrada)**: CAT14 (3) y AGT9 (3) en verde (`obtener-fotos-producto.spec.ts`,
+`enviar-fotos.spec.ts`) más integración de `listarFotos` (portada primero) y del contador de fotos
+individuales en Redis. `FotosProducto` es un tipo nuevo del dominio de catálogo; `RepositorioProducto`
+ganó `listarFotos` y `ContadoresSesion` ganó `fotosIndividuales`/`sumarFotosIndividuales` (clave
+`agente:<conv>:v<n>:fotos`, mismo TTL). Un collage inexistente en modo `collage` devuelve un error
+explícito que sugiere `individuales`.
 
 **Review requerida**: RDD
 

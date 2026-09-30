@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../plataforma/prisma/index.js';
-import type { Producto, ProductoResumen } from '../dominio/producto.js';
+import type { FotosProducto, Producto, ProductoResumen } from '../dominio/producto.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
 
 /**
@@ -43,6 +43,23 @@ export class RepositorioProductoPrisma implements RepositorioProducto {
       anchoMm: fila.anchoMm,
       altoMm: fila.altoMm,
       tieneFotos: fila._count.fotos > 0,
+    };
+  }
+
+  async listarFotos(productoId: string): Promise<FotosProducto> {
+    const fila = await this.prisma.producto.findUnique({
+      where: { id: productoId },
+      select: {
+        claveCollage: true,
+        fotos: {
+          orderBy: [{ esPortada: 'desc' }, { orden: 'asc' }],
+          select: { claveArchivo: true },
+        },
+      },
+    });
+    return {
+      claveCollage: fila?.claveCollage ?? null,
+      clavesFotos: (fila?.fotos ?? []).map((foto) => foto.claveArchivo),
     };
   }
 }

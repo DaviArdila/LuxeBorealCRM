@@ -19,6 +19,9 @@ class RepositorioProductoFalso implements RepositorioProducto {
   buscarPorIdOSku(): Promise<never> {
     throw new Error('no usado por ListarProductosActivos');
   }
+  listarFotos(): Promise<never> {
+    throw new Error('no usado por este caso de uso');
+  }
 }
 
 /** Doble de {@link CacheCatalogo}: registra el orden de llamadas y lo que se le reemplaza. */

@@ -36,6 +36,15 @@ export interface FichaProducto {
   readonly tieneFotos: boolean;
 }
 
+/**
+ * Claves de objeto (MED1) de las imágenes de un producto, nunca rutas ni URLs (CAT14): el collage si el
+ * importador lo generó y las fotos individuales en orden de envío (portada primero).
+ */
+export interface FotosProducto {
+  readonly claveCollage: string | null;
+  readonly clavesFotos: readonly string[];
+}
+
 /** Se lanza al pedir la ficha de un producto inexistente o inactivo (CAT3). */
 export class ProductoNoDisponible extends Error {
   constructor(mensaje = 'producto no disponible') {

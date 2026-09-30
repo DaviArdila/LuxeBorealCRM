@@ -28,6 +28,9 @@ class RepositorioProductoFalso implements RepositorioProducto {
   buscarPorIdOSku(): Promise<Producto | null> {
     return Promise.resolve(this.producto);
   }
+  listarFotos(): Promise<never> {
+    throw new Error('no usado por este caso de uso');
+  }
 }
 
 describe('modulos/catalogo/aplicacion/ObtenerFichaProducto', () => {
