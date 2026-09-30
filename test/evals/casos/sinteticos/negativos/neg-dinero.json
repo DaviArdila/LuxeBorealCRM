@@ -1,0 +1,24 @@
+{
+  "id": "neg-dinero",
+  "titulo": "EVL2 — negativo: dineroConRastro falla con un monto que ninguna herramienta devolvió",
+  "origen": "sintetico",
+  "esperaFallo": "dineroConRastro",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto cuesta el anillo?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "El anillo cuesta $350.000."
+        }
+      ],
+      "aserciones": {
+        "dineroConRastro": true
+      }
+    }
+  ]
+}

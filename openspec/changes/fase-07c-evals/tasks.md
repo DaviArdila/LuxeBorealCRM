@@ -19,7 +19,7 @@ Conventional Commits, sin atribución de IA.
 ## Checklist
 
 - [x] T1 — Arnés de evals: proyecto `evals`, `npm run evals`, LLM guionado, grabador y semilla
-- [ ] T2 — Aserciones deterministas con sus negativos + umbral por modo
+- [x] T2 — Aserciones deterministas con sus negativos + umbral por modo
 - [ ] T3 — Casos sintéticos: 3 casos de entrada, R1, R2, R12, R13, políticas y handoff
 - [ ] T4 — Modo real con costo visible + anonimizador del set dorado `[manual]` parcial
 - [ ] T5 — Modelos de respaldo `[manual]` + cierre de 07c y de la Fase 07
@@ -119,6 +119,11 @@ de cada solicitud (las anteriores arrastran el historial del turno). (4) La semi
 
 **Hecho cuando**: 5 escenarios en verde; cada aserción tiene al menos un negativo; el umbral de
 `umbral.ts` coincide con EVL3.
+
+**Estado (cerrada)**: EVL2 (3) y EVL3 (2) en verde (`aserciones.spec.ts`, `umbral.spec.ts`, 33 tests
+unitarios de evals en total); las ocho aserciones tienen su negativo en
+`casos/sinteticos/negativos/` y `agente.evals.ts` falla nombrando el caso si un negativo pasa. El
+test final «EVL3 — veredicto de la corrida guionada» calcula el veredicto e imprime el resumen.
 
 **Review requerida**: RDD
 

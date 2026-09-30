@@ -1,0 +1,39 @@
+{
+  "id": "neg-texto-literal",
+  "titulo": "EVL2 — negativo: textoLiteral falla si la política no se cita sin cambios",
+  "origen": "sintetico",
+  "esperaFallo": "textoLiteral",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Aceptan devoluciones?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_politica",
+              "argumentos": {
+                "tema": "devoluciones"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Puedes devolver el producto cuando quieras."
+        }
+      ],
+      "aserciones": {
+        "textoLiteral": [
+          {
+            "herramienta": "consultar_politica",
+            "campo": "texto"
+          }
+        ]
+      }
+    }
+  ]
+}

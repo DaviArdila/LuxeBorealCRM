@@ -1,0 +1,24 @@
+{
+  "id": "neg-recargo",
+  "titulo": "EVL2 — negativo: recargoSinPorcentaje falla si el texto cita un porcentaje",
+  "origen": "sintetico",
+  "esperaFallo": "recargoSinPorcentaje",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Hay contra entrega?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Con contra entrega hay un 5 % adicional."
+        }
+      ],
+      "aserciones": {
+        "recargoSinPorcentaje": true
+      }
+    }
+  ]
+}

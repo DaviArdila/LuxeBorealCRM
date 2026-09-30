@@ -1,0 +1,41 @@
+{
+  "id": "neg-herramientas-prohibidas",
+  "titulo": "EVL2 — negativo: herramientasProhibidas falla si se llamó una prohibida",
+  "origen": "sintetico",
+  "esperaFallo": "herramientasProhibidas",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Hola"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "marcar_lead_caliente",
+              "argumentos": {
+                "temperatura": "caliente",
+                "senales": [
+                  "dijo hola"
+                ],
+                "resumen": "solo saludó",
+                "id_producto": null
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Listo."
+        }
+      ],
+      "aserciones": {
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ]
+      }
+    }
+  ]
+}

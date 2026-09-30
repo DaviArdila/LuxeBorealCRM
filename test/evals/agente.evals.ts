@@ -24,6 +24,7 @@ import { calcularVeredicto } from './soporte/umbral.js';
 const modo = leerModoEvals(process.env);
 const CARPETA_CASOS = path.resolve(import.meta.dirname, 'casos');
 const sinteticos = cargarCasos(path.join(CARPETA_CASOS, 'sinteticos'));
+const negativos = cargarCasos(path.join(CARPETA_CASOS, 'sinteticos', 'negativos'));
 
 describe('Evals del agente — casos sintéticos (modo guionado)', () => {
   const simulador = { valor: undefined as SimuladorOpenRouter | undefined };
@@ -56,10 +57,27 @@ describe('Evals del agente — casos sintéticos (modo guionado)', () => {
     });
   }
 
+  for (const caso of negativos) {
+    it(caso.titulo, async () => {
+      const resultados = await ejecutarCaso({ caso, generador, grabador, prisma });
+      const esperada = resultados.find((resultado) => resultado.nombre === caso.esperaFallo);
+      expect(esperada, `${caso.id}: el caso no declara la aserción ${String(caso.esperaFallo)}`).toBeDefined();
+      // Si la aserción pasa, no detecta la violación: el negativo falla nombrando el caso (EVL2).
+      expect(esperada?.ok, `${caso.id}: la aserción ${String(caso.esperaFallo)} no detectó la violación`).toBe(false);
+    });
+  }
+
   it('EVL1 — El modo guionado no llama a ningún proveedor', async () => {
     expect(modo.modo).toBe('guionado');
     expect(simulador.valor?.intentos).toBe(0);
     expect(await prisma.usoLlm.count()).toBe(0);
+  });
+
+  it('EVL3 — veredicto de la corrida guionada', () => {
+    const veredicto = calcularVeredicto(resumenes.flatMap((caso) => caso.resultados), 'guionado');
+    // Se imprime el resumen (sin tiempos ni texto de clientes) para el registro de la corrida.
+    process.stdout.write(`${armarResumen(resumenes, veredicto, 'guionado')}\n`);
+    expect(veredicto.aprobada).toBe(true);
   });
 
   it('EVL1 — Dos corridas guionadas dan el mismo resultado', async () => {

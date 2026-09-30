@@ -1,0 +1,24 @@
+{
+  "id": "neg-handoff",
+  "titulo": "EVL2 — negativo: handoff prohibido falla si el turno termina en traspaso",
+  "origen": "sintetico",
+  "esperaFallo": "handoff",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Hola"
+        }
+      ],
+      "guion": [
+        {
+          "error": "proveedor-caido"
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido"
+      }
+    }
+  ]
+}
