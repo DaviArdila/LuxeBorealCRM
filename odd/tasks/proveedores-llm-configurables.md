@@ -28,7 +28,7 @@ Detalle, slices y RED de cada una en `openspec/changes/proveedores-llm-configura
 
 - [x] T1 — Resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*`. Ruta: inline
 - [x] T2 — Configuración por proveedor. Ruta: delegada
-- [ ] T3 — Adaptador genérico con OpenRouter como proveedor. Ruta: delegada
+- [x] T3 — Adaptador genérico con OpenRouter como proveedor. Ruta: delegada
 - [ ] T4 — Proveedor `openai` (único directo inicial, P37). Ruta: delegada
 - [~] T5 — pospuesta (P37: solo OpenAI): proveedor `anthropic`
 - [~] T6 — pospuesta (P37: solo OpenAI): proveedor `google`
@@ -74,6 +74,13 @@ escritura); T1 y T9 son de un archivo y quedan inline.
   candidata `@ai-sdk/openai` 4.0.81 anotada en D7; commit `3572966`. T2: `OPENAI_API_KEY`, prefijos
   válidos, clave de producción solo del proveedor usado; RED (6 tests) → GREEN; ruta: delegada
   (escritor único). Checks: lint, typecheck, fronteras y tests unitarios de config en verde.
+
+- 2026-09-30: slice PR2 (rama `proveedores-llm-p2-adaptador-generico`). T3: `AdaptadorAiSdk`
+  (único que importa `ai`) + `proveedores/openrouter.ts`; el gateway escribe el `proveedor` real
+  de la fila (LLM15). RED (3 archivos de test en rojo) -> GREEN; commit `094ff13`. Ruta: delegada
+  (escritor único). Checks: lint, typecheck, fronteras, contrato:deriva, commits, unit (978),
+  integracion (249 de 250; el que falla, `prompts-build`, es `spawnSync npx ENOENT` de Windows, ajeno
+  al cambio), e2e (33) y evals (31) en verde. Cableado transitorio en `llm.module.ts` hasta T8.
 
 ## Próximo paso
 

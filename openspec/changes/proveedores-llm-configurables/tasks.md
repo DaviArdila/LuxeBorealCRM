@@ -33,7 +33,7 @@ slices nuevos después del PR 4.
   prefijos válidos, clave exigida en producción solo al proveedor usado, precio por modelo; `.env.example`.
   RED: los 5 escenarios de config y que el valor de una clave nunca salga en el error. Ruta:
   delegada (escritor).
-- [ ] **T3 — Adaptador genérico con OpenRouter (LLM11, LLM15, LLM22).** `adaptador-ai-sdk.ts` +
+- [x] **T3 — Adaptador genérico con OpenRouter (LLM11, LLM15, LLM22).** `adaptador-ai-sdk.ts` +
   `proveedores/openrouter.ts` (mover, no reescribir) y `resolverModelo` en el gateway para el
   `proveedor` de la fila. RED: fila con `proveedor` real; el test de integración de OpenRouter sigue en
   verde sin cambios (no regresión). Ruta: delegada.
