@@ -80,6 +80,9 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   // Fase 07a, T4: el agente entra en `AppModule`; los valores solo cumplen `esquemaConfiguracion`.
   AGENTE_TOPE_TURNOS: 12,
   AGENTE_SESION_TTL_H: 168,
+  AGENTE_MAX_VUELTAS: 5,
+  AGENTE_HISTORIAL_TURNOS: 6,
+  AGENTE_FOTOS_INDIVIDUALES_MAX: 4,
 };
 
 export interface DocumentosContrato {

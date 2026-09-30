@@ -24,7 +24,34 @@ const ESTADOS_A_CHATWOOT: Readonly<Record<Exclude<EstadoConversacionCanal, 'posp
 
 const mensajeChatwootSchema = z.looseObject({
   content_attributes: z.looseObject({ luxe_clave: z.string().optional() }).nullable().optional(),
+  attachments: z.array(z.looseObject({ data_url: z.string().optional() })).nullable().optional(),
 });
+
+const EXTENSION_POR_TIPO: Readonly<Record<string, string>> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+/**
+ * Nombre del adjunto que lleva la marca (CAN10): la marca con todo lo que no sea `[A-Za-z0-9_-]`
+ * cambiado por `_` (los `:` de las claves de idempotencia no son seguros en un nombre de archivo) y
+ * la extensión del tipo. La reconciliación compara solo el tramo anterior a la extensión.
+ */
+function tramoDeMarca(marca: string): string {
+  return marca.replace(/[^A-Za-z0-9_-]/g, '_');
+}
+
+/** Último segmento de una `data_url` de adjunto, sin query ni escapes: el nombre con el que se subió. */
+function nombreDeAdjunto(dataUrl: string): string {
+  const ruta = dataUrl.split(/[?#]/)[0] ?? '';
+  const ultimo = ruta.slice(ruta.lastIndexOf('/') + 1);
+  try {
+    return decodeURIComponent(ultimo);
+  } catch {
+    return ultimo;
+  }
+}
 
 const respuestaMensajesSchema = z.looseObject({
   payload: z.array(mensajeChatwootSchema).optional(),
@@ -46,12 +73,43 @@ export class AdaptadorCanalChatwoot implements AdaptadorCanal {
     });
   }
 
+  /**
+   * D5 (07b), CAN6: `POST` multipart con el archivo en `attachments[]`, la leyenda como `content` y la
+   * marca en `content_attributes` **y** en el nombre del archivo (CAN10; ver `[manual]` en T1).
+   */
+  async enviarImagen(
+    idConversacion: string,
+    contenido: Buffer,
+    contentType: string,
+    leyenda: string | undefined,
+    marca: string,
+  ): Promise<void> {
+    const formulario = new FormData();
+    formulario.set('message_type', 'outgoing');
+    if (leyenda !== undefined) formulario.set('content', leyenda);
+    formulario.set('content_attributes', JSON.stringify({ luxe_clave: marca }));
+    const extension = EXTENSION_POR_TIPO[contentType] ?? 'jpg';
+    formulario.set(
+      'attachments[]',
+      new Blob([new Uint8Array(contenido)], { type: contentType }),
+      `${tramoDeMarca(marca)}.${extension}`,
+    );
+    await this.cliente.postMultipart(idConversacion, 'messages', formulario);
+  }
+
+  /** D13/CAN10: la marca se busca en `content_attributes` y, si no vuelve ahí, en el nombre de los adjuntos. */
   async existeMensajeConMarca(idConversacion: string, marca: string): Promise<boolean> {
     const respuesta = await this.cliente.get(idConversacion, 'messages');
     const analizada = respuestaMensajesSchema.safeParse(respuesta);
     if (!analizada.success) return false;
+    const tramo = tramoDeMarca(marca);
     return (analizada.data.payload ?? []).some(
-      (mensaje) => mensaje.content_attributes?.luxe_clave === marca,
+      (mensaje) =>
+        mensaje.content_attributes?.luxe_clave === marca ||
+        (mensaje.attachments ?? []).some((adjunto) => {
+          const nombre = nombreDeAdjunto(adjunto.data_url ?? '');
+          return nombre.startsWith(`${tramo}.`);
+        }),
     );
   }
 

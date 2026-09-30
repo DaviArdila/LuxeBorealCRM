@@ -16,6 +16,7 @@
  * `scripts/` tendría que importar una ruta interna del módulo para lograrlo.
  */
 export { CatalogoModule } from './catalogo.module.js';
+export { BuscarProductos } from './aplicacion/buscar-productos.js';
 export { CotizarEnvio } from './aplicacion/cotizar-envio.js';
 export { ConsultarPolitica, type ResultadoPolitica } from './aplicacion/consultar-politica.js';
 export {
@@ -25,8 +26,15 @@ export {
 } from './aplicacion/importar-catalogo.js';
 export { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
 export { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
+export { ObtenerFotosProducto } from './aplicacion/obtener-fotos-producto.js';
 export { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
-export { ProductoNoDisponible, type FichaProducto, type Producto, type ProductoResumen } from './dominio/producto.js';
+export {
+  ProductoNoDisponible,
+  type FichaProducto,
+  type FotosProducto,
+  type Producto,
+  type ProductoResumen,
+} from './dominio/producto.js';
 export { type DestinoEnvio, type ResultadoCotizacion } from './dominio/envio.js';
 export { FUENTE_CATALOGO, PestanaNoDisponible, type FuenteCatalogo } from './puertos/fuente-catalogo.js';
 export { FuenteCatalogoDirectorio } from './infraestructura/fuente-catalogo-directorio.js';

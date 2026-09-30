@@ -1,0 +1,38 @@
+{
+  "id": "politica-no-corresponde",
+  "titulo": "EVL1 — caso: la política de contra entrega no se cita cuando no corresponde",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿De qué material es el collar?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "obtener_ficha",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "El Collar Luna es de plata 925 con un dije de luna."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "textoAusente": [
+          "contra entrega",
+          "pagas cuando lo recibes"
+        ],
+        "dineroConRastro": true
+      }
+    }
+  ]
+}

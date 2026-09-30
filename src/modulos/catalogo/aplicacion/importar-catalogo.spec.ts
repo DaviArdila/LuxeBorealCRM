@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import type { CacheCatalogo } from '../puertos/cache-catalogo.js';
 import type { FilaCruda, NombrePestana } from '../dominio/validar-catalogo.js';
 import type { FuenteCatalogo } from '../puertos/fuente-catalogo.js';
-import type { Almacenamiento } from '../../medios/index.js';
+import { ObjetoNoEncontrado, type Almacenamiento, type ObjetoAlmacenado } from '../../medios/index.js';
 import type {
   DatosImportacion,
   EstadoProductoActual,
@@ -66,6 +66,13 @@ class AlmacenamientoEnMemoria implements Almacenamiento {
 
   obtenerUrl(clave: string): Promise<string> {
     return Promise.resolve(`https://almacenamiento.prueba/${clave}`);
+  }
+
+  leer(clave: string): Promise<ObjetoAlmacenado> {
+    const contenido = this.guardados.get(clave);
+    return contenido === undefined
+      ? Promise.reject(new ObjetoNoEncontrado(clave))
+      : Promise.resolve({ contenido, contentType: 'image/jpeg' });
   }
 
   eliminar(clave: string): Promise<void> {
@@ -343,5 +350,20 @@ describe('catalogo/aplicacion/ImportarCatalogo', () => {
 
     expect(repositorioImportacion.llamadasEscribir).toHaveLength(1);
     expect(almacenamiento.clavesEliminadas).toEqual(['catalogo/SKU-0001/foto-3.jpg']);
+  });
+
+  it('sin FUENTE_CATALOGO (la app sin el comando de importación) ejecutar falla con un error claro', async () => {
+    const almacenamiento = new AlmacenamientoEnMemoria();
+    const importador = new ImportarCatalogo(
+      undefined,
+      new ResolverGeografiaImportacion(new RepositorioGeografiaEnMemoria()),
+      new RepositorioImportacionFalso(new Map()),
+      new ProcesarFotos(almacenamiento),
+      almacenamiento,
+      new CacheCatalogoFalsa(),
+      new ClockFalso(new Date('2026-09-26T12:00:00.000Z')),
+    );
+
+    await expect(importador.ejecutar()).rejects.toThrow(/FUENTE_CATALOGO/);
   });
 });

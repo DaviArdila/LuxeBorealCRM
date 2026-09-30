@@ -1,0 +1,286 @@
+import { readFileSync } from 'node:fs';
+import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
+import { FakePuertoLlm } from '../../../../test/fakes/puerto-llm-falso.js';
+import { ErrorPasarelaLlm } from '../../llm/index.js';
+import type { LlamadaHerramienta, LlamadaInvalida, LlmPort, RespuestaGeneracion, SolicitudGeneracion } from '../../llm/index.js';
+import type { EfectoTurno } from '../dominio/efectos.js';
+import type { Herramienta } from '../dominio/herramienta.js';
+import { BucleHerramientas, type EntradaBucle } from './bucle-herramientas.js';
+import { RegistroHerramientas } from './registro-herramientas.js';
+
+// Escenarios AGT4, AGT5 y AGT6 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`
+// y R1 «El LLM necesita datos de un producto». El bucle se prueba con nombres inventados: no conoce
+// ninguna de las siete herramientas reales (A4).
+
+const INICIO = new Date('2026-09-30T12:00:00.000Z');
+const CONFIG = { LOCK_TURNO_TTL_S: 30, AGENTE_MAX_VUELTAS: 5 };
+const ENTRADA: EntradaBucle = {
+  sesion: { conversacionId: 'conv-1', version: 0 },
+  contactoId: 'contacto-1',
+  systemPrompt: 'prompt',
+  mensajes: [{ rol: 'usuario', texto: 'hola' }],
+};
+
+function herramienta(
+  nombre: string,
+  ejecutar: Herramienta['ejecutar'] = () => Promise.resolve({ paraElModelo: { ok: nombre }, efectos: [] }),
+): Herramienta {
+  return {
+    definicion: {
+      nombre,
+      descripcion: `herramienta ${nombre}`,
+      esquema: { safeParse: () => ({ success: true }) },
+      esquemaJson: { type: 'object' },
+    },
+    ejecutar,
+  };
+}
+
+function llamada(id: string, nombre: string, argumentos: unknown = {}): LlamadaHerramienta {
+  return { id, nombre, argumentos };
+}
+
+function pideHerramientas(...llamadas: LlamadaHerramienta[]): { respuesta: RespuestaGeneracion } {
+  return { respuesta: { llamadasHerramienta: llamadas } };
+}
+
+function texto(t: string): { respuesta: RespuestaGeneracion } {
+  return { respuesta: { texto: t } };
+}
+
+function invalida(id: string, nombre: string): { respuesta: RespuestaGeneracion } {
+  const llamadaInvalida: LlamadaInvalida = { llamada: llamada(id, nombre, { mal: true }), causa: 'ciudad: requerido' };
+  return { respuesta: { llamadasInvalidas: [llamadaInvalida] } };
+}
+
+function crear(herramientas: readonly Herramienta[], config = CONFIG) {
+  const llm = new FakePuertoLlm();
+  const clock = new ClockFalso(INICIO);
+  const bucle = new BucleHerramientas(llm, new RegistroHerramientas(herramientas), clock, config);
+  return { llm, clock, bucle };
+}
+
+describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
+  it('AGT4 — El modelo encadena herramientas y termina con texto', async () => {
+    const orden: string[] = [];
+    const { llm, bucle } = crear([
+      herramienta('buscar', () => {
+        orden.push('buscar');
+        return Promise.resolve({ paraElModelo: { id: 'p1' }, efectos: [] });
+      }),
+      herramienta('ficha', () => {
+        orden.push('ficha');
+        return Promise.resolve({ paraElModelo: { nombre: 'Collar' }, efectos: [] });
+      }),
+    ]);
+    llm.encolar(pideHerramientas(llamada('c1', 'buscar')), pideHerramientas(llamada('c2', 'ficha')), texto('Aquí va'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(orden).toEqual(['buscar', 'ficha']);
+    expect(resultado).toMatchObject({ tipo: 'texto', texto: 'Aquí va' });
+    expect(llm.solicitudes).toHaveLength(3);
+    const ultimo = llm.solicitudes[2]?.mensajes.at(-1);
+    expect(ultimo?.resultadosHerramienta).toEqual([
+      { idLlamada: 'c2', nombre: 'ficha', resultado: { nombre: 'Collar' }, esError: false },
+    ]);
+  });
+
+  it('AGT4 — Los efectos de imagen se acumulan y el modelo solo recibe lo que la herramienta le dejó ver', async () => {
+    const efecto: EfectoTurno = { tipo: 'enviar-imagen', claveObjeto: 'productos/p1/collage.jpg' };
+    const { llm, bucle } = crear([
+      herramienta('fotos', () => Promise.resolve({ paraElModelo: { enviadas: 1 }, efectos: [efecto] })),
+    ]);
+    llm.encolar(pideHerramientas(llamada('c1', 'fotos')), texto('Listo'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toMatchObject({ tipo: 'texto', efectos: [efecto] });
+    const paraElModelo = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta?.[0]?.resultado;
+    expect(paraElModelo).toEqual({ enviadas: 1 });
+  });
+
+  it('las herramientas ven los efectos que dejaron las anteriores del mismo turno', async () => {
+    const vistos: (readonly EfectoTurno[])[] = [];
+    const { llm, bucle } = crear([
+      herramienta('primera', () => Promise.resolve({ paraElModelo: {}, efectos: [{ tipo: 'sin-cobertura' }] })),
+      herramienta('segunda', (_args, ctx) => {
+        vistos.push(ctx.efectosPrevios);
+        return Promise.resolve({ paraElModelo: {}, efectos: [] });
+      }),
+    ]);
+    llm.encolar(pideHerramientas(llamada('c1', 'primera')), pideHerramientas(llamada('c2', 'segunda')), texto('ok'));
+
+    await bucle.ejecutar(ENTRADA);
+
+    expect(vistos).toEqual([[{ tipo: 'sin-cobertura' }]]);
+  });
+
+  it('AGT4 — Una herramienta desconocida vuelve al modelo como error', async () => {
+    const { llm, bucle } = crear([herramienta('buscar')]);
+    llm.encolar(pideHerramientas(llamada('c1', 'inventada')), texto('sigo'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toMatchObject({ tipo: 'texto', texto: 'sigo' });
+    const devuelto = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta?.[0];
+    expect(devuelto).toMatchObject({ idLlamada: 'c1', nombre: 'inventada', esError: true });
+    expect(JSON.stringify(devuelto?.resultado)).toContain('inventada');
+  });
+
+  it('AGT4 — Dos llamadas inválidas en el mismo turno derivan a humano', async () => {
+    const { llm, bucle } = crear([herramienta('cotizar')]);
+    llm.encolar(invalida('c1', 'cotizar'), invalida('c2', 'cotizar'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toEqual({ tipo: 'derivar', motivo: 'argumentos-invalidos' });
+    expect(llm.solicitudes).toHaveLength(2);
+  });
+
+  it('la primera llamada inválida solo se devuelve al modelo con la causa', async () => {
+    const { llm, bucle } = crear([herramienta('cotizar')]);
+    llm.encolar(invalida('c1', 'cotizar'), texto('corregido'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toMatchObject({ tipo: 'texto', texto: 'corregido' });
+    const devuelto = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta?.[0];
+    expect(devuelto).toMatchObject({ idLlamada: 'c1', nombre: 'cotizar', esError: true });
+    expect(JSON.stringify(devuelto?.resultado)).toContain('ciudad: requerido');
+  });
+
+  it('una herramienta que lanza se devuelve al modelo como error y el turno continúa', async () => {
+    const { llm, bucle } = crear([herramienta('rota', () => Promise.reject(new Error('base caída con dato secreto')))]);
+    llm.encolar(pideHerramientas(llamada('c1', 'rota')), texto('sigo'));
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toMatchObject({ tipo: 'texto', texto: 'sigo' });
+    const devuelto = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta?.[0];
+    expect(devuelto?.esError).toBe(true);
+    expect(JSON.stringify(devuelto?.resultado)).not.toContain('secreto');
+  });
+
+  it('R1 — El LLM necesita datos de un producto: solo recibe las herramientas registradas', async () => {
+    const { llm, bucle } = crear([herramienta('buscar'), herramienta('ficha')]);
+    llm.encolar(texto('hola'));
+
+    await bucle.ejecutar(ENTRADA);
+
+    const solicitud = llm.solicitudes[0];
+    expect(solicitud?.perfil).toBe('conversacion');
+    expect(solicitud?.herramientas?.map((definicion) => definicion.nombre)).toEqual(['buscar', 'ficha']);
+    expect(solicitud?.systemPrompt).toBe('prompt');
+    expect(solicitud?.conversacionId).toBe('conv-1');
+  });
+
+  it('un texto final vacío no se envía: deriva como fallo del LLM', async () => {
+    const { llm, bucle } = crear([herramienta('buscar')]);
+    llm.encolar(texto('   '));
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'fallo-llm' });
+  });
+
+  it('el bucle no contiene el nombre de ninguna de las siete herramientas (A4)', () => {
+    const fuente = readFileSync(new URL('./bucle-herramientas.ts', import.meta.url), 'utf8');
+    for (const nombre of [
+      'buscar_producto',
+      'obtener_ficha',
+      'cotizar_envio',
+      'enviar_fotos',
+      'marcar_lead_caliente',
+      'guardar_datos_contacto',
+      'consultar_politica',
+    ]) {
+      expect(fuente).not.toContain(nombre);
+    }
+  });
+});
+
+describe('modulos/agente/aplicacion — BucleHerramientas (AGT5, plazo y vueltas)', () => {
+  it('AGT5 — Cada llamada recibe solo el tiempo que le queda al turno', async () => {
+    const clock = new ClockFalso(INICIO);
+    const solicitudes: SolicitudGeneracion[] = [];
+    const llm: LlmPort = {
+      generar(solicitud) {
+        solicitudes.push(solicitud);
+        if (solicitudes.length === 1) {
+          clock.avanzar(10_000);
+          return Promise.resolve({ llamadasHerramienta: [llamada('c1', 'buscar')] });
+        }
+        return Promise.resolve({ texto: 'listo' });
+      },
+    };
+    const bucle = new BucleHerramientas(llm, new RegistroHerramientas([herramienta('buscar')]), clock, CONFIG);
+
+    await bucle.ejecutar(ENTRADA);
+
+    expect(solicitudes.map((s) => s.plazoMs)).toEqual([25_000, 15_000]);
+  });
+
+  it('AGT5 — Agotar las vueltas sin texto final deriva a humano', async () => {
+    const { llm, bucle } = crear([herramienta('buscar')]);
+    for (let i = 0; i < 8; i += 1) {
+      llm.encolar(pideHerramientas(llamada(`c${String(i)}`, 'buscar')));
+    }
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toEqual({ tipo: 'derivar', motivo: 'plazo-agotado' });
+    expect(llm.solicitudes).toHaveLength(5);
+  });
+
+  it('un plazo ya agotado antes de una vuelta no llama al LLM', async () => {
+    const clock = new ClockFalso(INICIO);
+    let llamadas = 0;
+    const llm: LlmPort = {
+      generar() {
+        llamadas += 1;
+        clock.avanzar(26_000);
+        return Promise.resolve({ llamadasHerramienta: [llamada('c1', 'buscar')] });
+      },
+    };
+    const bucle = new BucleHerramientas(llm, new RegistroHerramientas([herramienta('buscar')]), clock, CONFIG);
+
+    const resultado = await bucle.ejecutar(ENTRADA);
+
+    expect(resultado).toEqual({ tipo: 'derivar', motivo: 'plazo-agotado' });
+    expect(llamadas).toBe(1);
+  });
+
+  it('un timeout de la pasarela con el plazo del turno agotado se reporta como plazo-agotado', async () => {
+    const clock = new ClockFalso(INICIO);
+    const llm: LlmPort = {
+      generar() {
+        clock.avanzar(25_000);
+        return Promise.reject(new ErrorPasarelaLlm('timeout'));
+      },
+    };
+    const bucle = new BucleHerramientas(llm, new RegistroHerramientas([]), clock, CONFIG);
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'plazo-agotado' });
+  });
+});
+
+describe('modulos/agente/aplicacion — BucleHerramientas (AGT6, fallos de la pasarela)', () => {
+  it('AGT6 — El techo de gasto deriva con su propio motivo', async () => {
+    const { llm, bucle } = crear([]);
+    llm.encolar({ error: new ErrorPasarelaLlm('techo-alcanzado') });
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'techo-gasto' });
+  });
+
+  it('AGT6 — La caída del proveedor deriva como fallo del LLM', async () => {
+    const { llm, bucle } = crear([]);
+    llm.encolar({ error: new ErrorPasarelaLlm('proveedor-caido') });
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'fallo-llm' });
+  });
+
+  it('cualquier otra excepción del LLM también deriva y nunca se propaga', async () => {
+    const { bucle } = crear([]);
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'fallo-llm' });
+  });
+});

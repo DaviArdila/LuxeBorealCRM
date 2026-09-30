@@ -11,5 +11,5 @@ export function anteponerAviso(pasos: readonly PasoRespuesta[], aviso: string): 
   if (indice === -1 || aviso.trim() === '') {
     return pasos;
   }
-  return pasos.map((paso, i) => (i === indice ? { ...paso, texto: `${aviso}\n\n${paso.texto}` } : paso));
+  return pasos.map((paso, i) => (i === indice && paso.tipo === 'texto' ? { ...paso, texto: `${aviso}\n\n${paso.texto}` } : paso));
 }

@@ -1,0 +1,46 @@
+{
+  "id": "r1-dato-rastreado",
+  "titulo": "R1 — Todo dato citado se rastrea a una llamada de herramienta",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto cuesta el envío del collar a Antioquia?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "cotizar_envio",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR",
+                "departamento": "Antioquia"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "El envío a Antioquia sale entre $12.000 y $18.000, entre 2 y 4 días. Es un valor aproximado: la transportadora confirma el real al despachar."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "cotizar_envio"
+          }
+        ],
+        "dineroConRastro": true,
+        "textoLiteral": [
+          {
+            "herramienta": "cotizar_envio",
+            "campo": "rango_texto"
+          }
+        ]
+      }
+    }
+  ]
+}

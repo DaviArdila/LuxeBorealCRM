@@ -1,0 +1,26 @@
+{
+  "id": "neg-texto-ausente",
+  "titulo": "EVL2 — negativo: textoAusente falla si aparece un texto que no debía citarse",
+  "origen": "sintetico",
+  "esperaFallo": "textoAusente",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Cuéntame del collar"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Se envía contra entrega."
+        }
+      ],
+      "aserciones": {
+        "textoAusente": [
+          "contra entrega"
+        ]
+      }
+    }
+  ]
+}

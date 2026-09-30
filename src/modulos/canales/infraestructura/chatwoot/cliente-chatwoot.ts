@@ -23,6 +23,14 @@ export class ClienteChatwoot {
     return this.llamar('POST', idConversacion, sufijo, cuerpo);
   }
 
+  /**
+   * `POST` `multipart/form-data` (D5 de la 07b, CAN6). El `Content-Type` con su `boundary` lo pone
+   * `fetch` al recibir un `FormData`: fijarlo a mano rompería el límite entre partes.
+   */
+  async postMultipart(idConversacion: string, sufijo: string, formulario: FormData): Promise<unknown> {
+    return this.llamar('POST', idConversacion, sufijo, formulario);
+  }
+
   async get(idConversacion: string, sufijo: string): Promise<unknown> {
     return this.llamar('GET', idConversacion, sufijo);
   }
@@ -36,7 +44,7 @@ export class ClienteChatwoot {
     metodo: Metodo,
     idConversacion: string,
     sufijo: string,
-    cuerpo?: Readonly<Record<string, unknown>>,
+    cuerpo?: Readonly<Record<string, unknown>> | FormData,
   ): Promise<unknown> {
     const url = this.url(idConversacion, sufijo);
     const pathname = new URL(url).pathname;
@@ -47,9 +55,9 @@ export class ClienteChatwoot {
         method: metodo,
         headers: {
           api_access_token: this.configuracion.CHATWOOT_BOT_TOKEN,
-          ...(cuerpo ? { 'Content-Type': 'application/json' } : {}),
+          ...(cuerpo && !(cuerpo instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         },
-        body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+        body: cuerpo instanceof FormData ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,
         signal: AbortSignal.timeout(this.configuracion.CHATWOOT_HTTP_TIMEOUT_MS),
       });
     } catch {

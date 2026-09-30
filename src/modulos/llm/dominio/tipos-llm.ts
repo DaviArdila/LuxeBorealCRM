@@ -55,6 +55,8 @@ export interface SolicitudGeneracion {
   readonly systemPrompt?: string;
   readonly herramientas?: readonly DefinicionHerramienta[];
   readonly conversacionId?: string;
+  // Milisegundos que le quedan al turno de quien llama (LLM14, ADR-0018): acota el presupuesto total.
+  readonly plazoMs?: number;
 }
 
 export interface UsoReportado {

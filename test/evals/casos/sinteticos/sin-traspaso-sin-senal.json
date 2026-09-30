@@ -1,0 +1,26 @@
+{
+  "id": "sin-traspaso-sin-senal",
+  "titulo": "EVL1 — caso: un cliente indeciso no se traspasa ni se marca como lead",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Mmm, lo voy a pensar"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Claro, tómate tu tiempo. Aquí sigo por si te surge alguna duda."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ]
+      }
+    }
+  ]
+}

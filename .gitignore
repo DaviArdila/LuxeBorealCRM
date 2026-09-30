@@ -19,3 +19,6 @@ src/plataforma/prisma/generado/
 
 # Índice de CodeGraph, regenerable localmente; no es fuente de verdad
 .codegraph/
+
+# Conversaciones reales sin anonimizar para el set dorado de evals (Fase 07c, R14): nunca se commitean
+.evals-crudo/

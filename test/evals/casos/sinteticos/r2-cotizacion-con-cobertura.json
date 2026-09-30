@@ -1,0 +1,46 @@
+{
+  "id": "r2-cotizacion-con-cobertura",
+  "titulo": "R2 — Cotización de envío con cobertura",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Envíalo a Bogotá, ¿cuánto cuesta?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "cotizar_envio",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-ANILLO",
+                "departamento": "Bogotá D.C.",
+                "ciudad": "Bogotá"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "A Bogotá el envío sale entre $12.000 y $18.000 aproximadamente; la transportadora confirma el valor real al despachar."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "dineroConRastro": true,
+        "textoLiteral": [
+          {
+            "herramienta": "cotizar_envio",
+            "campo": "rango_texto"
+          }
+        ],
+        "menciona": [
+          "aproximad",
+          "transportadora"
+        ]
+      }
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { EnviarRespuestaTurno } from '../../../src/modulos/conversaciones/aplicacion/enviar-respuesta-turno.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
+import type { CapacidadesSalida } from '../../../src/modulos/conversaciones/index.js';
 import type { SalidaCanal, SolicitudEnvioMensajes } from '../../../src/modulos/canales/index.js';
 import {
   CONFIGURACION,
@@ -31,6 +32,16 @@ class SalidaCanalDoble implements SalidaCanal {
   }
 }
 
+/**
+ * Ningún canal real del perfil (CAN8) declara hoy `admiteImagen: false` (WhatsApp sí; el resto es
+ * permisivo), así que el escenario de CNV10 fuerza la capacidad por la costura protegida.
+ */
+class EnviarRespuestaTurnoSinImagen extends EnviarRespuestaTurno {
+  protected override capacidades(): CapacidadesSalida {
+    return { mensajeSalienteCuesta: true, admiteImagen: false };
+  }
+}
+
 let modulo: TestingModule | undefined;
 
 afterEach(async () => {
@@ -40,6 +51,7 @@ afterEach(async () => {
 
 async function crearContexto(): Promise<{
   enviarRespuestaTurno: EnviarRespuestaTurno;
+  enviarSinImagen: EnviarRespuestaTurno;
   prisma: PrismaService;
   salidaCanal: SalidaCanalDoble;
 }> {
@@ -97,6 +109,7 @@ async function crearContexto(): Promise<{
   const salidaCanal = new SalidaCanalDoble();
   return {
     enviarRespuestaTurno: new EnviarRespuestaTurno(repositorio, salidaCanal),
+    enviarSinImagen: new EnviarRespuestaTurnoSinImagen(repositorio, salidaCanal),
     prisma,
     salidaCanal,
   };
@@ -172,5 +185,36 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
       enviarRespuestaTurno.enviar(crypto.randomUUID(), 'resp-3', [{ paso: 'p1', tipo: 'texto', texto: 'hola' }]),
     ).resolves.toBeUndefined();
     expect(salidaCanal.llamadas).toHaveLength(0);
+  });
+
+  it('CNV10 — Un texto seguido de un collage sale como dos mensajes en orden', async () => {
+    const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarRespuestaTurno.enviar(idConv, 'resp-img', [
+      { paso: 'p1', tipo: 'texto', texto: 'mira este modelo' },
+      { paso: 'p2', tipo: 'imagen', claveObjeto: 'catalogo/luna/collage.jpg', leyenda: 'Luna' },
+    ]);
+
+    expect(salidaCanal.llamadas).toHaveLength(1);
+    expect(salidaCanal.llamadas[0]).toMatchObject({
+      requiereEstado: 'bot',
+      mensajes: [
+        { tipo: 'texto', texto: 'mira este modelo' },
+        { tipo: 'imagen', claveObjeto: 'catalogo/luna/collage.jpg', leyenda: 'Luna' },
+      ],
+    });
+  });
+
+  it('CNV10 — Un canal que no admite imagen omite el paso de imagen', async () => {
+    const { enviarSinImagen, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarSinImagen.enviar(idConv, 'resp-sin-img', [
+      { paso: 'p1', tipo: 'texto', texto: 'mira este modelo' },
+      { paso: 'p2', tipo: 'imagen', claveObjeto: 'catalogo/luna/collage.jpg' },
+    ]);
+
+    expect(salidaCanal.llamadas[0]?.mensajes).toEqual([{ tipo: 'texto', texto: 'mira este modelo' }]);
   });
 });

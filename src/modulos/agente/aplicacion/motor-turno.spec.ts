@@ -5,7 +5,7 @@ import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repo
 import { MotorTurno } from './motor-turno.js';
 import { PoliticaNoTextuales } from './politicas/politica-no-textuales.js';
 import { TextoHandoff } from './texto-handoff.js';
-import { ContenidoEcoProvisional } from './politicas/contenido-eco-provisional.js';
+import { PoliticaEco } from '../../../../test/fakes/politica-eco.js';
 
 const AVISO = 'Soy un asistente automatizado.';
 
@@ -56,7 +56,7 @@ function crearMotor(politicas: readonly PoliticaTurno[]) {
 describe('MotorTurno', () => {
   it('AGT1 — Un turno de texto llega hasta la generación de contenido', async () => {
     const previa = new PoliticaEspia({ decision: 'seguir' });
-    const { motor } = crearMotor([previa, new ContenidoEcoProvisional()]);
+    const { motor } = crearMotor([previa, new PoliticaEco()]);
 
     const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
 
@@ -122,7 +122,7 @@ describe('MotorTurno', () => {
     const SESION = { conversacionId: 'conv-1', version: 0 };
 
     it('AGT2 — La primera respuesta de la conversación lleva el aviso en el mismo mensaje', async () => {
-      const { motor } = crearMotor([new ContenidoEcoProvisional()]);
+      const { motor } = crearMotor([new PoliticaEco()]);
 
       const respuesta = await motor.generar(solicitudDeTexto('hola'));
 
@@ -130,7 +130,7 @@ describe('MotorTurno', () => {
     });
 
     it('AGT2 — La segunda respuesta no repite el aviso', async () => {
-      const { motor } = crearMotor([new ContenidoEcoProvisional()]);
+      const { motor } = crearMotor([new PoliticaEco()]);
       await motor.generar(solicitudDeTexto('hola'));
 
       const respuesta = await motor.generar(solicitudDeTexto('sigo aquí'));
@@ -139,7 +139,7 @@ describe('MotorTurno', () => {
     });
 
     it('AGT2 — Una respuesta vacía no genera un mensaje solo para el aviso', async () => {
-      const { motor, contadores } = crearMotor([new ContenidoEcoProvisional()]);
+      const { motor, contadores } = crearMotor([new PoliticaEco()]);
 
       const ignorado = await motor.generar(solicitudDeSticker());
       const primeraReal = await motor.generar(solicitudDeTexto('hola'));
@@ -150,7 +150,7 @@ describe('MotorTurno', () => {
     });
 
     it('una sesión posterior de la misma conversación no repite el aviso aunque no tenga turnos', async () => {
-      const { motor } = crearMotor([new ContenidoEcoProvisional()]);
+      const { motor } = crearMotor([new PoliticaEco()]);
 
       const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
 

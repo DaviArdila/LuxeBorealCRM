@@ -15,6 +15,21 @@ export interface LlamadaRegistrada {
   readonly cuerpo: unknown;
 }
 
+/** Archivo recibido en un `POST` multipart (CAN6, 07b): lo que Chatwoot recibiría en `attachments[]`. */
+export interface ArchivoMultipart {
+  readonly campo: string;
+  readonly nombre: string;
+  readonly tipo: string;
+  readonly bytes: Buffer;
+}
+
+/** `cuerpo` de una llamada multipart: campos de texto y archivos (no hay JSON que analizar). */
+export interface CuerpoMultipart {
+  readonly multipart: true;
+  readonly campos: Readonly<Record<string, string>>;
+  readonly archivos: readonly ArchivoMultipart[];
+}
+
 export interface RespuestaProgramada {
   readonly status: number;
   readonly cuerpo?: unknown;
@@ -32,6 +47,7 @@ export class ChatwootFalso {
   private readonly colaRespuestas: RespuestaProgramada[] = [];
   private readonly mensajesPorConversacion = new Map<string, unknown[]>();
   private readonly etiquetasPorConversacion = new Map<string, string[]>();
+  private conservarMarcaEnMultipart = true;
 
   async iniciar(): Promise<void> {
     this.servidor = createServer((req, res) => {
@@ -67,6 +83,15 @@ export class ChatwootFalso {
     this.colaRespuestas.length = 0;
     this.mensajesPorConversacion.clear();
     this.etiquetasPorConversacion.clear();
+    this.conservarMarcaEnMultipart = true;
+  }
+
+  /**
+   * Simula un Chatwoot que descarta `content_attributes` en los `POST` multipart (CAN10, `[manual]`
+   * pendiente contra el Chatwoot real): la marca solo sobrevive en el nombre del adjunto.
+   */
+  descartarMarcaEnMultipart(): void {
+    this.conservarMarcaEnMultipart = false;
   }
 
   /** La próxima llamada (orden FIFO) responde con esto en vez del comportamiento por defecto. */
@@ -99,11 +124,21 @@ export class ChatwootFalso {
   private async manejar(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const cuerpoCrudo = await leerCuerpo(req);
-    const cuerpo = cuerpoCrudo.length > 0 ? (JSON.parse(cuerpoCrudo.toString('utf8')) as unknown) : undefined;
+    const tipoContenido = primeraCabecera(req.headers['content-type']) ?? '';
+    const multipart = tipoContenido.startsWith('multipart/form-data')
+      ? await analizarMultipart(cuerpoCrudo, tipoContenido)
+      : undefined;
+    const cuerpo =
+      multipart ?? (cuerpoCrudo.length > 0 ? (JSON.parse(cuerpoCrudo.toString('utf8')) as unknown) : undefined);
     const apiAccessToken = primeraCabecera(req.headers['api_access_token']);
     this.llamadas.push({ metodo: req.method ?? '', ruta: url.pathname, apiAccessToken, cuerpo });
 
     const programada = this.colaRespuestas.shift();
+    // Un multipart que llega se "crea" en Chatwoot salvo que la respuesta programada sea un error:
+    // así un timeout del cliente (respuesta lenta con 2xx) deja el mensaje creado (CAN10).
+    if (multipart && (programada === undefined || programada.status < 300)) {
+      this.registrarMultipart(url.pathname, multipart);
+    }
     if (programada) {
       if (programada.retrasoMs) await esperar(programada.retrasoMs);
       for (const [nombre, valor] of Object.entries(programada.cabeceras ?? {})) {
@@ -114,6 +149,25 @@ export class ChatwootFalso {
     }
 
     this.responderPorDefecto(req.method ?? '', url.pathname, cuerpo, res);
+  }
+
+  private registrarMultipart(ruta: string, multipart: CuerpoMultipart): void {
+    const coincidencia = PATRON_RUTA_CONVERSACION.exec(ruta);
+    if (!coincidencia || coincidencia[2] !== 'messages') return;
+    const archivo = multipart.archivos[0];
+    if (!archivo) return;
+    const atributos = this.conservarMarcaEnMultipart ? multipart.campos['content_attributes'] : undefined;
+    this.guardarMensajeConAdjunto(coincidencia[1], atributos, archivo.nombre);
+  }
+
+  private guardarMensajeConAdjunto(idConversacion: string, atributosJson: string | undefined, nombre: string): void {
+    const lista = this.mensajesPorConversacion.get(idConversacion) ?? [];
+    lista.push({
+      id: lista.length + 1,
+      content_attributes: atributosJson === undefined ? {} : (JSON.parse(atributosJson) as unknown),
+      attachments: [{ file_type: 'image', data_url: `${this.url()}/rails/active_storage/blobs/x/${encodeURIComponent(nombre)}` }],
+    });
+    this.mensajesPorConversacion.set(idConversacion, lista);
   }
 
   private responderPorDefecto(metodo: string, ruta: string, cuerpo: unknown, res: ServerResponse): void {
@@ -166,6 +220,24 @@ function responderJson(res: ServerResponse, status: number, cuerpo: unknown): vo
 
 function primeraCabecera(valor: string | string[] | undefined): string | undefined {
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+async function analizarMultipart(cuerpo: Buffer, tipoContenido: string): Promise<CuerpoMultipart> {
+  const formulario = await new Request('http://localhost/', {
+    method: 'POST',
+    headers: { 'content-type': tipoContenido },
+    body: new Uint8Array(cuerpo),
+  }).formData();
+  const campos: Record<string, string> = {};
+  const archivos: ArchivoMultipart[] = [];
+  for (const [campo, valor] of formulario.entries()) {
+    if (typeof valor === 'string') {
+      campos[campo] = valor;
+    } else {
+      archivos.push({ campo, nombre: valor.name, tipo: valor.type, bytes: Buffer.from(await valor.arrayBuffer()) });
+    }
+  }
+  return { multipart: true, campos, archivos };
 }
 
 async function leerCuerpo(req: IncomingMessage): Promise<Buffer> {

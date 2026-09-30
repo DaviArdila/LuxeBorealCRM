@@ -14,8 +14,10 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../../src/app.module.js';
 import { configurarAplicacion, OPCIONES_APLICACION } from '../../src/configurar-aplicacion.js';
+import { LLM_PORT } from '../../src/modulos/llm/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
+import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
@@ -84,10 +86,16 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso, topeTurnos: number)
   };
 }
 
-async function crearAplicacion(chatwootFalso: ChatwootFalso, topeTurnos = 12): Promise<INestApplication> {
+async function crearAplicacion(
+  chatwootFalso: ChatwootFalso,
+  llm: FakePuertoLlm,
+  topeTurnos = 12,
+): Promise<INestApplication> {
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIGURACION)
     .useValue(configuracionDePrueba(chatwootFalso, topeTurnos))
+    .overrideProvider(LLM_PORT)
+    .useValue(llm)
     .compile();
   const app = modulo.createNestApplication<NestExpressApplication>(OPCIONES_APLICACION);
   configurarAplicacion(app);
@@ -166,8 +174,9 @@ async function esperarMensajes(falso: ChatwootFalso, idConversacion: number, can
   return textosEnviados(falso, idConversacion);
 }
 
-describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a)', () => {
+describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; el contenido lo da un LLM falso desde la 07b)', () => {
   const chatwootFalso = new ChatwootFalso();
+  let llm = new FakePuertoLlm();
   let app: INestApplication | undefined;
 
   beforeAll(async () => {
@@ -185,7 +194,8 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a)'
   });
 
   async function arrancar(topeTurnos?: number): Promise<INestApplication> {
-    app = await crearAplicacion(chatwootFalso, topeTurnos);
+    llm = new FakePuertoLlm();
+    app = await crearAplicacion(chatwootFalso, llm, topeTurnos);
     const prisma = app.get(PrismaService);
     for (const [clave, valor] of Object.entries(TEXTOS)) {
       await prisma.parametro.upsert({ where: { clave }, create: { clave, valor }, update: { valor } });
@@ -264,6 +274,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a)'
 
   it('AGT2 — La primera respuesta de la conversación lleva el aviso en el mismo mensaje', async () => {
     const aplicacion = await arrancar();
+    llm.encolar({ respuesta: { texto: 'Claro, ¿de qué material?' } }, { respuesta: { texto: 'Perfecto, oro.' } });
     const { idConversacion, idContacto } = nuevaConversacion();
     const primero = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola, busco un anillo');
@@ -275,12 +286,13 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a)'
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
-    expect(mensajes[0]).toBe(`${TEXTOS.aviso_datos}\n\nHola, busco un anillo`);
-    expect(mensajes[1]).toBe('De oro, por favor');
+    expect(mensajes[0]).toBe(`${TEXTOS.aviso_datos}\n\nClaro, ¿de qué material?`);
+    expect(mensajes[1]).toBe('Perfecto, oro.');
   }, 40_000);
 
   it('R13 — Tope de turnos alcanzado', async () => {
     const aplicacion = await arrancar(1);
+    llm.encolar({ respuesta: { texto: 'Hola, ¿en qué te ayudo?' } });
     const { idConversacion, idContacto } = nuevaConversacion();
     const primero = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola');

@@ -3,7 +3,7 @@ import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config
 import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import type { ClaveSesion, ContadoresSesion } from '../../puertos/contadores-sesion.js';
 
-function claveContador(sesion: ClaveSesion, contador: 'turnos' | 'audios'): string {
+function claveContador(sesion: ClaveSesion, contador: 'turnos' | 'audios' | 'fotos'): string {
   return `agente:${sesion.conversacionId}:v${String(sesion.version)}:${contador}`;
 }
 
@@ -38,11 +38,20 @@ export class ContadoresSesionRedis implements ContadoresSesion {
     await this.redis.del(claveContador(sesion, 'audios'));
   }
 
-  private async incrementar(clave: string): Promise<number> {
+  async fotosIndividuales(sesion: ClaveSesion): Promise<number> {
+    await this.conectarSiHaceFalta();
+    return Number((await this.redis.get(claveContador(sesion, 'fotos'))) ?? 0);
+  }
+
+  async sumarFotosIndividuales(sesion: ClaveSesion, cantidad: number): Promise<void> {
+    await this.incrementar(claveContador(sesion, 'fotos'), cantidad);
+  }
+
+  private async incrementar(clave: string, por = 1): Promise<number> {
     await this.conectarSiHaceFalta();
     const resultados = await this.redis
       .multi()
-      .incr(clave)
+      .incrby(clave, por)
       .expire(clave, this.configuracion.AGENTE_SESION_TTL_H * 3600)
       .exec();
     const cuenta = resultados?.[0]?.[1];

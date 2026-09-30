@@ -1,0 +1,28 @@
+{
+  "id": "neg-herramientas-esperadas",
+  "titulo": "EVL2 — negativo: herramientasEsperadas falla si la herramienta no se llamó",
+  "origen": "sintetico",
+  "esperaFallo": "herramientasEsperadas",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Necesito información"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Claro, dime más."
+        }
+      ],
+      "aserciones": {
+        "herramientasEsperadas": [
+          {
+            "nombre": "buscar_producto"
+          }
+        ]
+      }
+    }
+  ]
+}

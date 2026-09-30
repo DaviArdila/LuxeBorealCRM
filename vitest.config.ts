@@ -46,6 +46,9 @@ export default defineConfig({
             // `scripts/importar-catalogo.spec.ts` (parseo puro de argumentos, sin infraestructura)
             // nunca corría bajo `npm test` — desviación reportada, no silenciosa, corregida aquí.
             'scripts/**/*.spec.ts',
+            // Fase 07c (T1): aserciones, umbral, esquema de casos, guion y resumen de las evals son
+            // funciones puras; los casos contra el agente corren en el proyecto `evals`.
+            'test/evals/**/*.spec.ts',
           ],
           exclude: ['test/fronteras/fixtures/**'],
           // El límite de cuatro workers evita que los tests unitarios que lanzan Docker, Git y
@@ -89,6 +92,23 @@ export default defineConfig({
           // Vitest exige groupOrder distinto al de `unit` cuando los proyectos tienen distintos
           // maxWorkers; ejecutar integración después del unitario también evita competir por Docker.
           sequence: { groupOrder: 1 },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'evals',
+          include: ['test/evals/**/*.evals.ts'],
+          // Fase 07c (D1, D7): las evals componen la aplicación completa sobre Postgres y Redis reales,
+          // igual que integración y e2e, y comparten su arnés de base por worker.
+          globalSetup: ['test/soporte/contenedores.global-setup.ts'],
+          setupFiles: ['test/soporte/base-por-worker.setup.ts'],
+          hookTimeout: 60_000,
+          // El modo real llama a un LLM de verdad (perfil `evals`, 30 s por intento, 3 repeticiones).
+          testTimeout: 180_000,
+          // Mismo hallazgo que integración y e2e: un archivo a la vez por worker.
+          maxConcurrency: 1,
+          sequence: { groupOrder: 2 },
         },
       },
       {

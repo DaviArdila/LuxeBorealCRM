@@ -36,10 +36,19 @@ export class FalloCanal extends Error {
  * (D12). `enviarTexto` recibe `marca` (clave de idempotencia, D11) para que el adaptador la
  * persista como `content_attributes.luxe_clave`; `existeMensajeConMarca` es la reconciliación de
  * D13 que el manejador del outbox usa antes de reintentar un mensaje cuyo intento anterior no
- * terminó con certeza.
+ * terminó con certeza. `enviarImagen` (D5 de la 07b) sube el adjunto con la misma `marca`: viaja en
+ * `content_attributes` y, como respaldo, en el nombre del archivo (CAN10), porque no está confirmado
+ * que Chatwoot conserve `content_attributes` en un multipart.
  */
 export interface AdaptadorCanal {
   enviarTexto(idConversacion: string, texto: string, marca: string): Promise<void>;
+  enviarImagen(
+    idConversacion: string,
+    contenido: Buffer,
+    contentType: string,
+    leyenda: string | undefined,
+    marca: string,
+  ): Promise<void>;
   existeMensajeConMarca(idConversacion: string, marca: string): Promise<boolean>;
   cambiarEstado(idConversacion: string, estado: Exclude<EstadoConversacionCanal, 'pospuesta'>): Promise<void>;
   agregarEtiquetas(idConversacion: string, etiquetas: readonly string[]): Promise<void>;

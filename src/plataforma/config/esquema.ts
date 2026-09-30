@@ -156,6 +156,12 @@ export const esquemaConfiguracion = z
     AGENTE_TOPE_TURNOS: z.coerce.number().int().min(1).default(12),
     /** Vida de los contadores de sesión del agente en Redis, en horas (D8); 168 h = 7 días. */
     AGENTE_SESION_TTL_H: z.coerce.number().int().min(1).max(720).default(168),
+    /** Vueltas máximas del bucle de herramientas por turno (Fase 07b, D10, AGT5). */
+    AGENTE_MAX_VUELTAS: z.coerce.number().int().min(1).max(8).default(5),
+    /** Turnos previos de la sesión que se envían al LLM (Fase 07b, D10, AGT7); 0 = sin historial. */
+    AGENTE_HISTORIAL_TURNOS: z.coerce.number().int().min(0).max(20).default(6),
+    /** Fotos individuales máximas por sesión (Fase 07b, D10, AGT9). */
+    AGENTE_FOTOS_INDIVIDUALES_MAX: z.coerce.number().int().min(1).max(10).default(4),
     /** Vacía por defecto; obligatoria no vacía en production (`superRefine` abajo). */
     OPENROUTER_API_KEY: z.string().default(''),
     /** Override hacia el simulador local en las pruebas (D11). */

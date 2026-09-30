@@ -16,6 +16,7 @@ import {
   grupoConversacion,
 } from '../dominio/claves-idempotencia.js';
 import type {
+  MensajeSaliente,
   SalidaCanal,
   SolicitudCambioEstado,
   SolicitudEnvioMensajes,
@@ -26,6 +27,12 @@ import type {
 export const TIPO_OUTBOX_MENSAJE = 'canal.mensaje';
 export const TIPO_OUTBOX_ESTADO = 'canal.estado';
 export const TIPO_OUTBOX_ETIQUETAS = 'canal.etiquetas';
+
+/** Contenido que no debe persistir tras publicarse (R14): el texto, o la leyenda de una imagen. */
+function efimeroDe(mensaje: MensajeSaliente): Record<string, unknown> | undefined {
+  if (mensaje.tipo === 'texto') return { texto: mensaje.texto };
+  return mensaje.leyenda === undefined ? undefined : { leyenda: mensaje.leyenda };
+}
 
 @Injectable()
 export class SalidaCanalOutbox implements SalidaCanal {
@@ -50,10 +57,12 @@ export class SalidaCanalOutbox implements SalidaCanal {
         secuencia: solicitud.idRespuesta,
         paso,
         total,
+        // La clave del objeto no es dato personal: viaja en `datos`; la leyenda sí puede serlo (R14).
+        ...(mensaje.tipo === 'imagen' ? { claveObjeto: mensaje.claveObjeto } : {}),
         // Opaco para `canales`: solo la guardia registrada sabe leerlo (CAN9).
         ...(solicitud.requiereEstado === undefined ? {} : { requiereEstado: solicitud.requiereEstado }),
       },
-      efimero: { texto: mensaje.texto },
+      efimero: efimeroDe(mensaje),
     }));
 
     await this.registroOutbox.agregar(entradas);

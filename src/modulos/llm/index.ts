@@ -6,6 +6,7 @@
  */
 export { LlmModule } from './llm.module.js';
 export { CODIGOS_ERROR_PASARELA, ErrorPasarelaLlm } from './dominio/error-pasarela-llm.js';
+export { ObtenerMensajeTechoGasto } from './aplicacion/obtener-mensaje-techo-gasto.js';
 export { LLM_PORT } from './puertos/llm-port.js';
 export type {
   CodigoErrorPasarela,

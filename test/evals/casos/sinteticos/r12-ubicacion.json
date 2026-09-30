@@ -1,0 +1,30 @@
+{
+  "id": "r12-ubicacion",
+  "titulo": "R12 — Ubicación entrante",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "ubicacion",
+          "texto": ""
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Gracias por compartir tu ubicación. ¿Me dices la ciudad y el departamento para cotizar el envío?"
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasProhibidas": [
+          "cotizar_envio"
+        ],
+        "menciona": [
+          "ciudad",
+          "departamento"
+        ]
+      }
+    }
+  ]
+}

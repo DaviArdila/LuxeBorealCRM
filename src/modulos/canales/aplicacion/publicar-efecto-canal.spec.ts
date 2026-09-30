@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EntradaOutbox } from '../../../plataforma/outbox/index.js';
 import { FalloPublicacion } from '../../../plataforma/outbox/index.js';
+import { ObjetoNoEncontrado, type Almacenamiento } from '../../medios/index.js';
 import { FalloCanal, type AdaptadorCanal } from '../puertos/adaptador-canal.js';
 import type { GuardiaEnvioCanal } from '../puertos/guardia-envio-canal.js';
 import { PublicarEfectoCanal } from './publicar-efecto-canal.js';
@@ -10,6 +11,13 @@ import { TIPO_OUTBOX_ESTADO, TIPO_OUTBOX_ETIQUETAS, TIPO_OUTBOX_MENSAJE } from '
 /** Doble de {@link AdaptadorCanal} que registra cada llamada (mismo patrón que `ClienteChatwootFalso`). */
 class AdaptadorCanalFalso implements AdaptadorCanal {
   readonly enviados: { idConversacion: string; texto: string; marca: string }[] = [];
+  readonly imagenesEnviadas: {
+    idConversacion: string;
+    contenido: Buffer;
+    contentType: string;
+    leyenda: string | undefined;
+    marca: string;
+  }[] = [];
   readonly estadosCambiados: { idConversacion: string; estado: string }[] = [];
   readonly etiquetasAgregadas: { idConversacion: string; etiquetas: readonly string[] }[] = [];
   readonly consultasDeMarca: { idConversacion: string; marca: string }[] = [];
@@ -22,6 +30,18 @@ class AdaptadorCanalFalso implements AdaptadorCanal {
   enviarTexto(idConversacion: string, texto: string, marca: string): Promise<void> {
     if (this.falloAEmitir) return Promise.reject(this.falloAEmitir);
     this.enviados.push({ idConversacion, texto, marca });
+    return Promise.resolve();
+  }
+
+  enviarImagen(
+    idConversacion: string,
+    contenido: Buffer,
+    contentType: string,
+    leyenda: string | undefined,
+    marca: string,
+  ): Promise<void> {
+    if (this.falloAEmitir) return Promise.reject(this.falloAEmitir);
+    this.imagenesEnviadas.push({ idConversacion, contenido, contentType, leyenda, marca });
     return Promise.resolve();
   }
 
@@ -57,6 +77,44 @@ function entradaMensaje(overrides: Partial<EntradaOutbox> = {}): EntradaOutbox {
   };
 }
 
+/** Doble de {@link Almacenamiento}: solo `leer` importa aquí (MED10); guarda lo que se le programa. */
+class AlmacenamientoFalso implements Almacenamiento {
+  constructor(private readonly objetos: Record<string, { contenido: Buffer; contentType: string }> = {}) {}
+
+  leer(clave: string): Promise<{ contenido: Buffer; contentType: string }> {
+    const objeto = this.objetos[clave];
+    return objeto ? Promise.resolve(objeto) : Promise.reject(new ObjetoNoEncontrado(clave));
+  }
+
+  guardar(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  obtenerUrl(): Promise<string> {
+    return Promise.resolve('');
+  }
+
+  eliminar(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+const ALMACENAMIENTO_VACIO = new AlmacenamientoFalso();
+
+function entradaImagen(overrides: Partial<EntradaOutbox> = {}): EntradaOutbox {
+  return {
+    id: 'fila-img',
+    tipo: TIPO_OUTBOX_MENSAJE,
+    claveIdempotencia: 'canal:mensaje:42:r1:01',
+    grupo: 'canal:42',
+    orden: 1,
+    datos: { idConversacion: '42', secuencia: 'r1', paso: 1, total: 2, claveObjeto: 'catalogo/luna/collage.jpg' },
+    efimero: { leyenda: 'Modelo Luna' },
+    intento: 1,
+    ...overrides,
+  };
+}
+
 /** Doble de {@link GuardiaEnvioCanal}: responde lo programado y registra cada consulta. */
 class GuardiaFalsa implements GuardiaEnvioCanal {
   readonly consultas: { idConversacion: string; requiereEstado: string }[] = [];
@@ -72,13 +130,13 @@ class GuardiaFalsa implements GuardiaEnvioCanal {
 function manejadorConGuardia(adaptador: AdaptadorCanal, guardia: GuardiaEnvioCanal | undefined): PublicarEfectoCanal {
   const registro = new RegistroGuardiaEnvioCanal();
   if (guardia !== undefined) registro.registrar(guardia);
-  return new PublicarEfectoCanal(adaptador, registro);
+  return new PublicarEfectoCanal(adaptador, registro, ALMACENAMIENTO_VACIO);
 }
 
 describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => {
   it('canal.mensaje en el primer intento envía directo, sin consultar existeMensajeConMarca', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await manejador.publicar(entradaMensaje({ intento: 1 }));
 
@@ -88,7 +146,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('D13 — canal.mensaje con intento > 1 y marca ya existente no reenvía', async () => {
     const adaptador = new AdaptadorCanalFalso(true);
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await manejador.publicar(entradaMensaje({ intento: 2 }));
 
@@ -98,7 +156,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('D13 — canal.mensaje con intento > 1 y marca inexistente reenvía', async () => {
     const adaptador = new AdaptadorCanalFalso(false);
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await manejador.publicar(entradaMensaje({ intento: 2 }));
 
@@ -108,7 +166,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('canal.estado traduce la fila a cambiarEstado con el estado de "datos"', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await manejador.publicar(
       entradaMensaje({
@@ -124,7 +182,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('canal.etiquetas traduce la fila a agregarEtiquetas con las etiquetas de "datos"', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await manejador.publicar(
       entradaMensaje({
@@ -141,7 +199,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
   it('un FalloCanal del adaptador se traduce a FalloPublicacion con la misma naturaleza y causa', async () => {
     const fallo = new FalloCanal('transitorio', 'POST /x: 500', 7);
     const adaptador = new AdaptadorCanalFalso(false, fallo);
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     const resultado = await manejador.publicar(entradaMensaje({ intento: 1 })).catch((error: unknown) => error);
 
@@ -153,7 +211,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('un tipo de outbox no reconocido lanza FalloPublicacion permanente', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     const resultado = await manejador
       .publicar(entradaMensaje({ tipo: 'canal.desconocido' }))
@@ -165,7 +223,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('datos malformados (sin idConversacion) lanzan en vez de fallar en silencio', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await expect(
       manejador.publicar(entradaMensaje({ datos: { secuencia: 'r1', paso: 0, total: 1 } })),
@@ -174,7 +232,7 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
 
   it('un mensaje sin texto efímero lanza en vez de enviar un mensaje vacío', async () => {
     const adaptador = new AdaptadorCanalFalso();
-    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal());
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
 
     await expect(manejador.publicar(entradaMensaje({ efimero: undefined }))).rejects.toThrow();
   });
@@ -244,5 +302,47 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
       expect(adaptador.estadosCambiados).toHaveLength(1);
       expect(guardia.consultas).toEqual([]);
     });
+  });
+
+  it('CAN6 — una fila con claveObjeto lee los bytes del almacenamiento y los sube con su leyenda', async () => {
+    const adaptador = new AdaptadorCanalFalso();
+    const almacenamiento = new AlmacenamientoFalso({
+      'catalogo/luna/collage.jpg': { contenido: Buffer.from('bytes'), contentType: 'image/jpeg' },
+    });
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), almacenamiento);
+
+    await manejador.publicar(entradaImagen());
+
+    expect(adaptador.enviados).toEqual([]);
+    expect(adaptador.imagenesEnviadas).toEqual([
+      {
+        idConversacion: '42',
+        contenido: Buffer.from('bytes'),
+        contentType: 'image/jpeg',
+        leyenda: 'Modelo Luna',
+        marca: 'canal:mensaje:42:r1:01',
+      },
+    ]);
+  });
+
+  it('CAN10 — un reintento de imagen con la marca ya en Chatwoot no la envía otra vez', async () => {
+    const adaptador = new AdaptadorCanalFalso(true);
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
+
+    await manejador.publicar(entradaImagen({ intento: 2 }));
+
+    expect(adaptador.consultasDeMarca).toEqual([{ idConversacion: '42', marca: 'canal:mensaje:42:r1:01' }]);
+    expect(adaptador.imagenesEnviadas).toEqual([]);
+  });
+
+  it('una imagen cuyo objeto ya no existe falla como permanente; no toca el adaptador', async () => {
+    const adaptador = new AdaptadorCanalFalso();
+    const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
+
+    await expect(manejador.publicar(entradaImagen())).rejects.toMatchObject({
+      name: 'FalloPublicacion',
+      clase: 'permanente',
+    });
+    expect(adaptador.imagenesEnviadas).toEqual([]);
   });
 });

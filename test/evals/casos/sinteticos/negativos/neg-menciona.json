@@ -1,0 +1,26 @@
+{
+  "id": "neg-menciona",
+  "titulo": "EVL2 — negativo: menciona falla si el texto no contiene lo esperado",
+  "origen": "sintetico",
+  "esperaFallo": "menciona",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Quiero un envío"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Con gusto te ayudo."
+        }
+      ],
+      "aserciones": {
+        "menciona": [
+          "ciudad"
+        ]
+      }
+    }
+  ]
+}

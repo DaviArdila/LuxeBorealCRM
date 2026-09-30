@@ -23,6 +23,8 @@
     "test": "vitest run --project unit",
     "test:integracion": "vitest run --project integracion",
     "test:e2e": "vitest run --project e2e",
+    "evals": "vitest run --project evals",
+    "evals:anonimizar": "npm run herramienta -- scripts/cli.ts evals:anonimizar",
     "test:cobertura": "vitest run --project unit --project integracion --coverage",
     "verify": "npm run prisma:generar && npm run lint && npm run typecheck && npm run fronteras && npm run contrato:deriva && vitest run --project unit --project integracion",
     "herramienta": "vite-node --config vitest.config.ts",
@@ -39,7 +41,7 @@
     "catalogo:importar": "npm run herramienta -- scripts/cli.ts catalogo:importar",
     "changelog": "git-cliff -o CHANGELOG.md",
     "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
-    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
+    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run evals && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",

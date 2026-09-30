@@ -17,4 +17,4 @@ export {
   type TipoContenidoTurno,
 } from './puertos/generador-respuesta.js';
 export type { CanalConversacion } from './puertos/repositorio-conversacion.js';
-export type { PasoRespuesta } from './puertos/salida-conversacion.js';
+export type { PasoImagen, PasoRespuesta, PasoTexto } from './puertos/salida-conversacion.js';
