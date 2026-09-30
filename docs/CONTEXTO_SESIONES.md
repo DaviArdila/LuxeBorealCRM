@@ -36,12 +36,12 @@ Esta tabla envejece: confirma el estado real con `gh pr list --state all` y `git
 | Proveedores LLM: adaptador genérico | `proveedores-llm-p2-adaptador-generico` | #35 | #34 |
 | Proveedores LLM: proveedor OpenAI | `proveedores-llm-p3-openai` | #36 | #35 |
 | Proveedores LLM: enrutador y docs | `proveedores-llm-p4-enrutador-docs` | #37 | #36 |
-| Semilla de catálogo de desarrollo | `chore/datos-semilla-catalogo` | por abrir | rama con el trabajo reciente |
-| Arreglo de lectura de mensajes | `fix/canales-lectura-mensajes` | por abrir | ídem |
-| Infra local de Chatwoot (healthcheck) | `chore/infra-chatwoot-local` | por abrir | `main` (independiente) |
-| Estado y plan del bot (este documento) | `docs/estado-y-plan-comportamiento-bot` | por abrir | rama con todo lo anterior |
+| Semilla de catálogo de desarrollo | `chore/datos-semilla-catalogo` | #39 | #37 |
+| Arreglo de lectura de mensajes | `fix/canales-lectura-mensajes` | #40 | #39 |
+| Infra local de Chatwoot (healthcheck) | `chore/infra-chatwoot-local` | #38 | `main` (independiente) |
+| Estado y plan del bot (este documento) | `docs/estado-y-plan-comportamiento-bot` | #41 | #40 |
 
-Orden de fusión: #33 → #34 → #35 → #36 → #37; luego las ramas nuevas. Cada PR se reapunta a `main` al
+Orden de fusión: #33 → #34 → #35 → #36 → #37 → #39 → #40 → #41; el #38 es independiente. Cada PR se reapunta a `main` al
 fusionar el anterior.
 
 ## Trabajo fuera de fase (resumen)
@@ -77,7 +77,7 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
 
 ## Pendientes del dueño
 
-- Fusionar los PRs #33-#37 y los de las ramas nuevas (el borrado de ramas remotas lo hace él).
+- Fusionar los PRs #33 a #41 (el borrado de ramas remotas lo hace él).
 - Revocar con `/revoke` en BotFather el token del bot de Telegram (quedó expuesto en una conversación) y
   poner el nuevo en su `.env`.
 - Pasar la app de Meta a modo Activo para recibir mensajes reales.
