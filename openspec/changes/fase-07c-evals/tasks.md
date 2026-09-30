@@ -18,7 +18,7 @@ Conventional Commits, sin atribución de IA.
 
 ## Checklist
 
-- [ ] T1 — Arnés de evals: proyecto `evals`, `npm run evals`, LLM guionado, grabador y semilla
+- [x] T1 — Arnés de evals: proyecto `evals`, `npm run evals`, LLM guionado, grabador y semilla
 - [ ] T2 — Aserciones deterministas con sus negativos + umbral por modo
 - [ ] T3 — Casos sintéticos: 3 casos de entrada, R1, R2, R12, R13, políticas y handoff
 - [ ] T4 — Modo real con costo visible + anonimizador del set dorado `[manual]` parcial
@@ -88,6 +88,14 @@ guion,grabador-llm,sembrar,componer-agente,resumen}.ts` (+specs), `test/evals/ag
 
 **Hecho cuando**: 2 escenarios en verde; `npm run ci` incluye `npm run evals` y sigue en verde; un
 caso JSON inválido falla con un mensaje que nombra el archivo y el campo.
+
+**Estado (cerrada)**: EVL1 (2) en verde en `agente.evals.ts` (3 tests con el caso `saludo`), más los
+unitarios de `modo-evals`, `esquema-caso`, `guion` y `resumen` (15 tests). `npm run ci` corre
+`npm run evals` después de `test:e2e`. Desviaciones: (1) `aserciones.ts` nace solo con `handoff`; el
+resto llega en T2 con sus negativos. (2) El caso `saludo` ya declara `menciona`, que T2 empieza a
+evaluar. (3) `GrabadorLlm` arma la grabación desde las respuestas del puerto y desde el último mensaje
+de cada solicitud (las anteriores arrastran el historial del turno). (4) La semilla usa SKU fijos
+(`SKU-EVAL-*`) y `sembrarBase` es idempotente.
 
 **Review requerida**: RDD
 

@@ -1,0 +1,12 @@
+{
+  "id": "saludo",
+  "titulo": "EVL1 — caso: un saludo recibe una respuesta de texto sin traspaso",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [{ "tipoContenido": "texto", "texto": "Hola, buenas tardes" }],
+      "guion": [{ "texto": "¡Hola! Bienvenida a Luxe Boreal, ¿qué joya buscas hoy?" }],
+      "aserciones": { "handoff": "prohibido", "menciona": ["joya"] }
+    }
+  ]
+}
