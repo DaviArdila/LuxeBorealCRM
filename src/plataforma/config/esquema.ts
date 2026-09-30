@@ -174,6 +174,10 @@ export const esquemaConfiguracion = z
     TELEGRAM_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1).default(5000),
     /** Un solo aviso por contacto en esta ventana, en horas (Fase 08, D8, R11). */
     LEADS_VENTANA_NOTIFICACION_H: z.coerce.number().int().min(1).max(168).default(24),
+    /** Minutos que un lead derivado espera sin atenderse antes de recordarlo al asesor (Fase 08, D10, P35). */
+    LEADS_RECORDATORIO_MIN: z.coerce.number().int().min(1).max(1440).default(30),
+    /** Barrido de recordatorios (D10): cada cuánto se revisan los leads sin atender. */
+    LEADS_BARRIDO_MS: z.coerce.number().int().min(1000).default(60000),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
