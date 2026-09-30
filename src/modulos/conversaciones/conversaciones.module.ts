@@ -8,6 +8,7 @@ import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones
 import { EnviarRespuestaTurno } from './aplicacion/enviar-respuesta-turno.js';
 import { GuardiaEnvioConversaciones } from './aplicacion/guardia-envio-conversaciones.js';
 import { ProcesarTurno } from './aplicacion/procesar-turno.js';
+import { ObservadoresHandoffModule } from './observadores-handoff.module.js';
 import { TransicionarConversacion } from './aplicacion/transicionar-conversacion.js';
 import {
   BarridoVencimientos,
@@ -34,6 +35,7 @@ const IMPORTS = [
   CanalesModule,
   BullModule.registerQueue({ name: NOMBRE_COLA_TURNO }),
   BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
+  ObservadoresHandoffModule,
 ];
 
 // Todo menos el generador: `ConversacionesModule` le suma `AgenteEco` y `conGenerador` el que le pasen.

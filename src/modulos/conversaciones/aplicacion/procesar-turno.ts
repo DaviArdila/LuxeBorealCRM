@@ -16,6 +16,7 @@ import {
 } from '../puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO, type EnviarRespuestaTurno } from '../puertos/salida-conversacion.js';
 import { capacidadesTurno } from './capacidades-turno.js';
+import { RegistroObservadoresHandoff } from './registro-observadores-handoff.js';
 import { TransicionarConversacion } from './transicionar-conversacion.js';
 
 /**
@@ -73,6 +74,7 @@ export class ProcesarTurno {
     @Inject(GENERADOR_RESPUESTA) private readonly generador: GeneradorRespuesta,
     @Inject(ENVIAR_RESPUESTA_TURNO) private readonly enviarRespuestaTurno: EnviarRespuestaTurno,
     private readonly transicionarConversacion: TransicionarConversacion,
+    private readonly observadoresHandoff: RegistroObservadoresHandoff,
   ) {}
 
   async ejecutar(idConversacion: string, idRespuesta: string): Promise<ResultadoProcesarTurno> {
@@ -136,6 +138,12 @@ export class ProcesarTurno {
     const fresca = await this.repositorio.obtenerPorId(idConversacion);
     if (fresca !== null && fresca.estado === 'bot') {
       await this.transicionarConversacion.ejecutar(fresca, 'handoff_pendiente', origenDelHandoff(motivo));
+      // NTF3: los observadores (p. ej. el aviso del lead) corren solo tras confirmar la transición.
+      await this.observadoresHandoff.notificar({
+        conversacionId: fresca.id,
+        contactoId: fresca.contactoId,
+        motivo,
+      });
     }
     await this.buffer.vaciar(idConversacion);
   }

@@ -11,6 +11,9 @@ import {
 } from '../puertos/repositorio-conversacion.js';
 
 /** Un segundo conflicto de versión sobre la misma fila: señal real, no algo para reintentar más (D2). */
+/** Etiqueta que Chatwoot muestra en las conversaciones derivadas por un lead (CNV11). */
+export const ETIQUETA_LEAD_CALIENTE = 'lead-caliente';
+
 export class ConflictoDeVersionPersistente extends Error {
   constructor(id: string) {
     super(`Conflicto de versión persistente al transicionar la conversación ${id} (D2).`);
@@ -79,6 +82,14 @@ export class TransicionarConversacion {
       idOperacion: `espejo-v${transicionada.version}`,
       estado,
     });
+    // CNV11: un handoff por lead marca la conversación para que el asesor la distinga en la bandeja.
+    if (origen === 'lead_caliente') {
+      await this.salidaCanal.agregarEtiquetas({
+        idConversacion: String(transicionada.chatwootConversationId),
+        idOperacion: `etiqueta-lead-v${transicionada.version}`,
+        etiquetas: [ETIQUETA_LEAD_CALIENTE],
+      });
+    }
   }
 
   private async intentar(

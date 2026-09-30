@@ -19,7 +19,7 @@ subir), sin atribución de IA.
 - [x] T1 — Escala determinista, detector de "pide persona" y redactor de resumen (dominio de `leads`)
 - [x] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
 - [x] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
-- [ ] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
+- [x] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [ ] T5 — Captura de datos fuera de horario
 - [ ] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
 - [ ] T7 — Recordatorios de leads sin atender
@@ -140,6 +140,16 @@ en `conversaciones`; etiqueta `lead-caliente`.
 REFACTOR: un observador que lanza no revierte el handoff (test).
 
 **Hecho cuando**: 4 escenarios en verde.
+
+**Estado (cerrada)**: AGT11 «La propuesta confirmada por la escala deriva», CNV11 «Lead caliente agrega su
+etiqueta» y «El aviso solo se encola tras confirmar la transición» en verde, más «Sin confirmar no
+deriva» (R9) y dos e2e por webhook (señal fuerte → texto de handoff del negocio, `handoff_pendiente`,
+etiqueta `lead-caliente` y lead derivado; señal débil sola → sin handoff ni etiqueta). Desviaciones: (1)
+`RegistroObservadoresHandoff` vive en su propio módulo mínimo, `ObservadoresHandoffModule`, para que `leads`
+(T6) lo importe sin instanciar todo `conversaciones`. (2) La etiqueta la agrega
+`TransicionarConversacion` al espejar un origen `lead_caliente` (`idOperacion` `etiqueta-lead-v<versión>`).
+(3) Un turno derivado no entra al historial ni consume turno. (4) Los tests de `ProcesarTurno` arman
+siempre un observador, así que el orden esperado pasó a `enviar → transicionar → observar`.
 
 **Review requerida**: RDD
 

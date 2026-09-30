@@ -159,6 +159,17 @@ async function esperarMensajes(falso: ChatwootFalso, idConversacion: number, can
   return mensajesPosteados(falso, idConversacion).map((l) => l.cuerpo);
 }
 
+function llamada(id: string, nombre: string, argumentos: Record<string, unknown>) {
+  return { respuesta: { llamadasHerramienta: [{ id, nombre, argumentos }] } };
+}
+
+function etiquetasPuestas(falso: ChatwootFalso, idConversacion: number): string[] {
+  return falso
+    .llamadasRegistradas()
+    .filter((l) => l.metodo === 'POST' && l.ruta.endsWith(`/conversations/${String(idConversacion)}/labels`))
+    .flatMap((l) => (l.cuerpo as { labels?: string[] }).labels ?? []);
+}
+
 function contenido(cuerpo: unknown): string {
   return (cuerpo as { content: string }).content;
 }
@@ -236,5 +247,66 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(contenido(unico)).toContain('atendemos los sábados');
     expect(llm.solicitudes).toHaveLength(1);
     expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+  }, 40_000);
+
+  it('AGT11 — La propuesta confirmada por la escala deriva: handoff, etiqueta y lead derivado', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    await prisma.parametro.upsert({
+      where: { clave: 'mensaje_handoff' },
+      create: { clave: 'mensaje_handoff', valor: 'TE-PASO-CON-UN-ASESOR' },
+      update: { valor: 'TE-PASO-CON-UN-ASESOR' },
+    });
+    llm.encolar(
+      llamada('c1', 'marcar_lead_caliente', {
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'Quiere pagar ya',
+        id_producto: null,
+      }),
+      { respuesta: { texto: 'Perfecto, sigo contigo' } },
+    );
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya, ¿cómo lo hago?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    // El texto que sale es el de handoff del negocio, no lo que escribió el modelo.
+    expect(contenido(unico)).toContain('TE-PASO-CON-UN-ASESOR');
+    expect(contenido(unico)).not.toContain('sigo contigo');
+    await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
+      timeout: 15_000,
+      interval: 100,
+    });
+    await vi.waitFor(() => expect(etiquetasPuestas(chatwootFalso, idConversacion)).toContain('lead-caliente'), {
+      timeout: 15_000,
+      interval: 100,
+    });
+    const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
+    expect(conversacion.estado).toBe('handoff_pendiente');
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({
+      derivado: true,
+      senales: ['pide_pagar'],
+    });
+  }, 40_000);
+
+  it('R9 — Una señal débil sola no deriva aunque el modelo proponga caliente', async () => {
+    const aplicacion = await arrancar();
+    llm.encolar(
+      llamada('c1', 'marcar_lead_caliente', {
+        temperatura: 'caliente',
+        senales: ['pregunta_precio'],
+        resumen: 'Preguntó el precio',
+        id_producto: null,
+      }),
+      { respuesta: { texto: 'Con gusto te cuento más' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('Con gusto te cuento más');
+    expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+    expect(etiquetasPuestas(chatwootFalso, idConversacion)).toEqual([]);
   }, 40_000);
 });

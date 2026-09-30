@@ -14,6 +14,7 @@ import {
 import { BucleHerramientas, type MotivoDerivacionBucle } from '../bucle-herramientas.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
+import { TextoHandoff } from '../texto-handoff.js';
 
 function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
   const pasos: PasoRespuesta[] = [];
@@ -48,6 +49,7 @@ export class ContenidoLlm implements PoliticaTurno {
     private readonly mensajeTechoGasto: ObtenerMensajeTechoGasto,
     @Inject(HISTORIAL_CONVERSACION) private readonly historial: HistorialConversacion,
     @Inject(CONFIGURACION) private readonly configuracion: Pick<Configuracion, 'AGENTE_HISTORIAL_TURNOS'>,
+    private readonly textoHandoff: TextoHandoff,
   ) {}
 
   async evaluar(solicitud: SolicitudTurno): Promise<DecisionPolitica> {
@@ -82,6 +84,19 @@ export class ContenidoLlm implements PoliticaTurno {
       };
     }
 
+    // D4 de la Fase 08: la escala confirmó y hay asesores disponibles → el turno termina en handoff con el
+    // texto del negocio, no con lo que escribió el modelo (que no conoce el estado). Un turno derivado no
+    // entra al historial: tras el handoff la sesión bot termina.
+    if (resultado.efectos.some((efecto) => efecto.tipo === 'lead-derivado')) {
+      return {
+        decision: 'responder',
+        respuesta: {
+          pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: await this.textoHandoff.obtener() }],
+          handoff: { motivo: 'lead-caliente' },
+        },
+        cuentaTurno: false,
+      };
+    }
     // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
     await this.historial.agregar(sesion, textoCliente, resultado.texto);
     const montos = contarMontosSinRastro(resultado.texto, resultado.resultadosParaElModelo);

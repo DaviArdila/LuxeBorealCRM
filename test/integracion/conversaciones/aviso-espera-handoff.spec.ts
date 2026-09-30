@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { ConsumidorConversaciones } from '../../../src/modulos/conversaciones/aplicacion/consumidor-conversaciones.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
+import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
@@ -145,6 +146,7 @@ async function crearAplicacion(): Promise<{
       MarcaMensajeProcesado,
       ColaTurno,
       ProcesarTurno,
+      RegistroObservadoresHandoff,
       TransicionarConversacion,
       ConsumidorConversaciones,
     ],
