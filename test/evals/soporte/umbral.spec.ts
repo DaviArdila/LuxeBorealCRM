@@ -1,7 +1,7 @@
 import type { ResultadoAsercion } from './aserciones.js';
 import { calcularVeredicto, REPETICIONES_REAL, UMBRAL_NO_CRITICAS_REAL } from './umbral.js';
 
-// Escenarios EVL3 de `openspec/changes/fase-07c-evals/specs/agente/spec.md`.
+// Escenarios EVL3 de `openspec/changes/archive/2026-09-30-fase-07c-evals/specs/agente/spec.md`.
 
 function r(ok: boolean, critica: boolean): ResultadoAsercion {
   return { nombre: critica ? 'dineroConRastro' : 'menciona', ok, critica, detalle: '' };

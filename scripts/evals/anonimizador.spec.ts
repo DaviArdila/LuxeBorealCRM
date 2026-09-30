@@ -6,7 +6,7 @@ import {
   verificarSinDatosPersonales,
 } from './anonimizador.js';
 
-// Escenarios EVL5 de `openspec/changes/fase-07c-evals/specs/agente/spec.md` (R14).
+// Escenarios EVL5 de `openspec/changes/archive/2026-09-30-fase-07c-evals/specs/agente/spec.md` (R14).
 
 describe('scripts/evals — anonimizador (D8)', () => {
   it('EVL5 — Teléfonos, correos y cédulas se reemplazan por marcadores estables', () => {

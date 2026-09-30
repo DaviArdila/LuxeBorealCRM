@@ -2,7 +2,7 @@
 
 - Change: `fase-07c-evals` · Fase de la hoja de ruta: **07c** (tercera de tres partes de la Fase 07) ·
   Rama: `fase-07c-evals`
-- Fecha: 2026-09-29 · Estado: **spec en revisión**
+- Fecha: 2026-09-29 · Estado: **cerrada con pendientes `[manual]`** (2026-09-30; ver `verify-report.md`)
 - Depende de: **07b cerrada** (agente completo con LLM y herramientas).
 - Análisis de la fase: `openspec/changes/fase-07a-turno-y-politicas/exploration.md`.
 

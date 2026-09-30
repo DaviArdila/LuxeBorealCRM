@@ -151,10 +151,11 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run auditoria` | `npm audit` filtrado por el umbral `high` y las excepciones versionadas de `auditoria-excepciones.json` |
 | `npm run flujos` | Valida estáticamente `.github/workflows/` con `actionlint` |
 | `npm run changelog` | Regenera `CHANGELOG.md` con `git-cliff` desde los commits de Conventional Commits (`cliff.toml`); nunca se edita a mano |
+| `npm run evals` | Vitest, proyecto `evals`: casos JSON contra el agente completo (Postgres + Redis reales) con un LLM guionado, sin red ni costo; umbral 100 % (Fase 07c). `EVALS_MODO=real` (con `OPENROUTER_API_KEY`, nunca en CI) lo corre contra el LLM real, 3 repeticiones, e imprime el costo |
+| `npm run evals:anonimizar` | Convierte una conversación cruda de Chatwoot (`.evals-crudo/`, ignorado por git) en un caso del set dorado con marcadores estables; no escribe nada si sobrevive un dato personal (R14) |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
-| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + lint/diff del contrato + auditoría + validación de workflows |
+| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |
 
-`npm run evals` llega en la Fase 07, cuando exista el agente.
 
 ## Reglas críticas
 

@@ -236,6 +236,15 @@ respaldo") marcada migrada. La Fase 07 queda cerrada cuando 07a, 07b y 07c está
 
 **Hecho cuando**: default fijado con evidencia aprobada por el usuario; docs al día.
 
+**Estado (PENDIENTE, `[manual]`)**: no se hizo en esta sesión. Elegir el respaldo exige la corrida real
+con la clave de OpenRouter del usuario y su límite de gasto (**P32**) y la aprobación del usuario sobre
+la tabla veredicto / costo / latencia. Sin evidencia no se cambia el default de
+`LLM_CONVERSACION_MODELOS` (sigue con un solo modelo: Luna). Lo que sí quedó listo: `EVALS_MODO=real
+LLM_EVALS_MODELOS=<candidato> OPENROUTER_API_KEY=… npm run evals` corre un candidato y imprime veredicto,
+costo y modelo. Al elegir: default de `LLM_CONVERSACION_MODELOS`, `LLM_PRECIOS_USD_JSON` y `.env.example`,
+enmienda de ADR-0002 y su test de configuración (dos modelos de empresas distintas, ambos con precio).
+`CLAUDE.md` ya documenta `npm run evals` y `npm run evals:anonimizar`.
+
 **Review requerida**: RDD
 
 ## Tareas `[manual]`

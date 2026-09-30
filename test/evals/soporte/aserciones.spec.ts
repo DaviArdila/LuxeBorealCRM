@@ -1,6 +1,6 @@
 import { evaluarAserciones, type GrabacionTurno } from './aserciones.js';
 
-// Escenarios EVL2 de `openspec/changes/fase-07c-evals/specs/agente/spec.md` y una prueba positiva y
+// Escenarios EVL2 de `openspec/changes/archive/2026-09-30-fase-07c-evals/specs/agente/spec.md` y una prueba positiva y
 // una negativa por cada aserción (D4).
 
 function grabacion(sobrescribir: Partial<GrabacionTurno> = {}): GrabacionTurno {
