@@ -115,14 +115,20 @@ export class LlmGateway implements LlmPort {
   ) {}
 
   async generar(solicitud: SolicitudGeneracion): Promise<RespuestaGeneracion> {
+    // LLM14: un turno sin tiempo no llega al proveedor ni gasta una consulta del techo.
+    if (solicitud.plazoMs !== undefined && solicitud.plazoMs <= 0) {
+      throw new ErrorPasarelaLlm('timeout');
+    }
     await this.verificarTecho(solicitud);
     const perfil = this.perfil(solicitud.perfil);
     const inicio = this.clock.ahora().getTime();
     // Con un lock corto el primer intento igual recibe el timeout completo del perfil.
-    const presupuestoMs = Math.max(
+    const presupuestoPropioMs = Math.max(
       this.configuracion.LOCK_TURNO_TTL_S * 1000 - MARGEN_DEL_LOCK_MS,
       perfil.timeoutMs,
     );
+    // LLM14: el plazo del llamador solo puede acortar el presupuesto, nunca ampliarlo.
+    const presupuestoMs = Math.min(presupuestoPropioMs, solicitud.plazoMs ?? presupuestoPropioMs);
     const restanteMs = () => presupuestoMs - (this.clock.ahora().getTime() - inicio);
 
     const fallos: FalloDeModelo[] = [];

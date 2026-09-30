@@ -315,6 +315,42 @@ describe('modulos/llm/aplicacion — LlmGateway v1: reintento acotado (LLM4, D4)
   });
 });
 
+describe('modulos/llm/aplicacion — LlmGateway v1: plazo del turno del llamador (LLM14, ADR-0018)', () => {
+  const TIMEOUT = new AdaptadorLlmError('reintentable', 'timeout');
+
+  it('LLM14 — Un plazo menor que el presupuesto propio acota el intento', async () => {
+    const { gateway, adaptador, temporizador } = crearGateway();
+    adaptador.programar(MODELO, { error: TIMEOUT, tardaMs: 8_000 }, { resultado: OK });
+
+    const error = await fallo(gateway.generar({ ...SOLICITUD, plazoMs: 8_000 }));
+
+    expect(error.codigo).toBe('timeout');
+    expect(temporizador.programaciones).toEqual([8_000]);
+    expect(adaptador.llamadas).toHaveLength(1);
+    expect(temporizador.esperas).toEqual([]);
+  });
+
+  it('LLM14 — Un plazo agotado no llama al proveedor', async () => {
+    const { gateway, adaptador } = crearGateway();
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const error = await fallo(gateway.generar({ ...SOLICITUD, plazoMs: 0 }));
+
+    expect(error.codigo).toBe('timeout');
+    expect(adaptador.llamadas).toHaveLength(0);
+  });
+
+  it('un plazo mayor que el presupuesto propio no lo amplía', async () => {
+    const { gateway, adaptador, temporizador } = crearGateway();
+    adaptador.programar(MODELO, { resultado: OK });
+
+    await gateway.generar({ ...SOLICITUD, plazoMs: 120_000 });
+
+    expect(temporizador.programaciones).toEqual([15_000]);
+    expect(adaptador.llamadas).toHaveLength(1);
+  });
+});
+
 describe('modulos/llm/aplicacion — LlmGateway v1: presupuesto total derivado del lock (D3)', () => {
   const TIMEOUT = new AdaptadorLlmError('reintentable', 'timeout');
 

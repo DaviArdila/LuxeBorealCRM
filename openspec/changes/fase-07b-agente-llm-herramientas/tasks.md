@@ -15,7 +15,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 ## Checklist
 
 - [x] T1 — Salida de imagen de extremo a extremo (medios → outbox → Chatwoot multipart) `[manual]` parcial
-- [ ] T2 — Bucle de herramientas + LlmModule cableado + plazo del turno + errores → handoff
+- [x] T2 — Bucle de herramientas + LlmModule cableado + plazo del turno + errores → handoff
 - [ ] T3 — Historial corto por sesión en Redis + ubicación como marcador
 - [ ] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
@@ -126,6 +126,17 @@ T4-T7), `ContenidoLlm` en el pipeline, `LlmModule` importado por `AgenteModule`,
    archivo, patrón de las reglas de fronteras).
 
 **Hecho cuando**: 11 escenarios en verde; `AppModule` arranca con `LlmModule` y el simulador.
+
+**Estado (cerrada)**: los 11 escenarios están en verde (`bucle-herramientas.spec.ts`,
+`contenido-llm.spec.ts`, `llm-gateway.spec.ts`) y los e2e de la 07a se reescribieron con `FakePuertoLlm`
+sobre `LLM_PORT`. Desviaciones anotadas: (1) `RegistroHerramientas` valida nombres únicos siempre y el
+total esperado (7) solo si se le pasa; el módulo no lo pasa hasta T7, cuando existen las siete (si no,
+el arranque fallaría durante T2-T6). (2) `EnsamblarPrompt` es provisional hasta T8. (3) El contexto
+inicial y el historial entran en T3 y T7; hoy el mensaje al LLM es solo el texto del turno (con el
+marcador de ubicación, P27). (4) `ContenidoEcoProvisional` se eliminó; `test/fakes/politica-eco.ts` lo
+reemplaza en los tests de `MotorTurno`. (5) Un `timeout` de la pasarela con el plazo del turno
+agotado se reporta como `plazo-agotado`. (6) Las tres variables `AGENTE_*` de D10 entran aquí (T2)
+porque el bucle usa `AGENTE_MAX_VUELTAS`.
 
 **Review requerida**: RDD
 

@@ -770,4 +770,38 @@ describe('cargarConfiguracion', () => {
       expect(cargarConfiguracion({ ...fuenteValida, AGENTE_SESION_TTL_H: '720' }).AGENTE_SESION_TTL_H).toBe(720);
     });
   });
+  describe('Variables AGENTE_MAX_VUELTAS/AGENTE_HISTORIAL_TURNOS/AGENTE_FOTOS_INDIVIDUALES_MAX (fase-07b, D10)', () => {
+    function nombresRechazados(fuente: Readonly<Record<string, string | undefined>>): readonly string[] {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) {
+          return error.variables.map((variable) => variable.nombre);
+        }
+        throw error;
+      }
+      throw new Error('La configuración se aceptó y debía rechazarse');
+    }
+
+    it('aplica los defaults 5, 6 y 4', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.AGENTE_MAX_VUELTAS).toBe(5);
+      expect(configuracion.AGENTE_HISTORIAL_TURNOS).toBe(6);
+      expect(configuracion.AGENTE_FOTOS_INDIVIDUALES_MAX).toBe(4);
+    });
+
+    it('rechaza valores fuera de rango y acepta los bordes', () => {
+      expect(nombresRechazados({ ...fuenteValida, AGENTE_MAX_VUELTAS: '0' })).toContain('AGENTE_MAX_VUELTAS');
+      expect(nombresRechazados({ ...fuenteValida, AGENTE_MAX_VUELTAS: '9' })).toContain('AGENTE_MAX_VUELTAS');
+      expect(nombresRechazados({ ...fuenteValida, AGENTE_HISTORIAL_TURNOS: '21' })).toContain(
+        'AGENTE_HISTORIAL_TURNOS',
+      );
+      expect(nombresRechazados({ ...fuenteValida, AGENTE_FOTOS_INDIVIDUALES_MAX: '0' })).toContain(
+        'AGENTE_FOTOS_INDIVIDUALES_MAX',
+      );
+      expect(cargarConfiguracion({ ...fuenteValida, AGENTE_HISTORIAL_TURNOS: '0' }).AGENTE_HISTORIAL_TURNOS).toBe(0);
+      expect(cargarConfiguracion({ ...fuenteValida, AGENTE_MAX_VUELTAS: '8' }).AGENTE_MAX_VUELTAS).toBe(8);
+    });
+  });
 });

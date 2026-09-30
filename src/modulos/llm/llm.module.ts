@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { LlmGateway } from './aplicacion/llm-gateway.js';
+import { ObtenerMensajeTechoGasto } from './aplicacion/obtener-mensaje-techo-gasto.js';
 import { AdaptadorOpenRouter } from './infraestructura/adaptador-openrouter.js';
 import { RepositorioParametroLlmPrisma } from './infraestructura/prisma/repositorio-parametro-llm-prisma.js';
 import { RepositorioUsoLlmPrisma } from './infraestructura/prisma/repositorio-uso-llm-prisma.js';
@@ -13,20 +14,20 @@ import { TEMPORIZADOR_LLM } from './puertos/temporizador-llm.js';
 
 /**
  * Módulo de la pasarela de LLM (ADR-0002): compone `LlmGateway` detrás de `LLM_PORT` con el adaptador
- * OpenRouter, los repositorios de `uso_llm` y `parametro` y el temporizador real. Solo exporta
- * `LLM_PORT`; el adaptador, los repositorios y el temporizador son internos. Todavía no se registra en
- * `AppModule` ni se conecta a `ProcesarTurno`: `GENERADOR_RESPUESTA` sigue en `AgenteEco` hasta que
- * la Fase 07 lo reemplace.
+ * OpenRouter, los repositorios de `uso_llm` y `parametro` y el temporizador real. Exporta
+ * `LLM_PORT` y el caso de uso `ObtenerMensajeTechoGasto` (Fase 07b); el adaptador, los repositorios y
+ * el temporizador son internos. `AgenteModule` lo importa y compone el bucle de herramientas encima.
  */
 @Module({
   imports: [PrismaModule],
   providers: [
     { provide: LLM_PORT, useClass: LlmGateway },
+    ObtenerMensajeTechoGasto,
     { provide: ADAPTADOR_LLM, useClass: AdaptadorOpenRouter },
     { provide: REPOSITORIO_USO_LLM, useClass: RepositorioUsoLlmPrisma },
     { provide: REPOSITORIO_PARAMETRO_LLM, useClass: RepositorioParametroLlmPrisma },
     { provide: TEMPORIZADOR_LLM, useClass: TemporizadorReal },
   ],
-  exports: [LLM_PORT],
+  exports: [LLM_PORT, ObtenerMensajeTechoGasto],
 })
 export class LlmModule {}

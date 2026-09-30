@@ -15,6 +15,8 @@ const TEXTOS_DE_RESPALDO: Readonly<Record<ClaveTextoAgente, string>> = {
   mensaje_handoff: 'Te paso con un asesor para cerrar los detalles — te escribe en un momento.',
   mensaje_handoff_fuera_horario:
     'En este momento no hay un asesor disponible; apenas abramos te escribimos para cerrar los detalles.',
+  // P31: el texto del prototipo, que ya está en uso real.
+  mensaje_error_llm: 'Ya te respondemos en un momento.',
 };
 
 /**
