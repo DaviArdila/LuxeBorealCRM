@@ -21,7 +21,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
 - [x] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
 - [x] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
-- [ ] T8 — Prompt versionado con prefijo estable + assets en el build
+- [x] T8 — Prompt versionado con prefijo estable + assets en el build
 - [ ] T9 — E2E con LLM falso + cierre documental
 
 ## Mapeo de escenarios por tarea (47)
@@ -242,6 +242,13 @@ respuestas cortas, collage por defecto.
 GREEN; REFACTOR: prueba que `npm run build` deja los `.md` en `dist/` y el cargador los encuentra.
 
 **Hecho cuando**: 2 escenarios en verde; arranque desde `dist/` probado.
+
+**Estado (cerrada)**: AGT13 (2) en verde (`ensamblar-prompt.spec.ts`) más la prueba sobre la salida
+compilada (`test/integracion/agente/prompts-build.spec.ts`: `nest build` deja los `.md` en
+`dist/modulos/agente/prompts/` y el `CargadorPrompts` compilado los lee). `EnsamblarPrompt` devuelve
+`{ texto, version }` y `ContenidoLlm` registra `agente.prompt` con la versión. El texto de
+`reglas.v1.md` se escribió desde la lista de la tarea porque el `systemPrompt.ts` del prototipo no
+está disponible en este entorno.
 
 **Review requerida**: RDD
 

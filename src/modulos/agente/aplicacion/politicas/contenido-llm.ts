@@ -58,13 +58,16 @@ export class ContenidoLlm implements PoliticaTurno {
 
     const { conversacionId, contactoId, version } = solicitud.contexto;
     const sesion = { conversacionId, version };
+    const prompt = await this.prompt.ensamblar({
+      instruccionesTurno: await this.contextoInicial.ejecutar({ sesion, contactoId, textoCliente }),
+    });
+    // AGT13: solo la versión del prompt al log, nunca su contenido (R14).
+    this.logger.log({ evento: 'agente.prompt', version: prompt.version });
     const previos = await this.historial.leer(sesion, this.configuracion.AGENTE_HISTORIAL_TURNOS);
     const resultado = await this.bucle.ejecutar({
       sesion,
       contactoId,
-      systemPrompt: this.prompt.ensamblar({
-        instruccionesTurno: await this.contextoInicial.ejecutar({ sesion, contactoId, textoCliente }),
-      }),
+      systemPrompt: prompt.texto,
       mensajes: [
         ...previos.map((turno) => ({ rol: turno.rol, texto: turno.texto })),
         { rol: 'usuario', texto: textoCliente },

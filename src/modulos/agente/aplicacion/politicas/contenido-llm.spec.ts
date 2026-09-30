@@ -6,13 +6,14 @@ import { HistorialEnMemoria } from '../../../../../test/fakes/historial-en-memor
 import { FakePuertoLlm } from '../../../../../test/fakes/puerto-llm-falso.js';
 import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
 import { RepositorioParametroLlmEnMemoria } from '../../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
-import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../../catalogo/index.js';
+import { ProductoNoDisponible, type ObtenerCatalogoCompacto, type ObtenerFichaProducto } from '../../../catalogo/index.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import { ErrorPasarelaLlm, ObtenerMensajeTechoGasto } from '../../../llm/index.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { Herramienta } from '../../dominio/herramienta.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
 import { crearGuardarDatosContacto } from '../herramientas/guardar-datos-contacto.js';
+import { CargadorPrompts } from '../../infraestructura/prompts/cargador-prompts.js';
 import { BucleHerramientas } from '../bucle-herramientas.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
@@ -59,11 +60,18 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     new ClockFalso(new Date('2026-09-30T12:00:00.000Z')),
     { LOCK_TURNO_TTL_S: 30, AGENTE_MAX_VUELTAS: 5 },
   );
+  const cargador = new CargadorPrompts();
+  cargador.onModuleInit();
+  const prompt = new EnsamblarPrompt(
+    cargador,
+    { ejecutar: () => Promise.resolve('- SKU-1: Anillo') } as unknown as ObtenerCatalogoCompacto,
+    { estaDentroDeHorario: () => Promise.resolve(true) },
+  );
   const contactos = new RepositorioContactoAgenteEnMemoria();
   const ficha = { ejecutar: () => Promise.reject(new ProductoNoDisponible()) } as unknown as ObtenerFichaProducto;
   const politica = new ContenidoLlm(
     bucle,
-    new EnsamblarPrompt(),
+    prompt,
     new ArmarContextoInicial(ficha, contactos, new ContadoresSesionEnMemoria()),
     parametros,
     new ObtenerMensajeTechoGasto(parametrosLlm),
@@ -237,6 +245,16 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     await politica.evaluar(turno({ idMensaje: 'm1', tipoContenido: 'ubicacion', texto: '' }));
 
     expect(llm.solicitudes[0]?.mensajes.at(-1)).toEqual({ rol: 'usuario', texto: '[ubicación compartida]' });
+  });
+
+  it('AGT13 — la versión del prompt queda en el log del turno sin su contenido', async () => {
+    const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const { llm, politica } = crear();
+    llm.encolar({ respuesta: { texto: 'hola' } });
+
+    await politica.evaluar(turno(HOLA));
+
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v1' });
   });
 
   it('AGT12 — el contexto inicial llega al modelo en el prompt del turno', async () => {

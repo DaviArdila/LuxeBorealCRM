@@ -34,6 +34,7 @@ import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js'
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
 import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
+import { CargadorPrompts } from './infraestructura/prompts/cargador-prompts.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
 import { CONTADORES_SESION, type ContadoresSesion } from './puertos/contadores-sesion.js';
@@ -71,6 +72,7 @@ const TOTAL_HERRAMIENTAS = 7;
     TextoHandoff,
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
+    CargadorPrompts,
     EnsamblarPrompt,
     BucleHerramientas,
     ContenidoLlm,
