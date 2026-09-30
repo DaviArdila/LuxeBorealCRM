@@ -1,0 +1,43 @@
+{
+  "id": "lead-escala-no-confirmada",
+  "titulo": "R9 — caso: una señal débil sola no traspasa aunque el modelo proponga caliente",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto cuesta?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "marcar_lead_caliente",
+              "argumentos": {
+                "temperatura": "caliente",
+                "senales": [
+                  "pregunta_precio"
+                ],
+                "resumen": "El cliente preguntó el precio.",
+                "id_producto": null
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Con gusto te cuento más. ¿Qué producto te interesa?"
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "marcar_lead_caliente"
+          }
+        ]
+      }
+    }
+  ]
+}

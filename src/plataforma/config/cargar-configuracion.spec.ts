@@ -361,6 +361,23 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.TELEGRAM_API_URL).toBe('https://api.telegram.org');
       expect(configuracion.TELEGRAM_HTTP_TIMEOUT_MS).toBe(5000);
       expect(configuracion.LEADS_VENTANA_NOTIFICACION_H).toBe(24);
+      expect(configuracion.LEADS_RECORDATORIO_MIN).toBe(30);
+      expect(configuracion.LEADS_BARRIDO_MS).toBe(60000);
+    });
+
+    it('LEADS_RECORDATORIO_MIN fuera de 1-1440 y LEADS_BARRIDO_MS menor que 1000 se rechazan', () => {
+      expect(variablesRechazadas({ ...fuenteValida, LEADS_RECORDATORIO_MIN: '0' })).toContainEqual({
+        nombre: 'LEADS_RECORDATORIO_MIN',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LEADS_RECORDATORIO_MIN: '1441' })).toContainEqual({
+        nombre: 'LEADS_RECORDATORIO_MIN',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LEADS_BARRIDO_MS: '999' })).toContainEqual({
+        nombre: 'LEADS_BARRIDO_MS',
+        problema: 'valor',
+      });
     });
 
     it('LEADS_VENTANA_NOTIFICACION_H fuera de 1-168 se rechaza (R11)', () => {

@@ -44,6 +44,8 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   TELEGRAM_API_URL: 'https://api.telegram.org',
   TELEGRAM_HTTP_TIMEOUT_MS: 5000,
   LEADS_VENTANA_NOTIFICACION_H: 24,
+  LEADS_RECORDATORIO_MIN: 30,
+  LEADS_BARRIDO_MS: 60000,
   COLAS_PREFIJO: 'luxe:colas',
   // Sin Redis real en este contexto (D6): registra la cola pero nunca arranca un worker, para que
   // la generación del contrato siga siendo determinista.

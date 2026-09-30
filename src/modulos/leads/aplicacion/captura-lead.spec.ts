@@ -3,7 +3,7 @@ import type { AvisarLead } from './avisar-lead.js';
 import { CompletarCaptura } from './completar-captura.js';
 import { ObtenerCapturaPendiente } from './obtener-captura-pendiente.js';
 
-// Escenarios LDS4 de `openspec/changes/fase-08-leads-handoff/specs/leads/spec.md`.
+// Escenarios LDS4 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/leads/spec.md`.
 
 class AvisarLeadFalso {
   readonly conversaciones: string[] = [];

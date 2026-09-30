@@ -114,4 +114,31 @@ export class RepositorioLeadPrisma implements RepositorioLead {
   async desmarcarNotificado(id: string): Promise<void> {
     await this.prisma.lead.update({ where: { id }, data: { notificadoEn: null, actualizado: this.clock.ahora() } });
   }
+
+  /**
+   * `FOR UPDATE SKIP LOCKED` hace que dos barridos simultáneos reclamen leads distintos, nunca el mismo, y
+   * la marca se escribe en la misma transacción que la selección (LDS5, D10).
+   */
+  async reclamarSinAtender(limite: Date, ahora: Date, maximo: number): Promise<Lead[]> {
+    return this.prisma.$transaction(async (tx) => {
+      const filas = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM lead
+        WHERE estado = 'nuevo'::estado_lead AND derivado AND recordatorio_en IS NULL
+          AND notificado_en IS NOT NULL AND notificado_en < ${limite}
+        ORDER BY notificado_en
+        LIMIT ${maximo}
+        FOR UPDATE SKIP LOCKED`;
+      const ids = filas.map((fila) => fila.id);
+      if (ids.length === 0) {
+        return [];
+      }
+      await tx.lead.updateMany({ where: { id: { in: ids } }, data: { recordatorioEn: ahora, actualizado: ahora } });
+      const reclamados = await tx.lead.findMany({ where: { id: { in: ids } }, orderBy: { notificadoEn: 'asc' } });
+      return reclamados.map(aLead);
+    });
+  }
+
+  async desmarcarRecordatorio(id: string): Promise<void> {
+    await this.prisma.lead.update({ where: { id }, data: { recordatorioEn: null, actualizado: this.clock.ahora() } });
+  }
 }

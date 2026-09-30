@@ -1,12 +1,18 @@
-# Delta for Notificaciones
+# Notificaciones — Specification
 
-## ADDED Requirements
+## Purpose
+
+Cubre los avisos internos a los asesores: por qué canal salen, qué pueden decir y cuántas veces. Los
+avisos salen por un puerto propio (`Notificador`, hoy Telegram) a través del outbox, no llevan datos
+personales del cliente y se limitan a uno por contacto cada 24 horas para no saturar al equipo.
+
+## Requirements
 
 ### Requirement: NTF1 — El aviso al asesor sale por un puerto y por el outbox
 
 El sistema MUST enviar los avisos a los asesores por un puerto propio `Notificador` implementado con
 Telegram, y MUST encolarlos en el outbox (ADR-0004); nadie MUST llamar a la API de Telegram de forma
-directa. El texto del aviso MUST llevar el resumen del lead (temperatura, señales, producto y motivo) y
+directa. El texto del aviso MUST llevar el resumen del lead (temperatura, señales y resumen) y
 MUST NOT llevar el teléfono, la cédula, el correo ni la dirección completos (**R14**).
 
 Fase que lo implementa: 08

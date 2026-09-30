@@ -22,9 +22,9 @@ subir), sin atribución de IA.
 - [x] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [x] T5 — Captura de datos fuera de horario
 - [x] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
-- [ ] T7 — Recordatorios de leads sin atender
-- [ ] T8 — Casos de evals y e2e por webhook de los flujos nuevos
-- [ ] T9 — Cierre documental
+- [x] T7 — Recordatorios de leads sin atender
+- [x] T8 — Casos de evals y e2e por webhook de los flujos nuevos
+- [x] T9 — Cierre documental
 
 ## Mapeo de escenarios por tarea (LDS 20 + NTF 10 + AGT 5 + CNV 3 = 38)
 
@@ -219,6 +219,16 @@ prueba.
 
 **Hecho cuando**: 3 escenarios en verde.
 
+**Estado (cerrada)**: LDS5 (3) en verde: `recordar-leads.spec.ts` (unitario, repositorio en memoria), cinco
+pruebas del reclamo contra Postgres (marca, no repetición, atendido/reciente/sin avisar, dos barridos
+simultáneos sin reclamar el mismo lead, máximo por barrido y deshacer) y un e2e con el job repetible de
+BullMQ real (recordatorio una sola vez tras varios barridos). Desviaciones: (1) el plazo cuenta desde el
+aviso (`notificado_en`), no desde la derivación: un lead que nunca se avisó (la ventana de 24 h del contacto
+lo suprimió) no se recuerda porque ya hay un aviso vigente para ese contacto. (2) El reclamo es una
+transacción `SELECT ... FOR UPDATE SKIP LOCKED` + marca (dos barridos simultáneos nunca toman el mismo lead)
+con tope de 50 por barrido. (3) Si el encolado de un recordatorio falla, se deshace su marca y el próximo
+barrido lo reintenta.
+
 **Review requerida**: RDD
 
 ## T8 — Casos de evals y e2e por webhook
@@ -233,6 +243,15 @@ no traspasa, captura).
 
 **Hecho cuando**: e2e y evals nuevos en verde.
 
+**Estado (cerrada)**: los e2e por webhook nacieron con cada tarea (`leads.e2e-spec.ts`, 9 escenarios: pide
+persona, mención que no deriva, lead dentro de horario con handoff/etiqueta/aviso, señal débil que no deriva,
+captura fuera de horario con aviso, ventana por contacto, reintento 500→200, rechazo permanente y
+recordatorio único). Las evals guionadas suman cuatro casos: `lead-escala-confirmada`,
+`lead-escala-no-confirmada`, `pide-persona` y `pide-persona-solo-mencion` (19 casos sintéticos en total,
+veredicto aprobado). Desviación: la captura fuera de
+horario no tiene caso guionado porque el arnés de evals no siembra excepciones de horario (habría que
+extender `semilla` y deshacerla) y el e2e ya la cubre de punta a punta con la excepción del día.
+
 **Review requerida**: RDD
 
 ## T9 — Cierre documental
@@ -242,6 +261,10 @@ no traspasa, captura).
 `verify-report.md` con "qué aprendimos"; fusión de los delta specs y archivado.
 
 **Hecho cuando**: checklist §12 de `luxeboreal-arquitectura` completo para la 08.
+
+**Estado (cerrada)**: inventario (`leads/*`, `telegram/*`, `leadsQueue.ts`, `catalogo/notificar.ts`), hoja
+de ruta, deltas fusionados en `openspec/specs/{leads,agente,conversaciones,notificaciones}` (dominio nuevo),
+`verify-report.md` con «qué aprendimos» y change archivado. `CLAUDE.md` no cambia de comandos.
 
 **Review requerida**: RDD
 

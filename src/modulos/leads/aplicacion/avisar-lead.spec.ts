@@ -5,7 +5,7 @@ import type { EncolarAviso, EntradaAviso } from '../../notificaciones/index.js';
 import { AvisarLead } from './avisar-lead.js';
 
 // Escenarios NTF1 (datos personales) y NTF2 (ventana) de
-// `openspec/changes/fase-08-leads-handoff/specs/notificaciones/spec.md`.
+// `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/notificaciones/spec.md`.
 
 class EncolarAvisoFalso {
   readonly avisos: EntradaAviso[] = [];

@@ -1,6 +1,6 @@
 import { evaluarEscala, SENALES } from './escala-lead.js';
 
-// Escenarios LDS1 de `openspec/changes/fase-08-leads-handoff/specs/leads/spec.md` (R9).
+// Escenarios LDS1 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/leads/spec.md` (R9).
 
 describe('modulos/leads/dominio — evaluarEscala (LDS1, D1)', () => {
   it('LDS1 — Una señal fuerte confirma el lead', () => {

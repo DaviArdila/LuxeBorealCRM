@@ -1,0 +1,26 @@
+{
+  "id": "pide-persona-solo-mencion",
+  "titulo": "R9 — caso: mencionar la palabra asesor no es pedir una persona",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿El asesor de ustedes atiende los sábados?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Sí, atendemos los sábados de 9 a 1."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ]
+      }
+    }
+  ]
+}

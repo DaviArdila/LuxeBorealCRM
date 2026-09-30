@@ -75,6 +75,7 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso, telegramFalso: Tele
     TELEGRAM_BOT_TOKEN: 'token-telegram-e2e',
     TELEGRAM_CHAT_ID: '-100555',
     TELEGRAM_API_URL: telegramFalso.url(),
+    LEADS_BARRIDO_MS: 1000,
   };
 }
 
@@ -455,5 +456,39 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
       derivado: true,
       senales: ['pide_persona'],
     });
+  }, 60_000);
+
+  it('LDS5 — Un lead derivado sin atender se recuerda una sola vez', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const { idConversacion, idContacto } = nuevaConversacion();
+    const contacto = await prisma.contacto.create({ data: { chatwootContactId: idContacto } });
+    const conversacion = await prisma.conversacion.create({
+      data: { contactoId: contacto.id, chatwootConversationId: idConversacion, canal: 'whatsapp', estado: 'handoff_pendiente' },
+    });
+    // Un lead derivado y avisado hace 2 horas (el umbral es de 30 minutos) que nadie tomó.
+    const avisadoHace2Horas = new Date(new ClockSistema().ahora().getTime() - 2 * 3_600_000);
+    await prisma.lead.create({
+      data: {
+        contactoId: contacto.id,
+        conversacionId: conversacion.id,
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'Quiere pagar ya',
+        derivado: true,
+        capturadoFueraHorario: false,
+        estado: 'nuevo',
+        notificadoEn: avisadoHace2Horas,
+      },
+    });
+
+    const [recordatorio] = await esperarAvisos(1);
+    expect(recordatorio).toContain('sin atender');
+    expect(recordatorio).toContain('Quiere pagar ya');
+    // Varios barridos después (cada segundo) no llega un segundo recordatorio.
+    await new Promise((resolver) => setTimeout(resolver, 3500));
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(1);
+    const lead = await prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } });
+    expect(lead.recordatorioEn).not.toBeNull();
   }, 60_000);
 });

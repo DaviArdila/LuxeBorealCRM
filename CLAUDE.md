@@ -11,7 +11,7 @@ traspaso a humano en Chatwoot, leads, catálogo), más el CRM de inventario y ve
 
 ## Estado
 
-**Fase de planeación.** No hay código todavía. El estado de cada fase vive **solo** en
+Hay código en `src/` y las fases avanzan de una en una. El estado de cada fase vive **solo** en
 `docs/fases/README.md` — no se copia en este archivo ni en el README.
 
 ## Orden de lectura
@@ -66,8 +66,38 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 - Al cerrar una tarea: checklist de cierre de la skill `luxeboreal-arquitectura`.
 - **Un commit por unidad de trabajo** (comportamiento + sus tests + su documentación juntos),
   Conventional Commits, sin atribución de IA ni líneas `Co-Authored-By`. Se trabaja en una rama de
-  fase (`fase-NN-<nombre>`), nunca directo en `main`. Push, PR y merge son siempre decisión del
-  usuario. Nunca `.env`, tokens ni secretos.
+  fase (`fase-NN-<nombre>`), nunca directo en `main`. Nunca `.env`, tokens ni secretos. Push, PR y merge
+  siguen la sección «Publicar y encadenar fases», que recoge la autorización vigente del usuario.
+
+## Publicar y encadenar fases
+
+Autorización durable del usuario (2026-09-30): el agente publica su trabajo en GitHub, abre los PRs y los
+fusiona sin pedir permiso cada vez, **solo** con CI verde y sin conflictos. Se sigue pidiendo confirmación
+para lo que no sea el flujo normal de una fase (borrar ramas o historial, force-push a `main`, cambiar
+secretos o configuración del repo).
+
+- **Ramas y PRs apilados.** Una rama por slice: `fase-NN-pK-<tema>` (K = 1, 2…), cada una sobre la
+  anterior; el PR de cada rama apunta a la anterior y se reapunta a `main` cuando la anterior se fusiona
+  (`stacked-to-main`, merge commit). Un PR no pasa de ~400 líneas de autoría salvo excepción escrita en el
+  `tasks.md` de la fase.
+- **Antes de cada push**, la batería completa en local: `npm run lint`, `typecheck`, `fronteras`,
+  `contrato:deriva`, `commits`, y los proyectos `unit`, `integracion`, `e2e` y `evals` de Vitest, no solo
+  `unit`: un colaborador nuevo en una clase rompe los tests de integración que la construyen a mano. Sin
+  Docker, las fallas de Testcontainers/MinIO se distinguen contra `main` y se dejan dichas en el PR.
+- **`npm run commits`** antes de empujar: encabezado y cuerpo de cada commit en ≤100 caracteres por línea
+  (el hook `commit-msg` no siempre se ejecuta).
+- **Después del push, verificar de verdad**: el PR abierto contra la base correcta, los checks de la cabeza
+  (`npm run ci`) en verde y, tras fusionar, que el merge quedó en `main`. Si el CI falla se busca la causa
+  raíz (log del job); «flake» no es causa y no se reintenta a ciegas. Una rama de la cadena que cambia bajo
+  otra se rebasa con `--force-with-lease` solo si es propia.
+- **Fusionar** con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes; el borrado de ramas
+  remotas lo hace el usuario en la web.
+- **Encadenar fases.** Al cerrar una fase con éxito (verify-report, deltas fusionados, archivada, README de
+  fases actualizado), se empieza la siguiente en su orden con su propia spec para aprobación. Se **detiene**
+  y se avisa cuando la siguiente depende de algo que solo el usuario puede dar (VPS o dominio, tokens de
+  Meta, un bot o un grupo, decisiones de negocio) o exige una revisión que no es automática (`judgment-day`
+  en las fases 04, 05, 06 y 10); las tareas `[manual]` pendientes se listan al cerrar, no bloquean lo que no
+  dependa de ellas.
 
 ## Flujo de trabajo (ecosistema Gentle-AI)
 
@@ -117,7 +147,7 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 
 ## Repositorio
 
-Repo git **propio** (`git init` el 2026-09-22), local por ahora; después se sube a GitHub. La carpeta
+Repo git **propio** (`git init` el 2026-09-22), publicado en GitHub (`DaviArdila/LuxeBorealCRM`). La carpeta
 vive dentro del repo del home del usuario (`C:\Users\ASUS`): usar siempre `git -C` o la raíz de este
 repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta y está ignorado.
 

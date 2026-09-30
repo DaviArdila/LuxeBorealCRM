@@ -4,7 +4,7 @@ import type { EvaluadorLead, PropuestaLead, ResultadoEvaluacionLead } from '../.
 import { crearMarcarLeadCaliente } from './marcar-lead-caliente.js';
 
 // Escenarios AGT11 (modificado en la Fase 08) de
-// `openspec/changes/fase-08-leads-handoff/specs/agente/spec.md`.
+// `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/agente/spec.md`.
 
 function contexto(efectosPrevios: readonly EfectoTurno[] = []): ContextoHerramienta {
   return { sesion: { conversacionId: 'conv-1', version: 0 }, contactoId: 'k', efectosPrevios };
