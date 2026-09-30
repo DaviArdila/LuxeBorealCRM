@@ -4,7 +4,7 @@ import type { RegistrarPidePersona } from '../../../leads/index.js';
 import { TextoHandoff } from '../texto-handoff.js';
 import { PoliticaPidePersona } from './politica-pide-persona.js';
 
-// Escenarios AGT14 y LDS3 de `openspec/changes/fase-08-leads-handoff/specs/`.
+// Escenarios AGT14 y LDS3 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/`.
 
 function turno(...textos: string[]): SolicitudTurno {
   return {

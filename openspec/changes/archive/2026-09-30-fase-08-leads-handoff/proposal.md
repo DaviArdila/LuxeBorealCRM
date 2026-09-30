@@ -1,7 +1,7 @@
 # Proposal: Fase 08 — Leads y handoff
 
 - Change: `fase-08-leads-handoff` · Fase de la hoja de ruta: **08** · Rama: `fase-08-leads-handoff`
-- Fecha: 2026-09-30 · Estado: **aprobada** (2026-09-30, con las recomendaciones de Q1-Q4)
+- Fecha: 2026-09-30 · Estado: **cerrada con pendiente `[manual]`** (2026-09-30; ver `verify-report.md`)
 - Depende de: **07a, 07b y 07c cerradas** (agente con LLM, `EVALUADOR_LEAD`, evals guionadas).
 
 ## Intent

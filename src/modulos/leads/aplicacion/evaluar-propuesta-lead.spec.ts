@@ -2,7 +2,7 @@ import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lea
 import { EvaluarPropuestaLead, type EntradaPropuesta } from './evaluar-propuesta-lead.js';
 
 // Escenarios LDS2 (y la decisión derivar/capturar de LDS4) de
-// `openspec/changes/fase-08-leads-handoff/specs/leads/spec.md`.
+// `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/leads/spec.md`.
 
 const BASE: EntradaPropuesta = {
   conversacionId: 'conv-1',

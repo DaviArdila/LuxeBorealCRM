@@ -4,7 +4,7 @@ import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lea
 import type { EncolarAviso, EntradaAviso } from '../../notificaciones/index.js';
 import { RecordarLeads } from './recordar-leads.js';
 
-// Escenarios LDS5 de `openspec/changes/fase-08-leads-handoff/specs/leads/spec.md`.
+// Escenarios LDS5 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/leads/spec.md`.
 
 class EncolarAvisoFalso {
   readonly avisos: EntradaAviso[] = [];

@@ -24,7 +24,7 @@ subir), sin atribución de IA.
 - [x] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
 - [x] T7 — Recordatorios de leads sin atender
 - [x] T8 — Casos de evals y e2e por webhook de los flujos nuevos
-- [ ] T9 — Cierre documental
+- [x] T9 — Cierre documental
 
 ## Mapeo de escenarios por tarea (LDS 20 + NTF 10 + AGT 5 + CNV 3 = 38)
 
@@ -261,6 +261,10 @@ extender `semilla` y deshacerla) y el e2e ya la cubre de punta a punta con la ex
 `verify-report.md` con "qué aprendimos"; fusión de los delta specs y archivado.
 
 **Hecho cuando**: checklist §12 de `luxeboreal-arquitectura` completo para la 08.
+
+**Estado (cerrada)**: inventario (`leads/*`, `telegram/*`, `leadsQueue.ts`, `catalogo/notificar.ts`), hoja
+de ruta, deltas fusionados en `openspec/specs/{leads,agente,conversaciones,notificaciones}` (dominio nuevo),
+`verify-report.md` con «qué aprendimos» y change archivado. `CLAUDE.md` no cambia de comandos.
 
 **Review requerida**: RDD
 
