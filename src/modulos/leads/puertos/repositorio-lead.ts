@@ -13,4 +13,12 @@ export interface RepositorioLead {
   obtenerAbiertoDeConversacion(conversacionId: string): Promise<Lead | null>;
   crear(nuevo: NuevoLead): Promise<Lead>;
   actualizar(id: string, cambios: CambiosLead): Promise<Lead>;
+  /**
+   * Fija `notificado_en = ahora` en el lead solo si ningún lead del mismo contacto tiene `notificado_en`
+   * posterior a `limite` (NTF2, D8). Comprobación y marca son atómicas: dos llamadas simultáneas para el
+   * mismo contacto devuelven `true` una sola vez. `false` = ya se avisó dentro de la ventana.
+   */
+  marcarNotificado(lead: { id: string; contactoId: string }, ahora: Date, limite: Date): Promise<boolean>;
+  /** Deshace {@link marcarNotificado} cuando el aviso no pudo encolarse: mejor perder la marca que el aviso. */
+  desmarcarNotificado(id: string): Promise<void>;
 }

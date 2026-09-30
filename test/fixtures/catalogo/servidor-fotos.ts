@@ -9,9 +9,11 @@ import path from 'node:path';
  * (`npm run catalogo:importar -- --dir test/fixtures/catalogo`) puedan resolverlos sin tocar la red
  * real ni Google Drive — `descargarFoto` (T6) siempre hace `fetch` HTTP, nunca lee del disco. El
  * puerto es fijo (no efímero) porque el CSV es un archivo estático versionado, sin ningún mecanismo
- * de sustitución de plantillas en este repo (`csv.ts` parsea el contenido tal cual).
+ * de sustitución de plantillas en este repo (`csv.ts` parsea el contenido tal cual). Está **debajo** del
+ * rango de puertos efímeros de Linux (32768-60999): otro test que haga `listen(0)` en paralelo (los
+ * servidores falsos de Chatwoot y Telegram) podría recibir justo este puerto y dar `EADDRINUSE`.
  */
-export const PUERTO_SERVIDOR_FOTOS_FIXTURE = 47850;
+export const PUERTO_SERVIDOR_FOTOS_FIXTURE = 18785;
 
 const DIRECTORIO_FOTOS = path.join(import.meta.dirname, 'fotos');
 

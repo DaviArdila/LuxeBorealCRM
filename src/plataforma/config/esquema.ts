@@ -166,6 +166,14 @@ export const esquemaConfiguracion = z
     OPENROUTER_API_KEY: z.string().default(''),
     /** Override hacia el simulador local en las pruebas (D11). */
     OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
+    /** Avisos a los asesores (Fase 08, D9/D11): vacíos por defecto; obligatorios en production. */
+    TELEGRAM_BOT_TOKEN: z.string().default(''),
+    TELEGRAM_CHAT_ID: z.string().default(''),
+    /** Override hacia el Telegram falso en las pruebas. */
+    TELEGRAM_API_URL: z.string().url().default('https://api.telegram.org'),
+    TELEGRAM_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1).default(5000),
+    /** Un solo aviso por contacto en esta ventana, en horas (Fase 08, D8, R11). */
+    LEADS_VENTANA_NOTIFICACION_H: z.coerce.number().int().min(1).max(168).default(24),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
@@ -187,6 +195,20 @@ export const esquemaConfiguracion = z
         code: 'custom',
         path: ['CHATWOOT_WEBHOOK_SECRETO'],
         message: 'CHATWOOT_WEBHOOK_SECRETO MUST NOT estar vacío cuando NODE_ENV es production (D3).',
+      });
+    }
+    if (datos.NODE_ENV === 'production' && datos.TELEGRAM_BOT_TOKEN === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TELEGRAM_BOT_TOKEN'],
+        message: 'TELEGRAM_BOT_TOKEN MUST NOT estar vacío cuando NODE_ENV es production (D9).',
+      });
+    }
+    if (datos.NODE_ENV === 'production' && datos.TELEGRAM_CHAT_ID === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TELEGRAM_CHAT_ID'],
+        message: 'TELEGRAM_CHAT_ID MUST NOT estar vacío cuando NODE_ENV es production (D9).',
       });
     }
     if (datos.NODE_ENV === 'production' && datos.OPENROUTER_API_KEY === '') {
