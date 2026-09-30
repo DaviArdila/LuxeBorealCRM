@@ -188,6 +188,8 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        TELEGRAM_BOT_TOKEN: 'token-telegram',
+        TELEGRAM_CHAT_ID: '-100123',
         OPENROUTER_API_KEY: 'clave-real',
       });
 
@@ -329,10 +331,71 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        TELEGRAM_BOT_TOKEN: 'token-telegram',
+        TELEGRAM_CHAT_ID: '-100123',
         OPENROUTER_API_KEY: 'clave-real',
       };
 
       expect(() => cargarConfiguracion(fuenteValidaProduccion)).not.toThrow();
+    });
+  });
+
+  describe('Variables TELEGRAM_*/LEADS_* (fase-08-leads-handoff, T6, D11)', () => {
+    function variablesRechazadas(fuente: Readonly<Record<string, string | undefined>>): readonly VariableInvalida[] {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) {
+          return error.variables;
+        }
+        throw error;
+      }
+      return [];
+    }
+
+    it('usa los valores por defecto de D11 cuando ninguna variable viene', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.TELEGRAM_BOT_TOKEN).toBe('');
+      expect(configuracion.TELEGRAM_CHAT_ID).toBe('');
+      expect(configuracion.TELEGRAM_API_URL).toBe('https://api.telegram.org');
+      expect(configuracion.TELEGRAM_HTTP_TIMEOUT_MS).toBe(5000);
+      expect(configuracion.LEADS_VENTANA_NOTIFICACION_H).toBe(24);
+    });
+
+    it('LEADS_VENTANA_NOTIFICACION_H fuera de 1-168 se rechaza (R11)', () => {
+      expect(variablesRechazadas({ ...fuenteValida, LEADS_VENTANA_NOTIFICACION_H: '0' })).toContainEqual({
+        nombre: 'LEADS_VENTANA_NOTIFICACION_H',
+        problema: 'valor',
+      });
+      expect(variablesRechazadas({ ...fuenteValida, LEADS_VENTANA_NOTIFICACION_H: '169' })).toContainEqual({
+        nombre: 'LEADS_VENTANA_NOTIFICACION_H',
+        problema: 'valor',
+      });
+    });
+
+    it('TELEGRAM_API_URL que no es una URL se rechaza', () => {
+      expect(variablesRechazadas({ ...fuenteValida, TELEGRAM_API_URL: 'no-es-url' })).toContainEqual({
+        nombre: 'TELEGRAM_API_URL',
+        problema: 'formato',
+      });
+    });
+
+    it('TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID vacíos en production se rechazan', () => {
+      const fuenteProduccion = {
+        ...fuenteValida,
+        NODE_ENV: 'production',
+        CHATWOOT_BOT_TOKEN: 'token-real',
+        CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        OPENROUTER_API_KEY: 'clave-real',
+      };
+      const sinTelegram = variablesRechazadas(fuenteProduccion);
+
+      expect(sinTelegram).toContainEqual({ nombre: 'TELEGRAM_BOT_TOKEN', problema: 'valor' });
+      expect(sinTelegram).toContainEqual({ nombre: 'TELEGRAM_CHAT_ID', problema: 'valor' });
+      expect(() =>
+        cargarConfiguracion({ ...fuenteProduccion, TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '-1' }),
+      ).not.toThrow();
     });
   });
 
@@ -716,6 +779,8 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        TELEGRAM_BOT_TOKEN: 'token-telegram',
+        TELEGRAM_CHAT_ID: '-100123',
       };
 
       expect(variablesRechazadas(fuenteProduccion)).toContainEqual({

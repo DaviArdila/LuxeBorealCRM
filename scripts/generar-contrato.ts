@@ -39,6 +39,11 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   CHATWOOT_WEBHOOK_SECRETO: '',
   CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
   CHATWOOT_HTTP_TIMEOUT_MS: 10000,
+  TELEGRAM_BOT_TOKEN: '',
+  TELEGRAM_CHAT_ID: '',
+  TELEGRAM_API_URL: 'https://api.telegram.org',
+  TELEGRAM_HTTP_TIMEOUT_MS: 5000,
+  LEADS_VENTANA_NOTIFICACION_H: 24,
   COLAS_PREFIJO: 'luxe:colas',
   // Sin Redis real en este contexto (D6): registra la cola pero nunca arranca un worker, para que
   // la generación del contrato siga siendo determinista.
