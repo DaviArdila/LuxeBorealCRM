@@ -4,6 +4,7 @@
  * el LLM que corresponda al modo. En modo guionado (por defecto) el LLM es un `FakePuertoLlm` alimentado
  * por el guion del caso: sin red ni costo y con resultados idénticos en cada corrida (EVL1).
  */
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { INestApplicationContext } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,8 +12,9 @@ import { GENERADOR_RESPUESTA, type GeneradorRespuesta } from '../../src/modulos/
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { SimuladorOpenRouter } from '../soporte/simulador-openrouter.js';
+import { ejecutarCorridaReal, leerLlmRealDeEntorno } from './soporte/corrida-real.js';
 import { componerAgente } from './soporte/componer-agente.js';
-import { cargarCasos } from './soporte/esquema-caso.js';
+import { cargarCasos, parsearCaso } from './soporte/esquema-caso.js';
 import { GrabadorLlm } from './soporte/grabador-llm.js';
 import { leerModoEvals } from './soporte/modo-evals.js';
 import { ejecutarCaso } from './soporte/ejecutar-caso.js';
@@ -26,7 +28,9 @@ const CARPETA_CASOS = path.resolve(import.meta.dirname, 'casos');
 const sinteticos = cargarCasos(path.join(CARPETA_CASOS, 'sinteticos'));
 const negativos = cargarCasos(path.join(CARPETA_CASOS, 'sinteticos', 'negativos'));
 
-describe('Evals del agente — casos sintéticos (modo guionado)', () => {
+const dorado = existsSync(path.join(CARPETA_CASOS, 'dorado')) ? cargarCasos(path.join(CARPETA_CASOS, 'dorado')) : [];
+
+describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintéticos (modo guionado)', () => {
   const simulador = { valor: undefined as SimuladorOpenRouter | undefined };
   const grabador = new GrabadorLlm(new FakePuertoLlm());
   let contexto: INestApplicationContext;
@@ -91,5 +95,55 @@ describe('Evals del agente — casos sintéticos (modo guionado)', () => {
     };
 
     expect(await resumenDeUnaCorrida()).toBe(await resumenDeUnaCorrida());
+  });
+});
+
+describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo demanda, EVL3/EVL4)', () => {
+  it('EVL3 — veredicto de la corrida real contra el umbral', async () => {
+    const llmReal = leerLlmRealDeEntorno(process.env);
+    const corrida = await ejecutarCorridaReal({
+      casos: [...sinteticos, ...dorado],
+      apiKey: process.env['OPENROUTER_API_KEY'] ?? '',
+      ...llmReal,
+    });
+    // EVL4: el resumen incluye el costo estimado y el modelo de cada caso.
+    process.stdout.write(`${corrida.texto}\n`);
+    expect(corrida.veredicto.aprobada).toBe(true);
+  });
+});
+
+describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del modo real contra un simulador (EVL4)', () => {
+  it('EVL4 — La corrida real imprime su costo y el modelo de cada caso', async () => {
+    const simulador = await SimuladorOpenRouter.iniciar();
+    simulador.responderTexto('¡Hola! ¿En qué te ayudo?', { tokensEntrada: 1000, tokensSalida: 500 });
+    try {
+      const caso = parsearCaso(
+        {
+          id: 'saludo-real',
+          titulo: 'EVL4 — caso: saludo contra el proveedor simulado',
+          origen: 'real-anonimizado',
+          revisadoPor: 'pruebas',
+          fecha: '2026-09-30',
+          turnos: [{ mensajes: [{ tipoContenido: 'texto', texto: 'Hola' }], aserciones: { handoff: 'prohibido', menciona: ['ayudo'] } }],
+        },
+        'saludo-real.json',
+      );
+
+      const corrida = await ejecutarCorridaReal({
+        casos: [caso],
+        apiKey: 'clave-de-prueba',
+        modelos: ['openai/gpt-5.6-luna'],
+        precios: { 'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
+        urlOpenRouter: simulador.url,
+      });
+
+      expect(corrida.veredicto.aprobada).toBe(true);
+      expect(simulador.intentos).toBe(3);
+      expect(corrida.costoUsd).toBeCloseTo(3 * 0.0008, 6);
+      expect(corrida.texto).toContain('Costo estimado: 0.0024 USD');
+      expect(corrida.texto).toContain('openai/gpt-5.6-luna');
+    } finally {
+      await simulador.cerrar();
+    }
   });
 });

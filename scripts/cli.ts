@@ -8,6 +8,7 @@ import { compararContrato, type ResultadoComparacionContrato } from './comparar-
 import { validarFlujos, type ResultadoValidacionFlujos } from './validar-flujos.js';
 import { sembrarGeografia, type ResultadoSemillaGeografia } from './sembrar-geografia.js';
 import { importarCatalogo, type ResultadoImportarCatalogoCli } from './importar-catalogo.js';
+import { anonimizarConversacion, type ResultadoAnonimizar } from './evals/anonimizar.js';
 
 /**
  * Único punto de entrada de línea de comandos para los scripts de esta fase (`package.json`:
@@ -32,7 +33,8 @@ type Resultado =
   | ResultadoComparacionContrato
   | ResultadoValidacionFlujos
   | ResultadoSemillaGeografia
-  | ResultadoImportarCatalogoCli;
+  | ResultadoImportarCatalogoCli
+  | ResultadoAnonimizar;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -76,11 +78,14 @@ async function main(): Promise<void> {
     case 'catalogo:importar':
       imprimirResultado(await importarCatalogo(resto));
       return;
+    case 'evals:anonimizar':
+      imprimirResultado(await anonimizarConversacion(resto));
+      return;
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
           'auditoria, contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
-          'semilla:geografia, catalogo:importar.\n',
+          'semilla:geografia, catalogo:importar, evals:anonimizar.\n',
       );
       process.exitCode = 1;
   }

@@ -21,7 +21,7 @@ Conventional Commits, sin atribución de IA.
 - [x] T1 — Arnés de evals: proyecto `evals`, `npm run evals`, LLM guionado, grabador y semilla
 - [x] T2 — Aserciones deterministas con sus negativos + umbral por modo
 - [x] T3 — Casos sintéticos: 3 casos de entrada, R1, R2, R12, R13, políticas y handoff
-- [ ] T4 — Modo real con costo visible + anonimizador del set dorado `[manual]` parcial
+- [x] T4 — Modo real con costo visible + anonimizador del set dorado `[manual]` parcial
 - [ ] T5 — Modelos de respaldo `[manual]` + cierre de 07c y de la Fase 07
 
 ## Mapeo de escenarios por tarea (11 EVL + 9 de cobertura)
@@ -193,6 +193,23 @@ su consola):
 
 **Hecho cuando**: 3 escenarios automáticos en verde; resultado `[manual]` anotado o marcado pendiente
 con su pregunta bloqueante.
+
+**Estado (cerrada la parte automática; `[manual]` PENDIENTE)**: EVL4 «sin clave» (unitario y
+comprobado con `EVALS_MODO=real npm run evals`: falla antes de componer nada), EVL5 (2) y el cableado de
+la corrida real contra el `SimuladorOpenRouter` (3 repeticiones, costo de `uso_llm` y modelo por caso
+impresos) en verde. Comando nuevo `npm run evals:anonimizar` (vía `scripts/cli.ts`), `.evals-crudo/` en
+`.gitignore`. Desviaciones: (1) no hay `llm-con-perfil-evals.ts`: la corrida real iguala el perfil de
+conversación al de `evals` en la configuración de prueba y sube `LOCK_TURNO_TTL_S` a 60, con el mismo
+efecto y sin decorador. (2) La lógica de la corrida vive en `soporte/corrida-real.ts` para que la usen
+el modo real y la prueba contra el simulador. (3) El anonimizador falla cerrado: una cifra de siete o
+más dígitos (p. ej. un presupuesto de «$1.500.000») se toma por cédula y se reemplaza. (4) El comando
+no sobrescribe un caso ya existente y lo escribe con `revisadoPor` y `fecha` vacíos, así no carga
+hasta que una persona lo revise.
+
+**`[manual]` pendiente** (no se pudo hacer en esta sesión: exige la clave de OpenRouter del usuario y
+sus datos reales): (a) corrida real `EVALS_MODO=real OPENROUTER_API_KEY=… npm run evals` — bloqueada
+por **P32**; anotar aquí veredicto, costo y modelos («EVL4 — La corrida real imprime su costo» contra
+el proveedor real). (b) Set dorado de 20-30 conversaciones — bloqueado por **P30**.
 
 **Review requerida**: RDD (el commit del set dorado, además, revisión humana de cada JSON).
 

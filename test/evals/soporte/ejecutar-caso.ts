@@ -1,4 +1,5 @@
 import type { GeneradorRespuesta, SolicitudTurno } from '../../../src/modulos/conversaciones/index.js';
+import type { LlmPort } from '../../../src/modulos/llm/index.js';
 import type { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { FakePuertoLlm } from '../../fakes/puerto-llm-falso.js';
 import { evaluarAserciones, type ResultadoAsercion } from './aserciones.js';
@@ -12,6 +13,10 @@ export interface EntradaEjecucion {
   readonly generador: GeneradorRespuesta;
   readonly grabador: GrabadorLlm;
   readonly prisma: PrismaService;
+  /** Modo real: el LLM de verdad (el guion se ignora). Sin él se usa el guion del turno. */
+  readonly llmReal?: LlmPort;
+  /** Recibe el id de cada conversación creada, para asociar el costo y los modelos al caso. */
+  readonly alCrearConversacion?: (conversacionId: string) => void;
 }
 
 let secuencia = 0;
@@ -22,7 +27,7 @@ let secuencia = 0;
  * que grabó el puerto del LLM. Cada ejecución usa una conversación nueva, así el historial y los
  * contadores de sesión del caso anterior no influyen.
  */
-export async function ejecutarCaso({ caso, generador, grabador, prisma }: EntradaEjecucion): Promise<readonly ResultadoAsercion[]> {
+export async function ejecutarCaso({ caso, generador, grabador, prisma, llmReal, alCrearConversacion }: EntradaEjecucion): Promise<readonly ResultadoAsercion[]> {
   secuencia += 1;
   const contacto = await prisma.contacto.create({
     data: { chatwootContactId: 800_000 + secuencia * 7 + Math.floor(Math.random() * 5), nombre: caso.contacto?.nombre ?? null },
@@ -30,17 +35,22 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma }: Entrad
   const conversacion = await prisma.conversacion.create({
     data: { contactoId: contacto.id, chatwootConversationId: 900_000 + secuencia * 7 + Math.floor(Math.random() * 5), canal: 'whatsapp', estado: 'bot' },
   });
+  alCrearConversacion?.(conversacion.id);
   if (caso.semilla?.politicas !== undefined) {
     await fijarPoliticas(prisma, caso.semilla.politicas);
   }
 
   const resultados: ResultadoAsercion[] = [];
   for (const [indice, turno] of caso.turnos.entries()) {
-    const llm = new FakePuertoLlm();
-    if (turno.guion !== undefined) {
-      encolarGuion(llm, `${caso.id}-t${String(indice + 1)}`, turno.guion);
+    if (llmReal !== undefined) {
+      grabador.usar(llmReal);
+    } else {
+      const llm = new FakePuertoLlm();
+      if (turno.guion !== undefined) {
+        encolarGuion(llm, `${caso.id}-t${String(indice + 1)}`, turno.guion);
+      }
+      grabador.usar(llm);
     }
-    grabador.usar(llm);
     grabador.reiniciar();
 
     const solicitud: SolicitudTurno = {
