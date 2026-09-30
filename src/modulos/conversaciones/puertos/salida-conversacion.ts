@@ -1,10 +1,22 @@
-/** Un paso de la respuesta generada, listo para enviar (D9/D10 de `design.md`). */
-export interface PasoRespuesta {
+/** Un paso de texto de la respuesta generada, listo para enviar (D9/D10 de `design.md`). */
+export interface PasoTexto {
   readonly paso: string;
-  /** La 07b agrega `{ tipo: 'imagen'; claveObjeto; leyenda? }`. */
   readonly tipo: 'texto';
   readonly texto: string;
 }
+
+/**
+ * Un paso de imagen (CNV10, D5 de la 07b): la clave del objeto en el almacenamiento y una leyenda
+ * opcional. Nunca bytes ni URLs; el canal los resuelve al publicar.
+ */
+export interface PasoImagen {
+  readonly paso: string;
+  readonly tipo: 'imagen';
+  readonly claveObjeto: string;
+  readonly leyenda?: string;
+}
+
+export type PasoRespuesta = PasoTexto | PasoImagen;
 
 /** Token de inyección del puerto {@link EnviarRespuestaTurno} (D10 de `design.md`). */
 export const ENVIAR_RESPUESTA_TURNO = Symbol('ENVIAR_RESPUESTA_TURNO');

@@ -93,6 +93,25 @@ imagen si `capacidades.admiteImagen` es falso (CNV10).
 **Rationale**: el outbox sigue siendo el único mecanismo de reintento (ADR-0004); la fila es pequeña.
 Verificación `[manual]` de `content_attributes` en multipart contra Chatwoot local (Risks).
 
+**Desviaciones de implementación (T1, anotadas al construir):** (1) La regla de fronteras 13 solo
+restringe *quién importa* `canales`; que `canales` importe el barril de `medios` está permitido y no
+hay ciclo (`medios` no importa `canales`), así que no hizo falta un puerto intermedio. (2) Ningún canal
+real declara hoy `admiteImagen: false` (`capacidadesTurno`: WhatsApp sí; los demás son permisivos), así
+que el escenario CNV10 «canal que no admite imagen» se prueba por una costura protegida,
+`EnviarRespuestaTurno.capacidades(canal)`, sobrescrita en el test; en producción delega en
+`capacidadesTurno`. (3) `PasoRespuesta` pasó a ser la unión `PasoTexto | PasoImagen`; los consumidores
+de `paso.texto` (`anteponerAviso`) ahora acotan por `tipo`. (4) La marca de reconciliación viaja en
+`content_attributes.luxe_clave` **y** en el nombre del adjunto: la marca con todo carácter fuera de
+`[A-Za-z0-9_-]` cambiado por `_` (los `:` no son seguros en un nombre de archivo) y la extensión del
+tipo (`jpg` por defecto); `existeMensajeConMarca` busca en ambos sitios (el nombre se lee del último
+segmento de `attachments[].data_url`, comparando el tramo anterior a la extensión). (5) La leyenda
+es efímera (R14) y solo se persiste si existe; un objeto inexistente al publicar es fallo
+`permanente` (`objeto-no-encontrado`) y cualquier otro fallo del almacenamiento es `transitorio`.
+(6) `AlmacenamientoMinio.leer` traduce `NoSuchKey` a `ObjetoNoEncontrado` (exportado por el barril de
+`medios`); los dobles `AlmacenamientoEnMemoria` de dos specs de `catalogo` ganaron `leer`, y hay un
+doble compartido en `test/fakes/almacenamiento-en-memoria.ts`. (7) `[manual]` sigue **pendiente**:
+ver T1 en `tasks.md`.
+
 ### Decision D6: contacto escrito ya; lead solo propuesto
 
 **Choice**: puerto `REPOSITORIO_CONTACTO_AGENTE` (`agente/puertos/`) con `leerResumen(contactoId) →

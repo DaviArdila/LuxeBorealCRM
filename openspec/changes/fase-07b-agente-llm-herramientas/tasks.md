@@ -14,7 +14,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 
 ## Checklist
 
-- [ ] T1 — Salida de imagen de extremo a extremo (medios → outbox → Chatwoot multipart) `[manual]` parcial
+- [x] T1 — Salida de imagen de extremo a extremo (medios → outbox → Chatwoot multipart) `[manual]` parcial
 - [ ] T2 — Bucle de herramientas + LlmModule cableado + plazo del turno + errores → handoff
 - [ ] T3 — Historial corto por sesión en Redis + ubicación como marcador
 - [ ] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
@@ -89,6 +89,25 @@ reconciliación usa el nombre del archivo (`<marca>.jpg`).
 3. REFACTOR: «CAN10 — Un reintento de una imagen ya creada no la envía otra vez» (integración).
 
 **Hecho cuando**: 6 escenarios en verde; resultado `[manual]` anotado.
+
+**Estado (cerrada, con `[manual]` PENDIENTE)**: los 6 escenarios están en verde, más un e2e por webhook
+(`test/e2e/salida-imagen.e2e-spec.ts`) del camino generador → outbox → publicador → `ChatwootFalso`.
+La verificación contra un Chatwoot real **no se hizo y no se da por hecha**: el usuario debe correrla.
+La reconciliación ya cubre ambos resultados posibles (busca la marca en `content_attributes.luxe_clave`
+y en el nombre del adjunto `<marca>.jpg`), así que el resultado solo decide si el respaldo por nombre es
+necesario.
+
+Cómo correrla (Chatwoot local de `infra/chatwoot`, una conversación abierta `<ID>` de un inbox API):
+
+1. Subir un multipart con marca en atributos y en el nombre:
+   `curl -X POST -H "api_access_token: <TOKEN>" -F "message_type=outgoing" -F "content=prueba"
+   -F 'content_attributes={"luxe_clave":"prueba-1"}' -F "attachments[]=@collage.jpg;filename=prueba_1.jpg"
+   <CHATWOOT_URL>/api/v1/accounts/<CUENTA>/conversations/<ID>/messages`.
+2. Leer `GET .../conversations/<ID>/messages` y mirar el mensaje nuevo: ¿trae
+   `content_attributes.luxe_clave == "prueba-1"`? ¿`attachments[0].data_url` termina en `prueba_1.jpg`?
+3. Anotar aquí el resultado. Si vuelve el atributo, el respaldo por nombre queda como defensa; si no
+   vuelve, la marca por nombre es la única reconciliación y CAN10 depende de que `data_url` conserve el
+   nombre (si tampoco lo conserva, hay que abrir una decisión antes de la corrida real de la 07b).
 
 **Review requerida**: RDD
 
