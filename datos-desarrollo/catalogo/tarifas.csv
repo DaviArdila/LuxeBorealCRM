@@ -1,0 +1,18 @@
+departamento,ciudad,peso_min_g,peso_max_g,rango_min_cop,rango_max_cop,dias_min,dias_max,contraentrega
+Bogotá D.C.,"Bogotá, D.C.",0,5000,9000,13000,1,2,si
+Bogotá D.C.,"Bogotá, D.C.",5001,20000,15000,22000,1,3,si
+Bogotá D.C.,"Bogotá, D.C.",20001,,30000,45000,2,4,si
+Antioquia,Medellín,0,5000,9000,13000,1,2,si
+Antioquia,Medellín,5001,20000,15000,22000,1,3,si
+Antioquia,,0,5000,13000,19000,2,4,si
+Antioquia,,5001,,20000,34000,3,5,si
+Valle del Cauca,Santiago de Cali,0,5000,10000,15000,2,3,si
+Valle del Cauca,Santiago de Cali,5001,,18000,30000,2,4,si
+Atlántico,,0,5000,14000,20000,2,4,si
+Atlántico,,5001,,22000,38000,3,5,si
+Santander,,0,5000,14000,20000,2,4,si
+Santander,,5001,,22000,38000,3,5,si
+Bolívar,Cartagena de Indias,0,,16000,26000,3,5,no
+,,0,5000,18000,28000,3,7,si
+,,5001,20000,30000,48000,4,8,si
+,,20001,,60000,90000,5,9,no
