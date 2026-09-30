@@ -16,6 +16,7 @@ Hay código en `src/` y las fases avanzan de una en una. El estado de cada fase 
 
 ## Orden de lectura
 
+0. Sesión nueva o en la nube: empieza por `docs/CONTEXTO_SESIONES.md` (estado real, ramas, límites).
 1. `SPEC.md` — qué es, principios, índice de reglas invariantes (R1-R16).
 2. `docs/fases/README.md` — hoja de ruta y fase actual.
 3. El change activo de la fase en curso, `openspec/changes/fase-NN-<nombre>/` (proposal, specs,
