@@ -1,7 +1,7 @@
 # Proposal: Fase 08 — Leads y handoff
 
 - Change: `fase-08-leads-handoff` · Fase de la hoja de ruta: **08** · Rama: `fase-08-leads-handoff`
-- Fecha: 2026-09-30 · Estado: **spec en revisión** (espera la aprobación del usuario)
+- Fecha: 2026-09-30 · Estado: **aprobada** (2026-09-30, con las recomendaciones de Q1-Q4)
 - Depende de: **07a, 07b y 07c cerradas** (agente con LLM, `EVALUADOR_LEAD`, evals guionadas).
 
 ## Intent
@@ -124,14 +124,14 @@ Volver a enchufar `EvaluadorLeadSinEscala` en `AgenteModule` (un binding) y quit
 - 07a-07c cerradas.
 - Aviso **real** en Telegram: un bot y un grupo de Telegram del usuario (**Q4**, `[manual]`).
 
-## Preguntas abiertas
+## Preguntas resueltas (2026-09-30)
 
-| # | Pregunta | Bloquea | Recomendación |
+| # | Pregunta | Bloqueaba | Respuesta (recomendación aceptada) |
 |---|---|---|---|
-| Q1 | ¿Cuáles son las señales fuertes y débiles? El código del prototipo no está disponible | T1 | Fuertes: `pide_pagar`, `pide_apartar`, `confirma_pedido`, `da_datos_de_entrega`, `pregunta_medios_de_pago`. Débiles: `pregunta_precio`, `pregunta_envio`, `pide_fotos`, `pregunta_disponibilidad`, `compara_productos`, `vuelve_a_escribir`. Umbral: ≥1 fuerte o ≥2 débiles (R9) |
-| Q2 | ¿Qué datos pide el guion de captura fuera de horario y con qué texto? | T5 | Los mismos cuatro de `guardar_datos_contacto` (nombre completo, teléfono de contacto, dirección, localidad); el texto de cierre es el parámetro `mensaje_captura_completa`, editable sin desplegar (R15) |
-| Q3 | ¿Cuándo se recuerda un lead que nadie atendió y cuántas veces? | T7 | Un solo recordatorio a los 30 min de derivado (mismo valor que `HANDOFF_ESPERA_MIN`), configurable |
-| Q4 | Bot y grupo de Telegram para el aviso real | T6 `[manual]` | El usuario crea el bot con @BotFather, lo agrega al grupo y pone `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en su entorno; los tests usan un Telegram falso |
+| Q1 → P33 | ¿Cuáles son las señales fuertes y débiles? El código del prototipo no está disponible | T1 | Fuertes: `pide_pagar`, `pide_apartar`, `confirma_pedido`, `da_datos_de_entrega`, `pregunta_medios_de_pago`. Débiles: `pregunta_precio`, `pregunta_envio`, `pide_fotos`, `pregunta_disponibilidad`, `compara_productos`, `vuelve_a_escribir`. Umbral: ≥1 fuerte o ≥2 débiles (R9) |
+| Q2 → P34 | ¿Qué datos pide el guion de captura fuera de horario y con qué texto? | T5 | Los mismos cuatro de `guardar_datos_contacto` (nombre completo, teléfono de contacto, dirección, localidad); el texto de cierre es el parámetro `mensaje_captura_completa`, editable sin desplegar (R15) |
+| Q3 → P35 | ¿Cuándo se recuerda un lead que nadie atendió y cuántas veces? | T7 | Un solo recordatorio a los 30 min de derivado (mismo valor que `HANDOFF_ESPERA_MIN`), configurable |
+| Q4 → P36 | Bot y grupo de Telegram para el aviso real | T6 `[manual]` | El usuario crea el bot con @BotFather, lo agrega al grupo y pone `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en su entorno; los tests usan un Telegram falso |
 
 ## Success Criteria
 

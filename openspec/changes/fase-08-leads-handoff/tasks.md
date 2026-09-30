@@ -50,7 +50,7 @@ subir), sin atribución de IA.
 | Delivery strategy | auto-chain |
 | Chain strategy | stacked-to-main |
 
-Decision needed before apply: Sí — **Q1-Q3** (ver `proposal.md`)
+Decision needed before apply: No (Q1-Q3 resueltas el 2026-09-30, P33-P35)
 Chained PRs recommended: Yes
 Chain strategy: stacked-to-main
 400-line budget risk: Medium
@@ -75,7 +75,7 @@ Chain strategy: stacked-to-main
 **RED → GREEN → REFACTOR**: RED (transcripción completa) con «LDS1 — Una señal fuerte confirma el lead»
 y «LDS3 — Mencionar la palabra no es pedirla»; GREEN; REFACTOR: el vocabulario en una sola constante.
 
-**Hecho cuando**: 7 escenarios en verde. **Bloqueada por Q1** (vocabulario aprobado).
+**Hecho cuando**: 7 escenarios en verde. Q1 resuelta (P33).
 
 **Review requerida**: RDD
 
@@ -123,7 +123,7 @@ REFACTOR: un observador que lanza no revierte el handoff (test).
 **RED → GREEN → REFACTOR**: RED con «LDS4 — Handoff fuera de horario dispara la captura de datos»;
 GREEN; REFACTOR: la conversación permanece en `bot` en todos los tests.
 
-**Hecho cuando**: 3 escenarios en verde. **Bloqueada por Q2** (guion de captura).
+**Hecho cuando**: 3 escenarios en verde. Q2 resuelta (P34).
 
 **Review requerida**: RDD
 
@@ -148,7 +148,7 @@ corre un lead de prueba; se anota aquí el resultado.
 **Objetivo**: D10. `RecordarLeads`, job repetible `barrido-leads`, `LEADS_RECORDATORIO_MIN`.
 
 **RED → GREEN → REFACTOR**: RED con «LDS5 — Recordatorio a un lead sin atender»; GREEN; REFACTOR:
-«El recordatorio no se repite» contra Postgres. **Bloqueada por Q3.**
+«El recordatorio no se repite» contra Postgres. Q3 resuelta (P35).
 
 **Hecho cuando**: 3 escenarios en verde.
 

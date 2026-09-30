@@ -1,6 +1,6 @@
 # Design: Fase 08 — Leads y handoff
 
-- Change: `fase-08-leads-handoff` · Fecha: 2026-09-30 · Estado: diseño propuesto
+- Change: `fase-08-leads-handoff` · Fecha: 2026-09-30 · Estado: diseño aprobado (2026-09-30)
 - Proposal: `proposal.md` · Specs: `leads` (LDS1-LDS5), `notificaciones` (NTF1-NTF4), `agente`
   (AGT11 modificado, AGT14), `conversaciones` (CNV11)
 - ADRs: [0004](../../../docs/adr/0004-inbox-outbox.md), [0016](../../../docs/adr/0016-composicion-agente-conversaciones.md)
@@ -175,4 +175,4 @@ obligatorio (regla 6).
 
 ## Open Questions
 
-- [ ] Q1 vocabulario de señales · [ ] Q2 guion de captura · [ ] Q3 recordatorio · [ ] Q4 bot de Telegram
+- [x] Q1-Q3 resueltas con la recomendación (P33-P35). [ ] Q4: el bot y el grupo de Telegram los crea el usuario (P36, solo bloquea el `[manual]` de T6).
