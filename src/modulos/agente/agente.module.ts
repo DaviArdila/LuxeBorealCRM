@@ -2,8 +2,15 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
 import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
+import {
+  BuscarProductos,
+  CatalogoModule,
+  ObtenerFichaProducto,
+} from '../catalogo/index.js';
 import { HorarioModule } from '../horario/index.js';
 import { LlmModule } from '../llm/index.js';
+import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
+import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
@@ -32,7 +39,7 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
  * el texto de handoff (AGT3); el motor aplica el aviso de datos y registra el turno (AGT2, D8).
  */
 @Module({
-  imports: [PrismaModule, RedisModule, HorarioModule, LlmModule],
+  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LlmModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
@@ -44,7 +51,14 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
     BucleHerramientas,
     ContenidoLlm,
     // Las herramientas reales se enchufan en T4-T7 de la Fase 07b; T7 fija `esperadas: 7` (R1).
-    { provide: HERRAMIENTAS_AGENTE, useValue: [] as readonly Herramienta[] },
+    {
+      provide: HERRAMIENTAS_AGENTE,
+      useFactory: (buscar: BuscarProductos, ficha: ObtenerFichaProducto): readonly Herramienta[] => [
+        crearBuscarProducto(buscar),
+        crearObtenerFicha(ficha),
+      ],
+      inject: [BuscarProductos, ObtenerFichaProducto],
+    },
     {
       provide: RegistroHerramientas,
       useFactory: (herramientas: readonly Herramienta[]) => new RegistroHerramientas(herramientas),

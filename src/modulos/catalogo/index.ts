@@ -16,6 +16,7 @@
  * `scripts/` tendría que importar una ruta interna del módulo para lograrlo.
  */
 export { CatalogoModule } from './catalogo.module.js';
+export { BuscarProductos } from './aplicacion/buscar-productos.js';
 export { CotizarEnvio } from './aplicacion/cotizar-envio.js';
 export { ConsultarPolitica, type ResultadoPolitica } from './aplicacion/consultar-politica.js';
 export {

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ALMACENAMIENTO, type Almacenamiento } from '../../medios/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
 import {
@@ -64,7 +64,9 @@ export interface ReporteImportacion {
 @Injectable()
 export class ImportarCatalogo {
   constructor(
-    @Inject(FUENTE_CATALOGO) private readonly fuenteCatalogo: FuenteCatalogo,
+    // Opcional: solo el comando de importación conoce el origen (Sheets o directorio). En la app, donde
+    // `AgenteModule` importa `CatalogoModule` solo por las consultas, no hay fuente y `ejecutar` lo dice.
+    @Optional() @Inject(FUENTE_CATALOGO) private readonly fuenteCatalogo: FuenteCatalogo | undefined,
     private readonly resolverGeografiaImportacion: ResolverGeografiaImportacion,
     @Inject(REPOSITORIO_IMPORTACION_CATALOGO) private readonly repositorioImportacion: RepositorioImportacionCatalogo,
     private readonly procesarFotos: ProcesarFotos,
@@ -167,8 +169,12 @@ export class ImportarCatalogo {
   }
 
   private async leerPestanas(): Promise<Readonly<Record<NombrePestana, readonly FilaCruda[]>>> {
+    const fuente = this.fuenteCatalogo;
+    if (fuente === undefined) {
+      throw new Error('ImportarCatalogo necesita FUENTE_CATALOGO: solo el comando catalogo:importar la provee.');
+    }
     const entradas = await Promise.all(
-      PESTANAS.map(async (pestana) => [pestana, await this.fuenteCatalogo.leerPestana(pestana)] as const),
+      PESTANAS.map(async (pestana) => [pestana, await fuente.leerPestana(pestana)] as const),
     );
     return Object.fromEntries(entradas) as Readonly<Record<NombrePestana, readonly FilaCruda[]>>;
   }

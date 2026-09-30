@@ -3,6 +3,7 @@ import { GeografiaModule } from '../geografia/index.js';
 import { MediosModule } from '../medios/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
+import { BuscarProductos } from './aplicacion/buscar-productos.js';
 import { ConsultarPolitica } from './aplicacion/consultar-politica.js';
 import { CotizarEnvio } from './aplicacion/cotizar-envio.js';
 import { ImportarCatalogo } from './aplicacion/importar-catalogo.js';
@@ -32,8 +33,8 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
  * Redis (T7) detrás de sus puertos, y los casos de uso de aplicación de ambas fases. `RedisModule`
  * se importa explícito porque, a diferencia de `plataforma/reloj`, no es `@Global()` (skill
  * `luxeboreal-arquitectura`); `CLOCK` le llega a `CacheCatalogoRedis`/`ImportarCatalogo` sin import
- * adicional. `AppModule` MUST NOT importarlo todavía — lo hará la primera fase que lo necesite (07),
- * igual que `GeografiaModule`/`HorarioModule` quedaron sin registrar tras sus fases.
+ * adicional. `AppModule` no lo registra: lo importa `AgenteModule` (Fase 07b), que envuelve sus casos de uso
+ * en las herramientas del LLM.
  *
  * Nota de deviación (reportada, no silenciosa, T9): `FUENTE_CATALOGO` (puerto de lectura del
  * catálogo, D2) MUST NOT registrarse aquí con un adaptador fijo — a diferencia de
@@ -55,6 +56,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     { provide: CACHE_CATALOGO, useClass: CacheCatalogoRedis },
     ObtenerFichaProducto,
     ListarProductosActivos,
+    BuscarProductos,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
     ConsultarPolitica,
@@ -65,6 +67,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
   exports: [
     ObtenerFichaProducto,
     ListarProductosActivos,
+    BuscarProductos,
     ObtenerCatalogoCompacto,
     CotizarEnvio,
     ConsultarPolitica,

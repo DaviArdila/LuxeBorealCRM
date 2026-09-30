@@ -17,7 +17,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 - [x] T1 — Salida de imagen de extremo a extremo (medios → outbox → Chatwoot multipart) `[manual]` parcial
 - [x] T2 — Bucle de herramientas + LlmModule cableado + plazo del turno + errores → handoff
 - [x] T3 — Historial corto por sesión en Redis + ubicación como marcador
-- [ ] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
+- [x] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
 - [ ] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
 - [ ] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
@@ -166,6 +166,13 @@ versión, `AGENTE_HISTORIAL_TURNOS = 0` y entradas ilegibles. El marcador de ubi
 reutilizando `normalizarTexto`/`palabrasClave` sin duplicarlas.
 
 **Hecho cuando**: 7 escenarios en verde (R2 con transcripción completa en la ficha).
+
+**Estado (cerrada)**: CAT13 (5) y AGT8 (2, ficha) en verde: `buscar.spec.ts`, `buscar-productos.spec.ts`,
+`buscar-producto.spec.ts`, `obtener-ficha.spec.ts`. Desviación: `AgenteModule` ahora importa
+`CatalogoModule` completo, y `ImportarCatalogo` exigía `FUENTE_CATALOGO`, que solo provee el comando
+`catalogo:importar`; se volvió `@Optional()` y `ejecutar` falla con un error claro si falta (test
+nuevo), sin cambiar el comportamiento del comando. Las herramientas se construyen con la fábrica
+`definirHerramienta` (esquema Zod → definición + JSON Schema desde un solo lugar).
 
 **Review requerida**: RDD
 

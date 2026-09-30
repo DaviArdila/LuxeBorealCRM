@@ -351,4 +351,19 @@ describe('catalogo/aplicacion/ImportarCatalogo', () => {
     expect(repositorioImportacion.llamadasEscribir).toHaveLength(1);
     expect(almacenamiento.clavesEliminadas).toEqual(['catalogo/SKU-0001/foto-3.jpg']);
   });
+
+  it('sin FUENTE_CATALOGO (la app sin el comando de importación) ejecutar falla con un error claro', async () => {
+    const almacenamiento = new AlmacenamientoEnMemoria();
+    const importador = new ImportarCatalogo(
+      undefined,
+      new ResolverGeografiaImportacion(new RepositorioGeografiaEnMemoria()),
+      new RepositorioImportacionFalso(new Map()),
+      new ProcesarFotos(almacenamiento),
+      almacenamiento,
+      new CacheCatalogoFalsa(),
+      new ClockFalso(new Date('2026-09-26T12:00:00.000Z')),
+    );
+
+    await expect(importador.ejecutar()).rejects.toThrow(/FUENTE_CATALOGO/);
+  });
 });
