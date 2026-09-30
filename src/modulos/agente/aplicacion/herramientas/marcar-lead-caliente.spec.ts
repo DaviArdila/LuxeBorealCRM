@@ -1,10 +1,10 @@
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { ContextoHerramienta } from '../../dominio/herramienta.js';
-import type { EvaluadorLead, PropuestaLead } from '../../puertos/evaluador-lead.js';
-import { EvaluadorLeadSinEscala } from '../evaluador-lead-sin-escala.js';
+import type { EvaluadorLead, PropuestaLead, ResultadoEvaluacionLead } from '../../puertos/evaluador-lead.js';
 import { crearMarcarLeadCaliente } from './marcar-lead-caliente.js';
 
-// Escenarios AGT11 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT11 (modificado en la Fase 08) de
+// `openspec/changes/fase-08-leads-handoff/specs/agente/spec.md`.
 
 function contexto(efectosPrevios: readonly EfectoTurno[] = []): ContextoHerramienta {
   return { sesion: { conversacionId: 'conv-1', version: 0 }, contactoId: 'k', efectosPrevios };
@@ -12,29 +12,60 @@ function contexto(efectosPrevios: readonly EfectoTurno[] = []): ContextoHerramie
 
 const ARGUMENTOS = {
   temperatura: 'caliente',
-  senales: ['pregunta por pago'],
+  senales: ['pide_pagar'],
   resumen: 'Quiere el anillo Aurora',
   id_producto: 'SKU-1',
 } as const;
 
-describe('modulos/agente/aplicacion/herramientas — marcar_lead_caliente', () => {
-  it('AGT11 — Sin escala la propuesta no deriva', async () => {
-    const resultado = await crearMarcarLeadCaliente(new EvaluadorLeadSinEscala()).ejecutar(ARGUMENTOS, contexto());
+function evaluador(resultado: ResultadoEvaluacionLead) {
+  const propuestas: PropuestaLead[] = [];
+  const doble: EvaluadorLead = {
+    evaluar: (propuesta) => {
+      propuestas.push(propuesta);
+      return Promise.resolve(resultado);
+    },
+  };
+  return { doble, propuestas };
+}
 
-    expect(resultado.paraElModelo).toMatchObject({ derivado: false, motivo: expect.any(String) as unknown });
+describe('modulos/agente/aplicacion/herramientas — marcar_lead_caliente', () => {
+  it('AGT11 — La propuesta confirmada por la escala deriva: el modelo recibe derivado true y queda el efecto', async () => {
+    const { doble } = evaluador({ derivado: true, accion: 'derivar', leadId: 'lead-1' });
+
+    const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto());
+
+    expect(resultado.paraElModelo).toEqual({ derivado: true });
+    expect(resultado.efectos).toEqual([{ tipo: 'lead-derivado', leadId: 'lead-1' }]);
+  });
+
+  it('AGT11 — La propuesta que la escala no confirma no deriva y da un motivo al modelo', async () => {
+    const { doble } = evaluador({ derivado: false, accion: 'ninguna', leadId: 'lead-1', motivo: 'sigue atendiendo' });
+
+    const resultado = await crearMarcarLeadCaliente(doble).ejecutar({ ...ARGUMENTOS, senales: ['pregunta_precio'] }, contexto());
+
+    expect(resultado.paraElModelo).toEqual({ derivado: false, motivo: 'sigue atendiendo' });
+    expect(resultado.efectos).toEqual([{ tipo: 'lead-propuesto', temperatura: 'caliente' }]);
+  });
+
+  it('LDS4 — Fuera de horario el modelo recibe la instrucción de capturar los datos y el efecto de captura pendiente', async () => {
+    const { doble } = evaluador({ derivado: false, accion: 'capturar', leadId: 'lead-2', motivo: 'pide los datos' });
+
+    const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto());
+
+    expect(resultado.paraElModelo).toEqual({ derivado: false, motivo: 'pide los datos' });
     expect(resultado.efectos).toEqual([{ tipo: 'lead-propuesto', temperatura: 'caliente' }]);
   });
 
   it('AGT11 — Sin cobertura no se evalúa el lead', async () => {
     let consultas = 0;
-    const evaluador: EvaluadorLead = {
+    const doble: EvaluadorLead = {
       evaluar: () => {
         consultas += 1;
-        return Promise.resolve({ derivado: true });
+        return Promise.resolve({ derivado: true, accion: 'derivar', leadId: null });
       },
     };
 
-    const resultado = await crearMarcarLeadCaliente(evaluador).ejecutar(ARGUMENTOS, contexto([{ tipo: 'sin-cobertura' }]));
+    const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto([{ tipo: 'sin-cobertura' }]));
 
     expect(resultado.paraElModelo).toMatchObject({ derivado: false });
     expect(consultas).toBe(0);
@@ -42,27 +73,22 @@ describe('modulos/agente/aplicacion/herramientas — marcar_lead_caliente', () =
   });
 
   it('le pasa al evaluador la propuesta completa y su contexto', async () => {
-    const propuestas: PropuestaLead[] = [];
-    const evaluador: EvaluadorLead = {
-      evaluar: (propuesta) => {
-        propuestas.push(propuesta);
-        return Promise.resolve({ derivado: true });
-      },
-    };
+    const { doble, propuestas } = evaluador({ derivado: false, accion: 'ninguna', leadId: null });
 
-    const resultado = await crearMarcarLeadCaliente(evaluador).ejecutar({ ...ARGUMENTOS, id_producto: null }, contexto());
+    await crearMarcarLeadCaliente(doble).ejecutar({ ...ARGUMENTOS, id_producto: null }, contexto());
 
     expect(propuestas).toEqual([
-      { temperatura: 'caliente', senales: ['pregunta por pago'], resumen: 'Quiere el anillo Aurora', productoId: null },
+      { temperatura: 'caliente', senales: ['pide_pagar'], resumen: 'Quiere el anillo Aurora', productoId: null },
     ]);
-    expect(resultado.paraElModelo).toEqual({ derivado: true });
   });
 
-  it('su definición valida la temperatura y admite id_producto nulo', () => {
-    const { definicion } = crearMarcarLeadCaliente(new EvaluadorLeadSinEscala());
+  it('su definición limita las señales al vocabulario cerrado (LDS1) y valida la temperatura', () => {
+    const { definicion } = crearMarcarLeadCaliente(evaluador({ derivado: false, accion: 'ninguna', leadId: null }).doble);
 
     expect(definicion.nombre).toBe('marcar_lead_caliente');
     expect(definicion.esquema.safeParse({ ...ARGUMENTOS, id_producto: null }).success).toBe(true);
+    expect(definicion.esquema.safeParse({ ...ARGUMENTOS, senales: ['esta_emocionado'] }).success).toBe(false);
     expect(definicion.esquema.safeParse({ ...ARGUMENTOS, temperatura: 'helado' }).success).toBe(false);
+    expect(JSON.stringify(definicion.esquemaJson)).toContain('pide_pagar');
   });
 });

@@ -7,4 +7,6 @@ export type EfectoTurno =
   | { readonly tipo: 'enviar-imagen'; readonly claveObjeto: string; readonly leyenda?: string }
   | { readonly tipo: 'sin-cobertura' }
   | { readonly tipo: 'datos-contacto-guardados' }
-  | { readonly tipo: 'lead-propuesto'; readonly temperatura: 'tibio' | 'caliente' };
+  | { readonly tipo: 'lead-propuesto'; readonly temperatura: 'tibio' | 'caliente' }
+  /** La escala confirmó y hay que derivar dentro de horario (D4 de la Fase 08): `ContenidoLlm` lo vuelve handoff. */
+  | { readonly tipo: 'lead-derivado'; readonly leadId: string };

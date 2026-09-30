@@ -12,6 +12,7 @@ import {
   ObtenerFotosProducto,
 } from '../catalogo/index.js';
 import { HorarioModule } from '../horario/index.js';
+import { LeadsModule } from '../leads/index.js';
 import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
 import { crearConsultarPolitica } from './aplicacion/herramientas/consultar-politica.js';
@@ -23,7 +24,6 @@ import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
-import { EvaluadorLeadSinEscala } from './aplicacion/evaluador-lead-sin-escala.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
@@ -33,6 +33,7 @@ import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
+import { EvaluadorLeadDeLeads } from './infraestructura/leads/evaluador-lead-de-leads.js';
 import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
 import { CargadorPrompts } from './infraestructura/prompts/cargador-prompts.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
@@ -60,13 +61,13 @@ const TOTAL_HERRAMIENTAS = 7;
  * el texto de handoff (AGT3); el motor aplica el aviso de datos y registra el turno (AGT2, D8).
  */
 @Module({
-  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LlmModule],
+  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
     { provide: REPOSITORIO_CONTACTO_AGENTE, useClass: RepositorioContactoAgentePrisma },
-    // La Fase 08 reemplaza este binding por la escala determinista (R9-R11).
-    { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadSinEscala },
+    // Fase 08: la escala determinista y el guardado del lead viven en `leads` (R9).
+    { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadDeLeads },
     ArmarContextoInicial,
     { provide: REPOSITORIO_PARAMETRO_AGENTE, useClass: RepositorioParametroAgentePrisma },
     TextoHandoff,
