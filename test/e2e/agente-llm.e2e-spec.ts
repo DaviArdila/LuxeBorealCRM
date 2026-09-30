@@ -338,26 +338,50 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     });
   }, 40_000);
 
-  it('AGT11 — Proponer un lead sin escala no deriva ni escribe en lead', async () => {
+  it('AGT11 — Una propuesta que la escala no confirma se guarda sin derivar', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    const antes = await prisma.lead.count();
     llm.encolar(
       llamada('c1', 'marcar_lead_caliente', {
         temperatura: 'caliente',
-        senales: ['pide pagar'],
-        resumen: 'Quiere cerrar el pedido',
+        senales: ['pregunta_precio'],
+        resumen: 'Preguntó el precio, llámalo al 3001234567',
         id_producto: null,
       }),
       { respuesta: { texto: 'Perfecto, sigo contigo' } },
     );
 
-    const { idConversacion } = await turno(aplicacion, 'Quiero pagar ya');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Cuánto cuesta?');
 
     await esperarMensajes(chatwootFalso, idConversacion, 1);
     expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ derivado: false });
-    expect(await prisma.lead.count()).toBe(antes);
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    const lead = await prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } });
+    expect(lead).toMatchObject({ derivado: false, temperatura: 'caliente', estado: 'nuevo' });
+    // R14: el resumen que guarda el lead no lleva el teléfono que copió el modelo.
+    expect(lead.resumen).not.toContain('3001234567');
     expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+  }, 40_000);
+
+  it('LDS2 — Una señal fuerte confirma el lead: se guarda derivado y el modelo recibe derivado true', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar(
+      llamada('c1', 'marcar_lead_caliente', {
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'Quiere pagar ya',
+        id_producto: null,
+      }),
+      { respuesta: { texto: 'Perfecto' } },
+    );
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ derivado: true });
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({ derivado: true });
   }, 40_000);
 
   it('AGT6 — Una caída del proveedor deriva a un asesor con el texto de mensaje_error_llm', async () => {

@@ -17,7 +17,7 @@ subir), sin atribución de IA.
 ## Checklist
 
 - [x] T1 — Escala determinista, detector de "pide persona" y redactor de resumen (dominio de `leads`)
-- [ ] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
+- [x] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
 - [ ] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
 - [ ] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [ ] T5 — Captura de datos fuera de horario
@@ -96,6 +96,17 @@ de la herramienta.
 contra Postgres); GREEN; REFACTOR: integración del upsert y de la redacción del resumen.
 
 **Hecho cuando**: 7 escenarios en verde; `AgenteModule` ya no usa `EvaluadorLeadSinEscala`.
+
+**Estado (cerrada)**: LDS2 (5) y AGT11 (2, ahora con la escala real) en verde, más `RepositorioLeadPrisma`
+contra Postgres (4 tests de integración) y dos e2e por webhook (propuesta no confirmada guardada sin
+derivar y con el teléfono redactado; señal fuerte → lead derivado). `EvaluadorLeadSinEscala` se eliminó.
+Desviaciones: (1) «un lead abierto por conversación» lo garantiza el lock del turno (R8), sin restricción
+única ni migración: anotado en `RepositorioLead`. (2) El puerto `EvaluadorLead` ganó `accion` y `leadId`
+en su resultado; al modelo solo le llega `{ derivado, motivo? }`. (3) `id_producto` (id o SKU) se resuelve
+a id real en el adaptador del agente con `ObtenerFichaProducto`; un producto no resoluble deja el lead sin
+producto. (4) `LeadsModule` importa `HorarioModule`; por ahora el efecto `lead-derivado` solo se emite (T4
+lo convierte en handoff) y `derivado: true` ya se guarda. (5) La decisión `capturar` fuera de horario (LDS4)
+nace aquí en el caso de uso; sus instrucciones y el cierre de la captura son de T5.
 
 **Review requerida**: RDD
 
