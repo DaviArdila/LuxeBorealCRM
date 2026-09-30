@@ -16,7 +16,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 
 - [x] T1 — Salida de imagen de extremo a extremo (medios → outbox → Chatwoot multipart) `[manual]` parcial
 - [x] T2 — Bucle de herramientas + LlmModule cableado + plazo del turno + errores → handoff
-- [ ] T3 — Historial corto por sesión en Redis + ubicación como marcador
+- [x] T3 — Historial corto por sesión en Redis + ubicación como marcador
 - [ ] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
 - [ ] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
@@ -149,6 +149,11 @@ lo lee y lo agrega solo con texto final; la ubicación sin texto viaja como `[ub
 con integración Redis (TTL y `LTRIM`).
 
 **Hecho cuando**: 4 escenarios en verde.
+
+**Estado (cerrada)**: AGT7 (3) y R12 «Ubicación entrante» (parte determinista) en verde en
+`contenido-llm.spec.ts`; `historial-redis.spec.ts` (integración) prueba recorte, TTL, sesiones por
+versión, `AGENTE_HISTORIAL_TURNOS = 0` y entradas ilegibles. El marcador de ubicación vive en
+`dominio/texto-del-cliente.ts` (desde T2).
 
 **Review requerida**: RDD
 

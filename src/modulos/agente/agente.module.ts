@@ -15,8 +15,10 @@ import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
+import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
 import { CONTADORES_SESION } from './puertos/contadores-sesion.js';
+import { HISTORIAL_CONVERSACION } from './puertos/historial-conversacion.js';
 import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
 
 /**
@@ -33,6 +35,7 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
   imports: [PrismaModule, RedisModule, HorarioModule, LlmModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
+    { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
     { provide: REPOSITORIO_PARAMETRO_AGENTE, useClass: RepositorioParametroAgentePrisma },
     TextoHandoff,
     PoliticaNoTextuales,

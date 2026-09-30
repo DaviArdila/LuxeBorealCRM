@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { ClockFalso } from '../../../../../test/fakes/clock-falso.js';
+import { HistorialEnMemoria } from '../../../../../test/fakes/historial-en-memoria.js';
 import { FakePuertoLlm } from '../../../../../test/fakes/puerto-llm-falso.js';
 import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
 import { RepositorioParametroLlmEnMemoria } from '../../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
@@ -15,12 +16,16 @@ import { ContenidoLlm } from './contenido-llm.js';
 // Escenarios AGT4 (imágenes después del texto) y AGT6 de la spec de la Fase 07b, sobre el pipeline.
 
 function turno(...mensajes: SolicitudTurno['mensajes'][number][]): SolicitudTurno {
+  return turnoDeVersion(0, ...mensajes);
+}
+
+function turnoDeVersion(version: number, ...mensajes: SolicitudTurno['mensajes'][number][]): SolicitudTurno {
   return {
     contexto: {
       conversacionId: 'conv-1',
       contactoId: 'contacto-1',
       canal: 'whatsapp',
-      version: 0,
+      version,
       capacidades: { mensajeSalienteCuesta: true, admiteImagen: true },
     },
     mensajes,
@@ -36,8 +41,9 @@ function herramienta(nombre: string, paraElModelo: unknown, efectos: readonly Ef
   };
 }
 
-function crear(herramientas: readonly Herramienta[] = []) {
+function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
   const llm = new FakePuertoLlm();
+  const historial = new HistorialEnMemoria();
   const parametros = new RepositorioParametroAgenteEnMemoria();
   parametros.textos.set('mensaje_error_llm', 'TEXTO-ERROR');
   const parametrosLlm = new RepositorioParametroLlmEnMemoria();
@@ -48,8 +54,15 @@ function crear(herramientas: readonly Herramienta[] = []) {
     new ClockFalso(new Date('2026-09-30T12:00:00.000Z')),
     { LOCK_TURNO_TTL_S: 30, AGENTE_MAX_VUELTAS: 5 },
   );
-  const politica = new ContenidoLlm(bucle, new EnsamblarPrompt(), parametros, new ObtenerMensajeTechoGasto(parametrosLlm));
-  return { llm, politica };
+  const politica = new ContenidoLlm(
+    bucle,
+    new EnsamblarPrompt(),
+    parametros,
+    new ObtenerMensajeTechoGasto(parametrosLlm),
+    historial,
+    { AGENTE_HISTORIAL_TURNOS: historialTurnos },
+  );
+  return { llm, politica, historial };
 }
 
 describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
@@ -155,5 +168,66 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     await politica.evaluar(turno(HOLA));
 
     expect(aviso).toHaveBeenCalledWith({ evento: 'agente.dinero-sin-rastro', montos: 1 });
+  });
+
+  it('AGT7 — El LLM recibe solo los últimos turnos de la sesión', async () => {
+    const { llm, politica, historial } = crear([], 6);
+    const sesion = { conversacionId: 'conv-1', version: 0 };
+    for (let i = 1; i <= 8; i += 1) {
+      await historial.agregar(sesion, `cliente ${String(i)}`, `bot ${String(i)}`);
+    }
+    llm.encolar({ respuesta: { texto: 'respuesta 9' } });
+
+    await politica.evaluar(turno({ idMensaje: 'm9', tipoContenido: 'texto', texto: 'cliente 9' }));
+
+    const mensajes = llm.solicitudes[0]?.mensajes ?? [];
+    expect(mensajes).toHaveLength(13);
+    expect(mensajes[0]).toEqual({ rol: 'usuario', texto: 'cliente 3' });
+    expect(mensajes[11]).toEqual({ rol: 'asistente', texto: 'bot 8' });
+    expect(mensajes[12]).toEqual({ rol: 'usuario', texto: 'cliente 9' });
+  });
+
+  it('AGT7 — El historial no guarda resultados de herramientas', async () => {
+    const ficha = herramienta('ficha', { precio_texto: '$389.000' });
+    const { llm, politica, historial } = crear([ficha]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'ficha', argumentos: {} }] } },
+      { respuesta: { texto: 'Cuesta $389.000' } },
+    );
+
+    await politica.evaluar(turno(HOLA));
+
+    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toEqual([
+      { rol: 'usuario', texto: 'hola' },
+      { rol: 'asistente', texto: 'Cuesta $389.000' },
+    ]);
+  });
+
+  it('AGT7 — Una sesión nueva arranca sin historial', async () => {
+    const { llm, politica, historial } = crear();
+    await historial.agregar({ conversacionId: 'conv-1', version: 0 }, 'viejo', 'viejo bot');
+    llm.encolar({ respuesta: { texto: 'hola de nuevo' } });
+
+    await politica.evaluar(turnoDeVersion(1, HOLA));
+
+    expect(llm.solicitudes[0]?.mensajes).toEqual([{ rol: 'usuario', texto: 'hola' }]);
+  });
+
+  it('un turno derivado no se agrega al historial', async () => {
+    const { llm, politica, historial } = crear();
+    llm.encolar({ error: new ErrorPasarelaLlm('proveedor-caido') });
+
+    await politica.evaluar(turno(HOLA));
+
+    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toEqual([]);
+  });
+
+  it('R12 — Ubicación entrante: el LLM la recibe como ubicación compartida', async () => {
+    const { llm, politica } = crear();
+    llm.encolar({ respuesta: { texto: '¿En qué ciudad y departamento estás?' } });
+
+    await politica.evaluar(turno({ idMensaje: 'm1', tipoContenido: 'ubicacion', texto: '' }));
+
+    expect(llm.solicitudes[0]?.mensajes.at(-1)).toEqual({ rol: 'usuario', texto: '[ubicación compartida]' });
   });
 });

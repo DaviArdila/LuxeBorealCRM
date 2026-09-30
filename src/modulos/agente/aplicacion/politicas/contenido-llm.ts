@@ -1,10 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
+import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
 import { ObtenerMensajeTechoGasto } from '../../../llm/index.js';
 import { contarMontosSinRastro } from '../../dominio/auditar-dinero.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { textoDelCliente } from '../../dominio/texto-del-cliente.js';
+import { HISTORIAL_CONVERSACION, type HistorialConversacion } from '../../puertos/historial-conversacion.js';
 import {
   REPOSITORIO_PARAMETRO_AGENTE,
   type RepositorioParametroAgente,
@@ -42,6 +44,8 @@ export class ContenidoLlm implements PoliticaTurno {
     private readonly prompt: EnsamblarPrompt,
     @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
     private readonly mensajeTechoGasto: ObtenerMensajeTechoGasto,
+    @Inject(HISTORIAL_CONVERSACION) private readonly historial: HistorialConversacion,
+    @Inject(CONFIGURACION) private readonly configuracion: Pick<Configuracion, 'AGENTE_HISTORIAL_TURNOS'>,
   ) {}
 
   async evaluar(solicitud: SolicitudTurno): Promise<DecisionPolitica> {
@@ -51,11 +55,16 @@ export class ContenidoLlm implements PoliticaTurno {
     }
 
     const { conversacionId, contactoId, version } = solicitud.contexto;
+    const sesion = { conversacionId, version };
+    const previos = await this.historial.leer(sesion, this.configuracion.AGENTE_HISTORIAL_TURNOS);
     const resultado = await this.bucle.ejecutar({
-      sesion: { conversacionId, version },
+      sesion,
       contactoId,
       systemPrompt: this.prompt.ensamblar(),
-      mensajes: [{ rol: 'usuario', texto: textoCliente }],
+      mensajes: [
+        ...previos.map((turno) => ({ rol: turno.rol, texto: turno.texto })),
+        { rol: 'usuario', texto: textoCliente },
+      ],
     });
 
     if (resultado.tipo === 'derivar') {
@@ -66,6 +75,8 @@ export class ContenidoLlm implements PoliticaTurno {
       };
     }
 
+    // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
+    await this.historial.agregar(sesion, textoCliente, resultado.texto);
     const montos = contarMontosSinRastro(resultado.texto, resultado.resultadosParaElModelo);
     if (montos > 0) {
       // D9, R14: solo la cantidad; el texto de la respuesta nunca va al log.
