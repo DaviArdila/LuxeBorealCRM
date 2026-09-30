@@ -9,7 +9,7 @@
 - Review requerida: **RDD** (sin judgment-day: no es una fase de las de la regla 6). Native
   `gentle-ai review` por commit de unidad de trabajo cuando RDD esté activo.
 - Ramas: `proveedores-llm-pK-<tema>`, apiladas sobre la anterior.
-- ADR-0019 aceptado y P37-P39 resueltas (2026-09-30). P40 sigue abierta y bloquea solo T10.
+- ADR-0019 aceptado y P37-P40 resueltas (2026-09-30). P40: gasto de la corrida real autorizado, límite de 2 USD.
 
 ## Slices
 
@@ -20,7 +20,7 @@
 | 3 | `proveedores-llm-p3-openai` | T4 | Proveedor OpenAI directo | PR 2 |
 | 4 | `proveedores-llm-p4-enrutador-docs` | T8 + T9 | Enrutador cableado, fronteras, fallback y docs | PR 3 |
 
-T10 `[manual]` corre después del PR 4 y depende de P40. T5-T7 quedan pospuestas: si se retoman, serán
+T10 `[manual]` corre después del PR 4, cuando el usuario ponga su clave (P40 resuelta: límite de 2 USD). T5-T7 quedan pospuestas: si se retoman, serán
 slices nuevos después del PR 4.
 
 ## Tareas
@@ -58,7 +58,7 @@ slices nuevos después del PR 4.
   ADR-0019 se aceptó el 2026-09-30); índice de ADR. Solo documentación: sin cambios de producción, sin riesgo de
   presupuesto. Ruta: inline.
 - [ ] **T10 — `[manual]` Corrida real de evals.** El usuario ejecuta `EVALS_MODO=real` con la clave de
-  OpenAI y el modelo elegido (P37; gasto por autorizar con P40, aún abierta); se registra el resultado y el gasto en
+  OpenAI y el modelo elegido (P37; gasto autorizado con P40: límite de 2 USD en la consola de OpenAI); se registra el resultado y el gasto en
   `verify-report.md`. Nada pasa a modelo principal sin esta corrida. No corre en CI. Ruta: manual.
 
 ## Cierre

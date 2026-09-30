@@ -98,9 +98,9 @@ Detalle en `docs/PREGUNTAS_ABIERTAS.md`.
 | P37 | ¿Qué proveedores y modelos concretos? | **Resuelta:** OpenAI, solo ese por ahora; `gpt-5.6-luna` como candidato |
 | P38 | ¿OpenRouter queda como respaldo? | **Resuelta:** sí (recomendación aceptada al aprobar el ADR-0019) |
 | P39 | ¿La clave vive en `.env` o en base de datos? | **Resuelta:** `.env` (recomendación aceptada al aprobar el ADR-0019) |
-| P40 | ¿Se autoriza el gasto de la corrida real de evals con la clave de OpenAI y con qué límite? | **Abierta:** bloquea solo T10 `[manual]` |
+| P40 | ¿Se autoriza el gasto de la corrida real de evals con la clave de OpenAI y con qué límite? | **Resuelta (2026-09-30):** sí, con límite de 2 USD para la sesión (criterio de P32); T10 `[manual]` solo espera al usuario |
 
-T1-T4, T8 y T9 no dependen de P40.
+T1-T4, T8 y T9 no dependían de P40.
 
 ## Criterios de éxito
 

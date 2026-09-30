@@ -12,7 +12,7 @@
 - TDD: no aplica a documentación. Para la implementación: **estricto**, fuente
   CLAUDE.md del proyecto, runner Vitest (`npm test`, `npm run test:integracion`).
 - Documentos: ADR `docs/adr/0019-proveedores-llm-configurables.md`; change
-  `openspec/changes/proveedores-llm-configurables/`; preguntas P37-P40 en `docs/PREGUNTAS_ABIERTAS.md` (P40 abierta).
+  `openspec/changes/proveedores-llm-configurables/`; preguntas P37-P40 en `docs/PREGUNTAS_ABIERTAS.md` (P40 resuelta).
 
 ## Tareas de documentación
 
@@ -20,7 +20,7 @@
 - [x] D2 — Change de OpenSpec: proposal, delta de `llm`, design y tasks. Ruta: delegada
 - [x] D3 — Preguntas P37-P40 en `PREGUNTAS_ABIERTAS.md`. Ruta: delegada
 - [x] D4 — Este documento de seguimiento. Ruta: delegada
-- [x] D5 — El usuario aceptó el ADR-0019 y resolvió P37-P39 (2026-09-30); P40 sigue abierta y solo bloquea T10. Ruta: usuario
+- [x] D5 — El usuario aceptó el ADR-0019 y resolvió P37-P39 (2026-09-30); P40 se resolvió después (ver Progreso). Ruta: usuario
 
 ## Tareas de implementación (D5 hecha; T5-T7 pospuestas)
 
@@ -35,7 +35,7 @@ Detalle, slices y RED de cada una en `openspec/changes/proveedores-llm-configura
 - [~] T7 — pospuesta (P37: solo OpenAI): proveedor `compatible`
 - [ ] T8 — Enrutador, cableado, fronteras y fallback. Ruta: delegada
 - [ ] T9 — Documentación y matiz de ADR-0002/0014 (obligatorio: ADR aceptado). Ruta: inline
-- [ ] T10 — `[manual]` corrida real de evals con la clave de OpenAI del usuario; espera P40. Ruta: manual
+- [ ] T10 — `[manual]` corrida real de evals con la clave de OpenAI del usuario; espera la clave del usuario (P40 resuelta, límite de 2 USD). Ruta: manual
 
 Slices (ver `tasks.md`): PR1 T1+T2, PR2 T3, PR3 T4, PR4 T8+T9; T10 manual tras el PR4.
 
@@ -94,4 +94,4 @@ escritura); T1 y T9 son de un archivo y quedan inline.
 ## Próximo paso
 
 T1: resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*` contra `ai`
-7.0.122. P40 se responde antes de T10.
+7.0.122. T10 es manual: el usuario corre `EVALS_MODO=real` con su clave de OpenAI (límite de 2 USD, P40).
