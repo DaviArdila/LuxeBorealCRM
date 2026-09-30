@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { HorarioModule } from '../horario/index.js';
+import { CompletarCaptura } from './aplicacion/completar-captura.js';
 import { EvaluarPropuestaLead } from './aplicacion/evaluar-propuesta-lead.js';
+import { ObtenerCapturaPendiente } from './aplicacion/obtener-captura-pendiente.js';
 import { RegistrarPidePersona } from './aplicacion/registrar-pide-persona.js';
 import { RepositorioLeadPrisma } from './infraestructura/prisma/repositorio-lead-prisma.js';
 import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
@@ -13,7 +15,13 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
  */
 @Module({
   imports: [PrismaModule, HorarioModule],
-  providers: [{ provide: REPOSITORIO_LEAD, useClass: RepositorioLeadPrisma }, EvaluarPropuestaLead, RegistrarPidePersona],
-  exports: [EvaluarPropuestaLead, RegistrarPidePersona],
+  providers: [
+    { provide: REPOSITORIO_LEAD, useClass: RepositorioLeadPrisma },
+    EvaluarPropuestaLead,
+    RegistrarPidePersona,
+    ObtenerCapturaPendiente,
+    CompletarCaptura,
+  ],
+  exports: [EvaluarPropuestaLead, RegistrarPidePersona, ObtenerCapturaPendiente, CompletarCaptura],
 })
 export class LeadsModule {}

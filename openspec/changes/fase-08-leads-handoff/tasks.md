@@ -20,7 +20,7 @@ subir), sin atribución de IA.
 - [x] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
 - [x] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
 - [x] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
-- [ ] T5 — Captura de datos fuera de horario
+- [x] T5 — Captura de datos fuera de horario
 - [ ] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
 - [ ] T7 — Recordatorios de leads sin atender
 - [ ] T8 — Casos de evals y e2e por webhook de los flujos nuevos
@@ -162,6 +162,17 @@ siempre un observador, así que el orden esperado pasó a `enviar → transicion
 GREEN; REFACTOR: la conversación permanece en `bot` en todos los tests.
 
 **Hecho cuando**: 3 escenarios en verde. Q2 resuelta (P34).
+
+**Estado (cerrada)**: LDS4 (3 restantes: «Handoff fuera de horario dispara la captura de datos», «Con los
+datos guardados se avisa y el lead queda capturado» —el aviso llega en T6— y «La conversación sigue atendida
+tras avisar») en verde en `captura-lead.spec.ts`, `armar-contexto-inicial.spec.ts` y
+`guardar-datos-contacto.spec.ts`, más un e2e por webhook de dos turnos con la excepción de horario del día
+(el bot pide los datos sin salir de `bot`, luego los guarda, el lead queda capturado y derivado y ningún
+estado se espeja a Chatwoot). Desviaciones: (1) «captura pendiente» se deduce del lead (abierto, sin
+derivar ni capturar, con la escala confirmada o nacido de «pide persona»), sin columna nueva. (2) Si cerrar
+la captura falla, `guardar_datos_contacto` igual responde `guardado` (los datos ya están a salvo). (3) El
+texto de cierre es el parámetro `mensaje_captura_completa` con respaldo en el repositorio de parámetros del
+agente (P34). (4) El aviso al asesor tras completar la captura se conecta en T6.
 
 **Review requerida**: RDD
 

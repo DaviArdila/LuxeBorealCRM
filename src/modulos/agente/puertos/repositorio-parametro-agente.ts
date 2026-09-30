@@ -5,7 +5,8 @@ export type ClaveTextoAgente =
   | 'aviso_datos'
   | 'mensaje_handoff'
   | 'mensaje_handoff_fuera_horario'
-  | 'mensaje_error_llm';
+  | 'mensaje_error_llm'
+  | 'mensaje_captura_completa';
 
 /** Token de inyección del puerto {@link RepositorioParametroAgente}. */
 export const REPOSITORIO_PARAMETRO_AGENTE = Symbol('REPOSITORIO_PARAMETRO_AGENTE');

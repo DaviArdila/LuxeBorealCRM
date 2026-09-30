@@ -2,6 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ObtenerFichaProducto } from '../../catalogo/index.js';
 import type { SesionHerramienta } from '../dominio/herramienta.js';
 import { CONTADORES_SESION, type ContadoresSesion } from '../puertos/contadores-sesion.js';
+import { CAPTURA_LEAD, type CapturaLead } from '../puertos/captura-lead.js';
+import {
+  REPOSITORIO_PARAMETRO_AGENTE,
+  type RepositorioParametroAgente,
+} from '../puertos/repositorio-parametro-agente.js';
 import {
   REPOSITORIO_CONTACTO_AGENTE,
   type RepositorioContactoAgente,
@@ -19,7 +24,7 @@ export interface EntradaContextoInicial {
  * Contexto inicial del turno (D7 de la Fase 07b, AGT12; SPEC del prototipo §3.3 y §3.7): instrucciones
  * de texto para la parte variable del prompt. En el primer turno de la conversación, un SKU activo en
  * el mensaje se indica como producto de entrada; si el contacto ya tiene nombre, se le indica al
- * modelo que lo salude por él sin asumir su interés. Nunca incluye otro dato personal, y un fallo al
+ * modelo que lo salude por él sin asumir su interés. Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
  * leer el catálogo o el contacto degrada al caso genérico en vez de romper el turno.
  */
 @Injectable()
@@ -28,6 +33,8 @@ export class ArmarContextoInicial {
     private readonly ficha: ObtenerFichaProducto,
     @Inject(REPOSITORIO_CONTACTO_AGENTE) private readonly contactos: RepositorioContactoAgente,
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
+    @Inject(CAPTURA_LEAD) private readonly captura: CapturaLead,
+    @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
   ) {}
 
   async ejecutar(entrada: EntradaContextoInicial): Promise<readonly string[]> {
@@ -45,7 +52,32 @@ export class ArmarContextoInicial {
         `El cliente se llama ${nombre}: salúdalo por su nombre. No asumas que quiere lo mismo que la última vez.`,
       );
     }
+    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
+    if (capturaPendiente !== null) {
+      instrucciones.push(capturaPendiente);
+    }
     return instrucciones;
+  }
+
+  /**
+   * R10, LDS4: con un lead confirmado fuera de horario el bot sigue atendiendo y pide los datos antes de
+   * avisar. El texto de cierre es un parámetro del negocio (R15, P34). Un fallo degrada al caso genérico.
+   */
+  private async instruccionDeCaptura(conversacionId: string): Promise<string | null> {
+    try {
+      if (!(await this.captura.pendiente(conversacionId))) {
+        return null;
+      }
+      const cierre = await this.parametros.obtenerTexto('mensaje_captura_completa');
+      return (
+        'Fuera del horario de atención: el cliente ya mostró intención de compra. Sigue atendiéndolo con ' +
+        'normalidad y pídele, uno a uno si hace falta, su nombre completo, un teléfono de contacto, la ' +
+        'dirección de entrega y la localidad. Cuando los tenga todos, guárdalos con guardar_datos_contacto ' +
+        `y despídete con este texto exacto: "${cierre}"`
+      );
+    } catch {
+      return null;
+    }
   }
 
   private async productoDeEntrada(

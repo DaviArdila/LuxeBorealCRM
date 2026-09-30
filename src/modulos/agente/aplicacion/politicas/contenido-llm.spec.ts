@@ -73,7 +73,13 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
   const politica = new ContenidoLlm(
     bucle,
     prompt,
-    new ArmarContextoInicial(ficha, contactos, new ContadoresSesionEnMemoria()),
+    new ArmarContextoInicial(
+      ficha,
+      contactos,
+      new ContadoresSesionEnMemoria(),
+      { pendiente: () => Promise.resolve(false), completar: () => Promise.resolve() },
+      parametros,
+    ),
     parametros,
     new ObtenerMensajeTechoGasto(parametrosLlm),
     historial,
@@ -282,7 +288,9 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
       });
     }
     const contactos = new RepositorioContactoAgenteEnMemoria();
-    const { llm, politica } = crear([crearGuardarDatosContacto(contactos)]);
+    const { llm, politica } = crear([
+      crearGuardarDatosContacto(contactos, { pendiente: () => Promise.resolve(false), completar: () => Promise.resolve() }),
+    ]);
     llm.encolar(
       {
         respuesta: {

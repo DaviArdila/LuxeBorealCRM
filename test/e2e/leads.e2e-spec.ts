@@ -15,6 +15,7 @@ import { LLM_PORT } from '../../src/modulos/llm/index.js';
 import { ALMACENAMIENTO } from '../../src/modulos/medios/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
+import { ClockSistema } from '../../src/plataforma/reloj/index.js';
 import { AlmacenamientoEnMemoria } from '../fakes/almacenamiento-en-memoria.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
@@ -149,6 +150,16 @@ function estadosEspejados(falso: ChatwootFalso, idConversacion: number): string[
     .llamadasRegistradas()
     .filter((l) => l.metodo === 'POST' && l.ruta.endsWith(`/conversations/${String(idConversacion)}/toggle_status`))
     .map((l) => (l.cuerpo as { status: string }).status);
+}
+
+/** Cierra el negocio todo el día de hoy (hora de Bogotá) con una excepción de horario; devuelve cómo deshacerlo. */
+async function cerrarNegocioHoy(prisma: PrismaService): Promise<() => Promise<void>> {
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new ClockSistema().ahora());
+  const fecha = new Date(`${hoy}T00:00:00.000Z`);
+  await prisma.excepcionHorario.upsert({ where: { fecha }, create: { fecha, motivo: 'e2e fuera de horario' }, update: {} });
+  return async () => {
+    await prisma.excepcionHorario.deleteMany({ where: { fecha } });
+  };
 }
 
 async function esperarMensajes(falso: ChatwootFalso, idConversacion: number, cantidad: number) {
@@ -309,4 +320,61 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
     expect(etiquetasPuestas(chatwootFalso, idConversacion)).toEqual([]);
   }, 40_000);
+
+  it('R10 — Fuera de horario el bot captura los datos, avisa el lead y sigue atendiendo', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const abrirDeNuevo = await cerrarNegocioHoy(prisma);
+    try {
+      llm.encolar(
+        llamada('c1', 'marcar_lead_caliente', {
+          temperatura: 'caliente',
+          senales: ['pide_pagar'],
+          resumen: 'Quiere pagar ya',
+          id_producto: null,
+        }),
+        { respuesta: { texto: 'Con gusto, ¿me das tu nombre completo?' } },
+      );
+      const { idConversacion, idContacto } = nuevaConversacion();
+      const primero = nuevoIdMensaje();
+      chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Quiero pagar ya');
+      await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero });
+
+      const antes = await esperarMensajes(chatwootFalso, idConversacion, 1);
+      // LDS4: no se aparca la conversación: sigue en bot y el modelo pide los datos.
+      expect(contenido(antes[0])).toContain('nombre completo');
+      const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+      await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({
+        derivado: false,
+        capturadoFueraHorario: false,
+      });
+      expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+
+      // Segundo turno: el cliente da sus datos y el modelo (con las instrucciones de captura) los guarda.
+      llm.encolar(
+        llamada('c2', 'guardar_datos_contacto', {
+          nombre_completo: 'Laura Gómez Pérez',
+          telefono_contacto: 'este mismo',
+          direccion: 'Calle 45 # 12-34',
+          localidad: 'Chapinero',
+        }),
+        { respuesta: { texto: 'Listo, ya tengo tus datos' } },
+      );
+      const segundo = nuevoIdMensaje();
+      chatwootFalso.programarTextoDeMensaje(String(idConversacion), segundo, 'Laura Gómez Pérez, calle 45 # 12-34, Chapinero');
+      await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
+
+      await esperarMensajes(chatwootFalso, idConversacion, 2);
+      // Solo el segundo turno (tras crearse el lead pendiente) recibe las instrucciones de captura.
+      expect(llm.solicitudes[0]?.systemPrompt).not.toContain('ya mostró intención de compra');
+      expect(llm.solicitudes[2]?.systemPrompt).toContain('ya mostró intención de compra');
+      const lead = await prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } });
+      expect(lead).toMatchObject({ derivado: true, capturadoFueraHorario: true });
+      const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
+      expect(conversacion.estado).toBe('bot');
+      expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+    } finally {
+      await abrirDeNuevo();
+    }
+  }, 60_000);
 });

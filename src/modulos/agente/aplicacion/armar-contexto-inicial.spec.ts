@@ -1,5 +1,7 @@
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { RepositorioContactoAgenteEnMemoria } from '../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
+import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import type { CapturaLead } from '../puertos/captura-lead.js';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
 
@@ -19,7 +21,20 @@ function crear() {
         : Promise.reject(new ProductoNoDisponible());
     },
   } as unknown as ObtenerFichaProducto;
-  return { caso: new ArmarContextoInicial(ficha, contactos, contadores), contadores, contactos, consultados };
+  const captura = { pendiente: false };
+  const capturaLead: CapturaLead = {
+    pendiente: () => Promise.resolve(captura.pendiente),
+    completar: () => Promise.resolve(),
+  };
+  const parametros = new RepositorioParametroAgenteEnMemoria();
+  parametros.textos.set('mensaje_captura_completa', 'TEXTO-CIERRE-CAPTURA');
+  return {
+    caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, parametros),
+    contadores,
+    contactos,
+    consultados,
+    captura,
+  };
 }
 
 describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () => {
@@ -74,8 +89,31 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     const contadores = new ContadoresSesionEnMemoria();
     const contactos = { leerNombre: () => Promise.reject(new Error('base caída')), guardarDatosCapturados: () => Promise.resolve() };
     const ficha = { ejecutar: () => Promise.reject(new Error('base caída')) } as unknown as ObtenerFichaProducto;
-    const caso = new ArmarContextoInicial(ficha, contactos, contadores);
+    const capturaCaida: CapturaLead = { pendiente: () => Promise.reject(new Error('base caída')), completar: () => Promise.resolve() };
+    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new RepositorioParametroAgenteEnMemoria());
 
     await expect(caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'SKU-123' })).resolves.toEqual([]);
+  });
+
+  it('LDS4 — Handoff fuera de horario dispara la captura de datos: las instrucciones piden los cuatro datos y el cierre', async () => {
+    const { caso, captura } = crear();
+    captura.pendiente = true;
+
+    const instrucciones = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' })).join('\n');
+
+    expect(instrucciones).toMatch(/nombre completo/i);
+    expect(instrucciones).toMatch(/teléfono/i);
+    expect(instrucciones).toMatch(/dirección/i);
+    expect(instrucciones).toMatch(/localidad/i);
+    expect(instrucciones).toContain('guardar_datos_contacto');
+    expect(instrucciones).toContain('TEXTO-CIERRE-CAPTURA');
+  });
+
+  it('sin captura pendiente no agrega instrucciones de captura', async () => {
+    const { caso } = crear();
+
+    const instrucciones = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' })).join('\n');
+
+    expect(instrucciones).not.toContain('guardar_datos_contacto');
   });
 });
