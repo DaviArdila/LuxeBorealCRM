@@ -4,12 +4,12 @@ import type { ClienteChatwoot } from './cliente-chatwoot.js';
 
 /** Mismo patrón que `ClienteChatwootFalso` de `adaptador-canal-chatwoot.spec.ts`. */
 class ClienteChatwootFalso {
-  readonly llamadasGet: { idConversacion: string; sufijo: string }[] = [];
+  readonly llamadasGet: { idConversacion: string; sufijo: string; credencial?: string }[] = [];
 
   constructor(private readonly respuestaGet: unknown = { payload: [] }) {}
 
-  get(idConversacion: string, sufijo: string): Promise<unknown> {
-    this.llamadasGet.push({ idConversacion, sufijo });
+  get(idConversacion: string, sufijo: string, credencial?: string): Promise<unknown> {
+    this.llamadasGet.push({ idConversacion, sufijo, credencial });
     return Promise.resolve(this.respuestaGet);
   }
 }
@@ -31,7 +31,8 @@ describe('LectorMensajeCanalChatwoot (unitario, D16 de la Fase 05)', () => {
     const texto = await lector.obtenerTexto('42', '2');
 
     expect(texto).toBe('texto del mensaje buscado');
-    expect(cliente.llamadasGet).toEqual([{ idConversacion: '42', sufijo: 'messages' }]);
+    // Chatwoot responde 401 a un token de Agent Bot al listar mensajes: se pide la credencial de lectura.
+    expect(cliente.llamadasGet).toEqual([{ idConversacion: '42', sufijo: 'messages', credencial: 'lectura' }]);
   });
 
   it('devuelve null cuando ningún mensaje coincide con el id', async () => {

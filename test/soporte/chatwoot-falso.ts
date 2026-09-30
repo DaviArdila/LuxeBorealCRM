@@ -48,6 +48,7 @@ export class ChatwootFalso {
   private readonly mensajesPorConversacion = new Map<string, unknown[]>();
   private readonly etiquetasPorConversacion = new Map<string, string[]>();
   private conservarMarcaEnMultipart = true;
+  private tokens: { readonly bot: string; readonly lectura: string } | undefined;
 
   async iniciar(): Promise<void> {
     this.servidor = createServer((req, res) => {
@@ -84,6 +85,18 @@ export class ChatwootFalso {
     this.mensajesPorConversacion.clear();
     this.etiquetasPorConversacion.clear();
     this.conservarMarcaEnMultipart = true;
+    this.tokens = undefined;
+  }
+
+  /**
+   * Reproduce la autorización del Chatwoot real (v4.17.1): un token de Agent Bot responde 401 a
+   * `GET .../messages` (los bots no pueden listar mensajes), y un token de usuario agente solo sirve
+   * para esa lectura; el resto de operaciones (`POST messages`, `toggle_status`, `labels`) exigen el
+   * token del bot para que sus mensajes no salgan como un humano (R6). Sin llamar a este método el
+   * servidor acepta cualquier token, como antes.
+   */
+  exigirTokensReales(tokens: { readonly bot: string; readonly lectura: string }): void {
+    this.tokens = tokens;
   }
 
   /**
@@ -133,6 +146,11 @@ export class ChatwootFalso {
     const apiAccessToken = primeraCabecera(req.headers['api_access_token']);
     this.llamadas.push({ metodo: req.method ?? '', ruta: url.pathname, apiAccessToken, cuerpo });
 
+    if (this.tokens && !this.tokenAutorizado(req.method ?? '', url.pathname, apiAccessToken)) {
+      responderJson(res, 401, { error: 'Invalid Access Token' });
+      return;
+    }
+
     const programada = this.colaRespuestas.shift();
     // Un multipart que llega se "crea" en Chatwoot salvo que la respuesta programada sea un error:
     // así un timeout del cliente (respuesta lenta con 2xx) deja el mensaje creado (CAN10).
@@ -149,6 +167,11 @@ export class ChatwootFalso {
     }
 
     this.responderPorDefecto(req.method ?? '', url.pathname, cuerpo, res);
+  }
+
+  private tokenAutorizado(metodo: string, ruta: string, token: string | undefined): boolean {
+    const esLecturaDeMensajes = metodo === 'GET' && PATRON_RUTA_CONVERSACION.exec(ruta)?.[2] === 'messages';
+    return token === (esLecturaDeMensajes ? this.tokens?.lectura : this.tokens?.bot);
   }
 
   private registrarMultipart(ruta: string, multipart: CuerpoMultipart): void {

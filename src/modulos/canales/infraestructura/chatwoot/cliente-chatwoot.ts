@@ -8,16 +8,34 @@
  * cuerpo de la respuesta ni el token (matriz de amenazas de `design.md`): solo método, ruta y
  * status. Vive en `infraestructura/chatwoot/` (D1: habla el formato de Chatwoot).
  */
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CONFIGURACION } from '../../../../plataforma/config/index.js';
 import type { Configuracion } from '../../../../plataforma/config/index.js';
 import { FalloCanal } from '../../puertos/adaptador-canal.js';
 
 type Metodo = 'GET' | 'POST';
 
+/**
+ * Qué token firma la llamada. `bot` (por defecto): el Agent Bot, con el que salen los mensajes, los
+ * cambios de estado y las etiquetas. `lectura`: un usuario agente, único que Chatwoot deja listar
+ * `GET .../messages`; MUST NOT usarse para escribir, o los mensajes saldrían como un humano y
+ * dispararían el eco humano (R6).
+ */
+export type CredencialChatwoot = 'bot' | 'lectura';
+
 @Injectable()
 export class ClienteChatwoot {
-  constructor(@Inject(CONFIGURACION) private readonly configuracion: Configuracion) {}
+  private static readonly registro = new Logger(ClienteChatwoot.name);
+
+  constructor(@Inject(CONFIGURACION) private readonly configuracion: Configuracion) {
+    if (!configuracion.CHATWOOT_API_TOKEN_LECTURA && configuracion.NODE_ENV !== 'test') {
+      ClienteChatwoot.registro.warn(
+        'CHATWOOT_API_TOKEN_LECTURA está vacío: la lectura de mensajes usa CHATWOOT_BOT_TOKEN y un ' +
+          'Chatwoot real responde 401 a un token de Agent Bot en GET .../messages, así que el bot no ' +
+          'verá el texto de los clientes. Configura el token de acceso de un usuario agente.',
+      );
+    }
+  }
 
   async post(idConversacion: string, sufijo: string, cuerpo: Readonly<Record<string, unknown>>): Promise<unknown> {
     return this.llamar('POST', idConversacion, sufijo, cuerpo);
@@ -31,8 +49,14 @@ export class ClienteChatwoot {
     return this.llamar('POST', idConversacion, sufijo, formulario);
   }
 
-  async get(idConversacion: string, sufijo: string): Promise<unknown> {
-    return this.llamar('GET', idConversacion, sufijo);
+  async get(idConversacion: string, sufijo: string, credencial: CredencialChatwoot = 'bot'): Promise<unknown> {
+    return this.llamar('GET', idConversacion, sufijo, undefined, credencial);
+  }
+
+  /** Sin token de lectura configurado, cae al del bot (compatibilidad; ver el aviso del constructor). */
+  private token(credencial: CredencialChatwoot): string {
+    const lectura = this.configuracion.CHATWOOT_API_TOKEN_LECTURA;
+    return credencial === 'lectura' && lectura ? lectura : this.configuracion.CHATWOOT_BOT_TOKEN;
   }
 
   private url(idConversacion: string, sufijo: string): string {
@@ -45,6 +69,7 @@ export class ClienteChatwoot {
     idConversacion: string,
     sufijo: string,
     cuerpo?: Readonly<Record<string, unknown>> | FormData,
+    credencial: CredencialChatwoot = 'bot',
   ): Promise<unknown> {
     const url = this.url(idConversacion, sufijo);
     const pathname = new URL(url).pathname;
@@ -54,7 +79,7 @@ export class ClienteChatwoot {
       respuesta = await fetch(url, {
         method: metodo,
         headers: {
-          api_access_token: this.configuracion.CHATWOOT_BOT_TOKEN,
+          api_access_token: this.token(credencial),
           ...(cuerpo && !(cuerpo instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         },
         body: cuerpo instanceof FormData ? cuerpo : cuerpo ? JSON.stringify(cuerpo) : undefined,

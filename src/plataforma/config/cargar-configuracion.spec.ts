@@ -273,6 +273,28 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.CHATWOOT_HTTP_TIMEOUT_MS).toBe(10000);
     });
 
+    it('CHATWOOT_API_TOKEN_LECTURA es opcional (ausente por defecto) y se acepta tal cual', () => {
+      expect(cargarConfiguracion(fuenteValida).CHATWOOT_API_TOKEN_LECTURA).toBeUndefined();
+      expect(
+        cargarConfiguracion({ ...fuenteValida, CHATWOOT_API_TOKEN_LECTURA: 'token-de-usuario' })
+          .CHATWOOT_API_TOKEN_LECTURA,
+      ).toBe('token-de-usuario');
+    });
+
+    it('CHATWOOT_API_TOKEN_LECTURA vacío no bloquea production (decisión pendiente, P41)', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        NODE_ENV: 'production',
+        CHATWOOT_BOT_TOKEN: 'token-real',
+        CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+        TELEGRAM_BOT_TOKEN: 'token-telegram',
+        TELEGRAM_CHAT_ID: '123',
+        OPENROUTER_API_KEY: 'clave-real',
+      });
+
+      expect(configuracion.CHATWOOT_API_TOKEN_LECTURA).toBeUndefined();
+    });
+
     it('rechaza CHATWOOT_URL que no es una URL', () => {
       const fuenteInvalida = { ...fuenteValida, CHATWOOT_URL: 'no-es-una-url' };
 

@@ -99,7 +99,8 @@ export class AdaptadorCanalChatwoot implements AdaptadorCanal {
 
   /** D13/CAN10: la marca se busca en `content_attributes` y, si no vuelve ahí, en el nombre de los adjuntos. */
   async existeMensajeConMarca(idConversacion: string, marca: string): Promise<boolean> {
-    const respuesta = await this.cliente.get(idConversacion, 'messages');
+    // Mismo endpoint que lee el texto entrante: requiere el token de lectura (un bot recibe 401).
+    const respuesta = await this.cliente.get(idConversacion, 'messages', 'lectura');
     const analizada = respuestaMensajesSchema.safeParse(respuesta);
     if (!analizada.success) return false;
     const tramo = tramoDeMarca(marca);
