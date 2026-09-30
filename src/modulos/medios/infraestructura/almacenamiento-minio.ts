@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { CONFIGURACION } from '../../../plataforma/config/index.js';
 import type { Configuracion } from '../../../plataforma/config/index.js';
-import type { Almacenamiento } from '../puertos/almacenamiento.js';
+import { ObjetoNoEncontrado, type Almacenamiento, type ObjetoAlmacenado } from '../puertos/almacenamiento.js';
 
 /**
  * Región requerida por el constructor de `S3Client` aunque MinIO la ignore por completo (no tiene
@@ -59,6 +59,26 @@ export class AlmacenamientoMinio implements Almacenamiento {
    */
   obtenerUrl(clave: string): Promise<string> {
     return Promise.resolve(`${this.urlPublicaBase}/${this.bucket}/${clave}`);
+  }
+
+  /**
+   * MED10: `GetObjectCommand` y lectura completa del cuerpo. Un `NoSuchKey` se traduce a
+   * {@link ObjetoNoEncontrado}; cualquier otro fallo del SDK se propaga tal cual para que quien
+   * lee lo trate como transitorio (no se filtran detalles del proveedor hacia el dominio).
+   */
+  async leer(clave: string): Promise<ObjetoAlmacenado> {
+    try {
+      const respuesta = await this.cliente.send(new GetObjectCommand({ Bucket: this.bucket, Key: clave }));
+      const bytes = await respuesta.Body?.transformToByteArray();
+      if (bytes === undefined) throw new ObjetoNoEncontrado(clave);
+      return {
+        contenido: Buffer.from(bytes),
+        contentType: respuesta.ContentType ?? 'application/octet-stream',
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'NoSuchKey') throw new ObjetoNoEncontrado(clave);
+      throw error;
+    }
   }
 
   async eliminar(clave: string): Promise<void> {

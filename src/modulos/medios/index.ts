@@ -4,5 +4,10 @@
  * `./aplicacion/collage.js`) — regla de fronteras `sin-rutas-internas-de-modulo`.
  */
 export { MediosModule } from './medios.module.js';
-export { ALMACENAMIENTO, type Almacenamiento } from './puertos/almacenamiento.js';
+export {
+  ALMACENAMIENTO,
+  ObjetoNoEncontrado,
+  type Almacenamiento,
+  type ObjetoAlmacenado,
+} from './puertos/almacenamiento.js';
 export { construirCollage, type FotoParaCollage } from './aplicacion/collage.js';

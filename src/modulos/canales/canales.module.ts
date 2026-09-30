@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
+import { MediosModule } from '../medios/index.js';
 import { OutboxModule, RegistroManejadoresOutbox } from '../../plataforma/outbox/index.js';
 import { ConsumidorRegistrador } from './aplicacion/consumidor-registrador.js';
 import { ProcesarEventoEntrante } from './aplicacion/procesar-evento-entrante.js';
@@ -46,11 +47,14 @@ import { SALIDA_CANAL } from './puertos/salida-canal.js';
  * `tipo` de outbox que `SalidaCanalOutbox` produce — mismo patrón de registro por `tipo` que D8,
  * aplicado aquí a `RegistroManejadoresOutbox` de `plataforma/outbox`.
  *
+ * D5 (07b): importa `MediosModule` para que `PublicarEfectoCanal` lea los bytes de una imagen con
+ * `ALMACENAMIENTO.leer` (MED10) al publicarla; `medios` no importa `canales`, no hay ciclo.
+ *
  * CAN9 (07a): `RegistroGuardiaEnvioCanal` se exporta para que `conversaciones` registre su guardia de
  * envío por paso desde `onModuleInit`, igual que hace con el consumidor de eventos.
  */
 @Module({
-  imports: [PrismaModule, OutboxModule, BullModule.registerQueue({ name: NOMBRE_COLA_INBOX })],
+  imports: [PrismaModule, OutboxModule, MediosModule, BullModule.registerQueue({ name: NOMBRE_COLA_INBOX })],
   controllers: [WebhookChatwootController],
   providers: [
     { provide: REPOSITORIO_EVENTO_ENTRANTE, useClass: RepositorioEventoEntrantePrisma },

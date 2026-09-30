@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
-import type { Almacenamiento } from '../../medios/index.js';
+import { ObjetoNoEncontrado, type Almacenamiento, type ObjetoAlmacenado } from '../../medios/index.js';
 import type { ProductoValidado } from '../dominio/validar-catalogo.js';
 import type { EstadoProductoActual } from '../puertos/repositorio-importacion.js';
 import { ProcesarFotos } from './procesar-fotos.js';
@@ -23,6 +23,13 @@ class AlmacenamientoEnMemoria implements Almacenamiento {
 
   obtenerUrl(clave: string): Promise<string> {
     return Promise.resolve(`https://almacenamiento.prueba/${clave}`);
+  }
+
+  leer(clave: string): Promise<ObjetoAlmacenado> {
+    const contenido = this.guardados.get(clave);
+    return contenido === undefined
+      ? Promise.reject(new ObjetoNoEncontrado(clave))
+      : Promise.resolve({ contenido, contentType: 'image/jpeg' });
   }
 
   eliminar(clave: string): Promise<void> {

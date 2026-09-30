@@ -29,6 +29,10 @@ class AdaptadorCanalFalso implements AdaptadorCanal {
     if (this.enviados.length === 1) await this.despuesDelPrimerEnvio?.();
   }
 
+  enviarImagen(): Promise<void> {
+    return Promise.resolve();
+  }
+
   existeMensajeConMarca(): Promise<boolean> {
     return Promise.resolve(false);
   }

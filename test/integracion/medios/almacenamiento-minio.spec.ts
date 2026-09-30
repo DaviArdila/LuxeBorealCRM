@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Configuracion } from '../../../src/plataforma/config/index.js';
 import { AlmacenamientoMinio } from '../../../src/modulos/medios/infraestructura/almacenamiento-minio.js';
+import { ObjetoNoEncontrado } from '../../../src/modulos/medios/index.js';
 import {
   bucketMinioDePrueba,
   credencialesMinioDePrueba,
@@ -107,5 +108,21 @@ describe('Puerto Almacenamiento sobre MinIO (T5, integración)', () => {
     await almacenamiento.eliminar(clave);
 
     expect((await fetch(url)).status).toBe(404);
+  });
+
+  it('MED10 — Un objeto guardado se lee con su contenido y tipo', async () => {
+    const contenido = Buffer.from('contenido-de-prueba-jpeg');
+    await almacenamiento.guardar(clave, contenido, 'image/jpeg');
+
+    const objeto = await almacenamiento.leer(clave);
+
+    expect(objeto.contenido).toEqual(contenido);
+    expect(objeto.contentType).toBe('image/jpeg');
+  });
+
+  it('MED10 — Leer una clave inexistente falla con un error tipado', async () => {
+    await expect(almacenamiento.leer(`catalogo/no-existe-${crypto.randomUUID()}.jpg`)).rejects.toBeInstanceOf(
+      ObjetoNoEncontrado,
+    );
   });
 });

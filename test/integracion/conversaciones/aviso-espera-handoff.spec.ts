@@ -220,8 +220,9 @@ describe('Aviso único de espera en handoff_pendiente (T8, integración, CNV3, D
 
     expect(contexto.salidaCanal.llamadas).toHaveLength(1);
     expect(contexto.salidaCanal.llamadas[0].mensajes).toHaveLength(1);
-    expect(contexto.salidaCanal.llamadas[0].mensajes[0].tipo).toBe('texto');
-    expect(contexto.salidaCanal.llamadas[0].mensajes[0].texto.length).toBeGreaterThan(0);
+    const mensaje = contexto.salidaCanal.llamadas[0].mensajes[0];
+    expect(mensaje.tipo).toBe('texto');
+    expect(mensaje.tipo === 'texto' && mensaje.texto.length).toBeGreaterThan(0);
     expect(contexto.salidaCanal.llamadas[0].requiereEstado).toBe('handoff_pendiente'); // CNV9
     // El outbox real (`claveMensaje`) rechaza un idRespuesta con ':' o de más de 64 caracteres.
     expect(contexto.salidaCanal.llamadas[0].idRespuesta).toMatch(/^[A-Za-z0-9_-]{1,64}$/);

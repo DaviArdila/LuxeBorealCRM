@@ -2,14 +2,16 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { ALMACENAMIENTO } from '../../../src/modulos/medios/index.js';
 import { CanalesModule, SALIDA_CANAL, type SalidaCanal } from '../../../src/modulos/canales/index.js';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ColasModule } from '../../../src/plataforma/colas/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { PublicadorOutbox } from '../../../src/plataforma/outbox/index.js';
+import { AlmacenamientoEnMemoria } from '../../fakes/almacenamiento-en-memoria.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
-import { ChatwootFalso } from '../../soporte/chatwoot-falso.js';
+import { ChatwootFalso, type CuerpoMultipart } from '../../soporte/chatwoot-falso.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
@@ -23,7 +25,8 @@ import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-
 async function crearAplicacion(
   chatwootFalso: ChatwootFalso,
   configuracionParcial: Partial<Configuracion> = {},
-): Promise<{ app: INestApplication; clock: ClockFalso }> {
+): Promise<{ app: INestApplication; clock: ClockFalso; almacenamiento: AlmacenamientoEnMemoria }> {
+  const almacenamiento = new AlmacenamientoEnMemoria();
   const clock = new ClockFalso(new Date('2030-01-01T00:00:00.000Z'));
   const configuracionDePrueba: Configuracion = {
     NODE_ENV: 'test',
@@ -77,11 +80,13 @@ async function crearAplicacion(
     .useValue(configuracionDePrueba)
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(ALMACENAMIENTO)
+    .useValue(almacenamiento)
     .compile();
 
   const app = modulo.createNestApplication();
   await app.init();
-  return { app, clock };
+  return { app, clock, almacenamiento };
 }
 
 function llamadasAMensajes(chatwootFalso: ChatwootFalso): readonly { cuerpo: unknown }[] {
@@ -226,5 +231,87 @@ describe('SalidaCanalOutbox + PublicarEfectoCanal contra Chatwoot falso (T7, int
     });
     expect(filas).toHaveLength(3);
     expect(filas.every((f) => f.enviadoEn !== null && f.error === null)).toBe(true);
+  });
+
+  it('CAN6 — Enviar una imagen sube el adjunto multipart con su leyenda', async () => {
+    const arrancado = await crearAplicacion(chatwootFalso);
+    app = arrancado.app;
+    const salidaCanal = app.get<SalidaCanal>(SALIDA_CANAL);
+    const publicador = app.get(PublicadorOutbox);
+    const prisma = app.get(PrismaService);
+    const idConversacion = randomUUID().slice(0, 8);
+    const bytes = Buffer.from('bytes-de-un-collage');
+    await arrancado.almacenamiento.guardar('catalogo/luna/collage.jpg', bytes, 'image/jpeg');
+
+    await salidaCanal.enviarMensajes({
+      idConversacion,
+      idRespuesta: 'r1',
+      mensajes: [
+        { tipo: 'texto', texto: 'mira este modelo' },
+        { tipo: 'imagen', claveObjeto: 'catalogo/luna/collage.jpg', leyenda: 'Modelo Luna' },
+      ],
+    });
+    await publicador.publicarPendientes();
+
+    const [texto, imagen] = llamadasAMensajes(chatwootFalso).map((l) => l.cuerpo);
+    expect(texto).toMatchObject({ content: 'mira este modelo' });
+    const multipart = imagen as CuerpoMultipart;
+    expect(multipart.multipart).toBe(true);
+    expect(multipart.campos['content']).toBe('Modelo Luna');
+    expect(JSON.parse(multipart.campos['content_attributes'] ?? '{}')).toEqual({
+      luxe_clave: `canal:mensaje:${idConversacion}:r1:01`,
+    });
+    expect(multipart.archivos).toHaveLength(1);
+    expect(multipart.archivos[0]).toMatchObject({
+      campo: 'attachments[]',
+      nombre: `canal_mensaje_${idConversacion}_r1_01.jpg`,
+      tipo: 'image/jpeg',
+    });
+    expect(multipart.archivos[0]?.bytes).toEqual(bytes);
+
+    // La leyenda es efímera (R14): tras publicarse no queda en la fila; la clave del objeto sí.
+    const fila = await prisma.outbox.findFirstOrThrow({
+      where: { claveIdempotencia: `canal:mensaje:${idConversacion}:r1:01` },
+    });
+    expect(fila.enviadoEn).not.toBeNull();
+    expect(JSON.stringify(fila.payload)).not.toContain('Modelo Luna');
+    expect(JSON.stringify(fila.payload)).toContain('catalogo/luna/collage.jpg');
+  });
+
+  it.each([
+    ['la marca vuelve en content_attributes', false],
+    ['Chatwoot descarta content_attributes y la marca solo viaja en el nombre del adjunto', true],
+  ])('CAN10 — Un reintento de una imagen ya creada no la envía otra vez (%s)', async (_caso, descartarAtributos) => {
+    const arrancado = await crearAplicacion(chatwootFalso, { CHATWOOT_HTTP_TIMEOUT_MS: 300 });
+    app = arrancado.app;
+    const { clock } = arrancado;
+    const salidaCanal = app.get<SalidaCanal>(SALIDA_CANAL);
+    const publicador = app.get(PublicadorOutbox);
+    const prisma = app.get(PrismaService);
+    const idConversacion = randomUUID().slice(0, 8);
+    await arrancado.almacenamiento.guardar('catalogo/luna/collage.jpg', Buffer.from('bytes'), 'image/jpeg');
+    if (descartarAtributos) chatwootFalso.descartarMarcaEnMultipart();
+
+    // 1.º intento: Chatwoot crea el mensaje pero responde tarde; el cliente vence por timeout
+    // (transitorio) y la fila queda pendiente sin saber si el mensaje se creó.
+    chatwootFalso.programarRespuesta({ status: 200, cuerpo: { id: 1 }, retrasoMs: 700 });
+    await salidaCanal.enviarMensajes({
+      idConversacion,
+      idRespuesta: 'r1',
+      mensajes: [{ tipo: 'imagen', claveObjeto: 'catalogo/luna/collage.jpg', leyenda: 'Modelo Luna' }],
+    });
+    await publicador.publicarPendientes();
+    expect(llamadasAMensajes(chatwootFalso)).toHaveLength(1);
+
+    clock.avanzar(15_000);
+    await publicador.publicarPendientes();
+
+    // Reconcilia (GET) y marca la fila como enviada sin un segundo POST multipart.
+    expect(llamadasAMensajes(chatwootFalso)).toHaveLength(1);
+    const fila = await prisma.outbox.findFirstOrThrow({
+      where: { claveIdempotencia: `canal:mensaje:${idConversacion}:r1:00` },
+    });
+    expect(fila.enviadoEn).not.toBeNull();
+    expect(fila.error).toBeNull();
   });
 });
