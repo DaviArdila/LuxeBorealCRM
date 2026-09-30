@@ -12,7 +12,7 @@ describe('modulos/llm — barril público', () => {
     const publicos = Object.keys(barril);
 
     for (const interno of [
-      'AdaptadorOpenRouter',
+      'AdaptadorAiSdk',
       'ADAPTADOR_LLM',
       'LlmGateway',
       'TEMPORIZADOR_LLM',

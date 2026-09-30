@@ -167,6 +167,67 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
   });
 });
 
+describe('modulos/llm/aplicacion — LlmGateway: proveedor real de la fila (LLM15, LLM19)', () => {
+  it('LLM15 — Un id sin prefijo se llama a OpenRouter como hoy', async () => {
+    const { gateway, adaptador, uso } = crearGateway();
+    adaptador.programar(MODELO, { resultado: OK });
+
+    await gateway.generar(SOLICITUD);
+
+    expect(adaptador.llamadas[0]?.modelo).toBe(MODELO);
+    expect(uso.filas[0]).toMatchObject({ proveedor: 'openrouter', modelo: MODELO });
+  });
+
+  it('LLM15 — Un id con prefijo se llama directo al proveedor indicado', async () => {
+    const id = 'openai:gpt-6-luna';
+    const { gateway, adaptador, uso } = crearGateway({
+      LLM_CONVERSACION_MODELOS: [id],
+      LLM_PRECIOS_USD_JSON: { [id]: PRECIO },
+    });
+    adaptador.programar(id, { resultado: OK });
+
+    await gateway.generar(SOLICITUD);
+
+    // El gateway entrega el id configurado completo: el enrutador (T8) recorta el prefijo.
+    expect(adaptador.llamadas[0]?.modelo).toBe(id);
+    expect(uso.filas[0]).toMatchObject({ proveedor: 'openai', modelo: id });
+  });
+
+  it('LLM15 — El intento fallido de un proveedor directo también lleva su proveedor', async () => {
+    const id = 'openai:gpt-6-luna';
+    const { gateway, adaptador, uso } = crearGateway({
+      LLM_CONVERSACION_MODELOS: [id, MODELO],
+      LLM_CONVERSACION_MAX_REINTENTOS: 0,
+      LLM_PRECIOS_USD_JSON: { [id]: PRECIO, [MODELO]: PRECIO },
+    });
+    adaptador.programar(id, { error: http(401, 'no-reintentable') });
+    adaptador.programar(MODELO, { resultado: OK });
+
+    await gateway.generar(SOLICITUD);
+
+    expect(uso.filas.map((fila) => [fila.proveedor, fila.exito])).toEqual([
+      ['openai', false],
+      ['openrouter', true],
+    ]);
+  });
+
+  it('LLM19 — El costo se calcula con el precio del id configurado', async () => {
+    const id = 'openai:gpt-6-luna';
+    const { gateway, adaptador, uso } = crearGateway({
+      LLM_CONVERSACION_MODELOS: [id],
+      LLM_PRECIOS_USD_JSON: { [id]: { entrada: 1, salida: 2, cache: 0.5 } },
+    });
+    adaptador.programar(id, {
+      resultado: { ...OK, uso: { tokensEntrada: 1000, tokensSalida: 500, tokensCache: 200 } },
+    });
+
+    await gateway.generar(SOLICITUD);
+
+    // (1000 * 1 + 500 * 2 + 200 * 0.5) / 1e6
+    expect(uso.filas[0]?.costoEstimadoUsd).toBe(0.0021);
+  });
+});
+
 describe('modulos/llm/aplicacion — LlmGateway v1: timeout (LLM3)', () => {
   it('LLM3 — Llamada que supera el timeout del perfil se aborta', async () => {
     const { gateway, adaptador, uso } = crearGateway({
