@@ -1,0 +1,7 @@
+/**
+ * Superficie pública de `modulos/notificaciones`. Nadie fuera de este módulo importa rutas internas (regla
+ * de fronteras `sin-rutas-internas-de-modulo`): `leads` encola avisos con {@link EncolarAviso}.
+ */
+export { NotificacionesModule } from './notificaciones.module.js';
+export { EncolarAviso, type EntradaAviso } from './aplicacion/encolar-aviso.js';
+export type { DatosAviso } from './dominio/armar-aviso.js';
