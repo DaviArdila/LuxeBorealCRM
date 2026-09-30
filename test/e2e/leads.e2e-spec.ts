@@ -20,6 +20,7 @@ import { AlmacenamientoEnMemoria } from '../fakes/almacenamiento-en-memoria.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
+import { TelegramFalso } from '../soporte/telegram-falso.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
@@ -28,7 +29,7 @@ const SECRETO = 'secreto-e2e-leads';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
 const DEBOUNCE_MS = 200;
 
-function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
+function configuracionDePrueba(chatwootFalso: ChatwootFalso, telegramFalso: TelegramFalso): Configuracion {
   return {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -71,18 +72,22 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso): Configuracion {
     HANDOFF_ESPERA_MIN: 30,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    TELEGRAM_BOT_TOKEN: 'token-telegram-e2e',
+    TELEGRAM_CHAT_ID: '-100555',
+    TELEGRAM_API_URL: telegramFalso.url(),
   };
 }
 
 
 async function crearAplicacion(
   chatwootFalso: ChatwootFalso,
+  telegramFalso: TelegramFalso,
   llm: FakePuertoLlm,
   almacenamiento: AlmacenamientoEnMemoria,
 ): Promise<INestApplication> {
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIGURACION)
-    .useValue(configuracionDePrueba(chatwootFalso))
+    .useValue(configuracionDePrueba(chatwootFalso, telegramFalso))
     .overrideProvider(LLM_PORT)
     .useValue(llm)
     .overrideProvider(ALMACENAMIENTO)
@@ -187,29 +192,42 @@ function contenido(cuerpo: unknown): string {
 
 describe('Leads y handoff de punta a punta (Fase 08)', () => {
   const chatwootFalso = new ChatwootFalso();
+  const telegramFalso = new TelegramFalso();
   let app: INestApplication | undefined;
   let llm = new FakePuertoLlm();
   let almacenamiento = new AlmacenamientoEnMemoria();
 
   beforeAll(async () => {
     await chatwootFalso.iniciar();
+    await telegramFalso.iniciar();
   });
 
   afterEach(async () => {
     await app?.close();
     app = undefined;
     chatwootFalso.limpiar();
+    telegramFalso.limpiar();
   });
 
   afterAll(async () => {
     await chatwootFalso.detener();
+    await telegramFalso.detener();
   });
 
   async function arrancar(): Promise<INestApplication> {
     llm = new FakePuertoLlm();
     almacenamiento = new AlmacenamientoEnMemoria();
-    app = await crearAplicacion(chatwootFalso, llm, almacenamiento);
+    app = await crearAplicacion(chatwootFalso, telegramFalso, llm, almacenamiento);
     return app;
+  }
+
+  /** Espera a que el Telegram falso haya recibido exactamente `cantidad` llamadas y devuelve sus textos. */
+  async function esperarAvisos(cantidad: number): Promise<string[]> {
+    await vi.waitFor(() => expect(telegramFalso.llamadasRegistradas()).toHaveLength(cantidad), {
+      timeout: 15_000,
+      interval: 100,
+    });
+    return telegramFalso.llamadasRegistradas().map((llamada) => llamada.texto ?? '');
   }
 
   async function turno(aplicacion: INestApplication, texto: string) {
@@ -246,6 +264,11 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
       senales: ['pide_persona'],
       temperatura: 'caliente',
     });
+    // NTF1/NTF3: el aviso sale tras confirmar el handoff, al grupo configurado y sin datos del contacto.
+    const [aviso] = await esperarAvisos(1);
+    expect(aviso).toContain('caliente');
+    expect(aviso).not.toContain(String(idContacto));
+    expect(telegramFalso.llamadasRegistradas()[0]?.chatId).toBe('-100555');
   }, 40_000);
 
   it('LDS3 — Mencionar la palabra no es pedirla: el turno sigue al LLM y no deriva', async () => {
@@ -299,6 +322,9 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
       derivado: true,
       senales: ['pide_pagar'],
     });
+    const [aviso] = await esperarAvisos(1);
+    expect(aviso).toContain('pide_pagar');
+    expect(aviso).toContain('Quiere pagar ya');
   }, 40_000);
 
   it('R9 — Una señal débil sola no deriva aunque el modelo proponga caliente', async () => {
@@ -319,6 +345,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(contenido(unico)).toContain('Con gusto te cuento más');
     expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
     expect(etiquetasPuestas(chatwootFalso, idConversacion)).toEqual([]);
+    expect(telegramFalso.llamadasRegistradas()).toEqual([]);
   }, 40_000);
 
   it('R10 — Fuera de horario el bot captura los datos, avisa el lead y sigue atendiendo', async () => {
@@ -373,8 +400,60 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
       const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
       expect(conversacion.estado).toBe('bot');
       expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
+      // LDS4/NTF1: con los datos guardados se avisa una vez, sin el nombre ni la dirección del cliente.
+      const [aviso] = await esperarAvisos(1);
+      expect(aviso).toContain('fuera de horario');
+      expect(aviso).not.toContain('Laura');
+      expect(aviso).not.toContain('Calle 45');
     } finally {
       await abrirDeNuevo();
     }
+  }, 60_000);
+
+  it('NTF2 — Ventana de 24 horas por contacto: dos conversaciones del mismo contacto avisan una vez', async () => {
+    const aplicacion = await arrancar();
+    const { idConversacion: primera, idContacto } = nuevaConversacion();
+    const { idConversacion: segunda } = nuevaConversacion();
+    for (const idConversacion of [primera, segunda]) {
+      const idMensaje = nuevoIdMensaje();
+      chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, 'Quiero hablar con un asesor');
+      await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje });
+      await esperarMensajes(chatwootFalso, idConversacion, 1);
+    }
+
+    await esperarAvisos(1);
+    // Margen para que un segundo aviso indebido llegara al Telegram falso antes de afirmar que no llegó.
+    await new Promise((resolver) => setTimeout(resolver, 1500));
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(1);
+  }, 60_000);
+
+  it('NTF4 — Reintento ante fallo de entrega: Telegram responde 500 y luego 200', async () => {
+    const aplicacion = await arrancar();
+    telegramFalso.programarRespuesta({ status: 500 });
+
+    await turno(aplicacion, 'Quiero hablar con un asesor');
+
+    const avisos = await esperarAvisos(2);
+    expect(avisos[1]).toBe(avisos[0]);
+    // Ningún aviso más después de la entrega exitosa.
+    await new Promise((resolver) => setTimeout(resolver, 1500));
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(2);
+  }, 60_000);
+
+  it('NTF4 — Un rechazo permanente no se reintenta y el lead queda intacto', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    telegramFalso.programarRespuesta({ status: 401, cuerpo: { ok: false } });
+
+    const { idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor');
+
+    await esperarAvisos(1);
+    await new Promise((resolver) => setTimeout(resolver, 2500));
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(1);
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({
+      derivado: true,
+      senales: ['pide_persona'],
+    });
   }, 60_000);
 });

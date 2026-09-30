@@ -89,4 +89,29 @@ export class RepositorioLeadPrisma implements RepositorioLead {
     });
     return aLead(fila);
   }
+
+  /**
+   * Una transacción con el contacto bloqueado (`FOR UPDATE`) serializa a quienes avisan por el mismo
+   * contacto; cada sentencia ve entonces lo que confirmó la anterior. Un solo `UPDATE ... WHERE NOT
+   * EXISTS` no bastaba: bajo `READ COMMITTED` dos sentencias concurrentes verían la misma foto y
+   * avisarían las dos (NTF2). El reloj es el `Clock` inyectado, no `now()` de SQL.
+   */
+  async marcarNotificado(lead: { id: string; contactoId: string }, ahora: Date, limite: Date): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM contacto WHERE id = ${lead.contactoId}::uuid FOR UPDATE`;
+      const marcados = await tx.$queryRaw<{ id: string }[]>`
+        UPDATE lead SET notificado_en = ${ahora}, actualizado = ${ahora}
+        WHERE id = ${lead.id}::uuid
+          AND NOT EXISTS (
+            SELECT 1 FROM lead
+            WHERE contacto_id = ${lead.contactoId}::uuid AND notificado_en > ${limite}
+          )
+        RETURNING id`;
+      return marcados.length > 0;
+    });
+  }
+
+  async desmarcarNotificado(id: string): Promise<void> {
+    await this.prisma.lead.update({ where: { id }, data: { notificadoEn: null, actualizado: this.clock.ahora() } });
+  }
 }

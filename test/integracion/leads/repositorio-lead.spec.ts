@@ -101,4 +101,73 @@ describe('RepositorioLeadPrisma (T2, integración)', () => {
 
     await expect(repositorio.obtenerAbiertoDeConversacion(conversacion.id)).resolves.toBeNull();
   });
+
+  describe('ventana de aviso por contacto (NTF2, D8)', () => {
+    const AHORA = new Date('2026-09-30T15:00:00.000Z');
+    const horas = (h: number): Date => new Date(AHORA.getTime() - h * 3_600_000);
+
+    async function dosLeads() {
+      const contexto = await crearContexto();
+      const nuevo = (conversacionId: string | null) =>
+        contexto.repositorio.crear({
+          contactoId: contexto.contacto.id,
+          conversacionId: conversacionId ?? contexto.conversacion.id,
+          productoId: null,
+          temperatura: 'caliente',
+          senales: ['pide_pagar'],
+          resumen: 'x',
+          derivado: true,
+        });
+      const a = await nuevo(null);
+      const b = await nuevo(null);
+      return { ...contexto, a, b };
+    }
+
+    it('NTF2 — marca el lead si el contacto nunca fue avisado', async () => {
+      const { repositorio, prisma, a, contacto } = await dosLeads();
+
+      await expect(repositorio.marcarNotificado({ id: a.id, contactoId: contacto.id }, AHORA, horas(24))).resolves.toBe(true);
+
+      const fila = await prisma.lead.findUniqueOrThrow({ where: { id: a.id } });
+      expect(fila.notificadoEn?.toISOString()).toBe(AHORA.toISOString());
+    });
+
+    it('NTF2 — Ventana de 24 horas por contacto: otro lead avisado hace 3 horas bloquea', async () => {
+      const { repositorio, prisma, a, b, contacto } = await dosLeads();
+      await prisma.lead.update({ where: { id: a.id }, data: { notificadoEn: horas(3) } });
+
+      await expect(repositorio.marcarNotificado({ id: b.id, contactoId: contacto.id }, AHORA, horas(24))).resolves.toBe(false);
+
+      const fila = await prisma.lead.findUniqueOrThrow({ where: { id: b.id } });
+      expect(fila.notificadoEn).toBeNull();
+    });
+
+    it('NTF2 — Pasada la ventana se vuelve a avisar (avisado hace 25 horas)', async () => {
+      const { repositorio, prisma, a, b, contacto } = await dosLeads();
+      await prisma.lead.update({ where: { id: a.id }, data: { notificadoEn: horas(25) } });
+
+      await expect(repositorio.marcarNotificado({ id: b.id, contactoId: contacto.id }, AHORA, horas(24))).resolves.toBe(true);
+    });
+
+    it('NTF2 — Dos derivaciones simultáneas avisan una sola vez', async () => {
+      const { repositorio, a, b, contacto } = await dosLeads();
+
+      const resultados = await Promise.all([
+        repositorio.marcarNotificado({ id: a.id, contactoId: contacto.id }, AHORA, horas(24)),
+        repositorio.marcarNotificado({ id: b.id, contactoId: contacto.id }, AHORA, horas(24)),
+      ]);
+
+      expect(resultados.filter(Boolean)).toHaveLength(1);
+    });
+
+    it('desmarcar devuelve el lead a «sin avisar» para que otro intento pueda avisar', async () => {
+      const { repositorio, prisma, a, contacto } = await dosLeads();
+      await repositorio.marcarNotificado({ id: a.id, contactoId: contacto.id }, AHORA, horas(24));
+
+      await repositorio.desmarcarNotificado(a.id);
+
+      const fila = await prisma.lead.findUniqueOrThrow({ where: { id: a.id } });
+      expect(fila.notificadoEn).toBeNull();
+    });
+  });
 });

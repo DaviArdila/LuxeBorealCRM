@@ -21,7 +21,7 @@ subir), sin atribución de IA.
 - [x] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
 - [x] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [x] T5 — Captura de datos fuera de horario
-- [ ] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
+- [x] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
 - [ ] T7 — Recordatorios de leads sin atender
 - [ ] T8 — Casos de evals y e2e por webhook de los flujos nuevos
 - [ ] T9 — Cierre documental
@@ -189,6 +189,24 @@ manejador contra `TelegramFalso` (429/500/401).
 corre un lead de prueba; se anota aquí el resultado.
 
 **Hecho cuando**: 10 escenarios en verde; resultado `[manual]` anotado o marcado pendiente.
+
+**Estado (cerrada; `[manual]` pendiente)**: NTF1 (2), NTF2 (3), NTF3 (2) y NTF4 (3) en verde: unitarios de
+`armarAviso`, `EncolarAviso`, `PublicarNotificacionTelegram`, `AvisarLead` y `AvisoLeadEnHandoff`;
+integración de `NotificadorTelegram` contra `TelegramFalso` (200/429/500/401/400/caído/sin credenciales) y
+de la ventana atómica contra Postgres; y tres e2e por webhook (dos conversaciones del mismo contacto avisan
+una vez, 500→200 entrega una vez, 401 no reintenta y el lead queda intacto). Desviaciones: (1) la marca de la
+ventana es una transacción que bloquea la fila del contacto (`FOR UPDATE`) y luego un `UPDATE ... WHERE NOT
+EXISTS ... RETURNING`: un solo `UPDATE` no es atómico entre dos contactos-lead concurrentes bajo
+`READ COMMITTED` (la prueba de concurrencia contra Postgres lo confirma). (2) La clave de idempotencia es
+`aviso:<leadId>:<instante de la marca>` y no `aviso:<leadId>`: pasada la ventana un mismo lead puede volver a
+avisarse sin que el outbox lo tome por duplicado. (3) El aviso no lleva el producto ni el enlace a la
+conversación de Chatwoot: `leads` no lee catálogo y el enlace exige el id de Chatwoot, que vive en `canales`;
+el aviso dice temperatura, señales y resumen (NTF1) y la conversación está en la bandeja de Chatwoot.
+(4) `CompletarCaptura` también avisa; si el aviso falla, la captura queda cerrada y se registra un `warn`.
+(5) Los bloques de configuración de las pruebas incluyen `TELEGRAM_*` y `LEADS_*` en
+`configuracion-agente-de-prueba.ts` (un solo lugar en vez de 48 archivos). `[manual]` (Q4/P36): pendiente de
+que el usuario cree el bot y el grupo, ponga `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` y corra un lead de
+prueba.
 
 **Review requerida**: RDD
 
