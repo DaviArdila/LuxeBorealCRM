@@ -47,13 +47,13 @@ slices nuevos después del PR 4.
   **verificar** el nombre del env del SDK y los metadatos de razonamiento (B7). Ruta prevista: delegada.
 - [~] **T7 — pospuesta (P37: solo OpenAI).** Proveedor `compatible` (LLM18, LLM22). Endpoint tipo OpenAI
   con `baseURL` y clave por entorno; URL obligatoria si se usa. Ruta prevista: delegada.
-- [ ] **T8 — Enrutador, cableado y fronteras (LLM15, LLM20, LLM21).** `adaptador-enrutador.ts`,
+- [x] **T8 — Enrutador, cableado y fronteras (LLM15, LLM20, LLM21).** `adaptador-enrutador.ts`,
   fábrica en `llm.module.ts` que instancia solo los proveedores usados (hoy OpenRouter y OpenAI; no
   depende de T5-T7, el registro admite sumar otros después), regla `@ai-sdk/` en
   `.dependency-cruiser.cjs`, `modo-evals.ts`. RED: prefijo enruta al proveedor correcto; caída de un
   proveedor deriva al siguiente; con todo caído, `proveedor-caido`; `npm run fronteras` rechaza un
   import fuera de infraestructura. Ruta: delegada.
-- [ ] **T9 — Documentación.** `.env.example` con ejemplos de perfil (sin claves ni precios inventados),
+- [x] **T9 — Documentación.** `.env.example` con ejemplos de perfil (sin claves ni precios inventados),
   nota en `CLAUDE.md` si cambia algún comando, y matiz de ADR-0002 y ADR-0014 (**obligatorio**: el
   ADR-0019 se aceptó el 2026-09-30); índice de ADR. Solo documentación: sin cambios de producción, sin riesgo de
   presupuesto. Ruta: inline.
