@@ -54,4 +54,30 @@ export class RepositorioLeadEnMemoria implements RepositorioLead {
     if (actual !== undefined) this.leads[indice] = { ...actual, notificadoEn: null };
     return Promise.resolve();
   }
+
+  reclamarSinAtender(limite: Date, ahora: Date, maximo: number): Promise<Lead[]> {
+    const reclamados: Lead[] = [];
+    this.leads.forEach((lead, indice) => {
+      const elegible =
+        reclamados.length < maximo &&
+        lead.estado === 'nuevo' &&
+        lead.derivado &&
+        lead.recordatorioEn === null &&
+        lead.notificadoEn !== null &&
+        lead.notificadoEn < limite;
+      if (elegible) {
+        const marcado: Lead = { ...lead, recordatorioEn: ahora };
+        this.leads[indice] = marcado;
+        reclamados.push(marcado);
+      }
+    });
+    return Promise.resolve(reclamados);
+  }
+
+  desmarcarRecordatorio(id: string): Promise<void> {
+    const indice = this.leads.findIndex((lead) => lead.id === id);
+    const actual = this.leads[indice];
+    if (actual !== undefined) this.leads[indice] = { ...actual, recordatorioEn: null };
+    return Promise.resolve();
+  }
 }

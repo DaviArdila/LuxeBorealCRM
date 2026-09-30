@@ -1,3 +1,4 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { ObservadoresHandoffModule, RegistroObservadoresHandoff } from '../conversaciones/index.js';
@@ -5,10 +6,12 @@ import { HorarioModule } from '../horario/index.js';
 import { NotificacionesModule } from '../notificaciones/index.js';
 import { AvisarLead } from './aplicacion/avisar-lead.js';
 import { AvisoLeadEnHandoff } from './aplicacion/aviso-lead-en-handoff.js';
+import { RecordarLeads } from './aplicacion/recordar-leads.js';
 import { CompletarCaptura } from './aplicacion/completar-captura.js';
 import { EvaluarPropuestaLead } from './aplicacion/evaluar-propuesta-lead.js';
 import { ObtenerCapturaPendiente } from './aplicacion/obtener-captura-pendiente.js';
 import { RegistrarPidePersona } from './aplicacion/registrar-pide-persona.js';
+import { BarridoLeads, NOMBRE_COLA_BARRIDO_LEADS } from './infraestructura/colas/barrido-leads.js';
 import { RepositorioLeadPrisma } from './infraestructura/prisma/repositorio-lead-prisma.js';
 import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
 
@@ -19,10 +22,17 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
  *
  * T6 (NTF1-NTF3): avisa a los asesores con `AvisarLead` (ventana de 24 h por contacto) a través de
  * `notificaciones`, y se registra como observador de handoff en `onModuleInit` (mismo patrón que
- * `CanalesModule`) para avisar solo después de confirmada la transición.
+ * `CanalesModule`) para avisar solo después de confirmada la transición. T7 (LDS5): `BarridoLeads` es un job
+ * repetible de BullMQ que corre `RecordarLeads` cada `LEADS_BARRIDO_MS`.
  */
 @Module({
-  imports: [PrismaModule, HorarioModule, NotificacionesModule, ObservadoresHandoffModule],
+  imports: [
+    PrismaModule,
+    HorarioModule,
+    NotificacionesModule,
+    ObservadoresHandoffModule,
+    BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_LEADS }),
+  ],
   providers: [
     { provide: REPOSITORIO_LEAD, useClass: RepositorioLeadPrisma },
     EvaluarPropuestaLead,
@@ -31,6 +41,8 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
     AvisarLead,
     AvisoLeadEnHandoff,
     CompletarCaptura,
+    RecordarLeads,
+    BarridoLeads,
   ],
   exports: [EvaluarPropuestaLead, RegistrarPidePersona, ObtenerCapturaPendiente, CompletarCaptura],
 })

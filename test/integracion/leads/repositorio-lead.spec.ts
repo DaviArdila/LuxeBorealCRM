@@ -170,4 +170,98 @@ describe('RepositorioLeadPrisma (T2, integración)', () => {
       expect(fila.notificadoEn).toBeNull();
     });
   });
+
+  describe('reclamo de leads sin atender (LDS5, D10)', () => {
+    const AHORA = new Date('2026-09-30T15:00:00.000Z');
+    const hace = (min: number): Date => new Date(AHORA.getTime() - min * 60_000);
+    const LIMITE = hace(30);
+
+    /** El reclamo mira toda la tabla: se vacía para no reclamar leads que dejaron otros tests del archivo. */
+    async function contextoLimpio() {
+      const contexto = await crearContexto();
+      await contexto.prisma.lead.deleteMany();
+      return contexto;
+    }
+
+    async function leadAvisado(contexto: Awaited<ReturnType<typeof crearContexto>>, minutos: number) {
+      const lead = await contexto.repositorio.crear({
+        contactoId: contexto.contacto.id,
+        conversacionId: contexto.conversacion.id,
+        productoId: null,
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'x',
+        derivado: true,
+      });
+      await contexto.prisma.lead.update({ where: { id: lead.id }, data: { notificadoEn: hace(minutos) } });
+      return lead;
+    }
+
+    it('LDS5 — reclama un lead derivado sin atender y marca recordatorio_en', async () => {
+      const contexto = await contextoLimpio();
+      const lead = await leadAvisado(contexto, 45);
+
+      const reclamados = await contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10);
+
+      expect(reclamados.map((r) => r.id)).toEqual([lead.id]);
+      const fila = await contexto.prisma.lead.findUniqueOrThrow({ where: { id: lead.id } });
+      expect(fila.recordatorioEn?.toISOString()).toBe(AHORA.toISOString());
+    });
+
+    it('LDS5 — El recordatorio no se repite: un segundo reclamo no devuelve el mismo lead', async () => {
+      const contexto = await contextoLimpio();
+      await leadAvisado(contexto, 45);
+
+      await contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10);
+
+      await expect(contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10)).resolves.toEqual([]);
+    });
+
+    it('LDS5 — Un lead ya atendido, reciente o sin avisar no se reclama', async () => {
+      const contexto = await contextoLimpio();
+      const atendido = await leadAvisado(contexto, 45);
+      await contexto.prisma.lead.update({ where: { id: atendido.id }, data: { estado: 'en_atencion' } });
+      await leadAvisado(contexto, 10);
+      await contexto.repositorio.crear({
+        contactoId: contexto.contacto.id,
+        conversacionId: contexto.conversacion.id,
+        productoId: null,
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'nunca avisado',
+        derivado: true,
+      });
+
+      await expect(contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10)).resolves.toEqual([]);
+    });
+
+    it('dos barridos simultáneos no reclaman el mismo lead', async () => {
+      const contexto = await contextoLimpio();
+      await leadAvisado(contexto, 45);
+      await leadAvisado(contexto, 50);
+
+      const [a, b] = await Promise.all([
+        contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10),
+        contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10),
+      ]);
+
+      const ids = [...a, ...b].map((lead) => lead.id);
+      expect(ids).toHaveLength(2);
+      expect(new Set(ids).size).toBe(2);
+    });
+
+    it('respeta el máximo por barrido y desmarcar devuelve el lead al siguiente barrido', async () => {
+      const contexto = await contextoLimpio();
+      const primero = await leadAvisado(contexto, 60);
+      await leadAvisado(contexto, 45);
+
+      const reclamados = await contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 1);
+      expect(reclamados.map((r) => r.id)).toEqual([primero.id]);
+
+      await contexto.repositorio.desmarcarRecordatorio(primero.id);
+
+      const siguiente = await contexto.repositorio.reclamarSinAtender(LIMITE, AHORA, 10);
+      expect(siguiente.map((r) => r.id)).toContain(primero.id);
+    });
+  });
 });

@@ -21,4 +21,12 @@ export interface RepositorioLead {
   marcarNotificado(lead: { id: string; contactoId: string }, ahora: Date, limite: Date): Promise<boolean>;
   /** Deshace {@link marcarNotificado} cuando el aviso no pudo encolarse: mejor perder la marca que el aviso. */
   desmarcarNotificado(id: string): Promise<void>;
+  /**
+   * Reclama, marcando `recordatorio_en = ahora`, los leads derivados y avisados antes de `limite` que
+   * siguen en `nuevo` y no se recordaron (LDS5, D10). El reclamo es atómico: dos barridos simultáneos no
+   * reclaman el mismo lead. Devuelve como máximo `maximo` leads.
+   */
+  reclamarSinAtender(limite: Date, ahora: Date, maximo: number): Promise<Lead[]>;
+  /** Deshace el reclamo cuando el recordatorio no pudo encolarse: el próximo barrido lo reintenta. */
+  desmarcarRecordatorio(id: string): Promise<void>;
 }

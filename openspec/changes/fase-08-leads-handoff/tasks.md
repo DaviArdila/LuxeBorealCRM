@@ -22,7 +22,7 @@ subir), sin atribución de IA.
 - [x] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [x] T5 — Captura de datos fuera de horario
 - [x] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
-- [ ] T7 — Recordatorios de leads sin atender
+- [x] T7 — Recordatorios de leads sin atender
 - [ ] T8 — Casos de evals y e2e por webhook de los flujos nuevos
 - [ ] T9 — Cierre documental
 
@@ -218,6 +218,16 @@ prueba.
 «El recordatorio no se repite» contra Postgres. Q3 resuelta (P35).
 
 **Hecho cuando**: 3 escenarios en verde.
+
+**Estado (cerrada)**: LDS5 (3) en verde: `recordar-leads.spec.ts` (unitario, repositorio en memoria), cinco
+pruebas del reclamo contra Postgres (marca, no repetición, atendido/reciente/sin avisar, dos barridos
+simultáneos sin reclamar el mismo lead, máximo por barrido y deshacer) y un e2e con el job repetible de
+BullMQ real (recordatorio una sola vez tras varios barridos). Desviaciones: (1) el plazo cuenta desde el
+aviso (`notificado_en`), no desde la derivación: un lead que nunca se avisó (la ventana de 24 h del contacto
+lo suprimió) no se recuerda porque ya hay un aviso vigente para ese contacto. (2) El reclamo es una
+transacción `SELECT ... FOR UPDATE SKIP LOCKED` + marca (dos barridos simultáneos nunca toman el mismo lead)
+con tope de 50 por barrido. (3) Si el encolado de un recordatorio falla, se deshace su marca y el próximo
+barrido lo reintenta.
 
 **Review requerida**: RDD
 
