@@ -5,11 +5,15 @@ import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
 import {
   BuscarProductos,
   CatalogoModule,
+  ConsultarPolitica,
+  CotizarEnvio,
   ObtenerFichaProducto,
 } from '../catalogo/index.js';
 import { HorarioModule } from '../horario/index.js';
 import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
+import { crearConsultarPolitica } from './aplicacion/herramientas/consultar-politica.js';
+import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
 import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
@@ -53,11 +57,18 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
     // Las herramientas reales se enchufan en T4-T7 de la Fase 07b; T7 fija `esperadas: 7` (R1).
     {
       provide: HERRAMIENTAS_AGENTE,
-      useFactory: (buscar: BuscarProductos, ficha: ObtenerFichaProducto): readonly Herramienta[] => [
+      useFactory: (
+        buscar: BuscarProductos,
+        ficha: ObtenerFichaProducto,
+        cotizar: CotizarEnvio,
+        politicas: ConsultarPolitica,
+      ): readonly Herramienta[] => [
         crearBuscarProducto(buscar),
         crearObtenerFicha(ficha),
+        crearCotizarEnvio(cotizar),
+        crearConsultarPolitica(politicas),
       ],
-      inject: [BuscarProductos, ObtenerFichaProducto],
+      inject: [BuscarProductos, ObtenerFichaProducto, CotizarEnvio, ConsultarPolitica],
     },
     {
       provide: RegistroHerramientas,

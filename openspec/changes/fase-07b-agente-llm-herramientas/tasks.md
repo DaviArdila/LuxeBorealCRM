@@ -185,6 +185,8 @@ GREEN; REFACTOR: el mapeo a snake_case del contrato con el modelo vive en un sol
 
 **Hecho cuando**: 2 escenarios en verde.
 
+**Estado (cerrada)**: AGT8 `cotizar_envio` sin cobertura y `consultar_politica` literal en verde; el mapeo a snake_case vive solo en `herramientas/contrato-modelo.ts`.
+
 **Review requerida**: RDD
 
 ## T6 — ObtenerFotosProducto + enviar_fotos
