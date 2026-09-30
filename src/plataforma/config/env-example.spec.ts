@@ -38,7 +38,7 @@ describe('plataforma/config — .env.example', () => {
     const configuracion = cargarConfiguracion(entorno);
 
     expect(configuracion.NODE_ENV).toBe('development');
-    expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+    expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-6-luna']);
     expect(configuracion.LLM_TECHO_MENSUAL_USD).toBe(10);
     expect(configuracion.LOCK_TURNO_TTL_S).toBe(30);
   });
