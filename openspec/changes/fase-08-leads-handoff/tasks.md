@@ -16,7 +16,7 @@ subir), sin atribución de IA.
 
 ## Checklist
 
-- [ ] T1 — Escala determinista, detector de "pide persona" y redactor de resumen (dominio de `leads`)
+- [x] T1 — Escala determinista, detector de "pide persona" y redactor de resumen (dominio de `leads`)
 - [ ] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
 - [ ] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
 - [ ] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
@@ -76,6 +76,14 @@ Chain strategy: stacked-to-main
 y «LDS3 — Mencionar la palabra no es pedirla»; GREEN; REFACTOR: el vocabulario en una sola constante.
 
 **Hecho cuando**: 7 escenarios en verde. Q1 resuelta (P33).
+
+**Estado (cerrada)**: LDS1 (5), LDS3 «Mencionar la palabra no es pedirla» y LDS2 «El resumen no lleva
+datos personales» (parte pura) en verde: 31 tests en `src/modulos/leads/dominio/`. Desviaciones: (1) el
+detector de «pide persona» cubre además «Petición explícita…» y «Rechazar hablar con un bot también
+deriva» (LDS3, pertenecen a T3 pero su función pura nace aquí) y una negación («no necesito un asesor»)
+que no deriva. (2) `redactarResumen` falla cerrado: una cifra de 7 o más dígitos (p. ej. un presupuesto
+de `$1.500.000`) también se omite. (3) `NOMBRES_SENALES` se exporta como tupla para que T2 arme el enum
+de la herramienta.
 
 **Review requerida**: RDD
 
