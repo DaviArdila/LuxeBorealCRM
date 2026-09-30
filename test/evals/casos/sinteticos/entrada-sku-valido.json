@@ -1,0 +1,42 @@
+{
+  "id": "entrada-sku-valido",
+  "titulo": "EVL1 — caso: entrada con un SKU prellenado válido",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Hola, me interesa el SKU-EVAL-ANILLO"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "obtener_ficha",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-ANILLO"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "¡Hola! El Anillo Aurora es de oro laminado 18k y cuesta $389.000. ¿Te lo muestro?"
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "obtener_ficha"
+          }
+        ],
+        "dineroConRastro": true,
+        "menciona": [
+          "anillo aurora"
+        ]
+      }
+    }
+  ]
+}

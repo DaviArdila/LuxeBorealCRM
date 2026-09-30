@@ -1,0 +1,45 @@
+{
+  "id": "r1-politica-inexistente",
+  "titulo": "R1 — Una política que no existe no se inventa",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Tienen garantía de por vida?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_politica",
+              "argumentos": {
+                "tema": "garantia"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "No tengo información sobre una garantía. Si quieres, te paso con un asesor para que te la confirme."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "consultar_politica"
+          }
+        ],
+        "menciona": [
+          "asesor"
+        ],
+        "textoAusente": [
+          "5 días",
+          "de por vida"
+        ]
+      }
+    }
+  ]
+}

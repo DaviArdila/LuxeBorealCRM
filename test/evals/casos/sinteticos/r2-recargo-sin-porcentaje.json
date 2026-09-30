@@ -1,0 +1,44 @@
+{
+  "id": "r2-recargo-sin-porcentaje",
+  "titulo": "R2 — El recargo contra entrega se dice sin porcentaje",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Puedo pagar contra entrega?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_politica",
+              "argumentos": {
+                "tema": "contra_entrega"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "recargoSinPorcentaje": true,
+        "dineroConRastro": true,
+        "textoLiteral": [
+          {
+            "herramienta": "consultar_politica",
+            "campo": "texto"
+          }
+        ],
+        "menciona": [
+          "suma al total"
+        ]
+      }
+    }
+  ]
+}

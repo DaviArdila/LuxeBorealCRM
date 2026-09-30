@@ -1,0 +1,48 @@
+{
+  "id": "r2-sin-cobertura",
+  "titulo": "R2 — Destino sin cobertura",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Envíalo a Mitú, Vaupés"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "cotizar_envio",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR",
+                "departamento": "Vaupés",
+                "ciudad": "Mitú"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "dineroConRastro": true,
+        "textoLiteral": [
+          {
+            "herramienta": "cotizar_envio",
+            "campo": "mensaje_sin_cobertura"
+          }
+        ],
+        "textoAusente": [
+          "entre $"
+        ],
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ]
+      }
+    }
+  ]
+}

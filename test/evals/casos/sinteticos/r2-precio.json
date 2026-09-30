@@ -1,0 +1,45 @@
+{
+  "id": "r2-precio",
+  "titulo": "R2 — El cliente pregunta el precio de un producto",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto vale el anillo Aurora?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "obtener_ficha",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-ANILLO"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "El Anillo Aurora cuesta $389.000."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "obtener_ficha"
+          }
+        ],
+        "dineroConRastro": true,
+        "textoLiteral": [
+          {
+            "herramienta": "obtener_ficha",
+            "campo": "precio_texto"
+          }
+        ]
+      }
+    }
+  ]
+}

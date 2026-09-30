@@ -1,0 +1,40 @@
+{
+  "id": "entrada-sku-inexistente",
+  "titulo": "EVL1 — caso: entrada con un SKU inexistente",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "me interesa el SKU-999"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "buscar_producto",
+              "argumentos": {
+                "query": "SKU-999"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "No encuentro ese producto en el catálogo. Cuéntame qué estás buscando y te ayudo."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasProhibidas": [
+          "obtener_ficha"
+        ],
+        "menciona": [
+          "no encuentro"
+        ],
+        "dineroConRastro": true
+      }
+    }
+  ]
+}

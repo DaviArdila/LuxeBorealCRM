@@ -1,0 +1,47 @@
+{
+  "id": "r1-politica",
+  "titulo": "R1 — El cliente pregunta por una política del negocio",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Puedo devolver el producto si no me gusta?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_politica",
+              "argumentos": {
+                "tema": "devoluciones"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Sobre devoluciones: Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "consultar_politica",
+            "argumentos": {
+              "tema": "devoluciones"
+            }
+          }
+        ],
+        "textoLiteral": [
+          {
+            "herramienta": "consultar_politica",
+            "campo": "texto"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -20,7 +20,7 @@ Conventional Commits, sin atribución de IA.
 
 - [x] T1 — Arnés de evals: proyecto `evals`, `npm run evals`, LLM guionado, grabador y semilla
 - [x] T2 — Aserciones deterministas con sus negativos + umbral por modo
-- [ ] T3 — Casos sintéticos: 3 casos de entrada, R1, R2, R12, R13, políticas y handoff
+- [x] T3 — Casos sintéticos: 3 casos de entrada, R1, R2, R12, R13, políticas y handoff
 - [ ] T4 — Modo real con costo visible + anonimizador del set dorado `[manual]` parcial
 - [ ] T5 — Modelos de respaldo `[manual]` + cierre de 07c y de la Fase 07
 
@@ -154,6 +154,15 @@ políticas que piden los casos).
 3. REFACTOR: los casos comparten la semilla base; cada uno declara solo lo que agrega.
 
 **Hecho cuando**: 9 escenarios de cobertura + 5 casos propios en verde en modo guionado.
+
+**Estado (cerrada)**: 14 casos sintéticos en `test/evals/casos/sinteticos/` (los 9 escenarios de
+cobertura con su título exacto, los 3 de entrada, «la política no se cita cuando no corresponde» y «sin
+traspaso sin señal fuerte») más el saludo, en verde; `npm run evals` pasa 26 tests. Comprobado por
+mutación: cambiar el precio del guion de `r2-precio` hace fallar `dineroConRastro`. Límites conocidos
+del modo guionado: prueba el arnés y las herramientas, no lo que dice un modelo real; R13 «collage por
+defecto» comprueba que se llame `enviar_fotos` con `modo: collage`, pero no puede prohibir a un modelo
+real llamar además a `individuales` (lo cubrirá la corrida real). La comprobación de que el contexto
+inicial llegó al prompt (AGT12) sigue en los unitarios de 07b.
 
 **Review requerida**: RDD
 

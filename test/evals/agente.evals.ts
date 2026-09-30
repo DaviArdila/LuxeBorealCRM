@@ -51,6 +51,7 @@ describe('Evals del agente — casos sintéticos (modo guionado)', () => {
     it(caso.titulo, async () => {
       const resultados = await ejecutarCaso({ caso: caso, generador, grabador, prisma });
       resumenes.push({ id: caso.id, titulo: caso.titulo, resultados });
+      expect(resultados.length, `${caso.id}: el caso no evaluó ninguna aserción`).toBeGreaterThan(0);
       for (const resultado of resultados) {
         expect(resultado.ok, `${caso.id}: ${resultado.nombre} — ${resultado.detalle}`).toBe(true);
       }

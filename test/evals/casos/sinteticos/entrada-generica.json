@@ -1,0 +1,52 @@
+{
+  "id": "entrada-generica",
+  "titulo": "EVL1 — caso: entrada con una mención genérica",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Busco un collar de plata"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "buscar_producto",
+              "argumentos": {
+                "query": "collar plata"
+              }
+            }
+          ]
+        },
+        {
+          "llamadas": [
+            {
+              "nombre": "obtener_ficha",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Te recomiendo el Collar Luna, de plata 925 con un dije de luna, por $259.000."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "buscar_producto"
+          },
+          {
+            "nombre": "obtener_ficha"
+          }
+        ],
+        "dineroConRastro": true
+      }
+    }
+  ]
+}
