@@ -494,6 +494,52 @@ describe('modulos/llm/aplicacion — LlmGateway v1: presupuesto total derivado d
   });
 });
 
+describe('modulos/llm/aplicacion — LlmGateway: fallback entre proveedores (LLM21, ADR-0014, ADR-0019)', () => {
+  const DIRECTO = 'openai:gpt-6-luna';
+  const PERFIL_MIXTO: Partial<ConfigGatewayLlm> = {
+    LLM_CONVERSACION_MODELOS: [DIRECTO, MODELO],
+    LLM_CONVERSACION_MAX_REINTENTOS: 0,
+    LLM_PRECIOS_USD_JSON: { [DIRECTO]: PRECIO, [MODELO]: PRECIO },
+  };
+
+  it('LLM21 — La caída de un proveedor deriva al modelo de otro proveedor', async () => {
+    const { gateway, adaptador, uso } = crearGateway(PERFIL_MIXTO);
+    adaptador.programar(DIRECTO, { error: http(503, 'reintentable') });
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const respuesta = await gateway.generar(SOLICITUD);
+
+    expect(respuesta.texto).toBe('respuesta');
+    expect(uso.filas.map((fila) => [fila.proveedor, fila.exito])).toEqual([
+      ['openai', false],
+      ['openrouter', true],
+    ]);
+  });
+
+  it('LLM21 — Con todos los modelos caídos el error sigue siendo proveedor-caido', async () => {
+    const { gateway, adaptador } = crearGateway(PERFIL_MIXTO);
+    adaptador.programar(DIRECTO, { error: http(503, 'reintentable') });
+    adaptador.programar(MODELO, { error: http(429, 'reintentable') });
+
+    const error = await fallo(gateway.generar(SOLICITUD));
+
+    expect(error.codigo).toBe('proveedor-caido');
+    expect(adaptador.llamadas.map((llamada) => llamada.modelo)).toEqual([DIRECTO, MODELO]);
+  });
+
+  it('el circuito es por id completo: abrir el de un proveedor directo no bloquea a OpenRouter', async () => {
+    const { gateway, adaptador } = crearGateway({ ...PERFIL_MIXTO, LLM_CB_UMBRAL_FALLOS: 1 });
+    adaptador.programar(DIRECTO, { error: http(503, 'reintentable') });
+    adaptador.programar(MODELO, { resultado: OK }, { resultado: OK });
+
+    await gateway.generar(SOLICITUD);
+    await gateway.generar(SOLICITUD);
+
+    // La segunda solicitud salta el circuito abierto de `openai:` y va directo al siguiente.
+    expect(adaptador.llamadas.map((llamada) => llamada.modelo)).toEqual([DIRECTO, MODELO, MODELO]);
+  });
+});
+
 describe('modulos/llm/aplicacion — LlmGateway v2: fallback nivel 1 iterado (LLM5, ADR-0014)', () => {
   it('LLM5 — Caída del primer modelo deriva al siguiente sin intervención del llamador', async () => {
     const { gateway, adaptador, uso } = crearGateway({
