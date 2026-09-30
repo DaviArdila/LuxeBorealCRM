@@ -104,6 +104,7 @@ describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo dema
     const corrida = await ejecutarCorridaReal({
       casos: [...sinteticos, ...dorado],
       apiKey: process.env['OPENROUTER_API_KEY'] ?? '',
+      openaiApiKey: process.env['OPENAI_API_KEY'] ?? '',
       ...llmReal,
     });
     // EVL4: el resumen incluye el costo estimado y el modelo de cada caso.

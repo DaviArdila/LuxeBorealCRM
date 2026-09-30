@@ -16,7 +16,10 @@ import { calcularVeredicto, REPETICIONES_REAL, type Veredicto } from './umbral.j
 
 export interface OpcionesCorridaReal {
   readonly casos: readonly CasoEval[];
+  /** Clave de OpenRouter; obligatoria solo si algún modelo va por OpenRouter (sin prefijo). */
   readonly apiKey: string;
+  /** Clave de OpenAI para los modelos `openai:` (ADR-0019). */
+  readonly openaiApiKey?: string;
   /** Modelos del perfil `evals` (LLM_EVALS_MODELOS); el primero es el principal. */
   readonly modelos: readonly string[];
   readonly precios: Configuracion['LLM_PRECIOS_USD_JSON'];
@@ -69,6 +72,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
   const configuracion: Configuracion = {
     ...base,
     OPENROUTER_API_KEY: opciones.apiKey,
+    OPENAI_API_KEY: opciones.openaiApiKey ?? '',
     ...(opciones.urlOpenRouter === undefined ? {} : { OPENROUTER_BASE_URL: opciones.urlOpenRouter }),
     LOCK_TURNO_TTL_S: 60,
     LLM_PRECIOS_USD_JSON: opciones.precios,
