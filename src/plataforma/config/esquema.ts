@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  PROVEEDORES_LLM_REGISTRADOS,
+  prefijoNoRegistrado,
+  resolverModelo,
+} from '../../compartido/llm/index.js';
 
 /** Precios por millón de tokens del modelo principal (ADR-0002); se refrescan al desplegar. */
 const PRECIOS_LLM_POR_DEFECTO = JSON.stringify({
@@ -166,6 +171,8 @@ export const esquemaConfiguracion = z
     OPENROUTER_API_KEY: z.string().default(''),
     /** Override hacia el simulador local en las pruebas (D11). */
     OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
+    /** Proveedor `openai` directo (LLM17); obligatoria en production solo si un perfil usa `openai:`. */
+    OPENAI_API_KEY: z.string().default(''),
     /** Avisos a los asesores (Fase 08, D9/D11): vacíos por defecto; obligatorios en production. */
     TELEGRAM_BOT_TOKEN: z.string().default(''),
     TELEGRAM_CHAT_ID: z.string().default(''),
@@ -215,13 +222,6 @@ export const esquemaConfiguracion = z
         message: 'TELEGRAM_CHAT_ID MUST NOT estar vacío cuando NODE_ENV es production (D9).',
       });
     }
-    if (datos.NODE_ENV === 'production' && datos.OPENROUTER_API_KEY === '') {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['OPENROUTER_API_KEY'],
-        message: 'OPENROUTER_API_KEY MUST NOT estar vacía cuando NODE_ENV es production (D12).',
-      });
-    }
     if (datos.LLM_CONVERSACION_TIMEOUT_MS >= datos.LOCK_TURNO_TTL_S * 1000) {
       ctx.addIssue({
         code: 'custom',
@@ -240,13 +240,41 @@ export const esquemaConfiguracion = z
       ['LLM_CONVERSACION_MODELOS', datos.LLM_CONVERSACION_MODELOS],
       ['LLM_EVALS_MODELOS', datos.LLM_EVALS_MODELOS],
     ] as const;
+    const proveedoresUsados = new Set<string>();
     for (const [variable, modelos] of perfiles) {
+      if (modelos.some((modelo) => prefijoNoRegistrado(modelo, PROVEEDORES_LLM_REGISTRADOS) !== null)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [variable],
+          message: `${variable} MUST usar solo prefijos de proveedores registrados (LLM16).`,
+        });
+      }
+      for (const modelo of modelos) {
+        proveedoresUsados.add(resolverModelo(modelo, PROVEEDORES_LLM_REGISTRADOS).proveedor);
+      }
       if (modelos.some((modelo) => !(modelo in datos.LLM_PRECIOS_USD_JSON))) {
         ctx.addIssue({
           code: 'custom',
           path: [variable],
           message: `${variable} MUST listar solo modelos con precio en LLM_PRECIOS_USD_JSON (D6).`,
         });
+      }
+    }
+    // LLM17: en production solo se exige la clave de los proveedores que algún perfil usa.
+    if (datos.NODE_ENV === 'production') {
+      const claves: Readonly<Record<string, [string, string]>> = {
+        openrouter: ['OPENROUTER_API_KEY', datos.OPENROUTER_API_KEY],
+        openai: ['OPENAI_API_KEY', datos.OPENAI_API_KEY],
+      };
+      for (const proveedor of proveedoresUsados) {
+        const [variable, valor] = claves[proveedor] ?? [];
+        if (variable !== undefined && valor === '') {
+          ctx.addIssue({
+            code: 'custom',
+            path: [variable],
+            message: `${variable} MUST NOT estar vacía cuando NODE_ENV es production y un perfil usa ${proveedor} (LLM17).`,
+          });
+        }
       }
     }
   });

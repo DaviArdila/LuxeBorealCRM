@@ -26,8 +26,8 @@
 
 Detalle, slices y RED de cada una en `openspec/changes/proveedores-llm-configurables/tasks.md`.
 
-- [ ] T1 — Resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*`. Ruta: inline
-- [ ] T2 — Configuración por proveedor. Ruta: delegada
+- [x] T1 — Resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*`. Ruta: inline
+- [x] T2 — Configuración por proveedor. Ruta: delegada
 - [ ] T3 — Adaptador genérico con OpenRouter como proveedor. Ruta: delegada
 - [ ] T4 — Proveedor `openai` (único directo inicial, P37). Ruta: delegada
 - [~] T5 — pospuesta (P37: solo OpenAI): proveedor `anthropic`
@@ -68,6 +68,12 @@ escritura); T1 y T9 son de un archivo y quedan inline.
   P38 y P39 resueltas con la recomendación. P40 sigue abierta (solo bloquea T10). T5-T7 pospuestas.
   La documentación anterior quedó en el commit `e8080bb`; ADR, índice, preguntas y change se
   actualizaron después (sin commit todavía).
+
+- 2026-09-30: slice PR1 (rama `proveedores-llm-p1-resolucion-config`). T1: `resolverModelo` (lógica
+  pura en `compartido/llm`, re-exportada en `modulos/llm/dominio/resolver-modelo.ts`) y versión
+  candidata `@ai-sdk/openai` 4.0.81 anotada en D7; commit `3572966`. T2: `OPENAI_API_KEY`, prefijos
+  válidos, clave de producción solo del proveedor usado; RED (6 tests) → GREEN; ruta: delegada
+  (escritor único). Checks: lint, typecheck, fronteras y tests unitarios de config en verde.
 
 ## Próximo paso
 

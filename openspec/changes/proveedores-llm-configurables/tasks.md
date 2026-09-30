@@ -25,11 +25,11 @@ slices nuevos después del PR 4.
 
 ## Tareas
 
-- [ ] **T1 — Resolución de modelo (LLM15, LLM16).** `dominio/resolver-modelo.ts`: `resolverModelo`
+- [x] **T1 — Resolución de modelo (LLM15, LLM16).** `dominio/resolver-modelo.ts`: `resolverModelo`
   y lista de proveedores registrados. **Antes de escribir código: verificar** los nombres y versiones
   de los paquetes `@ai-sdk/*` compatibles con `ai` 7.0.122 y anotarlos en `design.md` D7. RED: ids sin
   prefijo, con prefijo, con `/`, con sufijo `:free`, prefijo desconocido. Ruta prevista: inline.
-- [ ] **T2 — Configuración (LLM16, LLM17, LLM19, LLM24).** `esquema.ts`: variables por proveedor,
+- [x] **T2 — Configuración (LLM16, LLM17, LLM19, LLM24).** `esquema.ts`: variables por proveedor,
   prefijos válidos, clave exigida en producción solo al proveedor usado, precio por modelo; `.env.example`.
   RED: los 5 escenarios de config y que el valor de una clave nunca salga en el error. Ruta:
   delegada (escritor).
