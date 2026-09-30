@@ -1,7 +1,7 @@
 import { RepositorioContactoAgenteEnMemoria } from '../../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import { crearGuardarDatosContacto } from './guardar-datos-contacto.js';
 
-// Escenarios AGT10 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT10 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
 
 const CONTEXTO = { sesion: { conversacionId: 'conv-1', version: 0 }, contactoId: 'contacto-7', efectosPrevios: [] };
 const DATOS = {

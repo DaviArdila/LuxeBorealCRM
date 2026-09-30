@@ -3,7 +3,7 @@ import { ProductoNoDisponible } from '../dominio/producto.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
 import { ObtenerFotosProducto } from './obtener-fotos-producto.js';
 
-// Escenarios CAT14 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/catalogo/spec.md`.
+// Escenarios CAT14 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/catalogo/spec.md`.
 
 const PRODUCTO: Producto = {
   id: 'p1',

@@ -2,7 +2,7 @@ import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-
 import { ProductoNoDisponible, type ObtenerFotosProducto } from '../../../catalogo/index.js';
 import { crearEnviarFotos } from './enviar-fotos.js';
 
-// Escenarios AGT9 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT9 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
 
 const SESION = { conversacionId: 'conv-1', version: 0 };
 const CONTEXTO = { sesion: SESION, contactoId: 'k', efectosPrevios: [] };

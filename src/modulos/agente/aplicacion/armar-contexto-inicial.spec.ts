@@ -3,7 +3,7 @@ import { RepositorioContactoAgenteEnMemoria } from '../../../../test/fakes/repos
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
 
-// Escenarios AGT12 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT12 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
 
 const SESION = { conversacionId: 'conv-1', version: 0 };
 

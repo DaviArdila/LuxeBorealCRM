@@ -2,7 +2,7 @@
 
 - Change: `fase-07b-agente-llm-herramientas` · Fase de la hoja de ruta: **07b** (segunda de tres partes
   de la Fase 07) · Rama: `fase-07b-agente-llm-herramientas`
-- Fecha: 2026-09-29 · Estado: **spec en revisión**
+- Fecha: 2026-09-29 · Estado: **cerrada** (2026-09-30; ver `verify-report.md`)
 - Depende de: **07a cerrada** (contrato del turno, pipeline, handoff, guardia por paso) más Fases 00a-06
   y `politicas-contraentrega`.
 - Análisis de la fase completa: `openspec/changes/fase-07a-turno-y-politicas/exploration.md`.

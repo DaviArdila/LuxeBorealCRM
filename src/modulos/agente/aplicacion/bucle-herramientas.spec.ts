@@ -8,7 +8,7 @@ import type { Herramienta } from '../dominio/herramienta.js';
 import { BucleHerramientas, type EntradaBucle } from './bucle-herramientas.js';
 import { RegistroHerramientas } from './registro-herramientas.js';
 
-// Escenarios AGT4, AGT5 y AGT6 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`
+// Escenarios AGT4, AGT5 y AGT6 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`
 // y R1 «El LLM necesita datos de un producto». El bucle se prueba con nombres inventados: no conoce
 // ninguna de las siete herramientas reales (A4).
 

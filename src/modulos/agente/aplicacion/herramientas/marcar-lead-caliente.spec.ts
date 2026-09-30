@@ -4,7 +4,7 @@ import type { EvaluadorLead, PropuestaLead } from '../../puertos/evaluador-lead.
 import { EvaluadorLeadSinEscala } from '../evaluador-lead-sin-escala.js';
 import { crearMarcarLeadCaliente } from './marcar-lead-caliente.js';
 
-// Escenarios AGT11 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT11 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
 
 function contexto(efectosPrevios: readonly EfectoTurno[] = []): ContextoHerramienta {
   return { sesion: { conversacionId: 'conv-1', version: 0 }, contactoId: 'k', efectosPrevios };

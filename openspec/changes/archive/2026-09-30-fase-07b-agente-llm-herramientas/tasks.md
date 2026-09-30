@@ -22,7 +22,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 - [x] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
 - [x] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
 - [x] T8 — Prompt versionado con prefijo estable + assets en el build
-- [ ] T9 — E2E con LLM falso + cierre documental
+- [x] T9 — E2E con LLM falso + cierre documental
 
 ## Mapeo de escenarios por tarea (47)
 
@@ -264,6 +264,12 @@ guardados, `proveedor-caido` → handoff con `mensaje_error_llm`. Docs: `docs/mi
 GREEN (cableado); REFACTOR: `npm run verify` + `npm run test:e2e` completos.
 
 **Hecho cuando**: checklist §12 de `luxeboreal-arquitectura` completo para 07b.
+
+**Estado (cerrada)**: `test/e2e/agente-llm.e2e-spec.ts` (7 tests) en verde: R13 ficha en un solo
+mensaje, CAT10 cotización con la política literal, AGT9 collage como multipart, AGT10 datos en el
+contacto, AGT11 sin escala no deriva ni escribe `lead`, AGT6 con `proveedor-caido` y `techo-alcanzado`
+→ handoff `handoff_pendiente` con el texto del negocio. Docs actualizados: `inventario.md`,
+`docs/fases/README.md`, `PREGUNTAS_ABIERTAS.md`. `CLAUDE.md` no cambia: no hay comandos nuevos.
 
 **Review requerida**: RDD
 

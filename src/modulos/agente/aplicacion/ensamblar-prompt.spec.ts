@@ -3,7 +3,7 @@ import type { Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
 
-// Escenarios AGT13 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT13 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
 
 const CATALOGO = '- SKU-1: Anillo Aurora — Oro laminado\n- SKU-2: Collar Luna — Plata 925';
 

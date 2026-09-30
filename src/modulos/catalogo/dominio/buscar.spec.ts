@@ -1,7 +1,7 @@
 import type { ProductoResumen } from './producto.js';
 import { buscarEnResumen } from './buscar.js';
 
-// Escenarios CAT13 de `openspec/changes/fase-07b-agente-llm-herramientas/specs/catalogo/spec.md`.
+// Escenarios CAT13 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/catalogo/spec.md`.
 
 function producto(id: string, nombre: string, descripcionCorta = ''): ProductoResumen {
   return { id, sku: `SKU-${id}`, nombre, descripcionCorta };
