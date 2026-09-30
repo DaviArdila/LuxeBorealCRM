@@ -1,0 +1,30 @@
+{
+  "id": "pide-persona",
+  "titulo": "R9 — caso: pedir hablar con una persona traspasa sin llamar al modelo",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Quiero hablar con un asesor"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Este texto no debería salir: el turno se traspasa sin llamar al modelo."
+        }
+      ],
+      "aserciones": {
+        "handoff": "esperado",
+        "textoAusente": [
+          "no debería salir"
+        ],
+        "herramientasProhibidas": [
+          "marcar_lead_caliente",
+          "buscar_producto"
+        ]
+      }
+    }
+  ]
+}

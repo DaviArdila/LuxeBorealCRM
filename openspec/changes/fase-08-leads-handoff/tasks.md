@@ -23,7 +23,7 @@ subir), sin atribución de IA.
 - [x] T5 — Captura de datos fuera de horario
 - [x] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
 - [x] T7 — Recordatorios de leads sin atender
-- [ ] T8 — Casos de evals y e2e por webhook de los flujos nuevos
+- [x] T8 — Casos de evals y e2e por webhook de los flujos nuevos
 - [ ] T9 — Cierre documental
 
 ## Mapeo de escenarios por tarea (LDS 20 + NTF 10 + AGT 5 + CNV 3 = 38)
@@ -242,6 +242,15 @@ no traspasa, captura).
 `npm run verify`, `npm run test:e2e` y `npm run evals` completos.
 
 **Hecho cuando**: e2e y evals nuevos en verde.
+
+**Estado (cerrada)**: los e2e por webhook nacieron con cada tarea (`leads.e2e-spec.ts`, 9 escenarios: pide
+persona, mención que no deriva, lead dentro de horario con handoff/etiqueta/aviso, señal débil que no deriva,
+captura fuera de horario con aviso, ventana por contacto, reintento 500→200, rechazo permanente y
+recordatorio único). Las evals guionadas suman cuatro casos: `lead-escala-confirmada`,
+`lead-escala-no-confirmada`, `pide-persona` y `pide-persona-solo-mencion` (19 casos sintéticos en total,
+veredicto aprobado). Desviación: la captura fuera de
+horario no tiene caso guionado porque el arnés de evals no siembra excepciones de horario (habría que
+extender `semilla` y deshacerla) y el e2e ya la cubre de punta a punta con la excepción del día.
 
 **Review requerida**: RDD
 

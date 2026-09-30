@@ -1,0 +1,43 @@
+{
+  "id": "lead-escala-confirmada",
+  "titulo": "R9 — caso: una señal fuerte confirma el lead caliente y se traspasa a un asesor",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Quiero pagar ya, ¿cómo lo hago?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "marcar_lead_caliente",
+              "argumentos": {
+                "temperatura": "caliente",
+                "senales": [
+                  "pide_pagar"
+                ],
+                "resumen": "El cliente quiere pagar ya.",
+                "id_producto": null
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Perfecto, te paso con un asesor."
+        }
+      ],
+      "aserciones": {
+        "handoff": "esperado",
+        "herramientasEsperadas": [
+          {
+            "nombre": "marcar_lead_caliente"
+          }
+        ]
+      }
+    }
+  ]
+}
