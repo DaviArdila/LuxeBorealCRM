@@ -27,6 +27,7 @@ import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
+import { PoliticaPidePersona } from './aplicacion/politicas/politica-pide-persona.js';
 import { PoliticaTopeTurnos } from './aplicacion/politicas/politica-tope-turnos.js';
 import { RegistroHerramientas } from './aplicacion/registro-herramientas.js';
 import { TextoHandoff } from './aplicacion/texto-handoff.js';
@@ -57,7 +58,7 @@ const TOTAL_HERRAMIENTAS = 7;
  * pasos y handoff, y `conversaciones` los ejecuta.
  *
  * El orden de `POLITICAS_TURNO` es el del pipeline (AGT1): mensajes no textuales (R12), tope de
- * turnos (R13) y, al final, `ContenidoLlm` (Fase 07b): el bucle de herramientas sobre `LLM_PORT`. `HorarioModule` aporta `HORARIO` para elegir
+ * turnos (R13), petición de persona (Fase 08, R9) y, al final, `ContenidoLlm` (Fase 07b): el bucle de herramientas sobre `LLM_PORT`. `HorarioModule` aporta `HORARIO` para elegir
  * el texto de handoff (AGT3); el motor aplica el aviso de datos y registra el turno (AGT2, D8).
  */
 @Module({
@@ -73,6 +74,7 @@ const TOTAL_HERRAMIENTAS = 7;
     TextoHandoff,
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
+    PoliticaPidePersona,
     CargadorPrompts,
     EnsamblarPrompt,
     BucleHerramientas,
@@ -122,9 +124,10 @@ const TOTAL_HERRAMIENTAS = 7;
       useFactory: (
         noTextuales: PoliticaNoTextuales,
         tope: PoliticaTopeTurnos,
+        pidePersona: PoliticaPidePersona,
         contenido: ContenidoLlm,
-      ) => [noTextuales, tope, contenido],
-      inject: [PoliticaNoTextuales, PoliticaTopeTurnos, ContenidoLlm],
+      ) => [noTextuales, tope, pidePersona, contenido],
+      inject: [PoliticaNoTextuales, PoliticaTopeTurnos, PoliticaPidePersona, ContenidoLlm],
     },
     { provide: GENERADOR_RESPUESTA, useClass: MotorTurno },
   ],

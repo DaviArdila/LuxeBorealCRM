@@ -400,6 +400,17 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       expect(await buffer.tamano()).toBe(0);
     });
 
+    it('CNV11 — Petición de persona pasa a handoff pendiente', async () => {
+      const { procesar, transicionar, salida } = armar({ pasos: [PASO], handoff: { motivo: 'pide-persona' } });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(salida.llamadas[0].conHandoff).toBe(true);
+      expect(transicionar.llamadas.map((l) => [l.destino, l.origen])).toEqual([
+        ['handoff_pendiente', 'regla_handoff_explicita'],
+      ]);
+    });
+
     it('CNV8 — El motivo lead-caliente transiciona con origen lead_caliente', async () => {
       const { procesar, transicionar } = armar({ pasos: [], handoff: { motivo: 'lead-caliente' } });
 

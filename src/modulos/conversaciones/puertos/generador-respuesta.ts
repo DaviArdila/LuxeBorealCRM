@@ -42,7 +42,9 @@ export type MotivoHandoff =
   | 'techo-gasto'
   | 'argumentos-invalidos'
   | 'plazo-agotado'
-  | 'lead-caliente';
+  | 'lead-caliente'
+  /** El cliente pidió hablar con una persona (Fase 08, LDS3): se deriva sin pasar por el LLM. */
+  | 'pide-persona';
 
 export interface RespuestaTurno {
   /** Vacío = no enviar nada (CNV8). */

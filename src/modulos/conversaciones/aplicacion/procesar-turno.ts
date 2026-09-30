@@ -27,7 +27,10 @@ function leerMensajeDelBuffer(crudo: string): MensajeTurno {
   return { ...mensaje, tipoContenido: mensaje.tipoContenido ?? 'texto' };
 }
 
-/** CNV8: `lead-caliente` es el único motivo con origen propio; el resto es una regla de handoff explícita. */
+/**
+ * CNV8, CNV11: `lead-caliente` es el único motivo con origen propio; el resto (audio repetido, tope de
+ * turnos, `pide-persona`…) es una regla de handoff explícita.
+ */
 function origenDelHandoff(motivo: MotivoHandoff): OrigenTransicion {
   return motivo === 'lead-caliente' ? 'lead_caliente' : 'regla_handoff_explicita';
 }

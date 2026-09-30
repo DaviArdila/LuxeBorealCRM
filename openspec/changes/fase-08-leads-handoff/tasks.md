@@ -18,7 +18,7 @@ subir), sin atribución de IA.
 
 - [x] T1 — Escala determinista, detector de "pide persona" y redactor de resumen (dominio de `leads`)
 - [x] T2 — Módulo `leads`: persistencia, evaluación de la propuesta y binding real de `EVALUADOR_LEAD`
-- [ ] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
+- [x] T3 — Política "pide persona" en el pipeline y motivo de handoff `pide-persona`
 - [ ] T4 — Derivación dentro de horario: handoff `lead-caliente`, etiqueta y observadores de handoff
 - [ ] T5 — Captura de datos fuera de horario
 - [ ] T6 — Módulo `notificaciones` (Telegram por outbox) y aviso con ventana de 24 h `[manual]` parcial
@@ -119,6 +119,15 @@ nace aquí en el caso de uso; sus instrucciones y el cierre de la captura son de
 REFACTOR: el orden del pipeline se declara en un solo lugar.
 
 **Hecho cuando**: 6 escenarios en verde.
+
+**Estado (cerrada)**: LDS3 (4), AGT14 (2) y CNV11 «Petición de persona pasa a handoff pendiente» en verde
+(`registrar-pide-persona.spec.ts`, `politica-pide-persona.spec.ts`, `procesar-turno.spec.ts`) y un e2e por
+webhook nuevo (`test/e2e/leads.e2e-spec.ts`: la petición deriva sin llamar al LLM, con el lead guardado y la
+conversación en `handoff_pendiente`; mencionar la palabra sigue al LLM). Desviaciones: (1) `pide_persona` no
+está en el vocabulario de la escala: la escribe directamente `RegistrarPidePersona`. (2) Fuera de horario la
+política registra el lead pendiente de captura y deja seguir el turno al LLM; las instrucciones de captura
+llegan en T5. (3) El orden del pipeline sigue declarado en un solo lugar, la fábrica de `POLITICAS_TURNO` de
+`agente.module.ts`.
 
 **Review requerida**: RDD
 

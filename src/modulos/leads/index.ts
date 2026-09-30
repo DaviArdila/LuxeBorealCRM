@@ -9,5 +9,10 @@ export {
   type EntradaPropuesta,
   type ResultadoPropuesta,
 } from './aplicacion/evaluar-propuesta-lead.js';
+export {
+  RegistrarPidePersona,
+  type EntradaPidePersona,
+  type ResultadoPidePersona,
+} from './aplicacion/registrar-pide-persona.js';
 export { detectarPidePersona } from './dominio/detectar-pide-persona.js';
 export { NOMBRES_SENALES, type NombreSenal } from './dominio/escala-lead.js';
