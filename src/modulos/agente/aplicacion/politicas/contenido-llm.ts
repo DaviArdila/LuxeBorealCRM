@@ -12,6 +12,7 @@ import {
   type RepositorioParametroAgente,
 } from '../../puertos/repositorio-parametro-agente.js';
 import { BucleHerramientas, type MotivoDerivacionBucle } from '../bucle-herramientas.js';
+import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
 
 function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
@@ -42,6 +43,7 @@ export class ContenidoLlm implements PoliticaTurno {
   constructor(
     private readonly bucle: BucleHerramientas,
     private readonly prompt: EnsamblarPrompt,
+    private readonly contextoInicial: ArmarContextoInicial,
     @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
     private readonly mensajeTechoGasto: ObtenerMensajeTechoGasto,
     @Inject(HISTORIAL_CONVERSACION) private readonly historial: HistorialConversacion,
@@ -60,7 +62,9 @@ export class ContenidoLlm implements PoliticaTurno {
     const resultado = await this.bucle.ejecutar({
       sesion,
       contactoId,
-      systemPrompt: this.prompt.ensamblar(),
+      systemPrompt: this.prompt.ensamblar({
+        instruccionesTurno: await this.contextoInicial.ejecutar({ sesion, contactoId, textoCliente }),
+      }),
       mensajes: [
         ...previos.map((turno) => ({ rol: turno.rol, texto: turno.texto })),
         { rol: 'usuario', texto: textoCliente },

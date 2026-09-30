@@ -1,13 +1,18 @@
 import { Logger } from '@nestjs/common';
 import { ClockFalso } from '../../../../../test/fakes/clock-falso.js';
+import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-sesion-en-memoria.js';
+import { RepositorioContactoAgenteEnMemoria } from '../../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import { HistorialEnMemoria } from '../../../../../test/fakes/historial-en-memoria.js';
 import { FakePuertoLlm } from '../../../../../test/fakes/puerto-llm-falso.js';
 import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
 import { RepositorioParametroLlmEnMemoria } from '../../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
+import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../../catalogo/index.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import { ErrorPasarelaLlm, ObtenerMensajeTechoGasto } from '../../../llm/index.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { Herramienta } from '../../dominio/herramienta.js';
+import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
+import { crearGuardarDatosContacto } from '../herramientas/guardar-datos-contacto.js';
 import { BucleHerramientas } from '../bucle-herramientas.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
@@ -54,15 +59,18 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     new ClockFalso(new Date('2026-09-30T12:00:00.000Z')),
     { LOCK_TURNO_TTL_S: 30, AGENTE_MAX_VUELTAS: 5 },
   );
+  const contactos = new RepositorioContactoAgenteEnMemoria();
+  const ficha = { ejecutar: () => Promise.reject(new ProductoNoDisponible()) } as unknown as ObtenerFichaProducto;
   const politica = new ContenidoLlm(
     bucle,
     new EnsamblarPrompt(),
+    new ArmarContextoInicial(ficha, contactos, new ContadoresSesionEnMemoria()),
     parametros,
     new ObtenerMensajeTechoGasto(parametrosLlm),
     historial,
     { AGENTE_HISTORIAL_TURNOS: historialTurnos },
   );
-  return { llm, politica, historial };
+  return { llm, politica, historial, contactos };
 }
 
 describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
@@ -229,5 +237,57 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     await politica.evaluar(turno({ idMensaje: 'm1', tipoContenido: 'ubicacion', texto: '' }));
 
     expect(llm.solicitudes[0]?.mensajes.at(-1)).toEqual({ rol: 'usuario', texto: '[ubicación compartida]' });
+  });
+
+  it('AGT12 — el contexto inicial llega al modelo en el prompt del turno', async () => {
+    const { llm, politica, contactos } = crear();
+    contactos.nombres.set('contacto-1', 'Laura');
+    llm.encolar({ respuesta: { texto: 'Hola Laura' } });
+
+    await politica.evaluar(turno(HOLA));
+
+    expect(llm.solicitudes[0]?.systemPrompt).toContain('Laura');
+  });
+
+  it('AGT10 — Los datos del contacto no aparecen en los logs', async () => {
+    const registros: unknown[][] = [];
+    for (const nivel of ['log', 'warn', 'error', 'debug', 'verbose', 'fatal'] as const) {
+      vi.spyOn(Logger.prototype, nivel).mockImplementation((...args: unknown[]) => {
+        registros.push(args);
+      });
+    }
+    for (const nivel of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+      vi.spyOn(console, nivel).mockImplementation((...args: unknown[]) => {
+        registros.push(args);
+      });
+    }
+    const contactos = new RepositorioContactoAgenteEnMemoria();
+    const { llm, politica } = crear([crearGuardarDatosContacto(contactos)]);
+    llm.encolar(
+      {
+        respuesta: {
+          llamadasHerramienta: [
+            {
+              id: 'c1',
+              nombre: 'guardar_datos_contacto',
+              argumentos: {
+                nombre_completo: 'Laura Gómez Pérez',
+                telefono_contacto: '3001234567',
+                direccion: 'Calle 45 # 12-34',
+                localidad: 'Chapinero',
+              },
+            },
+          ],
+        },
+      },
+      { respuesta: { texto: 'Listo, quedó guardado' } },
+    );
+
+    await politica.evaluar(turno(HOLA));
+
+    const volcado = JSON.stringify(registros);
+    for (const valor of ['Laura Gómez Pérez', '3001234567', 'Calle 45 # 12-34', 'Chapinero']) {
+      expect(volcado).not.toContain(valor);
+    }
   });
 });

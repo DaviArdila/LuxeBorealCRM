@@ -16,10 +16,14 @@ import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
 import { crearConsultarPolitica } from './aplicacion/herramientas/consultar-politica.js';
 import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
+import { crearGuardarDatosContacto } from './aplicacion/herramientas/guardar-datos-contacto.js';
+import { crearMarcarLeadCaliente } from './aplicacion/herramientas/marcar-lead-caliente.js';
 import { crearEnviarFotos } from './aplicacion/herramientas/enviar-fotos.js';
 import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
+import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
+import { EvaluadorLeadSinEscala } from './aplicacion/evaluador-lead-sin-escala.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
@@ -29,11 +33,20 @@ import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
+import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
 import { CONTADORES_SESION, type ContadoresSesion } from './puertos/contadores-sesion.js';
+import { EVALUADOR_LEAD, type EvaluadorLead } from './puertos/evaluador-lead.js';
 import { HISTORIAL_CONVERSACION } from './puertos/historial-conversacion.js';
+import {
+  REPOSITORIO_CONTACTO_AGENTE,
+  type RepositorioContactoAgente,
+} from './puertos/repositorio-contacto-agente.js';
 import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
+
+/** R1: el LLM solo dispone de estas siete herramientas. */
+const TOTAL_HERRAMIENTAS = 7;
 
 /**
  * Módulo del agente (Fases 07a y 07b, ADR-0016): implementa el puerto `GENERADOR_RESPUESTA` que define
@@ -50,6 +63,10 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
+    { provide: REPOSITORIO_CONTACTO_AGENTE, useClass: RepositorioContactoAgentePrisma },
+    // La Fase 08 reemplaza este binding por la escala determinista (R9-R11).
+    { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadSinEscala },
+    ArmarContextoInicial,
     { provide: REPOSITORIO_PARAMETRO_AGENTE, useClass: RepositorioParametroAgentePrisma },
     TextoHandoff,
     PoliticaNoTextuales,
@@ -57,7 +74,7 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
     EnsamblarPrompt,
     BucleHerramientas,
     ContenidoLlm,
-    // Las herramientas reales se enchufan en T4-T7 de la Fase 07b; T7 fija `esperadas: 7` (R1).
+    // R1: exactamente siete herramientas; el arranque falla si falta o sobra alguna.
     {
       provide: HERRAMIENTAS_AGENTE,
       useFactory: (
@@ -68,12 +85,16 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
         fotos: ObtenerFotosProducto,
         contadores: ContadoresSesion,
         configuracion: Configuracion,
+        contactos: RepositorioContactoAgente,
+        evaluador: EvaluadorLead,
       ): readonly Herramienta[] => [
         crearBuscarProducto(buscar),
         crearObtenerFicha(ficha),
         crearCotizarEnvio(cotizar),
         crearConsultarPolitica(politicas),
         crearEnviarFotos(fotos, contadores, configuracion),
+        crearGuardarDatosContacto(contactos),
+        crearMarcarLeadCaliente(evaluador),
       ],
       inject: [
         BuscarProductos,
@@ -83,11 +104,14 @@ import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-ag
         ObtenerFotosProducto,
         CONTADORES_SESION,
         CONFIGURACION,
+        REPOSITORIO_CONTACTO_AGENTE,
+        EVALUADOR_LEAD,
       ],
     },
     {
       provide: RegistroHerramientas,
-      useFactory: (herramientas: readonly Herramienta[]) => new RegistroHerramientas(herramientas),
+      useFactory: (herramientas: readonly Herramienta[]) =>
+        new RegistroHerramientas(herramientas, TOTAL_HERRAMIENTAS),
       inject: [HERRAMIENTAS_AGENTE],
     },
     {

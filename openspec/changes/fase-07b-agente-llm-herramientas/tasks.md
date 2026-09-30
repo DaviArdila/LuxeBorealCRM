@@ -20,7 +20,7 @@ Rama: `fase-07b-agente-llm-herramientas` (desde `main` con 07a fusionada).
 - [x] T4 — BuscarProductos en catálogo + herramientas buscar_producto y obtener_ficha
 - [ ] T5 — Herramientas cotizar_envio y consultar_politica
 - [x] T6 — ObtenerFotosProducto en catálogo + herramienta enviar_fotos
-- [ ] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
+- [x] T7 — guardar_datos_contacto, marcar_lead_caliente (evaluador sin escala) y contexto inicial
 - [ ] T8 — Prompt versionado con prefijo estable + assets en el build
 - [ ] T9 — E2E con LLM falso + cierre documental
 
@@ -217,6 +217,16 @@ explícito que sugiere `individuales`.
 real, transcripción completa); GREEN; REFACTOR: integración del repositorio contra Postgres.
 
 **Hecho cuando**: 8 escenarios en verde; ninguna fila en `lead` tras los tests.
+
+**Estado (cerrada)**: AGT10 (3), AGT11 (2) y AGT12 (3) en verde; con las siete herramientas
+registradas, `AgenteModule` fija `RegistroHerramientas(…, 7)` y el arranque falla si falta o sobra una
+(R1). Desviaciones: (1) `RepositorioContactoAgente` expone solo `leerNombre` y
+`guardarDatosCapturados`; `leerResumen` y `establecerUltimoProducto` del diseño no tienen escenario
+que los use (AGT12 solo necesita el nombre) y se dejan para la Fase 08, que escribe `lead`. (2) El
+adaptador Prisma recibe el `Clock` para `actualizado` (regla 6 de `CLAUDE.md`). (3) AGT10 tercer
+escenario se prueba en `contenido-llm.spec.ts` espiando todos los niveles de `Logger` y `console`
+durante un turno completo con la herramienta real. (4) Ninguna fila en `lead`: `EvaluadorLeadSinEscala`
+no escribe y `marcar_lead_caliente` solo deja el efecto `lead-propuesto`.
 
 **Review requerida**: RDD
 
