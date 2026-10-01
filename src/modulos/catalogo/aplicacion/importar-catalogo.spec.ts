@@ -164,7 +164,7 @@ function crearOrquestador(opciones: {
 }): ImportarCatalogo {
   const geografia = opciones.geografia ?? new RepositorioGeografiaEnMemoria();
   const resolverGeografia = new ResolverGeografiaImportacion(geografia);
-  const procesarFotos = new ProcesarFotos(opciones.almacenamiento);
+  const procesarFotos = new ProcesarFotos(opciones.almacenamiento, { CATALOGO_GENERAR_COLLAGE: true });
   const clock = new ClockFalso(opciones.hoy ?? new Date('2026-09-26T12:00:00.000Z'));
 
   return new ImportarCatalogo(
@@ -358,7 +358,7 @@ describe('catalogo/aplicacion/ImportarCatalogo', () => {
       undefined,
       new ResolverGeografiaImportacion(new RepositorioGeografiaEnMemoria()),
       new RepositorioImportacionFalso(new Map()),
-      new ProcesarFotos(almacenamiento),
+      new ProcesarFotos(almacenamiento, { CATALOGO_GENERAR_COLLAGE: true }),
       almacenamiento,
       new CacheCatalogoFalsa(),
       new ClockFalso(new Date('2026-09-26T12:00:00.000Z')),

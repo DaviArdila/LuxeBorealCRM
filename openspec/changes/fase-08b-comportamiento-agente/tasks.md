@@ -20,7 +20,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
 - [x] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
 - [x] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
-- [ ] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
+- [x] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
 - [ ] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
 - [ ] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
 - [ ] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
@@ -117,7 +117,15 @@ Chain strategy: stacked-to-main
 - **Qué**: `CATALOGO_GENERAR_COLLAGE` (esquema de configuración, `.env.example`, contrato de variables);
   `ProcesarFotos` genera collage solo si está activa; `construirCollage` ajusta la grilla (MED8).
 - **RED**: los seis escenarios de MED8 y los dos de IMP15; el de «Una sola foto no genera collage» falla hoy.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 9 fallos (MED8 con 1, 2, 3 y 5 fotos y comprobación de píxeles, IMP15,
+  variable de configuración); GREEN: unit 126/126 en catálogo, evals APROBADA, e2e verde. La grilla
+  reparte casillas sin huecos (impar: la última ocupa toda la fila inferior); con menos de 2 fotos
+  `construirCollage` devuelve `null` y con más de 6 lanza `RangeError`. **Desviaciones**: (1) el escenario
+  MED9 «Redescargar una foto por archivo faltante…» usaba un producto de una sola foto, que con MED8
+  nuevo ya no tiene collage; pasó a dos fotos, mismo comportamiento verificado. (2) `importar-catalogo-cli.spec.ts`
+  (integración con MinIO, no corre sin Docker) fija `CATALOGO_GENERAR_COLLAGE=true` para seguir comprobando
+  que el collage se genera cuando se pide. Con la variable apagada, el collage guardado de una importación
+  previa deja de referenciarse (`clave_collage` nula); el archivo huérfano queda en el almacenamiento.
 
 ## T6 — `enviar_fotos` por ángulo
 

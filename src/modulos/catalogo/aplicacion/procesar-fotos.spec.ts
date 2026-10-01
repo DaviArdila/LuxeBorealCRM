@@ -88,6 +88,10 @@ function producto(sku: string, fotos: readonly string[]): ProductoValidado {
   };
 }
 
+// Los escenarios de MED5/MED9 se ejercitan con el collage activo; IMP15 prueba el valor por defecto.
+const CON_COLLAGE = { CATALOGO_GENERAR_COLLAGE: true };
+const SIN_COLLAGE = { CATALOGO_GENERAR_COLLAGE: false };
+
 const CLAVE_FOTO_1 = 'catalogo/SKU-1/foto-1.jpg';
 const CLAVE_FOTO_2 = 'catalogo/SKU-1/foto-2.jpg';
 const CLAVE_FOTO_3 = 'catalogo/SKU-1/foto-3.jpg';
@@ -122,7 +126,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       const resultado = await caso.ejecutar([producto('SKU-1', [enlace])], estadoPrevio);
 
@@ -154,7 +158,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       const resultado = await caso.ejecutar([producto('SKU-1', [enlaceNuevo])], estadoPrevio);
 
@@ -185,7 +189,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       const resultado = await caso.ejecutar([producto('SKU-1', [enlace])], estadoPrevio);
 
@@ -193,6 +197,43 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
       expect(resultado.productos[0]?.fotos).toEqual([
         { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlace, angulo: null },
       ]);
+    });
+  });
+
+  describe('IMP15 — el collage es opcional y está apagado por defecto', () => {
+    async function procesar(config: { CATALOGO_GENERAR_COLLAGE: boolean }, cantidadFotos: number) {
+      const enlaces = Array.from({ length: cantidadFotos }, (_, i) => `https://cdn.tienda.com/${String(i + 1)}.jpg`);
+      const contenido = await imagenDeColor(500, 500, { r: 10, g: 120, b: 200 });
+      vi.stubGlobal(
+        'fetch',
+        fetchFalso({ clavesExistentes: new Set(), contenidoPorEnlace: new Map(enlaces.map((e) => [e, contenido])) }),
+      );
+      const almacenamiento = new AlmacenamientoEnMemoria();
+      const resultado = await new ProcesarFotos(almacenamiento, config).ejecutar([producto('SKU-1', enlaces)], new Map());
+      return { resultado, almacenamiento };
+    }
+
+    it('IMP15 — Por defecto la importación no genera collage', async () => {
+      const { resultado, almacenamiento } = await procesar(SIN_COLLAGE, 3);
+
+      expect(resultado.productos[0]?.fotos).toHaveLength(3);
+      expect(resultado.productos[0]?.claveCollage).toBeNull();
+      expect(almacenamiento.guardados.has(CLAVE_COLLAGE)).toBe(false);
+    });
+
+    it('IMP15 — Con la variable activa la importación genera el collage', async () => {
+      const { resultado, almacenamiento } = await procesar(CON_COLLAGE, 3);
+
+      expect(resultado.productos[0]?.fotos).toHaveLength(3);
+      expect(resultado.productos[0]?.claveCollage).toBe(CLAVE_COLLAGE);
+      expect(almacenamiento.guardados.has(CLAVE_COLLAGE)).toBe(true);
+    });
+
+    it('con la variable activa, un producto de una sola foto no tiene collage (MED8)', async () => {
+      const { resultado, almacenamiento } = await procesar(CON_COLLAGE, 1);
+
+      expect(resultado.productos[0]?.claveCollage).toBeNull();
+      expect(almacenamiento.guardados.has(CLAVE_COLLAGE)).toBe(false);
     });
   });
 
@@ -215,7 +256,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
         ],
       };
 
-      const resultado = await new ProcesarFotos(new AlmacenamientoEnMemoria()).ejecutar([conAngulos], new Map());
+      const resultado = await new ProcesarFotos(new AlmacenamientoEnMemoria(), CON_COLLAGE).ejecutar([conAngulos], new Map());
 
       expect(resultado.productos[0]?.fotos.map((f) => f.angulo)).toEqual(['frente', 'lateral_derecho']);
     });
@@ -227,7 +268,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
       const original = await imagenDeColor(3000, 2000, { r: 255, g: 255, b: 0 });
       vi.stubGlobal('fetch', fetchFalso({ clavesExistentes: new Set(), contenidoPorEnlace: new Map([[enlace, original]]) }));
       const almacenamiento = new AlmacenamientoEnMemoria();
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       await caso.ejecutar([producto('SKU-1', [enlace])], new Map());
 
@@ -244,7 +285,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
       const original = await imagenDeColor(800, 600, { r: 0, g: 255, b: 255 });
       vi.stubGlobal('fetch', fetchFalso({ clavesExistentes: new Set(), contenidoPorEnlace: new Map([[enlace, original]]) }));
       const almacenamiento = new AlmacenamientoEnMemoria();
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       await caso.ejecutar([producto('SKU-1', [enlace])], new Map());
 
@@ -282,7 +323,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       const resultado = await caso.ejecutar([producto('SKU-1', enlaces)], estadoPrevio);
 
@@ -321,7 +362,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
       const resultado = await caso.ejecutar([producto('SKU-1', enlacesActuales)], estadoPrevio);
 
@@ -331,13 +372,17 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
     });
 
     it('MED9 — Redescargar una foto por archivo faltante regenera el collage aunque el hash no haya cambiado', async () => {
-      const enlace = 'https://cdn.tienda.com/1.jpg';
+      // Dos fotos: con una sola no hay collage (MED8). La posición 1 ya no existe; la 2 sí.
+      const enlace1 = 'https://cdn.tienda.com/1.jpg';
+      const enlace2 = 'https://cdn.tienda.com/2.jpg';
       const contenidoNuevo = await imagenDeColor(400, 400, { r: 50, g: 60, b: 70 });
+      const contenidoFoto2 = await imagenDeColor(400, 400, { r: 90, g: 10, b: 10 });
       vi.stubGlobal(
         'fetch',
         fetchFalso({
-          clavesExistentes: new Set(), // la posición 1 ya no existe en el almacenamiento
-          contenidoPorEnlace: new Map([[enlace, contenidoNuevo]]),
+          clavesExistentes: new Set([CLAVE_FOTO_2]),
+          contenidoPorClave: new Map([[CLAVE_FOTO_2, contenidoFoto2]]),
+          contenidoPorEnlace: new Map([[enlace1, contenidoNuevo]]),
         }),
       );
       const almacenamiento = new AlmacenamientoEnMemoria();
@@ -345,15 +390,18 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
         [
           'SKU-1',
           {
-            fotos: [{ orden: 1, claveArchivo: CLAVE_FOTO_1, origenUrl: enlace }],
-            fotosHash: calcularHashDePrueba([enlace]), // mismo hash: el enlace no cambió
+            fotos: [
+              { orden: 1, claveArchivo: CLAVE_FOTO_1, origenUrl: enlace1 },
+              { orden: 2, claveArchivo: CLAVE_FOTO_2, origenUrl: enlace2 },
+            ],
+            fotosHash: calcularHashDePrueba([enlace1, enlace2]), // mismo hash: los enlaces no cambiaron
             claveCollage: CLAVE_COLLAGE,
           },
         ],
       ]);
-      const caso = new ProcesarFotos(almacenamiento);
+      const caso = new ProcesarFotos(almacenamiento, CON_COLLAGE);
 
-      const resultado = await caso.ejecutar([producto('SKU-1', [enlace])], estadoPrevio);
+      const resultado = await caso.ejecutar([producto('SKU-1', [enlace1, enlace2])], estadoPrevio);
 
       expect(almacenamiento.guardados.has(CLAVE_FOTO_1)).toBe(true); // se redescargó
       expect(almacenamiento.guardados.has(CLAVE_COLLAGE)).toBe(true); // el collage se regeneró

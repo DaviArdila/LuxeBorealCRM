@@ -1027,6 +1027,18 @@ describe('cargarConfiguracion', () => {
       expect(cargarConfiguracion({ ...fuenteValida, AGENTE_SESION_TTL_H: '720' }).AGENTE_SESION_TTL_H).toBe(720);
     });
   });
+  describe('Variable CATALOGO_GENERAR_COLLAGE (fase-08b, IMP15)', () => {
+    it('IMP15 — por defecto el collage está apagado y acepta true o false', () => {
+      expect(cargarConfiguracion(fuenteValida).CATALOGO_GENERAR_COLLAGE).toBe(false);
+      expect(cargarConfiguracion({ ...fuenteValida, CATALOGO_GENERAR_COLLAGE: 'true' }).CATALOGO_GENERAR_COLLAGE).toBe(true);
+      expect(cargarConfiguracion({ ...fuenteValida, CATALOGO_GENERAR_COLLAGE: 'false' }).CATALOGO_GENERAR_COLLAGE).toBe(false);
+    });
+
+    it('rechaza un valor que no sea true o false', () => {
+      expect(() => cargarConfiguracion({ ...fuenteValida, CATALOGO_GENERAR_COLLAGE: 'si' })).toThrow(ConfiguracionInvalidaError);
+    });
+  });
+
   describe('Variables AGENTE_MAX_VUELTAS/AGENTE_HISTORIAL_TURNOS/AGENTE_FOTOS_INDIVIDUALES_MAX (fase-07b, D10)', () => {
     function nombresRechazados(fuente: Readonly<Record<string, string | undefined>>): readonly string[] {
       try {

@@ -2,7 +2,7 @@ import type { Configuracion } from '../../src/plataforma/config/index.js';
 
 type CamposAgente = Extract<
   keyof Configuracion,
-  `AGENTE_${string}` | `TELEGRAM_${string}` | `LEADS_${string}`
+  `AGENTE_${string}` | `TELEGRAM_${string}` | `LEADS_${string}` | `CATALOGO_${string}`
 >;
 
 // Igual que `CONFIGURACION_LLM_DE_PRUEBA`: los tests que arman una `Configuracion` completa a mano
@@ -13,6 +13,8 @@ export const CONFIGURACION_AGENTE_DE_PRUEBA: Pick<Configuracion, CamposAgente> =
   AGENTE_MAX_VUELTAS: 5,
   AGENTE_HISTORIAL_TURNOS: 6,
   AGENTE_FOTOS_INDIVIDUALES_MAX: 4,
+  // Fase 08b (IMP15): el collage del importador está apagado por defecto.
+  CATALOGO_GENERAR_COLLAGE: false,
   // Fase 08 (T6): sin credenciales, el aviso a Telegram queda desactivado en los tests que no lo prueban.
   TELEGRAM_BOT_TOKEN: '',
   TELEGRAM_CHAT_ID: '',

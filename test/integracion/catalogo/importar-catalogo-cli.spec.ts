@@ -90,6 +90,7 @@ const CLAVES_ENTORNO = [
   'MINIO_BUCKET',
   'MINIO_URL_PUBLICA',
   'CATALOGO_SHEET_ID',
+  'CATALOGO_GENERAR_COLLAGE',
 ] as const;
 
 /**
@@ -119,6 +120,8 @@ function fijarVariablesDeEntorno(configuracion: Configuracion): () => void {
   process.env.MINIO_BUCKET = configuracion.MINIO_BUCKET;
   delete process.env.MINIO_URL_PUBLICA;
   delete process.env.CATALOGO_SHEET_ID;
+  // Fase 08b (IMP15): el collage está apagado por defecto; este test comprueba que se genera cuando se pide.
+  process.env.CATALOGO_GENERAR_COLLAGE = 'true';
 
   return () => {
     for (const clave of CLAVES_ENTORNO) {

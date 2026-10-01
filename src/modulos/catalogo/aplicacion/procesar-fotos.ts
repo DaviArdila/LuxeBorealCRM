@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import { ALMACENAMIENTO, construirCollage, type Almacenamiento } from '../../medios/index.js';
+import { CONFIGURACION, type Configuracion } from '../../../plataforma/config/index.js';
 import type { FotoValidada, ProductoValidado } from '../dominio/validar-catalogo.js';
 import { descargarFoto } from '../infraestructura/descarga-drive.js';
 import type { EstadoFotoActual, EstadoProductoActual, NuevaFotoImportada } from '../puertos/repositorio-importacion.js';
@@ -54,7 +55,10 @@ interface DecisionFoto {
  */
 @Injectable()
 export class ProcesarFotos {
-  constructor(@Inject(ALMACENAMIENTO) private readonly almacenamiento: Almacenamiento) {}
+  constructor(
+    @Inject(ALMACENAMIENTO) private readonly almacenamiento: Almacenamiento,
+    @Inject(CONFIGURACION) private readonly configuracion: Pick<Configuracion, 'CATALOGO_GENERAR_COLLAGE'>,
+  ) {}
 
   async ejecutar(
     productos: readonly ProductoValidado[],
@@ -92,11 +96,16 @@ export class ProcesarFotos {
     const fotosHash = calcularFotosHash(producto.fotos);
     const claveCollagePrevia = previo?.claveCollage ?? null;
     const debeRegenerarCollage =
-      decisiones.length > 0 && (huboFotoNueva || fotosHash !== previo?.fotosHash || claveCollagePrevia === null);
+      this.configuracion.CATALOGO_GENERAR_COLLAGE &&
+      decisiones.length > 0 &&
+      (huboFotoNueva || fotosHash !== previo?.fotosHash || claveCollagePrevia === null);
 
-    const claveCollage = debeRegenerarCollage
-      ? await this.regenerarCollage(producto.sku, decisiones)
-      : claveCollagePrevia;
+    // IMP15: con el collage apagado no se genera ninguno y `clave_collage` queda nula.
+    const claveCollage = !this.configuracion.CATALOGO_GENERAR_COLLAGE
+      ? null
+      : debeRegenerarCollage
+        ? await this.regenerarCollage(producto.sku, decisiones)
+        : claveCollagePrevia;
 
     const fotos: readonly NuevaFotoImportada[] = decisiones.map((decision) => ({
       orden: decision.orden,
@@ -137,7 +146,7 @@ export class ProcesarFotos {
   }
 
   /** MED9: recompone el collage con las fotos de todas las posiciones, aunque solo alguna se haya redescargado. */
-  private async regenerarCollage(sku: string, decisiones: readonly DecisionFoto[]): Promise<string> {
+  private async regenerarCollage(sku: string, decisiones: readonly DecisionFoto[]): Promise<string | null> {
     const buffers = await Promise.all(
       decisiones.map((decision) =>
         decision.bufferNuevo !== null ? Promise.resolve(decision.bufferNuevo) : this.leerBufferExistente(decision.claveArchivo),
@@ -145,6 +154,9 @@ export class ProcesarFotos {
     );
 
     const bufferCollage = await construirCollage(buffers.map((buffer) => ({ buffer })));
+    if (bufferCollage === null) {
+      return null; // MED8: una sola foto no lleva collage.
+    }
     const claveCollage = `catalogo/${sku}/collage.jpg`;
     await this.almacenamiento.guardar(claveCollage, bufferCollage, 'image/jpeg');
     return claveCollage;
