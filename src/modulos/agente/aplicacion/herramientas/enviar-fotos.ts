@@ -7,7 +7,7 @@ import type { ContadoresSesion } from '../../puertos/contadores-sesion.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
 const esquema = z.object({
-  id_producto: z.string().min(1).describe('El id o el SKU del producto del que se mandan fotos.'),
+  id_producto: z.string().min(1).describe('El id del producto del que se mandan fotos.'),
   modo: z
     .enum(['collage', 'individuales'])
     .describe('"collage" manda una sola imagen con todas las fotos (por defecto); "individuales" manda una por foto.'),

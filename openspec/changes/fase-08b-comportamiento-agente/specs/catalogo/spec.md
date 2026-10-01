@@ -2,6 +2,40 @@
 
 ## MODIFIED Requirements
 
+### Requirement: CAT4 — La caché de catálogo compacto sirve la misma copia mientras la versión no cambia
+
+El sistema MUST mantener una caché del catálogo compacto (texto id + nombre + descripción corta,
+sin precios y **sin SKU**, AGT16) detrás de un puerto propio del módulo `catalogo`, implementada como
+*provider* inyectable de NestJS — nunca un `let` de módulo abierto al importarse (corrige A1) ni una
+dependencia directa del módulo de colas (corrige A3). Mientras la clave de versión no cambie, una
+lectura MUST devolver la misma copia sin reflejar escrituras hechas fuera de la operación de
+invalidación de esta fase.
+
+(Previously: el texto compacto era «sku + nombre + descripción corta».)
+
+Fase que lo implementa: 02; 08b (id en lugar de SKU)
+
+#### Scenario: Una escritura directa en producto sin pasar por la invalidación no se refleja de inmediato
+
+- Dado un catálogo compacto ya leído una vez (una copia en caché con la versión actual),
+- Cuando se guarda un producto nuevo directamente en la base de datos, sin llamar a la operación de
+  invalidación,
+- Entonces la siguiente lectura del catálogo compacto sigue devolviendo la copia anterior, sin el
+  producto nuevo.
+
+#### Scenario: El catálogo compacto no lleva precios y solo lista productos activos ordenados por nombre
+
+- Dado un catálogo con productos activos e inactivos, con nombres en distinto orden alfabético,
+- Cuando se obtiene el catálogo compacto,
+- Entonces el texto devuelto lista solo los productos activos, ordenados por nombre, y no contiene
+  ningún valor de dinero.
+
+#### Scenario: Cada línea del catálogo compacto lleva el id del producto y no su SKU
+
+- Dado un catálogo con productos activos que tienen id y SKU,
+- Cuando se obtiene el catálogo compacto,
+- Entonces cada línea empieza con el id del producto y ninguna contiene su SKU.
+
 ### Requirement: CAT14 — Fotos de un producto listas para enviar
 
 El sistema MUST exponer un caso de uso que, dado el id o SKU de un producto activo y, opcionalmente, un

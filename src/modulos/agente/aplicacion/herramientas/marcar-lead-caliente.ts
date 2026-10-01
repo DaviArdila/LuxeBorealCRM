@@ -10,7 +10,7 @@ const esquema = z.object({
     .array(z.enum(NOMBRES_SENALES))
     .describe('Señales concretas que dijo o hizo el cliente, solo del vocabulario permitido.'),
   resumen: z.string().min(1).describe('Resumen breve de lo que busca el cliente, sin datos personales.'),
-  id_producto: z.string().nullable().describe('El id o SKU del producto de interés, o null si no hay uno.'),
+  id_producto: z.string().nullable().describe('El id del producto de interés, o null si no hay uno.'),
 });
 
 /**

@@ -5,7 +5,7 @@ import { cotizacionParaElModelo } from './contrato-modelo.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
 const esquema = z.object({
-  id_producto: z.string().min(1).describe('El id o el SKU del producto que se quiere enviar.'),
+  id_producto: z.string().min(1).describe('El id del producto que se quiere enviar, tal como lo devolvió buscar_producto.'),
   departamento: z.string().min(1).describe('Departamento de destino, como lo dijo el cliente.'),
   ciudad: z.string().nullish().describe('Ciudad o municipio de destino, si el cliente la dio.'),
 });

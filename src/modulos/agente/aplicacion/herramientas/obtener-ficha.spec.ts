@@ -25,13 +25,40 @@ describe('modulos/agente/aplicacion/herramientas — obtener_ficha', () => {
 
     expect(resultado.paraElModelo).toEqual({
       id: 'p1',
-      sku: 'SKU-1',
       nombre: 'Anillo Aurora',
       descripcion_larga: 'Oro laminado',
       precio_texto: formatearCop(389000),
       tiene_fotos: true,
     });
     expect(JSON.stringify(resultado.paraElModelo)).not.toContain('389000');
+  });
+
+  it('AGT16 — Los resultados de las herramientas no contienen SKU (obtener_ficha)', async () => {
+    const ficha = {
+      ejecutar: () =>
+        Promise.resolve({ id: 'p1', sku: 'SKU-1', nombre: 'Anillo', descripcionLarga: 'Oro', precioTexto: '$1', tieneFotos: true }),
+    } as unknown as ObtenerFichaProducto;
+    const herramienta = crearObtenerFicha(ficha);
+
+    const resultado = await herramienta.ejecutar({ id_producto: 'p1' }, CONTEXTO);
+
+    expect(JSON.stringify(resultado.paraElModelo)).not.toContain('SKU');
+    expect(herramienta.definicion.descripcion).not.toMatch(/sku/i);
+  });
+
+  it('AGT16 — Un SKU como entrada sigue funcionando', async () => {
+    const consultados: string[] = [];
+    const ficha = {
+      ejecutar: (idOSku: string) => {
+        consultados.push(idOSku);
+        return Promise.resolve({ id: 'p1', sku: 'SKU-1', nombre: 'Anillo', descripcionLarga: 'Oro', precioTexto: '$1', tieneFotos: true });
+      },
+    } as unknown as ObtenerFichaProducto;
+
+    const resultado = await crearObtenerFicha(ficha).ejecutar({ id_producto: 'SKU-1' }, CONTEXTO);
+
+    expect(consultados).toEqual(['SKU-1']);
+    expect(resultado.paraElModelo).toMatchObject({ id: 'p1', nombre: 'Anillo' });
   });
 
   it('AGT8 — obtener_ficha de un producto inactivo devuelve un error explícito', async () => {

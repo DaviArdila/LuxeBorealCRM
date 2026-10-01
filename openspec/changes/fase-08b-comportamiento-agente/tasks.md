@@ -18,7 +18,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 
 - [x] T1 — Prompt en dos archivos: `reglas` (no negociable) y `estilo` (editable), versión `v2`
 - [x] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
-- [ ] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
+- [x] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
 - [ ] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
 - [ ] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
 - [ ] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
@@ -93,7 +93,12 @@ Chain strategy: stacked-to-main
   SKU; `id_producto` sigue aceptando SKU como entrada.
 - **RED**: los tres escenarios de AGT16.
 - **Archivos**: `catalogo/dominio/producto.ts`, herramientas de `agente`, sus specs.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 7 fallos (catálogo compacto, `buscar_producto`, `obtener_ficha`);
+  GREEN: 735/735 en unit, evals APROBADA (100 %), e2e verde. **Desviación**: el delta de `catalogo` no
+  incluía CAT4 (su texto decía «sku + nombre + descripción corta»); se agregó como MODIFIED con un escenario
+  nuevo («Cada línea del catálogo compacto lleva el id del producto y no su SKU»). Las descripciones de las
+  herramientas dejan de mencionar el SKU, pero `id_producto` lo sigue aceptando como entrada. `reglas.v2.md`
+  pide no mencionar códigos internos.
 
 ## T4 — Esquema `foto.angulo` e importador
 
