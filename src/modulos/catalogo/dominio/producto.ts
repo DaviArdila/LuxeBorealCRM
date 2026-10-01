@@ -5,6 +5,7 @@
  * la regla `dominio-aislado` (skill `luxeboreal-arquitectura` §2); nunca NestJS ni Prisma.
  */
 import { formatearCop } from '../../../compartido/dinero/index.js';
+import type { AnguloFoto } from './angulo-foto.js';
 
 /** Resumen de producto sin dinero: lo que expone el listado y el catálogo compacto (CAT1, CAT4). */
 export interface ProductoResumen {
@@ -34,15 +35,37 @@ export interface FichaProducto {
   readonly descripcionLarga: string;
   readonly precioTexto: string;
   readonly tieneFotos: boolean;
+  /** Ángulos con foto, sin repetir y en orden de envío; vacío si ninguna foto está etiquetada (IMP14). */
+  readonly angulosFotos: readonly AnguloFoto[];
+}
+
+/** Una foto de un producto: clave de objeto (MED1, nunca ruta ni URL) y el ángulo que muestra, si se sabe. */
+export interface FotoProducto {
+  readonly claveObjeto: string;
+  readonly angulo: AnguloFoto | null;
 }
 
 /**
- * Claves de objeto (MED1) de las imágenes de un producto, nunca rutas ni URLs (CAT14): el collage si el
- * importador lo generó y las fotos individuales en orden de envío (portada primero).
+ * Lo que entrega el caso de uso de fotos (CAT14, Fase 08b): la foto pedida (la portada sin ángulo, o la de
+ * ese ángulo; `null` si no hay), los ángulos disponibles y el pie de foto armado por el backend (AGT17).
  */
 export interface FotosProducto {
-  readonly claveCollage: string | null;
-  readonly clavesFotos: readonly string[];
+  readonly foto: FotoProducto | null;
+  readonly angulosDisponibles: readonly AnguloFoto[];
+  readonly leyenda: string;
+}
+
+/** Ángulos presentes en una lista de fotos ya ordenada, sin repetir y sin contar las sin etiquetar. */
+export function angulosDeFotos(fotos: readonly FotoProducto[]): readonly AnguloFoto[] {
+  return [...new Set(fotos.flatMap((foto) => (foto.angulo === null ? [] : [foto.angulo])))];
+}
+
+/**
+ * Pie de foto (AGT17): nombre, descripción corta y el precio ya formateado por el backend (R2). Nunca lleva el
+ * SKU (AGT16) ni nada que escriba el modelo.
+ */
+export function armarLeyendaFoto(producto: Producto): string {
+  return `${producto.nombre} — ${producto.descripcionCorta}\n${formatearCop(producto.precioCop)}`;
 }
 
 /** Se lanza al pedir la ficha de un producto inexistente o inactivo (CAT3). */
@@ -58,7 +81,7 @@ export class ProductoNoDisponible extends Error {
  * ningún valor, solo llama a los formateadores de `compartido/dinero`. La ficha no expone el recargo
  * contra entrega (CAT2): lo que el cliente debe saber lo entrega la política `contra_entrega`.
  */
-export function armarFicha(producto: Producto): FichaProducto {
+export function armarFicha(producto: Producto, angulosFotos: readonly AnguloFoto[] = []): FichaProducto {
   return {
     id: producto.id,
     sku: producto.sku,
@@ -66,6 +89,7 @@ export function armarFicha(producto: Producto): FichaProducto {
     descripcionLarga: producto.descripcionLarga,
     precioTexto: formatearCop(producto.precioCop),
     tieneFotos: producto.tieneFotos,
+    angulosFotos,
   };
 }
 

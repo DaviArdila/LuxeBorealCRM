@@ -203,11 +203,13 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     return app;
   }
 
-  async function sembrarProducto(prisma: PrismaService, conCollage = false) {
+  async function sembrarProducto(prisma: PrismaService, conFotos = false) {
     const sufijo = crypto.randomUUID().slice(0, 8).toUpperCase();
-    const claveCollage = `catalogo/SKU-${sufijo}/collage.jpg`;
-    if (conCollage) {
-      await almacenamiento.guardar(claveCollage, Buffer.from(`bytes-${sufijo}`), 'image/jpeg');
+    const claveFrente = `catalogo/SKU-${sufijo}/foto-1.jpg`;
+    const claveLado = `catalogo/SKU-${sufijo}/foto-2.jpg`;
+    if (conFotos) {
+      await almacenamiento.guardar(claveFrente, Buffer.from(`frente-${sufijo}`), 'image/jpeg');
+      await almacenamiento.guardar(claveLado, Buffer.from(`lado-${sufijo}`), 'image/jpeg');
     }
     return prisma.producto.create({
       data: {
@@ -217,10 +219,14 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
         descripcionLarga: 'Anillo de oro laminado con acabado brillante.',
         precioCop: PRECIO_COP,
         activo: true,
-        ...(conCollage
+        ...(conFotos
           ? {
-              claveCollage,
-              fotos: { create: [{ orden: 0, esPortada: true, claveArchivo: `catalogo/SKU-${sufijo}/foto-1.jpg` }] },
+              fotos: {
+                create: [
+                  { orden: 0, esPortada: true, angulo: 'frente', claveArchivo: claveFrente },
+                  { orden: 1, esPortada: false, angulo: 'lateral_izquierdo', claveArchivo: claveLado },
+                ],
+              },
             }
           : {}),
       },
@@ -292,11 +298,11 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(JSON.stringify(cotizacion?.resultado)).not.toMatch(/\d\s?%/);
   }, 40_000);
 
-  it('AGT9 — El collage llega a Chatwoot como imagen después del texto', async () => {
+  it('AGT9 — Sin ángulo llega una sola foto a Chatwoot como imagen después del texto, con su pie de foto', async () => {
     const aplicacion = await arrancar();
     const producto = await sembrarProducto(aplicacion.get(PrismaService), true);
     llm.encolar(
-      llamada('c1', 'enviar_fotos', { id_producto: producto.id, modo: 'collage' }),
+      llamada('c1', 'enviar_fotos', { id_producto: producto.id }),
       { respuesta: { texto: 'Aquí tienes las fotos del anillo' } },
     );
 
@@ -307,7 +313,12 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     const multipart = imagen as CuerpoMultipart;
     expect(multipart.multipart).toBe(true);
     expect(multipart.archivos).toHaveLength(1);
-    expect(multipart.archivos[0]?.bytes.toString()).toMatch(/^bytes-/);
+    expect(multipart.archivos[0]?.bytes.toString()).toMatch(/^frente-/);
+    // AGT17: el pie lo arma el backend con nombre, descripción corta y precio (R2); nunca lleva el SKU.
+    // El multipart normaliza el salto de línea del pie a CRLF.
+    const pie = (multipart.campos['content'] ?? '').replace(/\r\n/g, '\n');
+    expect(pie).toBe(`${producto.nombre} — Oro laminado 18k\n${formatearCop(PRECIO_COP)}`);
+    expect(pie).not.toContain(producto.sku);
     // El modelo solo supo cuántas se enviaron, nunca la clave.
     expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ enviadas: 1 });
   }, 40_000);

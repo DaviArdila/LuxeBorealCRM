@@ -60,8 +60,14 @@ export async function sembrarBase(prisma: PrismaService): Promise<void> {
         activo: producto.activo,
         ...(producto.fotos
           ? {
-              claveCollage: `evals/${producto.sku}/collage.jpg`,
-              fotos: { create: [0, 1, 2].map((orden) => ({ orden, esPortada: orden === 0, claveArchivo: `evals/${producto.sku}/foto-${String(orden + 1)}.jpg` })) },
+              fotos: {
+                create: (['frente', 'lateral_izquierdo', 'detalle'] as const).map((angulo, orden) => ({
+                  orden,
+                  esPortada: orden === 0,
+                  angulo,
+                  claveArchivo: `evals/${producto.sku}/foto-${String(orden + 1)}.jpg`,
+                })),
+              },
             }
           : {}),
       },

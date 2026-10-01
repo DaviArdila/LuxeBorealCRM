@@ -1,0 +1,20 @@
+{
+  "id": "r13-una-foto",
+  "titulo": "R13 — Una sola foto por defecto",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [{ "tipoContenido": "texto", "texto": "¿Me mandas fotos del collar?" }],
+      "guion": [
+        { "llamadas": [{ "nombre": "enviar_fotos", "argumentos": { "id_producto": "SKU-EVAL-COLLAR" } }] },
+        { "texto": "Claro, te comparto la foto del Collar Luna. Si quieres verlo desde otro ángulo, dime." }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [{ "nombre": "enviar_fotos", "argumentos": { "id_producto": "SKU-EVAL-COLLAR" } }],
+        "sinEmojis": true,
+        "sinSku": true
+      }
+    }
+  ]
+}

@@ -16,7 +16,7 @@ const esquema = z.object({
 export function crearObtenerFicha(ficha: ObtenerFichaProducto): Herramienta {
   return definirHerramienta(
     'obtener_ficha',
-    'Devuelve la ficha de un producto activo: nombre, descripción larga, precio ya formateado y si tiene fotos. Es la única fuente de precios.',
+    'Devuelve la ficha de un producto activo: nombre, descripción larga, precio ya formateado, si tiene fotos y los ángulos de fotos que se pueden pedir. Es la única fuente de precios.',
     esquema,
     async ({ id_producto }) => {
       try {
@@ -28,6 +28,7 @@ export function crearObtenerFicha(ficha: ObtenerFichaProducto): Herramienta {
             descripcion_larga: resultado.descripcionLarga,
             precio_texto: resultado.precioTexto,
             tiene_fotos: resultado.tieneFotos,
+            angulos_fotos: resultado.angulosFotos,
           },
           efectos: [],
         };

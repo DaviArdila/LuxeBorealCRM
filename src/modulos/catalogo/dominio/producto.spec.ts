@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatearCop } from '../../../compartido/dinero/index.js';
-import { armarCatalogoCompacto, armarFicha, type Producto, type ProductoResumen } from './producto.js';
+import { armarCatalogoCompacto, armarFicha, armarLeyendaFoto, type Producto, type ProductoResumen } from './producto.js';
 
 function producto(sobrescribir: Partial<Producto> = {}): Producto {
   return {
@@ -39,6 +39,18 @@ describe('catalogo/dominio/producto', () => {
       const ficha = armarFicha(producto({ tieneFotos: true }));
 
       expect(ficha.tieneFotos).toBe(true);
+    });
+  });
+
+  describe('armarLeyendaFoto', () => {
+    it('AGT17 — El pie de foto lleva nombre, descripción corta y el precio formateado por el backend', () => {
+      const leyenda = armarLeyendaFoto(producto({ nombre: 'Grifo alto', descripcionCorta: 'Cromado', precioCop: 289000 }));
+
+      expect(leyenda).toBe(`Grifo alto — Cromado\n${formatearCop(289000)}`);
+    });
+
+    it('AGT17 — El pie de foto no lleva el SKU', () => {
+      expect(armarLeyendaFoto(producto({ sku: 'SKU-GL001' }))).not.toContain('SKU');
     });
   });
 

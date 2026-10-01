@@ -31,6 +31,7 @@ export { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
 export {
   ProductoNoDisponible,
   type FichaProducto,
+  type FotoProducto,
   type FotosProducto,
   type Producto,
   type ProductoResumen,

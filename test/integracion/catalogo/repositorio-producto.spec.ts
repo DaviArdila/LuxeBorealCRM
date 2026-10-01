@@ -144,32 +144,32 @@ describe('Repositorio de producto (T5, integración)', () => {
     expect(encontrado).toBeNull();
   });
 
-  it('listarFotos devuelve el collage y las fotos con la portada primero y luego por orden (CAT14)', async () => {
+  it('listarFotos devuelve las fotos con su ángulo, la portada primero y luego por orden (CAT14)', async () => {
     const repositorio = await crearRepositorio();
     const prisma = modulo!.get(PrismaService);
     const creado = await crearProducto(prisma);
-    await prisma.producto.update({ where: { id: creado.id }, data: { claveCollage: 'catalogo/x/collage.jpg' } });
     await prisma.foto.createMany({
       data: [
-        { productoId: creado.id, orden: 2, claveArchivo: 'foto-orden-2.jpg' },
+        { productoId: creado.id, orden: 2, claveArchivo: 'foto-orden-2.jpg', angulo: 'detalle' },
         { productoId: creado.id, orden: 0, claveArchivo: 'foto-orden-0.jpg' },
-        { productoId: creado.id, orden: 1, claveArchivo: 'foto-portada.jpg', esPortada: true },
+        { productoId: creado.id, orden: 1, claveArchivo: 'foto-portada.jpg', esPortada: true, angulo: 'frente' },
       ],
     });
 
     const fotos = await repositorio.listarFotos(creado.id);
 
-    expect(fotos).toEqual({
-      claveCollage: 'catalogo/x/collage.jpg',
-      clavesFotos: ['foto-portada.jpg', 'foto-orden-0.jpg', 'foto-orden-2.jpg'],
-    });
+    expect(fotos).toEqual([
+      { claveObjeto: 'foto-portada.jpg', angulo: 'frente' },
+      { claveObjeto: 'foto-orden-0.jpg', angulo: null },
+      { claveObjeto: 'foto-orden-2.jpg', angulo: 'detalle' },
+    ]);
   });
 
-  it('listarFotos de un producto sin fotos ni collage devuelve vacío', async () => {
+  it('listarFotos de un producto sin fotos devuelve una lista vacía', async () => {
     const repositorio = await crearRepositorio();
     const prisma = modulo!.get(PrismaService);
     const creado = await crearProducto(prisma);
 
-    await expect(repositorio.listarFotos(creado.id)).resolves.toEqual({ claveCollage: null, clavesFotos: [] });
+    await expect(repositorio.listarFotos(creado.id)).resolves.toEqual([]);
   });
 });
