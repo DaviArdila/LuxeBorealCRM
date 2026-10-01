@@ -9,6 +9,11 @@ export {
   type EventoHandoff,
   type ObservadorHandoff,
 } from './aplicacion/registro-observadores-handoff.js';
+export {
+  RegistroObservadoresEspera,
+  type EventoEsperaCliente,
+  type ObservadorEsperaCliente,
+} from './aplicacion/registro-observadores-espera.js';
 export { ObservadoresHandoffModule } from './observadores-handoff.module.js';
 export { ConversacionesModule } from './conversaciones.module.js';
 export {

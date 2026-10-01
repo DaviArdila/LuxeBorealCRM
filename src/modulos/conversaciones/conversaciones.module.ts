@@ -7,6 +7,7 @@ import { AgenteEco } from './aplicacion/agente-eco.js';
 import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones.js';
 import { EnviarRespuestaTurno } from './aplicacion/enviar-respuesta-turno.js';
 import { GuardiaEnvioConversaciones } from './aplicacion/guardia-envio-conversaciones.js';
+import { ProcesarEsperasClientes } from './aplicacion/procesar-esperas-clientes.js';
 import { ProcesarTurno } from './aplicacion/procesar-turno.js';
 import { ObservadoresHandoffModule } from './observadores-handoff.module.js';
 import { TransicionarConversacion } from './aplicacion/transicionar-conversacion.js';
@@ -14,6 +15,7 @@ import {
   BarridoVencimientos,
   NOMBRE_COLA_BARRIDO_VENCIMIENTOS,
 } from './infraestructura/colas/barrido-vencimientos.js';
+import { BarridoEsperas, NOMBRE_COLA_BARRIDO_ESPERAS } from './infraestructura/colas/barrido-esperas.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from './infraestructura/colas/cola-turno.js';
 import { RepositorioConversacionPrisma } from './infraestructura/prisma/repositorio-conversacion-prisma.js';
 import { RepositorioParametroConversacionesPrisma } from './infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
@@ -37,6 +39,7 @@ const IMPORTS = [
   CanalesModule,
   BullModule.registerQueue({ name: NOMBRE_COLA_TURNO }),
   BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
+  BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_ESPERAS }),
   ObservadoresHandoffModule,
 ];
 
@@ -58,6 +61,8 @@ const PROVIDERS = [
   ConsumidorConversaciones,
   GuardiaEnvioConversaciones,
   BarridoVencimientos,
+  ProcesarEsperasClientes,
+  BarridoEsperas,
 ];
 
 /** Arranque común de las dos variantes del módulo: registra el consumidor y la guardia en `canales`. */
