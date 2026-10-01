@@ -20,8 +20,8 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
 - [x] T3 — Aviso por todo traspaso sin lead (`AvisoTraspaso`, `EventoHandoff.version`, límite por instancia) (`8c961f8`)
 - [x] T4 — Marca de «cliente esperando» en `conversaciones` (Redis) y su limpieza (`e204a81`)
 - [x] T5 — `BarridoEsperas`, `ObservadorEsperaCliente` y `AvisoEsperaCliente` (`fbe99aa`)
-- [x] T6 — Evals y e2e del recorrido completo
-- [ ] T7 — Guía de operación, cierre documental y prueba real `[manual]`
+- [x] T6 — Evals y e2e del recorrido completo (`3834ba7`)
+- [x] T7 — Guía de operación, cierre documental y prueba real `[manual]` (cierre documental; el `[manual]` queda pendiente del dueño)
 
 ## Mapeo de escenarios por tarea (NTF1 3 + NTF2 4 + NTF5 4 + NTF6 5 + NTF7 5 + CNV12 6 = 27)
 

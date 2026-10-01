@@ -40,6 +40,7 @@ Qué pregunta responde cada documento:
 | Contrato de la API y su documentación interactiva | `openapi/openapi.json` + Scalar en `/docs` |
 | Qué hacer si algo falla en producción | `docs/operacion/` (desde la Fase 09) |
 | Cómo cambiar el estilo del bot sin desplegar | `docs/operacion/estilo-del-bot.md` |
+| Qué avisos le llegan al asesor por Telegram y cómo abrir la conversación | `docs/operacion/avisos-al-asesor.md` |
 | Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
 | Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
 | Investigación y evidencia detrás de una decisión | `docs/analisis/` |
