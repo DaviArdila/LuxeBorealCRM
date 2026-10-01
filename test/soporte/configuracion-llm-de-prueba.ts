@@ -1,6 +1,6 @@
 import type { Configuracion } from '../../src/plataforma/config/index.js';
 
-type CamposLlm = Extract<keyof Configuracion, `LLM_${string}` | `OPENROUTER_${string}`>;
+type CamposLlm = Extract<keyof Configuracion, `LLM_${string}` | `OPENROUTER_${string}` | `OPENAI_${string}`>;
 
 // Los tests que arman una `Configuracion` completa a mano expanden este bloque en vez de repetir
 // las variables `LLM_*`/`OPENROUTER_*` (T3 de la Fase 06): una variable nueva se agrega aquí una vez.
@@ -22,4 +22,5 @@ export const CONFIGURACION_LLM_DE_PRUEBA: Pick<Configuracion, CamposLlm> = {
   LLM_CB_VENTANA_S: 60,
   OPENROUTER_API_KEY: '',
   OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
+  OPENAI_API_KEY: '',
 };

@@ -810,6 +810,159 @@ describe('cargarConfiguracion', () => {
     });
   });
 
+  describe('Proveedores de LLM por prefijo (proveedores-llm-configurables, T2, D4)', () => {
+    const preciosOpenai = JSON.stringify({
+      'openai:gpt-modelo': { entrada: 1, salida: 2, cache: 0.1 },
+    });
+    const fuenteProduccion = {
+      ...fuenteValida,
+      NODE_ENV: 'production',
+      CHATWOOT_BOT_TOKEN: 'token-real',
+      CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
+      TELEGRAM_BOT_TOKEN: 'token-telegram',
+      TELEGRAM_CHAT_ID: '-100123',
+    };
+    const fuenteSoloOpenai = {
+      ...fuenteProduccion,
+      LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo',
+      LLM_EVALS_MODELOS: 'openai:gpt-modelo',
+      LLM_PRECIOS_USD_JSON: preciosOpenai,
+    };
+
+    function rechazo(fuente: Readonly<Record<string, string | undefined>>): ConfiguracionInvalidaError {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) return error;
+        throw error;
+      }
+      throw new Error('La configuración se aceptó y debía rechazarse');
+    }
+
+    it('LLM15 — sin configuración nueva OPENAI_API_KEY queda vacía y todo va a OpenRouter', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.OPENAI_API_KEY).toBe('');
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+    });
+
+    it('LLM16 — Un prefijo de proveedor desconocido impide el arranque', () => {
+      const error = rechazo({
+        ...fuenteValida,
+        LLM_CONVERSACION_MODELOS: 'desconocido:modelo-x',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'desconocido:modelo-x': { entrada: 1, salida: 2, cache: 0 },
+        }),
+      });
+
+      expect(error.variables).toContainEqual({ nombre: 'LLM_CONVERSACION_MODELOS', problema: 'valor' });
+    });
+
+    it('LLM16 — Un id de OpenRouter con barra o sufijo :free se acepta como está', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        LLM_CONVERSACION_MODELOS: 'meta-llama/llama-3-8b:free,openai/gpt-5.6-luna',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'meta-llama/llama-3-8b:free': { entrada: 0, salida: 0, cache: 0 },
+          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        }),
+      });
+
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual([
+        'meta-llama/llama-3-8b:free',
+        'openai/gpt-5.6-luna',
+      ]);
+    });
+
+    it('LLM17 — Producción exige la clave de cada proveedor usado', () => {
+      const error = rechazo({ ...fuenteSoloOpenai, OPENROUTER_API_KEY: 'clave-openrouter' });
+
+      expect(error.variables).toContainEqual({ nombre: 'OPENAI_API_KEY', problema: 'valor' });
+      expect(() =>
+        cargarConfiguracion({ ...fuenteSoloOpenai, OPENAI_API_KEY: 'clave-openai' }),
+      ).not.toThrow();
+    });
+
+    it('LLM17 — Un proveedor sin uso no exige clave', () => {
+      const conOpenrouter = cargarConfiguracion({
+        ...fuenteProduccion,
+        OPENROUTER_API_KEY: 'clave-openrouter',
+      });
+
+      expect(conOpenrouter.OPENAI_API_KEY).toBe('');
+      // Con todos los modelos en OpenAI, la clave de OpenRouter deja de ser obligatoria.
+      expect(() =>
+        cargarConfiguracion({ ...fuenteSoloOpenai, OPENAI_API_KEY: 'clave-openai' }),
+      ).not.toThrow();
+    });
+
+    it('LLM17 — Fuera de production ninguna clave es obligatoria', () => {
+      expect(() =>
+        cargarConfiguracion({
+          ...fuenteValida,
+          LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo',
+          LLM_PRECIOS_USD_JSON: preciosOpenai,
+          LLM_EVALS_MODELOS: 'openai:gpt-modelo',
+        }),
+      ).not.toThrow();
+    });
+
+    it('LLM17 — un perfil mixto exige la clave de OpenRouter y la de OpenAI', () => {
+      const mixta = {
+        ...fuenteProduccion,
+        LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo,openai/gpt-5.6-luna',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'openai:gpt-modelo': { entrada: 1, salida: 2, cache: 0.1 },
+          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        }),
+      };
+
+      expect(rechazo(mixta).variables).toEqual(
+        expect.arrayContaining([
+          { nombre: 'OPENROUTER_API_KEY', problema: 'valor' },
+          { nombre: 'OPENAI_API_KEY', problema: 'valor' },
+        ]),
+      );
+    });
+
+    it('LLM19 — Un perfil con un modelo sin precio impide el arranque', () => {
+      const error = rechazo({
+        ...fuenteValida,
+        LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo',
+      });
+
+      expect(error.variables).toContainEqual({ nombre: 'LLM_CONVERSACION_MODELOS', problema: 'valor' });
+    });
+
+    it('LLM19 — El precio se busca con el id completo, con prefijo', () => {
+      const configuracion = cargarConfiguracion({
+        ...fuenteValida,
+        LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo',
+        LLM_EVALS_MODELOS: 'openai:gpt-modelo',
+        LLM_PRECIOS_USD_JSON: preciosOpenai,
+      });
+
+      expect(configuracion.LLM_PRECIOS_USD_JSON['openai:gpt-modelo']).toEqual({
+        entrada: 1,
+        salida: 2,
+        cache: 0.1,
+      });
+    });
+
+    it('LLM24 — El error nombra la variable y nunca imprime el valor de una clave', () => {
+      const error = rechazo({
+        ...fuenteSoloOpenai,
+        OPENROUTER_API_KEY: 'sk-or-valor-secreto-1',
+        OPENAI_API_KEY: '',
+        LLM_CONVERSACION_MODELOS: 'desconocido:modelo-x,openai:gpt-modelo',
+      });
+
+      expect(error.message).toContain('OPENAI_API_KEY');
+      expect(error.message).not.toContain('sk-or-valor-secreto-1');
+      expect(JSON.stringify(error.variables)).not.toContain('sk-or-valor-secreto-1');
+    });
+  });
+
   describe('Variables AGENTE_TOPE_TURNOS/AGENTE_SESION_TTL_H (fase-07a-turno-y-politicas, T4, D10)', () => {
     function variablesRechazadas(
       fuente: Readonly<Record<string, string | undefined>>,

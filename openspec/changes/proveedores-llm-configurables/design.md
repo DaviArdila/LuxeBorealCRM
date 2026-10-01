@@ -97,6 +97,24 @@ instala con versión exacta y su API se verifica en T1/T4 contra la documentaci�
 instalada (`ai` 7.0.122); los nombres `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google` y
 `@ai-sdk/openai-compatible` son la expectativa y **se confirman en T1** (no se dan por sabidos).
 
+**Verificado en T1 (2026-09-30), solo `@ai-sdk/openai`:** el paquete existe (`npm view`, `latest`
+4.0.82). `ai` 7.0.122 instalado declara `@ai-sdk/provider` 4.0.19 y `@ai-sdk/provider-utils` 5.0.51
+(`node_modules/ai/package.json`, igual que lo instalado en `node_modules/@ai-sdk/`).
+`@ai-sdk/openai@4.0.81` declara exactamente esas dos versiones (`npm view @ai-sdk/openai@4.0.81
+dependencies`) y solo tiene `zod` `^3.25.76 || ^4.1.8` como peer, sin peer sobre `ai`; la 4.0.82 pide
+provider 4.0.20 y utils 5.0.52 (patch posterior, instalaría copias duplicadas). **Versión candidata
+exacta: `4.0.81`** (misma línea de contrato `LanguageModel` que `ai` 7.0.122). Sigue pendiente de T4
+comprobar en la instalación real que `npm ls @ai-sdk/provider` queda deduplicado y que el modelo
+de `openai(...)` es aceptado por `generateText` (typecheck). Los demás paquetes no se
+verificaron (pospuestos, P37).
+
+**Decisión de T1/T2 (frontera):** `plataforma/` no puede importar de `modulos/`
+(`plataforma-no-conoce-modulos`) y `dominio/` solo importa de `dominio/` y `compartido/`. Para que
+la lista de proveedores y la regla de prefijo se declaren una sola vez (D4), la lógica pura vive en
+`src/compartido/llm/proveedores-llm.ts`; `modulos/llm/dominio/resolver-modelo.ts` la re-exporta (y es
+donde se prueba) y `plataforma/config` la importa de `compartido/llm`. No hay `OPENAI_BASE_URL`: el
+design no lo pide (solo `compatible` lleva URL).
+
 ### D8 — Uso y caché por proveedor
 
 El AI SDK ya expone el uso normalizado (`usage.inputTokens`, `outputTokens`,
