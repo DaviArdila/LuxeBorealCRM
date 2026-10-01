@@ -14,7 +14,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 
 ## Checklist
 
-- [ ] T1 — `validarEstilo` (dominio) y ADR-0020 aceptada
+- [x] T1 — `validarEstilo` (dominio) y ADR-0020 aceptada
 - [ ] T2 — Lectura del estilo: `ProveedorEstilo` con respaldo, copia en memoria y versión en Redis
 - [ ] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
 - [ ] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
@@ -62,7 +62,9 @@ Chain strategy: stacked-to-main
 
 - **Qué**: función pura `agente/dominio/validar-estilo.ts` (AGT20); el dueño acepta el ADR-0020.
 - **RED**: los tres escenarios de AGT20.
-- **Estado**: pendiente (ADR-0020 aceptado).
+- **Estado**: hecha (2026-10-01; ADR-0020 aceptado). RED: `validar-estilo.spec.ts` sin el módulo; GREEN: 6/6. Constante
+  `MAX_CARACTERES_ESTILO = 4000`; el motivo nombra la regla y nunca copia el texto (R14); el límite es inclusivo y
+  un `$` sin cifras o la palabra «sku» sola no cuentan.
 
 ## T2 — Lectura del estilo
 
