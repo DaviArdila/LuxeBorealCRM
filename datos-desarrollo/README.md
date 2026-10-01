@@ -40,6 +40,8 @@ Wikimedia Commons; el importador lo descarga, lo redimensiona y lo sube a MinIO.
 al importar. Autor y licencia de cada una: `catalogo/ATRIBUCIONES.md`.
 
 Para usar tus propias fotos, cambia los enlaces de `fotos` por enlaces `http(s)` (varios separados por `;`).
+La columna opcional `fotos_angulos` dice qué muestra cada foto, en el mismo orden y separada por `;`:
+`frente`, `lateral_izquierdo`, `lateral_derecho`, `detalle` o `uso` (vacío = sin etiquetar).
 
 ## Por qué `complemento.sql`
 

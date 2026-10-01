@@ -19,7 +19,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T1 — Prompt en dos archivos: `reglas` (no negociable) y `estilo` (editable), versión `v2`
 - [x] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
 - [x] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
-- [ ] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
+- [x] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
 - [ ] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
 - [ ] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
 - [ ] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
@@ -106,7 +106,11 @@ Chain strategy: stacked-to-main
   `fotos_angulos` (IMP14); actualiza `datos-desarrollo/` con un ejemplo.
 - **RED**: los cuatro escenarios de IMP14, uno contra Postgres real (integración).
 - **Aprobación de esquema**: dada por el dueño (opción A, 2026-10-01).
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 8 fallos (validador, `ProcesarFotos`); GREEN: unit 768/768 e integración
+  contra Postgres real (`repositorio-importacion.spec.ts`, 9/9, incluye la migración `20261001120000_foto_angulo`).
+  `MODELO_DATOS.md` primero. Ángulos en `catalogo/dominio/angulo-foto.ts` (exportados por el barril para T6).
+  `NuevaFotoImportada.angulo` y `FotoValidada.angulo` son obligatorios (`null` = sin etiquetar); se
+  actualizaron las expectativas de `procesar-fotos.spec.ts`. La semilla de desarrollo trae `fotos_angulos`.
 
 ## T5 — Collage opcional y sin casillas vacías
 

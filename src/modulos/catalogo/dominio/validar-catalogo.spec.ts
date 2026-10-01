@@ -144,6 +144,64 @@ describe('catalogo/dominio/validar-catalogo', () => {
     });
   });
 
+  describe('IMP14 — el ángulo de cada foto (columna opcional fotos_angulos)', () => {
+    const DOS_FOTOS = 'https://cdn.tienda.com/1.jpg;https://cdn.tienda.com/2.jpg';
+
+    it('IMP14 — Los ángulos se guardan en el orden de las fotos', () => {
+      const r = validarCatalogoCompleto(
+        crudo({ productos: [{ ...PRODUCTO_OK, fotos: DOS_FOTOS, fotos_angulos: 'frente;lateral_izquierdo' }] }),
+        lugares(),
+        HOY,
+      );
+
+      expect(r.valido).toBe(true);
+      expect(r.datos?.productos[0]?.fotos.map((f) => f.angulo)).toEqual(['frente', 'lateral_izquierdo']);
+    });
+
+    it('IMP14 — Sin la columna las fotos quedan sin ángulo', () => {
+      const r = validarCatalogoCompleto(crudo({ productos: [{ ...PRODUCTO_OK, fotos: DOS_FOTOS }] }), lugares(), HOY);
+
+      expect(r.valido).toBe(true);
+      expect(r.datos?.productos[0]?.fotos.map((f) => f.angulo)).toEqual([null, null]);
+    });
+
+    it('un valor vacío entre dos ángulos deja esa foto sin ángulo; mayúsculas y espacios se toleran', () => {
+      const tres = 'https://cdn.tienda.com/1.jpg;https://cdn.tienda.com/2.jpg;https://cdn.tienda.com/3.jpg';
+      const r = validarCatalogoCompleto(
+        crudo({ productos: [{ ...PRODUCTO_OK, fotos: tres, fotos_angulos: ' Frente ;; DETALLE' }] }),
+        lugares(),
+        HOY,
+      );
+
+      expect(r.valido).toBe(true);
+      expect(r.datos?.productos[0]?.fotos.map((f) => f.angulo)).toEqual(['frente', null, 'detalle']);
+    });
+
+    it('IMP14 — Un ángulo fuera de la lista rechaza la importación', () => {
+      const r = validarCatalogoCompleto(
+        crudo({ productos: [{ ...PRODUCTO_OK, fotos: DOS_FOTOS, fotos_angulos: 'diagonal;frente' }] }),
+        lugares(),
+        HOY,
+      );
+
+      expect(r.valido).toBe(false);
+      expect(r.datos).toBeNull();
+      expect(errorEn(r, 'fotos_angulos')).toMatchObject({ pestana: 'productos', fila: 1 });
+      expect(errorEn(r, 'fotos_angulos')?.mensaje).toContain('diagonal');
+    });
+
+    it('IMP14 — Más ángulos que fotos rechaza la importación', () => {
+      const r = validarCatalogoCompleto(
+        crudo({ productos: [{ ...PRODUCTO_OK, fotos: 'https://cdn.tienda.com/1.jpg', fotos_angulos: 'frente;detalle' }] }),
+        lugares(),
+        HOY,
+      );
+
+      expect(r.valido).toBe(false);
+      expect(errorEn(r, 'fotos_angulos')).toMatchObject({ pestana: 'productos', fila: 1 });
+    });
+  });
+
   describe('IMP5 — peso y medidas del producto son opcionales pero enteros cuando se informan', () => {
     it('IMP5 — Peso y medidas vacíos se aceptan sin error', () => {
       const r = validarCatalogoCompleto(crudo(), lugares(), HOY);

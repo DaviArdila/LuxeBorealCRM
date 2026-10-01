@@ -108,6 +108,7 @@ tarifas estimadas), **atención** (contacto, conversación, lead, horario), **op
 | `orden` | int | no | |
 | `clave_archivo` | text | no | ruta o clave en el almacenamiento, sin asumir disco local |
 | `es_portada` | bool | no | default false |
+| `angulo` | text | sí | qué muestra la foto: `frente`, `lateral_izquierdo`, `lateral_derecho`, `detalle` o `uso` (validado en código, Fase 08b); nulo = sin etiquetar |
 | `origen_url` | text | sí | enlace de Drive en la última importación |
 | `creado`, `actualizado` | timestamptz | no | |
 

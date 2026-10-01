@@ -84,7 +84,7 @@ function producto(sku: string, fotos: readonly string[]): ProductoValidado {
     largoMm: null,
     anchoMm: null,
     altoMm: null,
-    fotos: fotos.map((origenUrl) => ({ origenUrl })),
+    fotos: fotos.map((origenUrl) => ({ origenUrl, angulo: null })),
   };
 }
 
@@ -128,7 +128,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
 
       expect(guardarEspiado).not.toHaveBeenCalled();
       expect(resultado.productos[0]?.fotos).toEqual([
-        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlace },
+        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlace, angulo: null },
       ]);
     });
 
@@ -160,7 +160,7 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
 
       expect(almacenamiento.guardados.has(CLAVE_FOTO_1)).toBe(true);
       expect(resultado.productos[0]?.fotos).toEqual([
-        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlaceNuevo },
+        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlaceNuevo, angulo: null },
       ]);
     });
 
@@ -191,8 +191,33 @@ describe('catalogo/aplicacion/ProcesarFotos', () => {
 
       expect(almacenamiento.guardados.has(CLAVE_FOTO_1)).toBe(true);
       expect(resultado.productos[0]?.fotos).toEqual([
-        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlace },
+        { orden: 1, claveArchivo: CLAVE_FOTO_1, esPortada: true, origenUrl: enlace, angulo: null },
       ]);
+    });
+  });
+
+  describe('IMP14 — el ángulo viaja con la foto', () => {
+    it('IMP14 — Los ángulos se guardan en el orden de las fotos (procesamiento)', async () => {
+      const enlaces = ['https://cdn.tienda.com/a.jpg', 'https://cdn.tienda.com/b.jpg'];
+      const contenido = await imagenDeColor(400, 400, { r: 0, g: 255, b: 0 });
+      vi.stubGlobal(
+        'fetch',
+        fetchFalso({
+          clavesExistentes: new Set(),
+          contenidoPorEnlace: new Map(enlaces.map((e) => [e, contenido])),
+        }),
+      );
+      const conAngulos: ProductoValidado = {
+        ...producto('SKU-1', enlaces),
+        fotos: [
+          { origenUrl: enlaces[0] ?? '', angulo: 'frente' },
+          { origenUrl: enlaces[1] ?? '', angulo: 'lateral_derecho' },
+        ],
+      };
+
+      const resultado = await new ProcesarFotos(new AlmacenamientoEnMemoria()).ejecutar([conAngulos], new Map());
+
+      expect(resultado.productos[0]?.fotos.map((f) => f.angulo)).toEqual(['frente', 'lateral_derecho']);
     });
   });
 

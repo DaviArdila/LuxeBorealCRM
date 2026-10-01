@@ -76,6 +76,7 @@ model Foto {
   orden        Int
   claveArchivo String   @map("clave_archivo")
   esPortada    Boolean  @default(false) @map("es_portada")
+  angulo       String?
   origenUrl    String?  @map("origen_url")
   creado       DateTime @default(now()) @db.Timestamptz(3)
   actualizado  DateTime @default(now()) @db.Timestamptz(3)

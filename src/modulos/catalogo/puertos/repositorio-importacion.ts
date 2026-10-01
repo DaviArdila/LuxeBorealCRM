@@ -7,6 +7,8 @@
  * `prisma-service-solo-en-infraestructura`); solo conoce este puerto.
  */
 
+import type { AnguloFoto } from '../dominio/angulo-foto.js';
+
 /** Token de inyección del puerto {@link RepositorioImportacionCatalogo}. */
 export const REPOSITORIO_IMPORTACION_CATALOGO = Symbol('REPOSITORIO_IMPORTACION_CATALOGO');
 
@@ -30,6 +32,7 @@ export interface NuevaFotoImportada {
   readonly claveArchivo: string;
   readonly esPortada: boolean;
   readonly origenUrl: string;
+  readonly angulo: AnguloFoto | null;
 }
 
 /** Producto validado (T2) y con sus fotos ya procesadas (T8), listo para `escribirTodoONada`. */

@@ -103,6 +103,7 @@ export class ProcesarFotos {
       claveArchivo: decision.claveArchivo,
       esPortada: decision.orden === 1,
       origenUrl: decision.origenUrl,
+      angulo: producto.fotos[decision.orden - 1]?.angulo ?? null,
     }));
 
     const clavesABorrar = (previo?.fotos ?? [])

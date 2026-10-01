@@ -134,6 +134,7 @@ export class RepositorioImportacionPrisma implements RepositorioImportacionCatal
               claveArchivo: foto.claveArchivo,
               esPortada: foto.esPortada,
               origenUrl: foto.origenUrl,
+              angulo: foto.angulo,
             })),
           });
           fotosEscritas += producto.fotos.length;
