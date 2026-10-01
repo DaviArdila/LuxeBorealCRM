@@ -19,8 +19,8 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
 - [x] T2 — Los avisos de lead y el recordatorio llevan enlace y producto (`ObtenerReferenciaConversacion`) (`3a7c909`)
 - [x] T3 — Aviso por todo traspaso sin lead (`AvisoTraspaso`, `EventoHandoff.version`, límite por instancia) (`8c961f8`)
 - [x] T4 — Marca de «cliente esperando» en `conversaciones` (Redis) y su limpieza (`e204a81`)
-- [x] T5 — `BarridoEsperas`, `ObservadorEsperaCliente` y `AvisoEsperaCliente`
-- [ ] T6 — Evals y e2e del recorrido completo
+- [x] T5 — `BarridoEsperas`, `ObservadorEsperaCliente` y `AvisoEsperaCliente` (`fbe99aa`)
+- [x] T6 — Evals y e2e del recorrido completo
 - [ ] T7 — Guía de operación, cierre documental y prueba real `[manual]`
 
 ## Mapeo de escenarios por tarea (NTF1 3 + NTF2 4 + NTF5 4 + NTF6 5 + NTF7 5 + CNV12 6 = 27)
@@ -80,7 +80,13 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
 ### T6 — Evals y e2e
 
 - E2E por webhook firmado: tope de turnos → aviso con enlace; cliente en `humano` sin respuesta → aviso de espera.
-- Evals guionadas: el aviso de traspaso no contiene SKU ni datos personales (aserción nueva con negativo).
+- Evals guionadas: **sin cambios (desviación anotada en `sdd-apply`, 2026-10-01)**. Las evals miden lo que el agente le
+  dice al cliente; el aviso de Telegram sale de `notificaciones`, fuera del agente, así que una aserción de evals no lo
+  alcanza. Que el aviso no lleve SKU ni datos personales lo cubren `armarAviso` (unitarias, con negativos) y los e2e.
+- Los dos e2e no tuvieron un RED clásico (el comportamiento venía de T3 y T5): se hizo una **prueba de mutación**
+  (quitar el registro de `AvisoTraspaso` y el de `AvisoEsperaCliente`) y ambos fallaron.
+- El e2e de espera retrocede el instante de la marca en Redis en vez de adelantar el reloj: el webhook firmado valida
+  su marca de tiempo contra el `CLOCK` de la app, y un reloj falso lo rechazaría.
 - Forecast: ~250 líneas.
 
 ### T7 — Guía y cierre
