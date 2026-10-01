@@ -26,6 +26,7 @@
  */
 
 import { esClavePolitica, temaDeClave, validarTemaPolitica, validarTextoPolitica } from './politica.js';
+import { ANGULOS_FOTO, esAnguloFoto, type AnguloFoto } from './angulo-foto.js';
 import { resolverLugar, type CatalogoLugares } from './resolver-lugar.js';
 
 export type NombrePestana = 'productos' | 'tarifas' | 'cobertura' | 'parametros' | 'excepciones_horario';
@@ -49,6 +50,8 @@ export interface AdvertenciaValidacion {
 
 export interface FotoValidada {
   readonly origenUrl: string;
+  /** Qué muestra la foto (IMP14); nulo si la hoja no la etiquetó. */
+  readonly angulo: AnguloFoto | null;
 }
 
 export interface ProductoValidado {
@@ -181,6 +184,37 @@ function separarEnlaces(valorCrudo: string): readonly string[] {
     .filter(Boolean);
 }
 
+/**
+ * Lee la columna opcional `fotos_angulos` (IMP14): un ángulo por foto, separados por `;` y en el mismo orden
+ * que `fotos`; un valor vacío deja esa foto sin ángulo. Un valor fuera de la lista o más ángulos que fotos
+ * son errores de la fila (todo-o-nada, IMP10).
+ */
+function leerAngulos(
+  errores: ErrorValidacionFila[],
+  numeroFila: number,
+  valorCrudo: string | undefined,
+  totalFotos: number,
+): readonly (AnguloFoto | null)[] {
+  const crudos = (valorCrudo ?? '').split(/[\n;]/).map((s) => s.trim().toLowerCase());
+  while (crudos.length > 0 && crudos[crudos.length - 1] === '') {
+    crudos.pop();
+  }
+  if (crudos.length > totalFotos) {
+    err(errores, 'productos', numeroFila, 'fotos_angulos', `${crudos.length} ángulos para ${totalFotos} foto(s)`);
+  }
+  return Array.from({ length: totalFotos }, (_, indice) => {
+    const valor = crudos[indice] ?? '';
+    if (valor === '') {
+      return null;
+    }
+    if (!esAnguloFoto(valor)) {
+      err(errores, 'productos', numeroFila, 'fotos_angulos', `"${valor}" no es un ángulo válido (${ANGULOS_FOTO.join(', ')})`);
+      return null;
+    }
+    return valor;
+  });
+}
+
 function leerEnteroOpcionalConError(
   errores: ErrorValidacionFila[],
   pestana: NombrePestana,
@@ -250,6 +284,7 @@ function validarProductos(filas: readonly FilaCruda[], errores: ErrorValidacionF
         err(errores, 'productos', numeroFila, 'fotos', `${enlaces.length} enlaces de foto, máximo ${MAX_FOTOS}`);
       }
     }
+    const angulos = leerAngulos(errores, numeroFila, filaCruda.fotos_angulos, enlaces.length);
     for (const enlace of enlaces) {
       if (!/^https?:\/\//i.test(enlace)) {
         err(errores, 'productos', numeroFila, 'fotos', `"${enlace}" no es un enlace http(s)`);
@@ -272,7 +307,7 @@ function validarProductos(filas: readonly FilaCruda[], errores: ErrorValidacionF
       largoMm,
       anchoMm,
       altoMm,
-      fotos: enlaces.map((origenUrl) => ({ origenUrl })),
+      fotos: enlaces.map((origenUrl, indice) => ({ origenUrl, angulo: angulos[indice] ?? null })),
     });
   });
 

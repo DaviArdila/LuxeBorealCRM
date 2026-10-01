@@ -19,8 +19,8 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T1 — Prompt en dos archivos: `reglas` (no negociable) y `estilo` (editable), versión `v2`
 - [x] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
 - [x] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
-- [ ] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
-- [ ] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
+- [x] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
+- [x] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
 - [ ] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
 - [ ] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
 - [ ] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
@@ -106,14 +106,27 @@ Chain strategy: stacked-to-main
   `fotos_angulos` (IMP14); actualiza `datos-desarrollo/` con un ejemplo.
 - **RED**: los cuatro escenarios de IMP14, uno contra Postgres real (integración).
 - **Aprobación de esquema**: dada por el dueño (opción A, 2026-10-01).
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 8 fallos (validador, `ProcesarFotos`); GREEN: unit 768/768 e integración
+  contra Postgres real (`repositorio-importacion.spec.ts`, 9/9, incluye la migración `20261001120000_foto_angulo`).
+  `MODELO_DATOS.md` primero. Ángulos en `catalogo/dominio/angulo-foto.ts` (exportados por el barril para T6).
+  `NuevaFotoImportada.angulo` y `FotoValidada.angulo` son obligatorios (`null` = sin etiquetar); se
+  actualizaron las expectativas de `procesar-fotos.spec.ts`. La semilla de desarrollo trae `fotos_angulos`.
 
 ## T5 — Collage opcional y sin casillas vacías
 
 - **Qué**: `CATALOGO_GENERAR_COLLAGE` (esquema de configuración, `.env.example`, contrato de variables);
   `ProcesarFotos` genera collage solo si está activa; `construirCollage` ajusta la grilla (MED8).
 - **RED**: los seis escenarios de MED8 y los dos de IMP15; el de «Una sola foto no genera collage» falla hoy.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 9 fallos (MED8 con 1, 2, 3 y 5 fotos y comprobación de píxeles, IMP15,
+  variable de configuración); GREEN: unit 126/126 en catálogo, evals APROBADA, e2e verde. La grilla
+  reparte casillas sin huecos (impar: la última ocupa toda la fila inferior); con menos de 2 fotos
+  `construirCollage` devuelve `null` y con más de 6 lanza `RangeError`. **Desviaciones**: (1) el escenario
+  MED9 «Redescargar una foto por archivo faltante…» usaba un producto de una sola foto, que con MED8
+  nuevo ya no tiene collage; pasó a dos fotos, mismo comportamiento verificado. (2) `importar-catalogo-cli.spec.ts`
+  (integración con MinIO, no corre sin Docker) fija `CATALOGO_GENERAR_COLLAGE=true` para seguir comprobando
+  que el collage se genera cuando se pide. El primer CI de #46 falló ahí: ese test esperaba collage para
+  `SKU-0002`, que tiene una sola foto (MED8: sin collage); ahora espera `null` y que el objeto no exista. Con la variable apagada, el collage guardado de una importación
+  previa deja de referenciarse (`clave_collage` nula); el archivo huérfano queda en el almacenamiento.
 
 ## T6 — `enviar_fotos` por ángulo
 

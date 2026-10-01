@@ -91,6 +91,8 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   AGENTE_MAX_VUELTAS: 5,
   AGENTE_HISTORIAL_TURNOS: 6,
   AGENTE_FOTOS_INDIVIDUALES_MAX: 4,
+  // Fase 08b: el importador no genera collage salvo que se active.
+  CATALOGO_GENERAR_COLLAGE: false,
 };
 
 export interface DocumentosContrato {

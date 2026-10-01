@@ -206,8 +206,8 @@ describe('Repositorio de importación de catálogo (T7, integración)', () => {
           producto({
             sku,
             fotos: [
-              { orden: 0, claveArchivo: 'nueva-0.jpg', esPortada: true, origenUrl: 'https://ejemplo.com/0.jpg' },
-              { orden: 1, claveArchivo: 'nueva-1.jpg', esPortada: false, origenUrl: 'https://ejemplo.com/1.jpg' },
+              { orden: 0, claveArchivo: 'nueva-0.jpg', esPortada: true, origenUrl: 'https://ejemplo.com/0.jpg', angulo: null },
+              { orden: 1, claveArchivo: 'nueva-1.jpg', esPortada: false, origenUrl: 'https://ejemplo.com/1.jpg', angulo: null },
             ],
           }),
         ],
@@ -219,6 +219,31 @@ describe('Repositorio de importación de catálogo (T7, integración)', () => {
 
     expect(fotos).toHaveLength(2);
     expect(fotos.map((f) => f.claveArchivo)).toEqual(['nueva-0.jpg', 'nueva-1.jpg']);
+  });
+
+  it('IMP14 — Los ángulos se guardan en el orden de las fotos (persistencia)', async () => {
+    const { repositorio, prisma } = await crearRepositorio();
+    const sku = `SKU-ANG-${crypto.randomUUID().slice(0, 8)}`;
+
+    await repositorio.escribirTodoONada(
+      datosVacios({
+        productos: [
+          producto({
+            sku,
+            fotos: [
+              { orden: 1, claveArchivo: 'a-1.jpg', esPortada: true, origenUrl: 'https://ejemplo.com/1.jpg', angulo: 'frente' },
+              { orden: 2, claveArchivo: 'a-2.jpg', esPortada: false, origenUrl: 'https://ejemplo.com/2.jpg', angulo: 'lateral_izquierdo' },
+              { orden: 3, claveArchivo: 'a-3.jpg', esPortada: false, origenUrl: 'https://ejemplo.com/3.jpg', angulo: null },
+            ],
+          }),
+        ],
+      }),
+      HOY,
+    );
+
+    const fotos = await prisma.foto.findMany({ where: { producto: { sku } }, orderBy: { orden: 'asc' } });
+
+    expect(fotos.map((f) => f.angulo)).toEqual(['frente', 'lateral_izquierdo', null]);
   });
 
   it('IMP11 — Un producto ausente de la hoja se desactiva, nunca se borra', async () => {

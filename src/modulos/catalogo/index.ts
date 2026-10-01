@@ -36,6 +36,7 @@ export {
   type ProductoResumen,
 } from './dominio/producto.js';
 export { type DestinoEnvio, type ResultadoCotizacion } from './dominio/envio.js';
+export { ANGULOS_FOTO, esAnguloFoto, type AnguloFoto } from './dominio/angulo-foto.js';
 export { FUENTE_CATALOGO, PestanaNoDisponible, type FuenteCatalogo } from './puertos/fuente-catalogo.js';
 export { FuenteCatalogoDirectorio } from './infraestructura/fuente-catalogo-directorio.js';
 export { FuenteCatalogoSheets } from './infraestructura/fuente-catalogo-sheets.js';

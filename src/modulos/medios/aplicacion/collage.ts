@@ -9,9 +9,8 @@ import sharp from 'sharp';
 
 const LADO_TILE_PX = 400;
 const COLUMNAS = 2;
-const MAX_FOTOS_GRILLA_2X2 = 4;
-const FILAS_GRILLA_2X2 = 2;
-const FILAS_GRILLA_2X3 = 3;
+const MIN_FOTOS_COLLAGE = 2;
+const MAX_FOTOS_COLLAGE = 6;
 const CALIDAD_JPEG_COLLAGE = 85;
 const FONDO_COLLAGE = { r: 255, g: 255, b: 255 };
 
@@ -19,36 +18,59 @@ export interface FotoParaCollage {
   readonly buffer: Buffer;
 }
 
-/**
- * Compone el collage de un producto: grilla 2×2 (1 a 4 fotos) o 2×3 (5 o 6 fotos), con cada tile de
- * 400×400 píxeles recortado para llenar el espacio (`cover`, MED8), codificado como JPEG calidad 85.
- */
-export async function construirCollage(fotos: readonly FotoParaCollage[]): Promise<Buffer> {
-  const filas = fotos.length > MAX_FOTOS_GRILLA_2X2 ? FILAS_GRILLA_2X3 : FILAS_GRILLA_2X2;
-  const anchoCollage = LADO_TILE_PX * COLUMNAS;
-  const altoCollage = LADO_TILE_PX * filas;
+interface Casilla {
+  readonly left: number;
+  readonly top: number;
+  readonly ancho: number;
+  readonly alto: number;
+}
 
-  const tiles = await Promise.all(
-    fotos.map((foto) =>
-      sharp(foto.buffer)
-        .resize(LADO_TILE_PX, LADO_TILE_PX, { fit: 'cover' })
-        .toBuffer(),
-    ),
+/**
+ * Reparte las fotos en una grilla de 2 columnas sin casillas vacías (MED8): una foto de más en cantidad
+ * impar ocupa toda la fila inferior. 2 fotos → 2×1, 3 → 2×2 con la tercera ancha, 4 → 2×2, 5 → 2×3 con
+ * la quinta ancha, 6 → 2×3.
+ */
+function repartirCasillas(cantidad: number): readonly Casilla[] {
+  const anchoCollage = LADO_TILE_PX * COLUMNAS;
+  const ultimaEsAncha = cantidad % COLUMNAS === 1;
+  return Array.from({ length: cantidad }, (_, indice) => {
+    const top = Math.floor(indice / COLUMNAS) * LADO_TILE_PX;
+    if (ultimaEsAncha && indice === cantidad - 1) {
+      return { left: 0, top, ancho: anchoCollage, alto: LADO_TILE_PX };
+    }
+    return { left: (indice % COLUMNAS) * LADO_TILE_PX, top, ancho: LADO_TILE_PX, alto: LADO_TILE_PX };
+  });
+}
+
+/**
+ * Compone el collage de un producto con 2 a 6 fotos (MED8): cada casilla se recorta para llenar el espacio
+ * (`cover`) y el resultado es un JPEG calidad 85. Con menos de 2 fotos devuelve `null`: una sola foto ya es
+ * lo que se envía y no hay nada que agrupar. Más de 6 es un error de quien llama (el importador limita a 6).
+ */
+export async function construirCollage(fotos: readonly FotoParaCollage[]): Promise<Buffer | null> {
+  if (fotos.length < MIN_FOTOS_COLLAGE) {
+    return null;
+  }
+  if (fotos.length > MAX_FOTOS_COLLAGE) {
+    throw new RangeError(`un collage admite como máximo ${String(MAX_FOTOS_COLLAGE)} fotos, llegaron ${String(fotos.length)}`);
+  }
+
+  const casillas = repartirCasillas(fotos.length);
+  const alto = Math.max(...casillas.map((casilla) => casilla.top + casilla.alto));
+
+  const composicion = await Promise.all(
+    fotos.map(async (foto, indice) => {
+      const casilla = casillas[indice];
+      if (casilla === undefined) {
+        throw new RangeError('casilla ausente para una foto del collage');
+      }
+      const tile = await sharp(foto.buffer).resize(casilla.ancho, casilla.alto, { fit: 'cover' }).toBuffer();
+      return { input: tile, left: casilla.left, top: casilla.top };
+    }),
   );
 
-  const composicion = tiles.map((tile, indice) => ({
-    input: tile,
-    left: (indice % COLUMNAS) * LADO_TILE_PX,
-    top: Math.floor(indice / COLUMNAS) * LADO_TILE_PX,
-  }));
-
   return sharp({
-    create: {
-      width: anchoCollage,
-      height: altoCollage,
-      channels: 3,
-      background: FONDO_COLLAGE,
-    },
+    create: { width: LADO_TILE_PX * COLUMNAS, height: alto, channels: 3, background: FONDO_COLLAGE },
   })
     .composite(composicion)
     .jpeg({ quality: CALIDAD_JPEG_COLLAGE })
