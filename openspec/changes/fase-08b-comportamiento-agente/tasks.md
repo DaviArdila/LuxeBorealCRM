@@ -50,8 +50,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 | Delivery strategy | auto-chain |
 | Chain strategy | stacked-to-main |
 
-Decision needed before apply: **Sí** — aprobación del dueño de esta fase y respuesta a Q1 (pie de foto) y Q2
-(columna `fotos_angulos`).
+Decision needed before apply: No (change aprobado el 2026-10-01; Q1 y Q2 resueltas).
 Chained PRs recommended: Yes
 Chain strategy: stacked-to-main
 400-line budget risk: Medium
@@ -119,7 +118,7 @@ Chain strategy: stacked-to-main
 - **Qué**: `ObtenerFotosProducto` arma la `leyenda` con nombre, descripción corta y `precio_texto`, sin SKU;
   `enviar_fotos` la pone en cada efecto (ya viaja hasta Chatwoot).
 - **RED**: los dos escenarios de AGT17, con transcripción completa (dinero, R2).
-- **Estado**: pendiente. **Bloqueada por Q1** hasta que el dueño confirme que el pie usa `descripcion_corta`.
+- **Estado**: pendiente (Q1 resuelta: el pie usa `descripcion_corta`).
 
 ## T8 — Evals y e2e
 

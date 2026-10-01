@@ -1,6 +1,6 @@
 # Design: Fase 08b — Comportamiento del agente y fotos
 
-- Change: `fase-08b-comportamiento-agente` · Fecha: 2026-10-01 · Estado: **diseño en revisión**
+- Change: `fase-08b-comportamiento-agente` · Fecha: 2026-10-01 · Estado: **diseño aprobado (2026-10-01)**
 - Proposal: `proposal.md` · Specs: `agente` (AGT9, AGT13 modificados; AGT15-AGT17), `conversaciones`
   (R13 modificado), `catalogo` (CAT14 modificado; IMP14, IMP15), `medios` (MED8 modificado)
 - ADRs: [0002](../../../docs/adr/0002-llm-y-openrouter.md) (prefijo estable), [0019](../../../docs/adr/0019-proveedores-llm-configurables.md)
@@ -66,8 +66,8 @@ de golpe, que es lo que pasa hoy).
 **Choice**: `leyenda = "<nombre> — <descripción corta>\n<precio_texto>"`, calculada donde ya está el
 formateo de dinero de CAT2, sin SKU. La `leyenda` ya viaja de punta a punta hasta el adaptador de
 Chatwoot; solo falta rellenarla. **Rationale**: R2, el LLM no escribe cifras.
-**Pendiente (Q1)**: si el dueño quiere atributos aparte (material, acabado, medidas), requeriría otra
-columna y otra decisión de esquema; esta fase usa `descripcion_corta`.
+**Q1 resuelta**: el dueño confirmó `descripcion_corta`; atributos aparte (material, acabado, medidas)
+requerirían otra columna y otra decisión de esquema.
 
 ### D6: collage opcional, sin casillas vacías
 

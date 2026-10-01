@@ -1,7 +1,7 @@
 # Proposal: Fase 08b — Comportamiento del agente y fotos
 
 - Change: `fase-08b-comportamiento-agente` · Fase de la hoja de ruta: **08b** · Rama: `fase-08b-comportamiento-agente`
-- Fecha: 2026-10-01 · Estado: **spec en revisión** (espera la aprobación del dueño; nada se implementa antes)
+- Fecha: 2026-10-01 · Estado: **aprobada** por el dueño (2026-10-01; Q1 y Q2 resueltas)
 - Depende de: **08 cerrada**. Seguimiento previo: `odd/tasks/comportamiento-del-bot.md`.
 - Siguiente: **08c — Prompts en base de datos** (fase aparte, ver «Out of Scope»).
 
@@ -71,8 +71,8 @@ No aplica: es una mejora del código nuevo, no una migración. El prototipo no s
 | Id | Estado | Nota |
 |---|---|---|
 | P43, P44, P45 | Resueltas por el dueño (2026-10-01) | P45 se ejecuta en la 08c |
-| **Q1** — «nombre con atributos» | **Bloqueante para T7** | Propongo que el pie use `nombre` + `descripcion_corta` (ya existen). Si quieres atributos aparte (material, acabado, medidas), eso es otra columna y otra decisión de esquema |
-| **Q2** — formato del ángulo en la hoja | Para aprobar | Propongo una columna `fotos_angulos` con los ángulos separados por `;` en el mismo orden que `fotos`; si falta, las fotos quedan sin ángulo |
+| **Q1** — «nombre con atributos» | **Resuelta (2026-10-01)** | El pie usa `nombre` + `descripcion_corta`. Atributos aparte serían otra columna y otra decisión de esquema |
+| **Q2** — formato del ángulo en la hoja | **Resuelta (2026-10-01)** | Columna `fotos_angulos` con los ángulos separados por `;` en el mismo orden que `fotos`; si falta, las fotos quedan sin ángulo |
 | P41 | Sin responder | No bloquea esta fase |
 
 ## Risks
