@@ -21,11 +21,13 @@ import { BufferTurno } from './infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from './infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from './infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from './infraestructura/redis/lock-turno.js';
+import { MarcaEsperaClienteRedis } from './infraestructura/redis/marca-espera-cliente-redis.js';
 import { MarcaEsperaHandoff } from './infraestructura/redis/marca-espera-handoff.js';
 import { MarcaMensajeProcesado } from './infraestructura/redis/marca-mensaje-procesado.js';
 import { GENERADOR_RESPUESTA } from './puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from './puertos/interruptor-global.js';
 import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from './puertos/repositorio-parametro-conversaciones.js';
+import { MARCA_ESPERA_CLIENTE } from './puertos/marca-espera-cliente.js';
 import { REPOSITORIO_CONVERSACION } from './puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
 
@@ -41,6 +43,7 @@ const IMPORTS = [
 // Todo menos el generador: `ConversacionesModule` le suma `AgenteEco` y `conGenerador` el que le pasen.
 const PROVIDERS = [
   { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
+  { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
   { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
   { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
   { provide: ENVIAR_RESPUESTA_TURNO, useClass: EnviarRespuestaTurno },

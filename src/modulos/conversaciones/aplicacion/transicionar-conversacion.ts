@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { SALIDA_CANAL, type SalidaCanal } from '../../canales/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../plataforma/config/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
 import { espejoEstadoCanal } from '../dominio/espejo-estado-canal.js';
 import { calcularTransicion, type EstadoAtencion, type OrigenTransicion } from '../dominio/maquina-estados.js';
+import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../puertos/marca-espera-cliente.js';
 import {
   REPOSITORIO_CONVERSACION,
   type Conversacion,
@@ -36,11 +37,14 @@ export class ConflictoDeVersionPersistente extends Error {
  */
 @Injectable()
 export class TransicionarConversacion {
+  private readonly logger = new Logger(TransicionarConversacion.name);
+
   constructor(
     @Inject(REPOSITORIO_CONVERSACION) private readonly repositorio: RepositorioConversacion,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
     @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
+    @Inject(MARCA_ESPERA_CLIENTE) private readonly marcaEspera: MarcaEsperaCliente,
   ) {}
 
   async ejecutar(
@@ -49,8 +53,26 @@ export class TransicionarConversacion {
     origen: OrigenTransicion,
   ): Promise<Conversacion> {
     const transicionada = await this.persistir(conversacion, destino, origen);
+    await this.cerrarEspera(transicionada, origen);
     await this.espejar(transicionada, origen);
     return transicionada;
+  }
+
+  /**
+   * CNV12 (Fase 08d): la espera del cliente termina cuando la conversación vuelve a `bot` (por vencimiento, porque
+   * Chatwoot la pasó a pendiente o la resolvió) o cuando un asesor escribe (eco humano). Es de apoyo: si el
+   * almacén falla, la transición ya está confirmada y solo queda un `warn`; el barrido de esperas recoge lo que quede.
+   */
+  private async cerrarEspera(transicionada: Conversacion, origen: OrigenTransicion): Promise<void> {
+    if (transicionada.estado !== 'bot' && origen !== 'eco_humano') return;
+    try {
+      await this.marcaEspera.cerrar(transicionada.id);
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.espera-cliente-cierre-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
+    }
   }
 
   private async persistir(

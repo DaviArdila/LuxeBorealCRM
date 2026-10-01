@@ -6,6 +6,7 @@ import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestr
 import {
   InterruptorGlobalRedis,
 } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
+import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import {
   CONFIGURACION,
@@ -41,6 +42,8 @@ async function crearContexto(): Promise<{
   contador: ContadorRateLimit;
   interruptor: InterruptorGlobalRedis;
   marcaMensajeProcesado: MarcaMensajeProcesado;
+  marcaEspera: MarcaEsperaClienteRedis;
+  prefijoColas: string;
   redis: ClienteRedis;
   clock: ClockFalso;
 }> {
@@ -105,6 +108,8 @@ async function crearContexto(): Promise<{
     // Clave propia por worker: la global `bot:activo` la comparten todos los archivos de integración.
     interruptor: new InterruptorGlobalRedis(clienteRedis, claveInterruptorDePrueba()),
     marcaMensajeProcesado: new MarcaMensajeProcesado(clienteRedis),
+    marcaEspera: new MarcaEsperaClienteRedis(clienteRedis, configuracionDePrueba),
+    prefijoColas: configuracionDePrueba.COLAS_PREFIJO,
     redis: clienteRedis,
     clock,
   };
@@ -214,5 +219,113 @@ describe('MarcaMensajeProcesado (judgment-day ronda 2, integración, ADR-0004)',
     await marcaMensajeProcesado.estaProcesado(idMensaje);
 
     expect(await marcaMensajeProcesado.marcarSiEsPrimeraVez(idMensaje)).toBe(true); // seguía sin existir
+  });
+});
+
+describe('MarcaEsperaClienteRedis (T4, integración, CNV12)', () => {
+  const T0 = new Date('2026-10-01T10:00:00Z');
+  const enMinutos = (minutos: number) => new Date(T0.getTime() + minutos * 60_000);
+
+  it('CNV12 — el primer mensaje sin respuesta abre la espera y uno posterior no cambia su instante', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+
+    await marcaEspera.registrar(id, T0);
+    await marcaEspera.registrar(id, enMinutos(3));
+
+    const vencidas = await marcaEspera.vencidas(enMinutos(10), 100);
+    expect(vencidas.filter((e) => e.conversacionId === id)).toEqual([{ conversacionId: id, desde: T0 }]);
+  });
+
+  it('CNV12 — cerrar borra la espera y deja abrir otra', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+
+    await marcaEspera.cerrar(id);
+    expect((await marcaEspera.vencidas(enMinutos(60), 100)).some((e) => e.conversacionId === id)).toBe(false);
+
+    await marcaEspera.registrar(id, enMinutos(20));
+    const otra = await marcaEspera.vencidas(enMinutos(60), 100);
+    expect(otra.find((e) => e.conversacionId === id)?.desde).toEqual(enMinutos(20));
+  });
+
+  it('NTF7 — vencidas solo devuelve las que superaron el límite, de la más antigua a la más reciente', async () => {
+    const { marcaEspera } = await crearContexto();
+    const [antigua, intermedia, reciente] = [idDePrueba(), idDePrueba(), idDePrueba()];
+    await marcaEspera.registrar(intermedia, enMinutos(4));
+    await marcaEspera.registrar(reciente, enMinutos(9));
+    await marcaEspera.registrar(antigua, T0);
+
+    const resultado = (await marcaEspera.vencidas(enMinutos(5), 100)).filter((e) =>
+      [antigua, intermedia, reciente].includes(e.conversacionId),
+    );
+
+    expect(resultado.map((e) => e.conversacionId)).toEqual([antigua, intermedia]);
+  });
+
+  it('NTF7 — vencidas respeta el máximo por barrido', async () => {
+    const { marcaEspera } = await crearContexto();
+    for (let i = 0; i < 4; i++) await marcaEspera.registrar(idDePrueba(), enMinutos(i));
+
+    expect(await marcaEspera.vencidas(enMinutos(60), 2)).toHaveLength(2);
+  });
+
+  it('NTF7 — reclamarAviso es atómico: solo una de dos llamadas concurrentes avisa', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+
+    const resultados = await Promise.all([marcaEspera.reclamarAviso(id), marcaEspera.reclamarAviso(id)]);
+
+    expect(resultados.filter(Boolean)).toHaveLength(1);
+    expect((await marcaEspera.vencidas(enMinutos(60), 100)).some((e) => e.conversacionId === id)).toBe(false);
+  });
+
+  it('NTF7 — una espera avisada no se reabre con un mensaje nuevo: no hay un segundo aviso', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+    await marcaEspera.reclamarAviso(id);
+
+    await marcaEspera.registrar(id, enMinutos(30));
+
+    expect((await marcaEspera.vencidas(enMinutos(120), 100)).some((e) => e.conversacionId === id)).toBe(false);
+  });
+
+  it('NTF7 — cerrar tras el aviso permite que el cliente abra una espera nueva', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+    await marcaEspera.reclamarAviso(id);
+
+    await marcaEspera.cerrar(id);
+    await marcaEspera.registrar(id, enMinutos(30));
+
+    expect((await marcaEspera.vencidas(enMinutos(120), 100)).some((e) => e.conversacionId === id)).toBe(true);
+  });
+
+  it('NTF7 — devolverAviso deshace el reclamo: la espera vuelve con su instante y puede reclamarse otra vez', async () => {
+    const { marcaEspera } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+    expect(await marcaEspera.reclamarAviso(id)).toBe(true);
+
+    await marcaEspera.devolverAviso({ conversacionId: id, desde: T0 });
+
+    const vencidas = await marcaEspera.vencidas(enMinutos(60), 100);
+    expect(vencidas.find((e) => e.conversacionId === id)?.desde).toEqual(T0);
+    expect(await marcaEspera.reclamarAviso(id)).toBe(true);
+  });
+
+  it('CNV12 — la marca no guarda el contenido: solo el id de la conversación y el instante', async () => {
+    const { marcaEspera, redis, prefijoColas } = await crearContexto();
+    const id = idDePrueba();
+    await marcaEspera.registrar(id, T0);
+
+    const miembros = await redis.zrange(`${prefijoColas}:espera-cliente:pendiente`, '0', '-1');
+
+    expect(miembros).toContain(id);
+    expect(miembros.every((miembro) => /^[0-9a-f-]{36}$/i.test(miembro))).toBe(true);
   });
 });

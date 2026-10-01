@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CanalesModule } from '../../../src/modulos/canales/index.js';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
+import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
+import { MARCA_ESPERA_CLIENTE } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import {
   BarridoVencimientos,
   NOMBRE_COLA_BARRIDO_VENCIMIENTOS,
@@ -20,6 +22,7 @@ import {
 import { ColasModule } from '../../../src/plataforma/colas/index.js';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
+import { RedisModule } from '../../../src/plataforma/redis/index.js';
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
@@ -95,6 +98,7 @@ async function crearContexto(): Promise<{
       ConfiguracionModule,
       RelojModule,
       PrismaModule,
+      RedisModule,
       ColasModule,
       CanalesModule, // SALIDA_CANAL real: el espejo de CNV8 queda en el outbox de Postgres
       BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
@@ -103,6 +107,7 @@ async function crearContexto(): Promise<{
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
       { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: espia },
+      { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       BarridoVencimientos,
     ],

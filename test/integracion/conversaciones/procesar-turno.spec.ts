@@ -7,6 +7,8 @@ import { SALIDA_CANAL, type SalidaCanal, type SolicitudCambioEstado } from '../.
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
 import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
+import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
+import { MARCA_ESPERA_CLIENTE } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
@@ -128,6 +130,7 @@ async function crearAplicacion(
         : { provide: GENERADOR_RESPUESTA, useValue: generador },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: salida },
       { provide: SALIDA_CANAL, useValue: salidaCanal },
+      { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       BufferTurno,
       LockTurno,
