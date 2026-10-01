@@ -16,6 +16,7 @@ import { crearGuardarDatosContacto } from '../herramientas/guardar-datos-contact
 import { CargadorPrompts } from '../../infraestructura/prompts/cargador-prompts.js';
 import { BucleHerramientas } from '../bucle-herramientas.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
+import type { ProveedorEstilo } from '../proveedor-estilo.js';
 import { TextoHandoff } from '../texto-handoff.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
 import { ContenidoLlm } from './contenido-llm.js';
@@ -65,6 +66,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
   cargador.onModuleInit();
   const prompt = new EnsamblarPrompt(
     cargador,
+    { obtener: () => Promise.resolve({ texto: cargador.estilo, version: 3, origen: 'base' as const }) } as unknown as ProveedorEstilo,
     { ejecutar: () => Promise.resolve('- SKU-1: Anillo') } as unknown as ObtenerCatalogoCompacto,
     { estaDentroDeHorario: () => Promise.resolve(true) },
   );
@@ -262,7 +264,9 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v2' });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v2', versionEstilo: 3 });
+    // R14: ningún registro del turno lleva el texto del estilo.
+    expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });
 
   it('AGT12 — el contexto inicial llega al modelo en el prompt del turno', async () => {

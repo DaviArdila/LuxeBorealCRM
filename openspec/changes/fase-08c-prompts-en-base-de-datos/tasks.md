@@ -16,7 +16,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 
 - [x] T1 — `validarEstilo` (dominio) y ADR-0020 aceptada
 - [x] T2 — Lectura del estilo: `ProveedorEstilo` con respaldo, copia en memoria y versión en Redis
-- [ ] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
+- [x] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
 - [ ] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
 - [ ] T5 — Comando `npm run prompt:estilo`
 - [ ] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
@@ -82,7 +82,10 @@ Chain strategy: stacked-to-main
 - **Qué**: `EnsamblarPrompt` pide el estilo a `ProveedorEstilo`; `ContenidoLlm` loguea `version` y `versionEstilo`
   sin contenido (AGT13).
 - **RED**: los escenarios de AGT13 sobre el proveedor y el log.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 24 fallos (el constructor de `EnsamblarPrompt` ganó `ProveedorEstilo`, el log la
+  `versionEstilo`); GREEN: unit 167/167 en `agente`. `PromptEnsamblado.versionEstilo` (`0` = archivo); el log del turno
+  lleva `{ evento, version, versionEstilo }` y un test comprueba que ningún log copia el texto del estilo. `AgenteModule`
+  registra `REPOSITORIO_ESTILO`, `VERSION_ESTILO` y `ProveedorEstilo`.
 
 ## T4 — Publicar, historial y restaurar
 

@@ -24,6 +24,7 @@ import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
+import { ProveedorEstilo } from './aplicacion/proveedor-estilo.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
@@ -49,6 +50,10 @@ import {
   type RepositorioContactoAgente,
 } from './puertos/repositorio-contacto-agente.js';
 import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
+import { REPOSITORIO_ESTILO } from './puertos/repositorio-estilo.js';
+import { VERSION_ESTILO } from './puertos/version-estilo.js';
+import { RepositorioEstiloPrisma } from './infraestructura/prisma/repositorio-estilo-prisma.js';
+import { VersionEstiloRedis } from './infraestructura/redis/version-estilo-redis.js';
 
 /** R1: el LLM solo dispone de estas siete herramientas. */
 const TOTAL_HERRAMIENTAS = 7;
@@ -78,6 +83,10 @@ const TOTAL_HERRAMIENTAS = 7;
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
     PoliticaPidePersona,
+    // Fase 08c: el estilo se lee de `parametro` con el archivo de respaldo y una copia con versión en Redis.
+    { provide: REPOSITORIO_ESTILO, useClass: RepositorioEstiloPrisma },
+    { provide: VERSION_ESTILO, useClass: VersionEstiloRedis },
+    ProveedorEstilo,
     CargadorPrompts,
     EnsamblarPrompt,
     BucleHerramientas,
