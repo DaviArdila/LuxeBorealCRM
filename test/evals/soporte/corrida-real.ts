@@ -11,10 +11,13 @@ import type { CasoEval } from './esquema-caso.js';
 import { ejecutarCaso } from './ejecutar-caso.js';
 import { GrabadorLlm } from './grabador-llm.js';
 import { armarResumen, type CasoResumen } from './resumen.js';
+import { aplicarEstiloCandidato } from './estilo-candidato.js';
 import { sembrarBase } from './sembrar.js';
 import { calcularVeredicto, REPETICIONES_REAL, type Veredicto } from './umbral.js';
 
 export interface OpcionesCorridaReal {
+  /** Ruta de un archivo de estilo para publicar en la base de la corrida antes de los casos (`EVALS_ESTILO`). */
+  readonly estiloCandidato?: string;
   readonly casos: readonly CasoEval[];
   /** Clave de OpenRouter; obligatoria solo si algún modelo va por OpenRouter (sin prefijo). */
   readonly apiKey: string;
@@ -94,6 +97,8 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
     const generador = app.get<GeneradorRespuesta>(GENERADOR_RESPUESTA);
     const prisma = app.get(PrismaService);
     await sembrarBase(prisma);
+    // EVL3: un estilo candidato (`EVALS_ESTILO`) se mide aquí, en la base de la corrida, antes de publicarlo.
+    await aplicarEstiloCandidato(app, opciones.estiloCandidato);
     const inicio = new ClockSistema().ahora();
 
     const acumulado = new Map<string, ResultadoAsercion[]>();

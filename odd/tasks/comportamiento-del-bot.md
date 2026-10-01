@@ -141,7 +141,10 @@ Además, que el dueño apruebe la 08b y la partición de la 09 en `docs/fases/RE
   PRs #43-#48. Pendientes `[manual]` del dueño: corrida real de evals y prueba por WhatsApp. La slice 3 (prompts en base
   de datos) sigue como **Fase 08c**, sin aprobar.
 
+- 2026-10-01: Fase 08c implementada y archivada (`openspec/changes/archive/2026-10-01-fase-08c-prompts-en-base-de-datos/`), PRs #49-#53.
+  Pendiente `[manual]`: medir un estilo candidato con los evals reales y publicarlo.
+
 ## Próximo paso
 
-Correr los evals reales con el prompt nuevo y verificar por WhatsApp (dueño). Después, redactar el change de la Fase
-08c (prompts en base de datos) para su aprobación.
+Correr los evals reales con el prompt nuevo (08b) y con el estilo candidato (08c) y verificar por WhatsApp (dueño). Después,
+la Fase 09a.

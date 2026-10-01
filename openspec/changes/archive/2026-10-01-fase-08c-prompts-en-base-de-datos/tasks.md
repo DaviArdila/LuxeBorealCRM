@@ -19,8 +19,8 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 - [x] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
 - [x] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
 - [x] T5 — Comando `npm run prompt:estilo`
-- [ ] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
-- [ ] T7 — Guía de operación y cierre documental
+- [x] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
+- [x] T7 — Guía de operación y cierre documental
 
 ## Mapeo de escenarios por tarea (AGT13 5 + AGT18 3 + AGT19 3 + AGT20 3 + AGT21 3 + AGT22 3 = 20)
 
@@ -116,11 +116,23 @@ Chain strategy: stacked-to-main
 
 - **Qué**: caso de evals y e2e donde un estilo publicado cambia el prompt del turno siguiente sin reiniciar, el
   respaldo cuando falta y `restaurar`.
-- **`[manual]`**: corrida real (`EVALS_MODO=real`) con el estilo que el dueño quiera probar (EVL3).
-- **Estado**: pendiente.
+- **`[manual]`**: corrida real (`EVALS_MODO=real`) con el estilo que el dueño quiera probar (EVL3), por ejemplo
+  `EVALS_MODO=real EVALS_ESTILO=./mi-estilo.md npm run evals` (clave de OpenAI; el estilo se publica solo en la base de la corrida).
+- **Estado**: hecha en lo automático (2026-10-01); la corrida real queda pendiente del dueño. Dos e2e nuevos
+  (`agente-llm`, 12/12): publicar un estilo cambia el prompt del siguiente mensaje sin reiniciar y conserva las reglas;
+  restaurar devuelve el estilo anterior. No hubo RED clásico (el comportamiento ya existía desde T2-T4): se hizo una
+  **prueba de mutación**, quitando a propósito `incrementar()` de `PublicarEstilo`, y los dos e2e fallaron; se
+  restauró el código. **Agregado fuera del mapeo**: `EVALS_ESTILO=<ruta>` (ayudante `estilo-candidato.ts`, 5 tests
+  unitarios y un caso de evals) publica un estilo candidato en la base **de la corrida** por el mismo caso de uso del
+  comando, para medirlo con el LLM real antes de publicarlo; un estilo inválido o un archivo ilegible detiene la
+  corrida sin copiar el texto. Evals guionadas: 35 pasan, APROBADA.
 
 ## T7 — Guía de operación y cierre
 
 - `docs/operacion/estilo-del-bot.md` (cómo editar, volver atrás y qué no se puede tocar); deltas fusionados en
   `openspec/specs/agente`; `docs/fases/README.md`; P45 anotada; `verify-report.md`; archivar el change.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). Guía en `docs/operacion/estilo-del-bot.md` (qué se puede editar, flujo recomendado con
+  `EVALS_ESTILO`, comandos, motivos de rechazo, volver atrás, síntomas). Delta fusionado en `openspec/specs/agente`
+  (25→30 requisitos, 77→93 escenarios: AGT13 modificado con 1 escenario nuevo y AGT18-AGT22 con 15). `docs/fases/README.md`
+  (08c cerrada con `[manual]`), `docs/PREGUNTAS_ABIERTAS.md` (P45 con su destino), `CLAUDE.md` (comando, `EVALS_ESTILO` y
+  mapa de documentación), `docs/CONTEXTO_SESIONES.md`, `verify-report.md` y change archivado.
