@@ -1,7 +1,7 @@
 # Proposal: Fase 08c — El estilo del agente se edita desde la base de datos
 
 - Change: `fase-08c-prompts-en-base-de-datos` · Fase de la hoja de ruta: **08c** · Rama: `fase-08c-prompts-en-base-de-datos`
-- Fecha: 2026-10-01 · Estado: **spec en revisión** (espera la aprobación del dueño y la del ADR-0020)
+- Fecha: 2026-10-01 · Estado: **aprobada** por el dueño (2026-10-01; ADR-0020 aceptado; Q1 y Q2 resueltas)
 - Depende de: **08b cerrada** (el estilo ya es un archivo aparte, `estilo.v2.md`).
 
 ## Intent
@@ -56,9 +56,9 @@ No aplica: mejora del código nuevo. El prototipo no se consulta.
 
 | Id | Estado | Nota |
 |---|---|---|
-| ADR-0020 | **Espera aprobación** | Define alternativas A/B y 1/2/3; recomienda A + 3 |
-| **Q1** — límite de caracteres | Para aprobar | Propongo 4.000 (≈ 1.000 tokens); si prefieres otro tope, se cambia una constante |
-| **Q2** — historial | Para aprobar | Propongo guardar las últimas 10 versiones |
+| ADR-0020 | **Aceptado (2026-10-01)** | Alternativas A/B y 1/2/3; se eligió A + 3 (versión completa) |
+| **Q1** — límite de caracteres | **Resuelta (2026-10-01)** | 4.000 caracteres (≈ 1.000 tokens): atrapa un descuido y no deja que el estilo compita con las reglas; subirlo después es cambiar una constante |
+| **Q2** — historial | **Resuelta (2026-10-01)** | Las últimas 10 versiones |
 
 ## Risks
 

@@ -44,8 +44,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 | Delivery strategy | auto-chain |
 | Chain strategy | stacked-to-main |
 
-Decision needed before apply: **Sí** — aprobación del dueño de esta fase, del ADR-0020 y respuesta a Q1 (4.000 caracteres)
-y Q2 (10 versiones).
+Decision needed before apply: No (fase y ADR-0020 aprobados el 2026-10-01; Q1 y Q2 resueltas).
 Chained PRs recommended: Yes
 Chain strategy: stacked-to-main
 400-line budget risk: Medium
@@ -63,7 +62,7 @@ Chain strategy: stacked-to-main
 
 - **Qué**: función pura `agente/dominio/validar-estilo.ts` (AGT20); el dueño acepta el ADR-0020.
 - **RED**: los tres escenarios de AGT20.
-- **Estado**: pendiente (espera la aprobación del ADR).
+- **Estado**: pendiente (ADR-0020 aceptado).
 
 ## T2 — Lectura del estilo
 

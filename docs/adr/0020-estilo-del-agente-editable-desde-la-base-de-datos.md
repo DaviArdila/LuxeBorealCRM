@@ -1,11 +1,11 @@
 # 0020. El estilo del agente se edita desde la base de datos, con el archivo como respaldo
 
-- Estado: propuesta
+- Estado: aceptada
 - Fecha: 2026-10-01
 
-> **Propuesta, no aceptada.** El dueño pidió poder cambiar el comportamiento del bot «a voluntad» sin
-> desplegar (P45) y eligió, como punto de partida, clave/valor en `parametro`. Este ADR concreta cómo.
-> Hasta que lo acepte, no se escribe código de la Fase 08c.
+> **Aceptada el 2026-10-01.** El dueño pidió poder cambiar el comportamiento del bot «a voluntad» sin
+> desplegar (P45), eligió clave/valor en `parametro` y aprobó la versión completa (copia en memoria con versión
+> en Redis), el tope de 4.000 caracteres y las 10 versiones de historial.
 
 ## Resumen
 

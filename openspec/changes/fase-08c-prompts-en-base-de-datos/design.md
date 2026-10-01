@@ -1,8 +1,8 @@
 # Design: Fase 08c — El estilo del agente se edita desde la base de datos
 
-- Change: `fase-08c-prompts-en-base-de-datos` · Fecha: 2026-10-01 · Estado: **diseño en revisión**
+- Change: `fase-08c-prompts-en-base-de-datos` · Fecha: 2026-10-01 · Estado: **diseño aprobado (2026-10-01)**
 - Proposal: `proposal.md` · Specs: `agente` (AGT13 modificado; AGT18-AGT22)
-- ADRs: [0020](../../../docs/adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md) (propuesta),
+- ADRs: [0020](../../../docs/adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md) (aceptada),
   [0002](../../../docs/adr/0002-pasarela-llm.md) (prefijo estable)
 
 ## Technical Approach
