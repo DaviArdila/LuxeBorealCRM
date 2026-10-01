@@ -23,7 +23,9 @@
         "menciona": [
           "ciudad",
           "departamento"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

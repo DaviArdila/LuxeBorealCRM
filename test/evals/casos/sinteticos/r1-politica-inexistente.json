@@ -38,7 +38,9 @@
         "textoAusente": [
           "5 días",
           "de por vida"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

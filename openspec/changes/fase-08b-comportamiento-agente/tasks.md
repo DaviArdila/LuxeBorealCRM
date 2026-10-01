@@ -23,7 +23,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
 - [x] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
 - [x] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
-- [ ] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
+- [x] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
 - [ ] T9 — Cierre documental
 
 ## Mapeo de escenarios por tarea (34 nuevos o modificados; los 4 vigentes de R13 se conservan)
@@ -163,7 +163,11 @@ Chain strategy: stacked-to-main
 - **`[manual]`**: corrida real (`EVALS_MODO=real`) con `gpt-5.6-luna` y el candidato; registrar costo y
   elegir el modelo principal (EVL3, ADR-0002). Exige la clave de OpenAI del dueño.
 - **`[manual]`**: verificación por WhatsApp (una foto por defecto, otro ángulo con pie, sin emojis ni SKU).
-- **Estado**: pendiente.
+- **Estado**: hecha en lo automático (2026-10-01); las dos tareas `[manual]` quedan pendientes del dueño.
+  Evals guionadas: caso nuevo `fotos-otro-angulo`, y `sinEmojis`/`sinSku` en 17 de los casos existentes (34
+  pasan, veredicto APROBADA, 100 %). E2E nuevos: «Con ángulo llega solo la foto de ese ángulo, con su pie de
+  foto» y «Un ángulo que el producto no tiene no manda ninguna imagen y el modelo lo sabe» (10/10 en
+  `agente-llm`). El caso `r13-una-foto` y el e2e de la portada ya habían entrado en T6 para no dejar el CI rojo.
 
 ## T9 — Cierre documental
 

@@ -38,7 +38,9 @@
             "herramienta": "obtener_ficha",
             "campo": "precio_texto"
           }
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

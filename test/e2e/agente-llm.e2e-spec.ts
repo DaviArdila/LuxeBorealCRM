@@ -172,6 +172,11 @@ function llamada(id: string, nombre: string, argumentos: Record<string, unknown>
   return { respuesta: { llamadasHerramienta: [{ id, nombre, argumentos }] } };
 }
 
+/** Todos los resultados de herramienta que vio el modelo hasta su última solicitud, en orden. */
+function todosLosResultados(llm: FakePuertoLlm) {
+  return (llm.solicitudes.at(-1)?.mensajes ?? []).flatMap((mensaje) => mensaje.resultadosHerramienta ?? []);
+}
+
 function resultadosDe(llm: FakePuertoLlm, indiceSolicitud: number) {
   return llm.solicitudes[indiceSolicitud]?.mensajes.at(-1)?.resultadosHerramienta ?? [];
 }
@@ -321,6 +326,45 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(pie).not.toContain(producto.sku);
     // El modelo solo supo cuántas se enviaron, nunca la clave.
     expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ enviadas: 1 });
+  }, 40_000);
+
+  it('AGT9 — Con ángulo llega a Chatwoot solo la foto de ese ángulo, con su pie de foto', async () => {
+    const aplicacion = await arrancar();
+    const producto = await sembrarProducto(aplicacion.get(PrismaService), true);
+    llm.encolar(
+      llamada('c1', 'obtener_ficha', { id_producto: producto.id }),
+      llamada('c2', 'enviar_fotos', { id_producto: producto.id, angulo: 'lateral_izquierdo' }),
+      { respuesta: { texto: 'Te lo muestro de lado' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Me lo muestras de lado?');
+
+    const [texto, imagen] = await esperarMensajes(chatwootFalso, idConversacion, 2);
+    expect(contenido(texto)).toContain('Te lo muestro de lado');
+    const multipart = imagen as CuerpoMultipart;
+    expect(multipart.archivos).toHaveLength(1);
+    expect(multipart.archivos[0]?.bytes.toString()).toMatch(/^lado-/);
+    expect(multipart.campos['content']).toContain(producto.nombre);
+    // La ficha le dijo al modelo qué ángulos puede pedir; nunca claves ni el SKU.
+    const [ficha, fotos] = todosLosResultados(llm);
+    expect(ficha?.resultado).toMatchObject({ angulos_fotos: ['frente', 'lateral_izquierdo'] });
+    expect(JSON.stringify(ficha?.resultado)).not.toContain(producto.sku);
+    expect(fotos?.resultado).toEqual({ enviadas: 1 });
+  }, 40_000);
+
+  it('AGT9 — Un ángulo que el producto no tiene no manda ninguna imagen y el modelo lo sabe', async () => {
+    const aplicacion = await arrancar();
+    const producto = await sembrarProducto(aplicacion.get(PrismaService), true);
+    llm.encolar(
+      llamada('c1', 'enviar_fotos', { id_producto: producto.id, angulo: 'uso' }),
+      { respuesta: { texto: 'Esa foto no la tengo, ¿te muestro otra?' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Tienes una foto instalado?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('no la tengo');
+    expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ enviadas: 0, error: expect.stringContaining('frente') as unknown });
   }, 40_000);
 
   it('AGT10 — Los datos que da el cliente quedan guardados en su contacto', async () => {

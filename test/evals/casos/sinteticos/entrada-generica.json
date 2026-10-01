@@ -45,7 +45,9 @@
             "nombre": "obtener_ficha"
           }
         ],
-        "dineroConRastro": true
+        "dineroConRastro": true,
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

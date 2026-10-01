@@ -39,7 +39,9 @@
             "herramienta": "cotizar_envio",
             "campo": "rango_texto"
           }
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

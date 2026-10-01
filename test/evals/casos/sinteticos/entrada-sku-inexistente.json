@@ -33,7 +33,9 @@
         "menciona": [
           "no encuentro"
         ],
-        "dineroConRastro": true
+        "dineroConRastro": true,
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]
