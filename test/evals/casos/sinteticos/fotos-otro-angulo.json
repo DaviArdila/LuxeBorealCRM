@@ -1,0 +1,45 @@
+{
+  "id": "fotos-otro-angulo",
+  "titulo": "AGT9 — caso: el cliente pide otro ángulo y se manda solo esa foto",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Me lo muestras de lado?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "enviar_fotos",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR",
+                "angulo": "lateral_izquierdo"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Claro, te comparto la foto del lado izquierdo del Collar Luna."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "enviar_fotos",
+            "argumentos": {
+              "id_producto": "SKU-EVAL-COLLAR",
+              "angulo": "lateral_izquierdo"
+            }
+          }
+        ],
+        "sinEmojis": true,
+        "sinSku": true
+      }
+    }
+  ]
+}

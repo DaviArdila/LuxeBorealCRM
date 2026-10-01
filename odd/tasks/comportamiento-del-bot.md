@@ -137,7 +137,11 @@ Además, que el dueño apruebe la 08b y la partición de la 09 en `docs/fases/RE
 
 - 2026-10-01: documento creado con las decisiones del dueño y la evidencia de código. Sin commit.
 
+- 2026-10-01: Fase 08b implementada y archivada (`openspec/changes/archive/2026-10-01-fase-08b-comportamiento-agente/`),
+  PRs #43-#48. Pendientes `[manual]` del dueño: corrida real de evals y prueba por WhatsApp. La slice 3 (prompts en base
+  de datos) sigue como **Fase 08c**, sin aprobar.
+
 ## Próximo paso
 
-Antes de C1.1, en este orden: fusionar los PRs abiertos (`docs/CONTEXTO_SESIONES.md`), verificar el flujo
-real por WhatsApp y decidir el modelo con los evals. Luego el dueño aprueba la 08b y se redacta el change.
+Correr los evals reales con el prompt nuevo y verificar por WhatsApp (dueño). Después, redactar el change de la Fase
+08c (prompts en base de datos) para su aprobación.

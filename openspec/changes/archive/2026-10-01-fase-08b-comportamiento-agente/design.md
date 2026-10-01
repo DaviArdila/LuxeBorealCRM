@@ -3,7 +3,7 @@
 - Change: `fase-08b-comportamiento-agente` · Fecha: 2026-10-01 · Estado: **diseño aprobado (2026-10-01)**
 - Proposal: `proposal.md` · Specs: `agente` (AGT9, AGT13 modificados; AGT15-AGT17), `conversaciones`
   (R13 modificado), `catalogo` (CAT14 modificado; IMP14, IMP15), `medios` (MED8 modificado)
-- ADRs: [0002](../../../docs/adr/0002-llm-y-openrouter.md) (prefijo estable), [0019](../../../docs/adr/0019-proveedores-llm-configurables.md)
+- ADRs: [0002](../../../../docs/adr/0002-llm-y-openrouter.md) (prefijo estable), [0019](../../../../docs/adr/0019-proveedores-llm-configurables.md)
 
 ## Technical Approach
 

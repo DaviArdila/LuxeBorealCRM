@@ -35,7 +35,9 @@
         "dineroConRastro": true,
         "menciona": [
           "anillo aurora"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

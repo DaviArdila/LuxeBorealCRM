@@ -39,7 +39,9 @@
         "menciona": [
           "aproximad",
           "transportadora"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

@@ -40,7 +40,9 @@
             "herramienta": "consultar_politica",
             "campo": "texto"
           }
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

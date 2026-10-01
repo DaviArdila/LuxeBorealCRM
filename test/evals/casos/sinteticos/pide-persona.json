@@ -23,7 +23,9 @@
         "herramientasProhibidas": [
           "marcar_lead_caliente",
           "buscar_producto"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

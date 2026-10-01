@@ -37,7 +37,9 @@
         ],
         "menciona": [
           "suma al total"
-        ]
+        ],
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]

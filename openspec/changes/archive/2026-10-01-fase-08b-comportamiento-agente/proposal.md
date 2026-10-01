@@ -1,7 +1,7 @@
 # Proposal: Fase 08b — Comportamiento del agente y fotos
 
 - Change: `fase-08b-comportamiento-agente` · Fase de la hoja de ruta: **08b** · Rama: `fase-08b-comportamiento-agente`
-- Fecha: 2026-10-01 · Estado: **aprobada** por el dueño (2026-10-01; Q1 y Q2 resueltas)
+- Fecha: 2026-10-01 · Estado: **cerrada con pendientes `[manual]`** (2026-10-01; ver `verify-report.md`)
 - Depende de: **08 cerrada**. Seguimiento previo: `odd/tasks/comportamiento-del-bot.md`.
 - Siguiente: **08c — Prompts en base de datos** (fase aparte, ver «Out of Scope»).
 

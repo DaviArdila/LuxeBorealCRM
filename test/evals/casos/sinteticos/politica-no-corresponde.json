@@ -31,7 +31,9 @@
           "contra entrega",
           "pagas cuando lo recibes"
         ],
-        "dineroConRastro": true
+        "dineroConRastro": true,
+        "sinEmojis": true,
+        "sinSku": true
       }
     }
   ]
