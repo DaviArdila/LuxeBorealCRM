@@ -124,7 +124,8 @@ Chain strategy: stacked-to-main
   MED9 «Redescargar una foto por archivo faltante…» usaba un producto de una sola foto, que con MED8
   nuevo ya no tiene collage; pasó a dos fotos, mismo comportamiento verificado. (2) `importar-catalogo-cli.spec.ts`
   (integración con MinIO, no corre sin Docker) fija `CATALOGO_GENERAR_COLLAGE=true` para seguir comprobando
-  que el collage se genera cuando se pide. Con la variable apagada, el collage guardado de una importación
+  que el collage se genera cuando se pide. El primer CI de #46 falló ahí: ese test esperaba collage para
+  `SKU-0002`, que tiene una sola foto (MED8: sin collage); ahora espera `null` y que el objeto no exista. Con la variable apagada, el collage guardado de una importación
   previa deja de referenciarse (`clave_collage` nula); el archivo huérfano queda en el almacenamiento.
 
 ## T6 — `enviar_fotos` por ángulo

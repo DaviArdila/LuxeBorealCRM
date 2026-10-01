@@ -203,7 +203,7 @@ describe('Comando catalogo:importar de punta a punta (T10, criterio de salida de
     await expect(conPrismaDePrueba((prisma) => prisma.producto.count())).resolves.toBe(0);
   });
 
-  it('--dir deja productos, fotos y collage listos en MinIO, sin tocar la red real', async () => {
+  it('--dir deja productos, fotos y el collage de quien tiene varias listos en MinIO, sin tocar la red real', async () => {
     restaurarEntorno = fijarVariablesDeEntorno(configuracionDePrueba());
 
     const resultado = await importarCatalogo(['--dir', RUTA_FIXTURES]);
@@ -222,7 +222,8 @@ describe('Comando catalogo:importar de punta a punta (T10, criterio de salida de
     expect(producto1?.claveCollage).toBe('catalogo/SKU-0001/collage.jpg');
     expect(producto2?.sku).toBe('SKU-0002');
     expect(producto2?.fotos).toHaveLength(1);
-    expect(producto2?.claveCollage).toBe('catalogo/SKU-0002/collage.jpg');
+    // MED8: con una sola foto no hay collage, aunque `CATALOGO_GENERAR_COLLAGE` esté activa.
+    expect(producto2?.claveCollage).toBeNull();
 
     await conPrismaDePrueba(async (prisma) => {
       await expect(prisma.tarifaEstimada.count()).resolves.toBe(2);
@@ -235,5 +236,6 @@ describe('Comando catalogo:importar de punta a punta (T10, criterio de salida de
     await expect(existeObjetoMinio(cliente, 'catalogo/SKU-0001/foto-1.jpg')).resolves.toBe(true);
     await expect(existeObjetoMinio(cliente, 'catalogo/SKU-0001/collage.jpg')).resolves.toBe(true);
     await expect(existeObjetoMinio(cliente, 'catalogo/SKU-0002/foto-1.jpg')).resolves.toBe(true);
+    await expect(existeObjetoMinio(cliente, 'catalogo/SKU-0002/collage.jpg')).resolves.toBe(false);
   });
 });
