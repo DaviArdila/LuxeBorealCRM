@@ -131,6 +131,6 @@ describe('AvisarLead (NTF1, NTF2)', () => {
 
     await caso.ejecutar('conv-1');
 
-    expect(encolar.avisos[0]?.aviso.capturadoFueraHorario).toBe(true);
+    expect(encolar.avisos[0]?.aviso).toMatchObject({ tipo: 'lead', capturadoFueraHorario: true });
   });
 });

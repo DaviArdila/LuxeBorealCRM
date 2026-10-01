@@ -75,6 +75,8 @@ async function crearContexto(): Promise<{
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ESPERA_CLIENTE_MIN: 10,
+    ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
   };
@@ -127,6 +129,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ESPERA_CLIENTE_MIN: 10,
+      ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion, salidaCanalNula);
@@ -150,6 +154,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ESPERA_CLIENTE_MIN: 10,
+      ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion, salidaCanalNula);
@@ -173,6 +179,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ESPERA_CLIENTE_MIN: 10,
+      ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion, salidaCanalNula);
@@ -199,6 +207,8 @@ describe('TransicionarConversacion (T2, integración, D2/D3)', () => {
       CONVERSACIONES_CONCURRENCIA: 10,
       CONVERSACIONES_BARRIDO_MS: 300000,
       HANDOFF_ESPERA_MIN: 30,
+      ESPERA_CLIENTE_MIN: 10,
+      ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
     } as Configuracion, salidaCanalNula);
