@@ -1,26 +1,27 @@
 import { z } from 'zod';
 import type { Configuracion } from '../../../../plataforma/config/index.js';
-import { ProductoNoDisponible, type ObtenerFotosProducto } from '../../../catalogo/index.js';
+import { ANGULOS_FOTO, ProductoNoDisponible, type ObtenerFotosProducto } from '../../../catalogo/index.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { Herramienta } from '../../dominio/herramienta.js';
 import type { ContadoresSesion } from '../../puertos/contadores-sesion.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
 const esquema = z.object({
-  id_producto: z.string().min(1).describe('El id del producto del que se mandan fotos.'),
-  modo: z
-    .enum(['collage', 'individuales'])
-    .describe('"collage" manda una sola imagen con todas las fotos (por defecto); "individuales" manda una por foto.'),
+  id_producto: z.string().min(1).describe('El id del producto del que se manda una foto.'),
+  angulo: z
+    .enum(ANGULOS_FOTO)
+    .optional()
+    .describe('Solo si el cliente pide ver otro ángulo; los disponibles salen de obtener_ficha. Sin ángulo se manda la foto principal.'),
 });
 
 const sinEnvio = (error: string) => ({ paraElModelo: { enviadas: 0, error }, efectos: [] as EfectoTurno[] });
 
 /**
- * `enviar_fotos` (AGT9): pide las claves a `ObtenerFotosProducto` y las devuelve como efectos
- * `enviar-imagen`; el modelo solo ve cuántas se enviaron (nunca claves ni URLs) y un error explícito
- * cuando no hay nada que enviar, para que no afirme haber mandado algo. El collage es una sola
- * imagen; las individuales respetan `AGENTE_FOTOS_INDIVIDUALES_MAX` por sesión. La clave sale del
- * catálogo, nunca de los argumentos del modelo (matriz de amenazas).
+ * `enviar_fotos` (AGT9): manda **una** foto por llamada: la principal, o la del ángulo que pida el cliente
+ * (la lista de ángulos disponibles la da `obtener_ficha`). La clave y el pie de foto salen del catálogo
+ * (`ObtenerFotosProducto`, AGT17), nunca de los argumentos del modelo (matriz de amenazas): el modelo solo
+ * ve cuántas se enviaron y un error explícito cuando no hay nada que enviar, para que no afirme haber
+ * mandado algo. `AGENTE_FOTOS_INDIVIDUALES_MAX` limita las fotos enviadas por sesión (R13).
  */
 export function crearEnviarFotos(
   obtenerFotos: ObtenerFotosProducto,
@@ -29,19 +30,16 @@ export function crearEnviarFotos(
 ): Herramienta {
   return definirHerramienta(
     'enviar_fotos',
-    'Envía al cliente las fotos de un producto. Usa modo "collage" por defecto (una sola imagen); "individuales" solo si el cliente pide ver las fotos por separado.',
+    'Envía al cliente UNA foto de un producto: la principal por defecto, o la de un ángulo si el cliente pide verlo desde otro lado. No mandes varias seguidas.',
     esquema,
-    async ({ id_producto, modo }, ctx) => {
-      const tope = configuracion.AGENTE_FOTOS_INDIVIDUALES_MAX;
-      const restantes =
-        modo === 'individuales' ? Math.max(0, tope - (await contadores.fotosIndividuales(ctx.sesion))) : tope;
-      if (modo === 'individuales' && restantes === 0) {
-        return sinEnvio('Ya se enviaron todas las fotos individuales permitidas en esta conversación.');
+    async ({ id_producto, angulo }, ctx) => {
+      if ((await contadores.fotosIndividuales(ctx.sesion)) >= configuracion.AGENTE_FOTOS_INDIVIDUALES_MAX) {
+        return sinEnvio('Ya se enviaron todas las fotos permitidas en esta conversación.');
       }
 
       let fotos;
       try {
-        fotos = await obtenerFotos.ejecutar(id_producto, restantes);
+        fotos = await obtenerFotos.ejecutar(id_producto, angulo);
       } catch (error) {
         if (error instanceof ProductoNoDisponible) {
           return sinEnvio('Ese producto no existe o no está disponible.');
@@ -49,21 +47,16 @@ export function crearEnviarFotos(
         throw error;
       }
 
-      if (modo === 'collage') {
-        return fotos.claveCollage === null
-          ? sinEnvio('Ese producto no tiene collage; prueba con el modo "individuales" si tiene fotos.')
-          : {
-              paraElModelo: { enviadas: 1 },
-              efectos: [{ tipo: 'enviar-imagen', claveObjeto: fotos.claveCollage }],
-            };
+      if (fotos.foto === null) {
+        if (angulo !== undefined && fotos.angulosDisponibles.length > 0) {
+          return sinEnvio(`Ese producto no tiene foto de ángulo "${angulo}". Ángulos disponibles: ${fotos.angulosDisponibles.join(', ')}.`);
+        }
+        return sinEnvio(angulo === undefined ? 'Ese producto no tiene fotos.' : `Ese producto no tiene foto de ángulo "${angulo}".`);
       }
-      if (fotos.clavesFotos.length === 0) {
-        return sinEnvio('Ese producto no tiene fotos.');
-      }
-      await contadores.sumarFotosIndividuales(ctx.sesion, fotos.clavesFotos.length);
+      await contadores.sumarFotosIndividuales(ctx.sesion, 1);
       return {
-        paraElModelo: { enviadas: fotos.clavesFotos.length },
-        efectos: fotos.clavesFotos.map((claveObjeto): EfectoTurno => ({ tipo: 'enviar-imagen', claveObjeto })),
+        paraElModelo: { enviadas: 1 },
+        efectos: [{ tipo: 'enviar-imagen', claveObjeto: fotos.foto.claveObjeto, leyenda: fotos.leyenda }],
       };
     },
   );

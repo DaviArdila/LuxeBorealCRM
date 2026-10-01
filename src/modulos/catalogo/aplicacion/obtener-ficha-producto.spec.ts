@@ -1,5 +1,5 @@
 import { formatearCop } from '../../../compartido/dinero/index.js';
-import type { Producto } from '../dominio/producto.js';
+import type { FotoProducto, Producto } from '../dominio/producto.js';
 import { ProductoNoDisponible } from '../dominio/producto.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
 import { ObtenerFichaProducto } from './obtener-ficha-producto.js';
@@ -21,15 +21,18 @@ const PRODUCTO_ACTIVO: Producto = {
 
 /** Doble de {@link RepositorioProducto}: `listarActivosResumen` no lo usa este caso de uso. */
 class RepositorioProductoFalso implements RepositorioProducto {
-  constructor(private readonly producto: Producto | null) {}
+  constructor(
+    private readonly producto: Producto | null,
+    private readonly fotos: readonly FotoProducto[] = [],
+  ) {}
   listarActivosResumen(): Promise<readonly never[]> {
     throw new Error('no usado por ObtenerFichaProducto');
   }
   buscarPorIdOSku(): Promise<Producto | null> {
     return Promise.resolve(this.producto);
   }
-  listarFotos(): Promise<never> {
-    throw new Error('no usado por este caso de uso');
+  listarFotos(): Promise<readonly FotoProducto[]> {
+    return Promise.resolve(this.fotos);
   }
 }
 
@@ -66,6 +69,21 @@ describe('modulos/catalogo/aplicacion/ObtenerFichaProducto', () => {
       descripcionLarga: 'larga',
       precioTexto: formatearCop(123456),
       tieneFotos: true,
+      angulosFotos: [],
     });
+  });
+
+  it('la ficha lista los ángulos de las fotos disponibles, sin repetir ni contar las sin etiquetar', async () => {
+    const fotos: readonly FotoProducto[] = [
+      { claveObjeto: 'a', angulo: 'frente' },
+      { claveObjeto: 'b', angulo: null },
+      { claveObjeto: 'c', angulo: 'detalle' },
+      { claveObjeto: 'd', angulo: 'frente' },
+    ];
+    const caso = new ObtenerFichaProducto(new RepositorioProductoFalso(PRODUCTO_ACTIVO, fotos));
+
+    const ficha = await caso.ejecutar('SKU-1');
+
+    expect(ficha.angulosFotos).toEqual(['frente', 'detalle']);
   });
 });

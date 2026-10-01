@@ -101,6 +101,8 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.reglas).toMatch(/una sola vez/i);
     expect(cargador.reglas).toMatch(/porcentaje/i);
     expect(cargador.reglas).toMatch(/ciudad y departamento/i);
-    expect(cargador.reglas).toMatch(/collage/i);
+    expect(cargador.reglas).toMatch(/enviar_fotos/);
+    expect(cargador.reglas).toMatch(/ángulo/i);
+    expect(cargador.reglas).not.toMatch(/collage/i);
   });
 });

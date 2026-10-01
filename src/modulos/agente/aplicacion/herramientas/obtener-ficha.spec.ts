@@ -18,6 +18,7 @@ describe('modulos/agente/aplicacion/herramientas — obtener_ficha', () => {
           descripcionLarga: 'Oro laminado',
           precioTexto: formatearCop(389000),
           tieneFotos: true,
+          angulosFotos: ['frente', 'detalle'],
         }),
     } as unknown as ObtenerFichaProducto;
 
@@ -29,6 +30,7 @@ describe('modulos/agente/aplicacion/herramientas — obtener_ficha', () => {
       descripcion_larga: 'Oro laminado',
       precio_texto: formatearCop(389000),
       tiene_fotos: true,
+      angulos_fotos: ['frente', 'detalle'],
     });
     expect(JSON.stringify(resultado.paraElModelo)).not.toContain('389000');
   });

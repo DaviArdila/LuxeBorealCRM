@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../plataforma/prisma/index.js';
-import type { FotosProducto, Producto, ProductoResumen } from '../dominio/producto.js';
+import { esAnguloFoto } from '../dominio/angulo-foto.js';
+import type { FotoProducto, Producto, ProductoResumen } from '../dominio/producto.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
 
 /**
@@ -46,20 +47,15 @@ export class RepositorioProductoPrisma implements RepositorioProducto {
     };
   }
 
-  async listarFotos(productoId: string): Promise<FotosProducto> {
-    const fila = await this.prisma.producto.findUnique({
-      where: { id: productoId },
-      select: {
-        claveCollage: true,
-        fotos: {
-          orderBy: [{ esPortada: 'desc' }, { orden: 'asc' }],
-          select: { claveArchivo: true },
-        },
-      },
+  async listarFotos(productoId: string): Promise<readonly FotoProducto[]> {
+    const filas = await this.prisma.foto.findMany({
+      where: { productoId },
+      orderBy: [{ esPortada: 'desc' }, { orden: 'asc' }],
+      select: { claveArchivo: true, angulo: true },
     });
-    return {
-      claveCollage: fila?.claveCollage ?? null,
-      clavesFotos: (fila?.fotos ?? []).map((foto) => foto.claveArchivo),
-    };
+    return filas.map((fila) => ({
+      claveObjeto: fila.claveArchivo,
+      angulo: fila.angulo !== null && esAnguloFoto(fila.angulo) ? fila.angulo : null,
+    }));
   }
 }

@@ -21,8 +21,8 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
 - [x] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
 - [x] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
-- [ ] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
-- [ ] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
+- [x] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
+- [x] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
 - [ ] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
 - [ ] T9 — Cierre documental
 
@@ -134,14 +134,27 @@ Chain strategy: stacked-to-main
   disponibles; `enviar_fotos` pierde `modo` y gana `angulo`; la ficha lista los ángulos disponibles; el
   contador por sesión se conserva.
 - **RED**: CAT14 (4), AGT9 (5) y R13 «Una sola foto por defecto».
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: 23 fallos en unit (caso de uso, herramienta, ficha, reglas); GREEN: unit
+  1035 pasan, evals APROBADA (100 %), e2e 33/33 e integración de `repositorio-producto` contra Postgres real.
+  `enviar_fotos` pierde `modo`, gana `angulo` (enum de `ANGULOS_FOTO`) y manda una sola foto por llamada; el
+  contador por sesión suma 1. `ObtenerFotosProducto` devuelve `{ foto, angulosDisponibles, leyenda }`;
+  `listarFotos` devuelve `FotoProducto[]` (clave y ángulo); la ficha trae `angulosFotos` y la herramienta
+  `angulos_fotos`. `reglas.v2.md` explica una foto y el ángulo bajo demanda. **Desviaciones**: (1) el caso de
+  evals `r13-collage` pasó a `r13-una-foto` (título del escenario nuevo) y la semilla de evals/e2e trae fotos con
+  ángulo; el e2e comprueba la imagen en Chatwoot (T8 agrega el ángulo pedido y los demás casos). (2) El multipart
+  convierte el salto de línea del pie en CRLF; el test lo normaliza. (3) La lista de ángulos disponibles en la
+  ficha no tenía escenario en el delta; queda cubierta por un test de `ObtenerFichaProducto` y por D4 del diseño.
 
 ## T7 — Pie de foto
 
 - **Qué**: `ObtenerFotosProducto` arma la `leyenda` con nombre, descripción corta y `precio_texto`, sin SKU;
   `enviar_fotos` la pone en cada efecto (ya viaja hasta Chatwoot).
 - **RED**: los dos escenarios de AGT17, con transcripción completa (dinero, R2).
-- **Estado**: pendiente (Q1 resuelta: el pie usa `descripcion_corta`).
+- **Estado**: hecha (2026-10-01; Q1 resuelta: el pie usa `descripcion_corta`). RED: `armarLeyendaFoto` inexistente, los
+  dos escenarios de AGT17 en dominio y caso de uso, y el efecto sin `leyenda` en la herramienta (8 fallos);
+  GREEN: `armarLeyendaFoto` en `catalogo/dominio/producto.ts` con `formatearCop` (R2), ficha del e2e verificada
+  contra el multipart de Chatwoot: `<nombre> — <descripción corta>` y `$389.000`, sin SKU. El modelo nunca ve
+  la leyenda (solo `enviadas`).
 
 ## T8 — Evals y e2e
 
