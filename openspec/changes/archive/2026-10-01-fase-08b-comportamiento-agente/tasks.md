@@ -24,7 +24,7 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 - [x] T6 — `enviar_fotos`: portada por defecto y ángulo bajo demanda; ficha con ángulos disponibles
 - [x] T7 — Pie de foto armado por el backend (nombre, descripción corta, `precio_texto`)
 - [x] T8 — Evals y e2e nuevos; ajuste de los que asumían collage; corrida real `[manual]`
-- [ ] T9 — Cierre documental
+- [x] T9 — Cierre documental
 
 ## Mapeo de escenarios por tarea (34 nuevos o modificados; los 4 vigentes de R13 se conservan)
 
@@ -174,4 +174,6 @@ Chain strategy: stacked-to-main
 - Fusionar los deltas en `openspec/specs/{agente,conversaciones,catalogo,medios}`; `MODELO_DATOS.md` al día;
   `docs/migracion/inventario.md` y `docs/fases/README.md` (fila 08b); P43-P45 anotadas como resueltas;
   `verify-report.md` con «qué aprendimos»; archivar el change.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). Deltas fusionados en `openspec/specs/{agente,conversaciones,catalogo,medios}` (22→25, 16, 27→29 y
+  10 requisitos; 12 + 8 + 4 escenarios nuevos), `MODELO_DATOS.md` ya estaba al día (T4), `docs/fases/README.md` (08b cerrada con
+  `[manual]`, 08c propuesta), `docs/migracion/inventario.md`, P43-P45 resueltas, `verify-report.md` y change archivado.

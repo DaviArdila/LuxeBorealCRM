@@ -59,10 +59,10 @@ describe('test/evals — evaluarAserciones', () => {
   });
 
   it('herramientasEsperadas exige la herramienta y, si se declaran, los argumentos parciales', () => {
-    const g = grabacion({ llamadas: [{ nombre: 'enviar_fotos', argumentos: { id_producto: 'X', modo: 'collage' } }] });
+    const g = grabacion({ llamadas: [{ nombre: 'enviar_fotos', argumentos: { id_producto: 'X', angulo: 'detalle' } }] });
 
-    expect(unica(g, { herramientasEsperadas: [{ nombre: 'enviar_fotos', argumentos: { modo: 'collage' } }] }).ok).toBe(true);
-    expect(unica(g, { herramientasEsperadas: [{ nombre: 'enviar_fotos', argumentos: { modo: 'individuales' } }] }).ok).toBe(false);
+    expect(unica(g, { herramientasEsperadas: [{ nombre: 'enviar_fotos', argumentos: { angulo: 'detalle' } }] }).ok).toBe(true);
+    expect(unica(g, { herramientasEsperadas: [{ nombre: 'enviar_fotos', argumentos: { angulo: 'frente' } }] }).ok).toBe(false);
     expect(unica(g, { herramientasEsperadas: [{ nombre: 'cotizar_envio' }] })).toMatchObject({ ok: false, critica: false });
   });
 

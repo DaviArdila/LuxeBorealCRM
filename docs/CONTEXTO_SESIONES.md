@@ -2,7 +2,7 @@
 
 **Lee esto primero si retomas el proyecto en una sesión nueva o en la nube.** Es un resumen con
 enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.md`](fases/README.md).
-Última actualización: 2026-10-01 (tras fusionar los PRs #33-#41).
+Última actualización: 2026-10-01 (Fase 08b implementada; PRs #43-#48).
 
 ## Qué es
 
@@ -18,12 +18,13 @@ enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.m
 |---|---|---|
 | 00a-08 | Cerradas y archivadas en `main`; CI de GitHub en verde en cada merge | La 08 fue PRs #25-#32 |
 | Fuera de fase | Proveedores LLM, semilla de catálogo, lectura de mensajes e infra local: **fusionados en `main`** | PRs #33-#41 |
-| 08b Comportamiento del agente | **Propuesta** (`idea`) | [`odd/tasks/comportamiento-del-bot.md`](../odd/tasks/comportamiento-del-bot.md) |
+| 08b Comportamiento y fotos | **Cerrada con pendientes `[manual]`** (2026-10-01) | `openspec/changes/archive/2026-10-01-fase-08b-comportamiento-agente/`; faltan la corrida real de evals y la prueba por WhatsApp |
+| 08c Prompts en base de datos | **Propuesta** (`idea`) | El `estilo` editable pasa a `parametro` con el `.md` de respaldo ([`odd/tasks/comportamiento-del-bot.md`](../odd/tasks/comportamiento-del-bot.md), slice 3) |
 | 09a Operación sin VPS | **Propuesta** | Kill switch con endpoint, Dockerfile, Sentry/logs, backups en local |
 | 09b Despliegue en VPS | **Propuesta**, bloqueada | Espera a que el dueño compre el VPS |
 | 10, 11, 12, 13, 14 | `idea` | 11-14 van después del corte (P8) |
 
-Tras la 08 quedan 08b, 09a, 09b, 10 (exige `judgment-day`), 11, 12, 13 y 14. Solo el dueño aprueba fases.
+Tras la 08b quedan 08c, 09a, 09b, 10 (exige `judgment-day`), 11, 12, 13 y 14. Solo el dueño aprueba fases.
 
 ## Ramas y PRs
 
@@ -41,6 +42,9 @@ ramas remotas con commits sin fusionar. El borrado de ramas remotas lo hace el d
 | Arreglo de lectura de mensajes | #40 | `989f3b8` |
 | Estado y plan del bot | #41 | `d97de48` |
 | Infra local de Chatwoot (healthcheck) | #38 | `200d6f7` |
+
+**Fase 08b** (stacked-to-main): #43 spec, #44 prompt (T1, T2), #45 SKU (T3), #46 ángulo y collage (T4, T5), #47 fotos por
+ángulo y pie de foto (T6, T7) y #48 evals, e2e y cierre (T8, T9). Compruébalo con `gh pr list --state all`.
 
 Para el estado vigente usa `gh pr list --state all` y `git branch -a`.
 
@@ -81,19 +85,22 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
 - Revocar con `/revoke` en BotFather el token del bot de Telegram (quedó expuesto en una conversación) y
   poner el nuevo en su `.env`.
 - Pasar la app de Meta a modo Activo para recibir mensajes reales.
-- Verificar el flujo de punta a punta por WhatsApp tras el arreglo de lectura (aún sin probar).
-- Responder P41, P43, P44, P45 y las de fases anteriores (P30, P32, P36: set dorado, evals, Telegram).
-- Aprobar la 08b y la partición de la 09; comprar el VPS antes de la 09b.
+- Verificar el flujo de punta a punta por WhatsApp (arreglo de lectura y Fase 08b: una foto, otro ángulo con pie,
+  sin emojis ni SKU).
+- Correr los evals reales con el prompt nuevo (`EVALS_MODO=real`, clave de OpenAI; EVL3) y elegir el modelo principal.
+- Responder P41 y las de fases anteriores (P30, P32, P36: set dorado, evals, Telegram).
+- Aprobar la Fase 08c (prompts en base de datos); comprar el VPS antes de la 09b.
 
 ## Decisiones ya tomadas
 
 | Tema | Decisión | Dónde |
 |---|---|---|
 | Proveedores LLM | OpenAI directo además de OpenRouter; claves en `.env` | [ADR-0019](adr/0019-proveedores-llm-configurables.md), P37-P40 |
-| Sin emojis, tono, estructura | Decidido 2026-10-01 | `odd/tasks/comportamiento-del-bot.md` |
-| SKU interno; el cliente ve nombre con atributos | Decidido 2026-10-01 | P42 |
-| Una foto por defecto, más bajo demanda con pie de foto | Decidido; enmienda R13/AGT9 | `odd/tasks/comportamiento-del-bot.md` |
-| Prompts editables desde la base de datos | Idea a estudiar (ADR y spec propios) | P45 |
+| Sin emojis, tono, estructura | **Hecho (08b):** `estilo.v2.md`, editable; las reglas no negociables van en `reglas.v2.md` | AGT13, AGT15 |
+| SKU interno; el cliente ve nombre con atributos | **Hecho (08b):** el modelo maneja el `id` | P42, AGT16 |
+| Una foto por defecto, otro ángulo bajo demanda con pie de foto | **Hecho (08b):** `foto.angulo`, `enviar_fotos`, pie del backend | R13, AGT9, AGT17, CAT14 |
+| Collage del importador | **Hecho (08b):** opcional y apagado (`CATALOGO_GENERAR_COLLAGE`), sin casillas vacías | P44, IMP15, MED8 |
+| Prompts editables desde la base de datos | Resuelta P45: clave/valor en `parametro` con respaldo `.md`; se construye en la **08c** | P45 |
 | Fases 11-14 después del corte | P8 | [`PREGUNTAS_ABIERTAS.md`](PREGUNTAS_ABIERTAS.md) |
 
 Preguntas pendientes: [`docs/PREGUNTAS_ABIERTAS.md`](PREGUNTAS_ABIERTAS.md).
@@ -123,8 +130,7 @@ Lista completa en la sección «Comandos» de `CLAUDE.md`.
 
 ## Próximos pasos, en orden
 
-1. El dueño verifica el flujo real por WhatsApp con `main` (los PRs ya están fusionados).
-2. Decidir el modelo principal con los evals (`gpt-5.6-luna` es el candidato).
-3. El dueño aprueba la 08b (y la partición de la 09) → se redacta el change de OpenSpec.
-4. Fase 08b por slices: prompt → fotos → prompts en base de datos.
-5. Fase 09a (sin VPS); comprar el VPS; Fase 09b; luego Fase 10 (corte).
+1. El dueño corre los evals reales con el prompt nuevo y verifica el flujo por WhatsApp (los `[manual]` de la 08b).
+2. Decidir el modelo principal con esos evals (`gpt-5.6-luna` es el candidato).
+3. Fase 08c (prompts en base de datos): redactar su change con ADR y spec para aprobación.
+4. Fase 09a (sin VPS); comprar el VPS; Fase 09b; luego Fase 10 (corte).
