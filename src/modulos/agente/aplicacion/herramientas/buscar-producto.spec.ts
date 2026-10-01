@@ -1,7 +1,7 @@
 import type { BuscarProductos } from '../../../catalogo/index.js';
 import { crearBuscarProducto } from './buscar-producto.js';
 
-// AGT8 (buscar_producto): hasta 5 resultados {id, sku, nombre, descripcion_corta}, sin dinero.
+// AGT8 (buscar_producto): hasta 5 resultados {id, nombre, descripcion_corta}, sin dinero ni SKU (AGT16).
 
 const CONTEXTO = { sesion: { conversacionId: 'c', version: 0 }, contactoId: 'k', efectosPrevios: [] };
 
@@ -20,10 +20,15 @@ describe('modulos/agente/aplicacion/herramientas — buscar_producto', () => {
 
     const resultado = await herramienta.ejecutar({ query: 'lampara' }, CONTEXTO);
 
-    expect(resultado.paraElModelo).toEqual([
-      { id: 'p1', sku: 'SKU-1', nombre: 'Lámpara', descripcion_corta: 'De mesa' },
-    ]);
+    expect(resultado.paraElModelo).toEqual([{ id: 'p1', nombre: 'Lámpara', descripcion_corta: 'De mesa' }]);
     expect(resultado.efectos).toEqual([]);
+  });
+
+  it('AGT16 — Los resultados de las herramientas no contienen SKU (buscar_producto)', async () => {
+    const resultado = await crearBuscarProducto(buscar).ejecutar({ query: 'lampara' }, CONTEXTO);
+
+    expect(JSON.stringify(resultado.paraElModelo)).not.toContain('SKU');
+    expect(crearBuscarProducto(buscar).definicion.descripcion).not.toMatch(/sku/i);
   });
 
   it('una búsqueda sin resultados devuelve una lista vacía', async () => {

@@ -4,11 +4,12 @@ import type { Herramienta } from '../../dominio/herramienta.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
 const esquema = z.object({
-  id_producto: z.string().min(1).describe('El id o el SKU del producto, tal como lo devolvió buscar_producto.'),
+  id_producto: z.string().min(1).describe('El id del producto, tal como lo devolvió buscar_producto.'),
 });
 
 /**
- * `obtener_ficha` (AGT8): envuelve `ObtenerFichaProducto`. El precio llega ya formateado por el backend
+ * `obtener_ficha` (AGT8): envuelve `ObtenerFichaProducto`; no devuelve el SKU (AGT16) aunque `id_producto`
+ * lo acepta como entrada (contexto inicial por enlace, AGT12). El precio llega ya formateado por el backend
  * (`precio_texto`, R2); un producto inexistente o inactivo vuelve como error explícito sin ningún dato
  * suyo (CAT3), para que el modelo no lo cite.
  */
@@ -23,7 +24,6 @@ export function crearObtenerFicha(ficha: ObtenerFichaProducto): Herramienta {
         return {
           paraElModelo: {
             id: resultado.id,
-            sku: resultado.sku,
             nombre: resultado.nombre,
             descripcion_larga: resultado.descripcionLarga,
             precio_texto: resultado.precioTexto,

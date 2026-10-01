@@ -53,11 +53,22 @@ describe('catalogo/dominio/producto', () => {
       const texto = armarCatalogoCompacto(productos);
 
       expect(texto.split('\n')).toEqual([
-        '- SKU-A: Anillo — anillo corto',
-        '- SKU-M: Mesa — mesa corta',
-        '- SKU-Z: Zapato — zapato corto',
+        '- 1: Anillo — anillo corto',
+        '- 2: Mesa — mesa corta',
+        '- 3: Zapato — zapato corto',
       ]);
       expect(texto).not.toMatch(/\$/);
+    });
+
+    it('CAT4 — Cada línea del catálogo compacto lleva el id del producto y no su SKU', () => {
+      const productos: ProductoResumen[] = [
+        { id: '0190f3a2-0000-7000-8000-000000000001', sku: 'SKU-GL001', nombre: 'Grifo alto', descripcionCorta: 'cromado' },
+      ];
+
+      const texto = armarCatalogoCompacto(productos);
+
+      expect(texto).toBe('- 0190f3a2-0000-7000-8000-000000000001: Grifo alto — cromado');
+      expect(texto).not.toContain('SKU');
     });
   });
 });

@@ -70,13 +70,13 @@ export function armarFicha(producto: Producto): FichaProducto {
 }
 
 /**
- * Texto compacto sku + nombre + descripción corta, una línea por producto, ordenado por nombre y
- * sin ningún valor de dinero (CAT4). Recibe únicamente resúmenes ya filtrados a productos activos:
+ * Texto compacto id + nombre + descripción corta, una línea por producto, ordenado por nombre y
+ * sin ningún valor de dinero (CAT4). El SKU es referencia interna y nunca entra (AGT16, Fase 08b). Recibe únicamente resúmenes ya filtrados a productos activos:
  * excluir los inactivos es responsabilidad del repositorio/aplicación (CAT1), no de esta función.
  */
 export function armarCatalogoCompacto(productos: readonly ProductoResumen[]): string {
   return [...productos]
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-    .map((p) => `- ${p.sku}: ${p.nombre} — ${p.descripcionCorta}`)
+    .map((p) => `- ${p.id}: ${p.nombre} — ${p.descripcionCorta}`)
     .join('\n');
 }

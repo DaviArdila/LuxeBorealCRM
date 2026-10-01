@@ -29,6 +29,6 @@ describe('modulos/catalogo/aplicacion/ObtenerCatalogoCompacto', () => {
     expect(listarProductosActivos.llamadas).toBe(1);
     // Mismo criterio de orden/formato que `armarCatalogoCompacto` (dominio/producto.ts, T3): por
     // nombre, sin ningún valor de dinero.
-    expect(texto).toBe('- SKU-1: Alfa — aaa\n- SKU-2: Zeta — zzz');
+    expect(texto).toBe('- p1: Alfa — aaa\n- p2: Zeta — zzz');
   });
 });
