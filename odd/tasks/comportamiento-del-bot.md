@@ -2,12 +2,11 @@
 
 - Objetivo: que el agente hable como quiere el dueño (sin emojis, con estructura, sin SKU), envíe una
   foto por defecto con pie de foto y tenga prompts editables sin desplegar.
-- Estado: **propuesta, nada aprobado.** Hoy es solo documentación. Cualquier cambio de comportamiento
-  exige antes un change de OpenSpec aprobado por el dueño (`openspec/changes/fase-08b-comportamiento-agente/`,
-  aún sin crear).
-- Alcance autorizado (2026-10-01): solo este documento, `docs/CONTEXTO_SESIONES.md`, la hoja de ruta y
-  las preguntas P42-P45. Ningún archivo de `src/`, `test/` ni `prisma/`. Push, PR y merge: decisión del
-  dueño.
+- Estado: **08b aprobada** (2026-10-01): el change vive en
+  `openspec/changes/fase-08b-comportamiento-agente/` y la slice 3 (prompts en base de datos) pasa a la
+  **Fase 08c**. Se implementa por tareas en `fase-08b-p*`.
+- Alcance autorizado (2026-10-01): redactar el change de la 08b, la hoja de ruta y este documento. Ningún
+  archivo de `src/`, `test/` ni `prisma/` hasta la aprobación.
 - TDD: **estricto** cuando se implemente; fuente `CLAUDE.md` del proyecto; runner Vitest (`npm test`,
   `npm run test:integracion`, `npm run evals`). Hoy no aplica (solo documentación).
 - Lugar en la hoja de ruta: fila 08b de `docs/fases/README.md` (estado `idea`), entre la 08 y la 09.
