@@ -88,6 +88,14 @@ export const esquemaConfiguracion = z
     CHATWOOT_ACCOUNT_ID: z.coerce.number().int().min(1).default(1),
     /** Vacío por defecto; obligatorio no vacío en production (`superRefine` abajo). */
     CHATWOOT_BOT_TOKEN: z.string().default(''),
+    /**
+     * Token de acceso de un usuario agente de Chatwoot, SOLO para leer mensajes: Chatwoot responde
+     * 401 a un token de Agent Bot en `GET .../messages`. Ausente o vacío ⇒ la lectura cae a
+     * `CHATWOOT_BOT_TOKEN` con un `warn` de arranque. No es obligatorio en production (pregunta P41).
+     * `optional` (no `default('')`) para no obligar a cada configuración literal de los tests a
+     * declararla, igual que `MINIO_URL_PUBLICA` y `CATALOGO_SHEET_ID`.
+     */
+    CHATWOOT_API_TOKEN_LECTURA: z.string().optional(),
     /** Vacío ⇒ la guardia de firma rechaza todo (D3, falla cerrada); obligatorio en production. */
     CHATWOOT_WEBHOOK_SECRETO: z.string().default(''),
     CHATWOOT_WEBHOOK_TOLERANCIA_S: z.coerce.number().int().min(30).max(3600).default(300),

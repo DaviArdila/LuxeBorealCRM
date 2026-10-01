@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Configuracion } from '../../../../plataforma/config/index.js';
 import { FalloCanal } from '../../puertos/adaptador-canal.js';
@@ -25,6 +26,7 @@ function configuracionDePrueba(parcial: Partial<Configuracion> = {}): Configurac
     CHATWOOT_URL: 'http://chatwoot.local',
     CHATWOOT_ACCOUNT_ID: 7,
     CHATWOOT_BOT_TOKEN: 'token-secreto-de-prueba',
+    CHATWOOT_API_TOKEN_LECTURA: '',
     CHATWOOT_WEBHOOK_SECRETO: '',
     CHATWOOT_WEBHOOK_TOLERANCIA_S: 300,
     CHATWOOT_HTTP_TIMEOUT_MS: 5000,
@@ -79,6 +81,73 @@ describe('ClienteChatwoot (unitario, D12)', () => {
     expect(url).toBe('http://chatwoot.local/api/v1/accounts/7/conversations/42/messages');
     expect(init.method).toBe('POST');
     expect((init.headers as Record<string, string>).api_access_token).toBe('token-secreto-de-prueba');
+  });
+
+  describe('credencial por operación (CAN6, token de lectura)', () => {
+    function tokenDe(fetchFalso: ReturnType<typeof vi.fn>): string {
+      const [, init] = fetchFalso.mock.calls[0] as [string, RequestInit];
+      return (init.headers as Record<string, string>).api_access_token ?? '';
+    }
+
+    it('la lectura usa CHATWOOT_API_TOKEN_LECTURA y las escrituras siguen con el token del bot', async () => {
+      const fetchFalso = vi.fn().mockResolvedValue(respuestaFalsa(200, { payload: [] }));
+      vi.stubGlobal('fetch', fetchFalso);
+      const cliente = new ClienteChatwoot(configuracionDePrueba({ CHATWOOT_API_TOKEN_LECTURA: 'token-de-usuario' }));
+
+      await cliente.get('42', 'messages', 'lectura');
+      await cliente.get('42', 'labels');
+      await cliente.post('42', 'messages', {});
+      await cliente.postMultipart('42', 'messages', new FormData());
+
+      const tokens = fetchFalso.mock.calls.map(
+        ([, init]) => (init as RequestInit & { headers: Record<string, string> }).headers.api_access_token,
+      );
+      expect(tokens).toEqual(['token-de-usuario', 'token-secreto-de-prueba', 'token-secreto-de-prueba', 'token-secreto-de-prueba']);
+    });
+
+    it('sin token de lectura, la lectura cae al token del bot (compatibilidad)', async () => {
+      const fetchFalso = vi.fn().mockResolvedValue(respuestaFalsa(200, { payload: [] }));
+      vi.stubGlobal('fetch', fetchFalso);
+      const cliente = new ClienteChatwoot(configuracionDePrueba({ CHATWOOT_API_TOKEN_LECTURA: '' }));
+
+      await cliente.get('42', 'messages', 'lectura');
+
+      expect(tokenDe(fetchFalso)).toBe('token-secreto-de-prueba');
+    });
+
+    it('sin token de lectura, avisa una sola vez al crearse y sin ningún valor de token', () => {
+      const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      try {
+        new ClienteChatwoot(configuracionDePrueba({ NODE_ENV: 'development', CHATWOOT_API_TOKEN_LECTURA: '' }));
+
+        expect(aviso).toHaveBeenCalledTimes(1);
+        const mensaje = String(aviso.mock.calls[0]?.[0]);
+        expect(mensaje).toContain('CHATWOOT_API_TOKEN_LECTURA');
+        expect(mensaje).toContain('401');
+        expect(mensaje).not.toContain('token-secreto-de-prueba');
+      } finally {
+        aviso.mockRestore();
+      }
+    });
+
+    it('con token de lectura no avisa, y un fallo de lectura no filtra ningún token', async () => {
+      const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respuestaFalsa(401, { error: 'x' })));
+      try {
+        const cliente = new ClienteChatwoot(
+          configuracionDePrueba({ NODE_ENV: 'development', CHATWOOT_API_TOKEN_LECTURA: 'token-de-usuario' }),
+        );
+
+        const fallo = (await cliente.get('42', 'messages', 'lectura').catch((error: unknown) => error)) as FalloCanal;
+
+        expect(aviso).not.toHaveBeenCalled();
+        expect(fallo.naturaleza).toBe('permanente');
+        expect(fallo.message).not.toContain('token-de-usuario');
+        expect(fallo.message).not.toContain('token-secreto-de-prueba');
+      } finally {
+        aviso.mockRestore();
+      }
+    });
   });
 
   it('un 429 clasifica como transitorio y traduce Retry-After a esperaSugeridaS', async () => {

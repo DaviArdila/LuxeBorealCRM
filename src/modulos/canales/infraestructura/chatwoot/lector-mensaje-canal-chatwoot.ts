@@ -21,7 +21,8 @@ export class LectorMensajeCanalChatwoot implements LectorMensajeCanal {
   async obtenerTexto(idConversacion: string, idMensaje: string): Promise<string | null> {
     let respuesta: unknown;
     try {
-      respuesta = await this.cliente.get(idConversacion, 'messages');
+      // Credencial de lectura: Chatwoot responde 401 a un token de Agent Bot en este endpoint.
+      respuesta = await this.cliente.get(idConversacion, 'messages', 'lectura');
     } catch {
       // `ClienteChatwoot.llamar` lanza `FalloCanal` ante timeout/red/HTTP 5xx/429; el contrato del
       // puerto (`LectorMensajeCanal`) promete "nunca lanza", así que una falla transitoria de
