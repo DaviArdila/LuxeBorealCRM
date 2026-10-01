@@ -5,11 +5,15 @@
  * por el guion del caso: sin red ni costo y con resultados idénticos en cada corrida (EVL1).
  */
 import { existsSync } from 'node:fs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { INestApplicationContext } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ProveedorEstilo } from '../../src/modulos/agente/index.js';
 import { GENERADOR_RESPUESTA, type GeneradorRespuesta } from '../../src/modulos/conversaciones/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
+import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { SimuladorOpenRouter } from '../soporte/simulador-openrouter.js';
 import { ejecutarCorridaReal, leerLlmRealDeEntorno } from './soporte/corrida-real.js';
@@ -19,6 +23,7 @@ import { GrabadorLlm } from './soporte/grabador-llm.js';
 import { leerModoEvals } from './soporte/modo-evals.js';
 import { ejecutarCaso } from './soporte/ejecutar-caso.js';
 import { armarResumen, type CasoResumen } from './soporte/resumen.js';
+import { aplicarEstiloCandidato, leerEstiloCandidato } from './soporte/estilo-candidato.js';
 import { sembrarBase } from './soporte/sembrar.js';
 import { calcularVeredicto } from './soporte/umbral.js';
 
@@ -96,6 +101,25 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
 
     expect(await resumenDeUnaCorrida()).toBe(await resumenDeUnaCorrida());
   });
+
+  it('EVL3 — Un estilo candidato se publica en la base de la corrida y el bot lo usa', async () => {
+    const carpeta = await mkdtemp(path.join(tmpdir(), 'evals-estilo-'));
+    const ruta = path.join(carpeta, 'candidato.md');
+    await writeFile(ruta, '# Candidato\n\nHabla en tono muy formal y sin emojis.\n', 'utf8');
+    try {
+      const aplicado = await aplicarEstiloCandidato(contexto, ruta);
+      const estilo = await contexto.get(ProveedorEstilo, { strict: false }).obtener();
+
+      expect(aplicado).not.toBeNull();
+      expect(estilo).toMatchObject({ origen: 'base' });
+      expect(estilo.texto).toContain('tono muy formal');
+    } finally {
+      await prisma.parametro.deleteMany({ where: { clave: { startsWith: 'prompt_estilo' } } });
+      // Invalida la copia en memoria del proveedor: el resto de la corrida vuelve al estilo del archivo.
+      await contexto.get<ClienteRedis>(REDIS_CLIENTE).incr('agente:prompt:version');
+      await rm(carpeta, { recursive: true, force: true });
+    }
+  });
 });
 
 describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo demanda, EVL3/EVL4)', () => {
@@ -105,6 +129,7 @@ describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo dema
       casos: [...sinteticos, ...dorado],
       apiKey: process.env['OPENROUTER_API_KEY'] ?? '',
       openaiApiKey: process.env['OPENAI_API_KEY'] ?? '',
+      estiloCandidato: leerEstiloCandidato(process.env),
       ...llmReal,
     });
     // EVL4: el resumen incluye el costo estimado y el modelo de cada caso.

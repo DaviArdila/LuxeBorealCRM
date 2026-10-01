@@ -15,10 +15,12 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { AppModule } from '../../src/app.module.js';
 import { configurarAplicacion, OPCIONES_APLICACION } from '../../src/configurar-aplicacion.js';
 import { formatearCop } from '../../src/compartido/dinero/index.js';
+import { PublicarEstilo, RestaurarEstilo } from '../../src/modulos/agente/index.js';
 import { ErrorPasarelaLlm, LLM_PORT } from '../../src/modulos/llm/index.js';
 import { ALMACENAMIENTO } from '../../src/modulos/medios/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
+import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { AlmacenamientoEnMemoria } from '../fakes/almacenamiento-en-memoria.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.js';
@@ -366,6 +368,58 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(contenido(unico)).toContain('no la tengo');
     expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ enviadas: 0, error: expect.stringContaining('frente') as unknown });
   }, 40_000);
+
+  /** Un turno de texto y el prompt de sistema con el que el modelo respondió (AGT13, AGT19). */
+  async function promptDeUnTurno(aplicacion: INestApplication, texto: string): Promise<string> {
+    llm.encolar({ respuesta: { texto: 'Claro, te ayudo.' } });
+    const { idConversacion } = await turno(aplicacion, texto);
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    return llm.solicitudes.at(-1)?.systemPrompt ?? '';
+  }
+
+  /** Deja la base y la versión compartida como estaban: el estilo editado no debe filtrarse a otros tests. */
+  async function limpiarEstilo(aplicacion: INestApplication): Promise<void> {
+    await aplicacion.get(PrismaService).parametro.deleteMany({ where: { clave: { startsWith: 'prompt_estilo' } } });
+    await aplicacion.get<ClienteRedis>(REDIS_CLIENTE).incr('agente:prompt:version');
+  }
+
+  it('AGT19 — Publicar un estilo hace que el siguiente mensaje lo use, sin reiniciar', async () => {
+    const aplicacion = await arrancar();
+    try {
+      const antes = await promptDeUnTurno(aplicacion, 'Hola, buenas');
+      const publicado = await aplicacion.get(PublicarEstilo, { strict: false }).ejecutar('ESTILO-E2E-PUBLICADO: habla muy formal y sin emojis.');
+      const despues = await promptDeUnTurno(aplicacion, 'Hola otra vez');
+
+      expect(publicado).toEqual({ publicado: true, version: 1 });
+      expect(antes).toContain('Cómo escribes');
+      expect(antes).not.toContain('ESTILO-E2E-PUBLICADO');
+      expect(despues).toContain('ESTILO-E2E-PUBLICADO');
+      expect(despues).not.toContain('Cómo escribes');
+      // AGT18: las reglas no negociables siguen intactas (R1, R2) con cualquier estilo.
+      expect(despues).toContain('Nunca calcules dinero');
+    } finally {
+      await limpiarEstilo(aplicacion);
+    }
+  }, 60_000);
+
+  it('AGT21 — Restaurar una versión devuelve ese estilo al siguiente mensaje', async () => {
+    const aplicacion = await arrancar();
+    try {
+      const publicar = aplicacion.get(PublicarEstilo, { strict: false });
+      await publicar.ejecutar('ESTILO-UNO: tono cercano.');
+      await publicar.ejecutar('ESTILO-DOS: tono muy serio.');
+      expect(await promptDeUnTurno(aplicacion, 'Hola')).toContain('ESTILO-DOS');
+
+      const restaurado = await aplicacion.get(RestaurarEstilo, { strict: false }).ejecutar(1);
+      const prompt = await promptDeUnTurno(aplicacion, 'Hola de nuevo');
+
+      expect(restaurado).toEqual({ publicado: true, version: 3 });
+      expect(prompt).toContain('ESTILO-UNO');
+      expect(prompt).not.toContain('ESTILO-DOS');
+    } finally {
+      await limpiarEstilo(aplicacion);
+    }
+  }, 60_000);
 
   it('AGT10 — Los datos que da el cliente quedan guardados en su contacto', async () => {
     const aplicacion = await arrancar();
