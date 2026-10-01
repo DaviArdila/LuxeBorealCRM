@@ -12,7 +12,7 @@ class AvisarLeadFalso {
 }
 
 function evento(motivo: EventoHandoff['motivo']): EventoHandoff {
-  return { conversacionId: 'conv-1', contactoId: 'c-1', motivo };
+  return { conversacionId: 'conv-1', contactoId: 'c-1', motivo, version: 0 };
 }
 
 describe('AvisoLeadEnHandoff (NTF3)', () => {

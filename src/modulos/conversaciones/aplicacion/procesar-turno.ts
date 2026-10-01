@@ -143,6 +143,7 @@ export class ProcesarTurno {
         conversacionId: fresca.id,
         contactoId: fresca.contactoId,
         motivo,
+        version: fresca.version,
       });
     }
     await this.buffer.vaciar(idConversacion);

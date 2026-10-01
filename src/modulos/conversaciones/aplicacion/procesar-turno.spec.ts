@@ -353,10 +353,14 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
   });
 
   describe('CNV8 — handoff pedido por el generador', () => {
-    function armar(respuesta: RespuestaTurno, estado: Conversacion['estado'] = 'bot') {
+    function armar(
+      respuesta: RespuestaTurno,
+      estado: Conversacion['estado'] = 'bot',
+      sobrescribir: Partial<Conversacion> = {},
+    ) {
       const orden: string[] = [];
       const buffer = new BufferTurnoFalso([mensaje('hola')]);
-      const repositorio = new RepositorioConversacionFalso(conversacionDePrueba(estado));
+      const repositorio = new RepositorioConversacionFalso(conversacionDePrueba(estado, sobrescribir));
       const generador = new GeneradorRespuestaFalso(respuesta);
       const salida = new EnviarRespuestaTurnoFalso();
       const transicionar = new TransicionarConversacionFalso();
@@ -434,7 +438,26 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       await procesar.ejecutar('conv-1', 'job-1');
 
       expect(orden).toEqual(['enviar', 'transicionar', 'observar']);
-      expect(eventos).toEqual([{ conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'lead-caliente' }]);
+      expect(eventos).toEqual([
+        { conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'lead-caliente', version: 0 },
+      ]);
+    });
+
+    it('NTF6 — El evento lleva la versión de la conversación antes de la transición, la de la sesión bot que termina', async () => {
+      const { procesar, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'tope-turnos' } }, 'bot', { version: 4 });
+
+      await procesar.ejecutar('conv-1', 'job-1');
+
+      expect(eventos).toEqual([{ conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'tope-turnos', version: 4 }]);
+    });
+
+    it('NTF6 — Si la transición falla no se avisa a nadie', async () => {
+      const { procesar, transicionar, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'tope-turnos' } });
+      transicionar.ejecutar = () => Promise.reject(new Error('conflicto de versión persistente'));
+
+      await expect(procesar.ejecutar('conv-1', 'job-1')).rejects.toThrow('conflicto de versión persistente');
+
+      expect(eventos).toEqual([]);
     });
 
     it('CNV11 — Si la conversación ya no está en bot la transición no ocurre y no se avisa a nadie', async () => {
