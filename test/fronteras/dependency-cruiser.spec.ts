@@ -355,7 +355,19 @@ describe('fronteras — dependency-cruiser (D11)', () => {
     ).toBe(true);
   });
 
-  it('regla 14 — ai-solo-en-infraestructura-llm (permitido): la infraestructura de llm importa el SDK y el provider', async () => {
+  it('LLM20 — La regla de fronteras rechaza un SDK de proveedor fuera de infraestructura', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'ai-solo-en-infraestructura-llm',
+        'src/modulos/pedidos/aplicacion/caso-uso-sdk-openai-llm.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 14 — ai-solo-en-infraestructura-llm (permitido): la infraestructura de llm importa el SDK y los providers', async () => {
     const violaciones = await violacionesDeFixtures();
 
     expect(

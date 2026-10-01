@@ -55,3 +55,13 @@ el respaldo nivel 2 (proveedor directo, opcional), la configuración por perfil 
 - `openspec/changes/fase-06-pasarela-llm/design.md`, Decision D2.
 - `openspec/changes/fase-06-pasarela-llm/specs/llm/spec.md`, escenarios LLM5 y LLM6.
 - [0002](0002-pasarela-llm.md) (matizada por este ADR en su fila "Respaldo nivel 1").
+
+## Nota posterior (2026-09-30)
+
+El [ADR-0019](0019-proveedores-llm-configurables.md) no cambia esta decisión: el gateway sigue
+iterando un modelo por llamada. Lo que cambia es que los modelos de un perfil pueden ser de
+**proveedores distintos** (`openai:<modelo>` y un id de OpenRouter en la misma lista), así que el
+fallback nivel 1 ahora también cruza proveedores. El circuito (ADR-0013) sigue siendo por id completo
+de modelo: una caída total de un proveedor gasta hasta el umbral de fallos por cada uno de sus modelos
+antes de abrirlos, acotado por el timeout y el presupuesto del turno; si molesta, un ADR aparte lo
+pasaría a circuito por proveedor.

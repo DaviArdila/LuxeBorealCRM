@@ -9,7 +9,7 @@
 - Review requerida: **RDD** (sin judgment-day: no es una fase de las de la regla 6). Native
   `gentle-ai review` por commit de unidad de trabajo cuando RDD esté activo.
 - Ramas: `proveedores-llm-pK-<tema>`, apiladas sobre la anterior.
-- ADR-0019 aceptado y P37-P39 resueltas (2026-09-30). P40 sigue abierta y bloquea solo T10.
+- ADR-0019 aceptado y P37-P40 resueltas (2026-09-30). P40: gasto de la corrida real autorizado, límite de 2 USD.
 
 ## Slices
 
@@ -20,7 +20,7 @@
 | 3 | `proveedores-llm-p3-openai` | T4 | Proveedor OpenAI directo | PR 2 |
 | 4 | `proveedores-llm-p4-enrutador-docs` | T8 + T9 | Enrutador cableado, fronteras, fallback y docs | PR 3 |
 
-T10 `[manual]` corre después del PR 4 y depende de P40. T5-T7 quedan pospuestas: si se retoman, serán
+T10 `[manual]` corre después del PR 4, cuando el usuario ponga su clave (P40 resuelta: límite de 2 USD). T5-T7 quedan pospuestas: si se retoman, serán
 slices nuevos después del PR 4.
 
 ## Tareas
@@ -47,18 +47,18 @@ slices nuevos después del PR 4.
   **verificar** el nombre del env del SDK y los metadatos de razonamiento (B7). Ruta prevista: delegada.
 - [~] **T7 — pospuesta (P37: solo OpenAI).** Proveedor `compatible` (LLM18, LLM22). Endpoint tipo OpenAI
   con `baseURL` y clave por entorno; URL obligatoria si se usa. Ruta prevista: delegada.
-- [ ] **T8 — Enrutador, cableado y fronteras (LLM15, LLM20, LLM21).** `adaptador-enrutador.ts`,
+- [x] **T8 — Enrutador, cableado y fronteras (LLM15, LLM20, LLM21).** `adaptador-enrutador.ts`,
   fábrica en `llm.module.ts` que instancia solo los proveedores usados (hoy OpenRouter y OpenAI; no
   depende de T5-T7, el registro admite sumar otros después), regla `@ai-sdk/` en
   `.dependency-cruiser.cjs`, `modo-evals.ts`. RED: prefijo enruta al proveedor correcto; caída de un
   proveedor deriva al siguiente; con todo caído, `proveedor-caido`; `npm run fronteras` rechaza un
   import fuera de infraestructura. Ruta: delegada.
-- [ ] **T9 — Documentación.** `.env.example` con ejemplos de perfil (sin claves ni precios inventados),
+- [x] **T9 — Documentación.** `.env.example` con ejemplos de perfil (sin claves ni precios inventados),
   nota en `CLAUDE.md` si cambia algún comando, y matiz de ADR-0002 y ADR-0014 (**obligatorio**: el
   ADR-0019 se aceptó el 2026-09-30); índice de ADR. Solo documentación: sin cambios de producción, sin riesgo de
   presupuesto. Ruta: inline.
 - [ ] **T10 — `[manual]` Corrida real de evals.** El usuario ejecuta `EVALS_MODO=real` con la clave de
-  OpenAI y el modelo elegido (P37; gasto por autorizar con P40, aún abierta); se registra el resultado y el gasto en
+  OpenAI y el modelo elegido (P37; gasto autorizado con P40: límite de 2 USD en la consola de OpenAI); se registra el resultado y el gasto en
   `verify-report.md`. Nada pasa a modelo principal sin esta corrida. No corre en CI. Ruta: manual.
 
 ## Cierre

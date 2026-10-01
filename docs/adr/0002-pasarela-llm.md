@@ -1,6 +1,6 @@
 # 0002. Pasarela de LLM: puerto propio + AI SDK sobre OpenRouter, GPT-5.6 Luna como principal
 
-- Estado: aceptada
+- Estado: aceptada (matizada por [0019](0019-proveedores-llm-configurables.md) en cuanto a OpenRouter)
 - Fecha: 2026-09-22
 
 ## Contexto
@@ -53,3 +53,13 @@ Comparación en `docs/analisis/02-investigacion.md` §3.
 - [GPT-5.6 Luna — OpenRouter](https://openrouter.ai/openai/gpt-5.6-luna)
 - [Model fallbacks — OpenRouter](https://openrouter.ai/docs/guides/routing/model-fallbacks)
 - [OpenRouter provider para el AI SDK](https://github.com/OpenRouterTeam/ai-sdk-provider)
+
+## Nota posterior (2026-09-30)
+
+El [ADR-0019](0019-proveedores-llm-configurables.md) matiza esta decisión sin revertirla: OpenRouter
+sigue siendo el proveedor **por defecto** (todo id de modelo sin prefijo va a él) y ya no es el único.
+Un id `<proveedor>:<modelo>` se conecta directo con la clave de ese proveedor (primero OpenAI). Siguen
+vigentes las tres capas, el modelo principal, la configuración por perfil y las prohibiciones; la
+prohibición de importar SDKs fuera de `modulos/llm/infraestructura` ahora cubre también `@ai-sdk/*`.
+El «Costo aceptado» de la comisión de OpenRouter deja de ser obligatorio para quien configure un
+proveedor directo. El texto de arriba se conserva como historia de la decisión.
