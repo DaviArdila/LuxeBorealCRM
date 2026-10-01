@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import { HORARIO, type Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
+import { ProveedorEstilo } from './proveedor-estilo.js';
 
 /** Instrucciones variables del turno (contexto inicial): siempre al final del prompt (AGT13). */
 export interface EntradaPrompt {
@@ -11,12 +12,15 @@ export interface EntradaPrompt {
 export interface PromptEnsamblado {
   readonly texto: string;
   readonly version: string;
+  /** Versión del estilo publicado (`0` = el archivo de respaldo): al log del turno, nunca su texto (AGT13). */
+  readonly versionEstilo: number;
 }
 
 /**
  * Arma el prompt de sistema en el orden que fija AGT13 (D8 de la Fase 07b, D1 de la 08b): reglas no
  * negociables, estilo, catálogo compacto sin precios y, al final, la parte variable del turno (horario e
- * instrucciones del contexto inicial). Las tres primeras piezas no dependen de la conversación, así que el prefijo es idéntico entre turnos
+ * instrucciones del contexto inicial). El estilo lo entrega `ProveedorEstilo` (base con respaldo en archivo,
+ * Fase 08c); `reglas` y `turno` siguen siendo archivos. Las tres primeras piezas no dependen de la conversación, así que el prefijo es idéntico entre turnos
  * mientras no cambie el catálogo y el proveedor puede cachearlo (ADR-0002). Las definiciones de las
  * herramientas viajan por el parámetro `tools` del LLM, no en este texto.
  */
@@ -24,11 +28,13 @@ export interface PromptEnsamblado {
 export class EnsamblarPrompt {
   constructor(
     private readonly cargador: CargadorPrompts,
+    private readonly proveedorEstilo: ProveedorEstilo,
     private readonly catalogoCompacto: ObtenerCatalogoCompacto,
     @Inject(HORARIO) private readonly horario: Horario,
   ) {}
 
   async ensamblar(entrada: EntradaPrompt): Promise<PromptEnsamblado> {
+    const estilo = await this.proveedorEstilo.obtener();
     const catalogo = await this.catalogoCompacto.ejecutar();
     const dentro = await this.horario.estaDentroDeHorario();
     const variable = this.cargador.turno
@@ -40,7 +46,7 @@ export class EnsamblarPrompt {
       )
       .replace('{{instrucciones}}', entrada.instruccionesTurno.join('\n'))
       .trim();
-    const texto = [this.cargador.reglas.trim(), this.cargador.estilo.trim(), `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
-    return { texto, version: this.cargador.version };
+    const texto = [this.cargador.reglas.trim(), estilo.texto.trim(), `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
+    return { texto, version: this.cargador.version, versionEstilo: estilo.version };
   }
 }

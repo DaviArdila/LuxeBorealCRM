@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
-import type { EstiloGuardado, RepositorioEstilo } from '../puertos/repositorio-estilo.js';
+import type { EstiloGuardado, RepositorioEstilo, VersionHistorial } from '../puertos/repositorio-estilo.js';
 import type { VersionEstilo } from '../puertos/version-estilo.js';
 import { ProveedorEstilo } from './proveedor-estilo.js';
 
@@ -14,6 +14,12 @@ class RepositorioEstiloFalso implements RepositorioEstilo {
   leerVigente(): Promise<EstiloGuardado | null> {
     this.lecturas += 1;
     return Promise.resolve(this.vigente);
+  }
+  leerHistorial(): Promise<readonly VersionHistorial[]> {
+    throw new Error('no usado por ProveedorEstilo');
+  }
+  publicar(): Promise<number> {
+    throw new Error('no usado por ProveedorEstilo');
   }
 }
 

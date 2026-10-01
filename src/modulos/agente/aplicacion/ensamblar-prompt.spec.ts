@@ -2,18 +2,22 @@ import type { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import type { Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
+import type { EstiloVigente, ProveedorEstilo } from './proveedor-estilo.js';
 
 // Escenarios AGT13 de `openspec/specs/agente/spec.md`; el estilo separado es de la Fase 08b
 // (`openspec/changes/fase-08b-comportamiento-agente/`).
 
 const CATALOGO = '- SKU-1: Anillo Aurora — Oro laminado\n- SKU-2: Collar Luna — Plata 925';
 
-function crear(catalogo = CATALOGO, dentroDeHorario = true) {
+function crear(catalogo = CATALOGO, dentroDeHorario = true, estilo?: Partial<EstiloVigente>) {
   const cargador = new CargadorPrompts();
   cargador.onModuleInit();
   const compacto = { ejecutar: () => Promise.resolve(catalogo) } as unknown as ObtenerCatalogoCompacto;
   const horario: Horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
-  return { ensamblar: new EnsamblarPrompt(cargador, compacto, horario), cargador };
+  // El proveedor entrega por defecto el estilo del archivo (origen `archivo`); cada test lo cambia si lo necesita.
+  const vigente: EstiloVigente = { texto: cargador.estilo, version: 0, origen: 'archivo', ...estilo };
+  const proveedor = { obtener: () => Promise.resolve(vigente) } as unknown as ProveedorEstilo;
+  return { ensamblar: new EnsamblarPrompt(cargador, proveedor, compacto, horario), cargador };
 }
 
 describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
@@ -40,12 +44,12 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   });
 
   it('AGT13 — El estilo va entre las reglas y el catálogo', async () => {
-    const { ensamblar, cargador } = crear();
+    const { ensamblar, cargador } = crear(CATALOGO, true, { texto: 'ESTILO-DE-LA-BASE: sé breve.', version: 3, origen: 'base' });
 
     const { texto } = await ensamblar.ensamblar({ instruccionesTurno: ['INSTRUCCION-DEL-TURNO'] });
 
     const posReglas = texto.indexOf(cargador.reglas.trim());
-    const posEstilo = texto.indexOf(cargador.estilo.trim());
+    const posEstilo = texto.indexOf('ESTILO-DE-LA-BASE');
     const posCatalogo = texto.indexOf(CATALOGO);
     const posTurno = texto.indexOf('INSTRUCCION-DEL-TURNO');
     expect(posReglas).toBe(0);
@@ -56,8 +60,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
   it('AGT13 — Cambiar el estilo no cambia las reglas', async () => {
     const base = crear();
-    const alterno = crear();
-    alterno.cargador.estilo = 'ESTILO-ALTERNO: usa un tono muy formal.';
+    const alterno = crear(CATALOGO, true, { texto: 'ESTILO-ALTERNO: usa un tono muy formal.', version: 2, origen: 'base' });
 
     const a = await base.ensamblar.ensamblar({ instruccionesTurno: [] });
     const b = await alterno.ensamblar.ensamblar({ instruccionesTurno: [] });
@@ -67,6 +70,24 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(b.texto.slice(0, finReglas)).toBe(a.texto.slice(0, finReglas));
     expect(b.texto).toContain('ESTILO-ALTERNO');
     expect(a.texto).not.toContain('ESTILO-ALTERNO');
+  });
+
+  it('AGT18 — Un estilo publicado reemplaza al del archivo en el prompt', async () => {
+    const { ensamblar, cargador } = crear(CATALOGO, true, { texto: 'ESTILO-PUBLICADO', version: 5, origen: 'base' });
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(texto).toContain('ESTILO-PUBLICADO');
+    expect(texto).not.toContain(cargador.estilo.trim());
+  });
+
+  it('AGT13 — La versión del estilo se entrega junto con la del prompt, sin su contenido', async () => {
+    const { ensamblar } = crear(CATALOGO, true, { texto: 'ESTILO-PUBLICADO', version: 5, origen: 'base' });
+
+    const resultado = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(resultado).toMatchObject({ version: 'v2', versionEstilo: 5 });
+    expect(JSON.stringify({ version: resultado.version, versionEstilo: resultado.versionEstilo })).not.toContain('ESTILO-PUBLICADO');
   });
 
   it('el estilo ordena sin emojis, viñetas y sin pegotes; las reglas no hablan de estilo', () => {
