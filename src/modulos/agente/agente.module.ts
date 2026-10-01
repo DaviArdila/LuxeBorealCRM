@@ -24,10 +24,7 @@ import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
-import { ProveedorEstilo } from './aplicacion/proveedor-estilo.js';
-import { PublicarEstilo } from './aplicacion/publicar-estilo.js';
-import { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
-import { ListarHistorialEstilo } from './aplicacion/listar-historial-estilo.js';
+import { EstiloModule } from './estilo.module.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
@@ -41,7 +38,6 @@ import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repos
 import { CapturaLeadDeLeads } from './infraestructura/leads/captura-lead-de-leads.js';
 import { EvaluadorLeadDeLeads } from './infraestructura/leads/evaluador-lead-de-leads.js';
 import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
-import { CargadorPrompts } from './infraestructura/prompts/cargador-prompts.js';
 import { HistorialRedis } from './infraestructura/redis/historial-redis.js';
 import { ContadoresSesionRedis } from './infraestructura/redis/contadores-sesion-redis.js';
 import { CONTADORES_SESION, type ContadoresSesion } from './puertos/contadores-sesion.js';
@@ -53,10 +49,6 @@ import {
   type RepositorioContactoAgente,
 } from './puertos/repositorio-contacto-agente.js';
 import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
-import { REPOSITORIO_ESTILO } from './puertos/repositorio-estilo.js';
-import { VERSION_ESTILO } from './puertos/version-estilo.js';
-import { RepositorioEstiloPrisma } from './infraestructura/prisma/repositorio-estilo-prisma.js';
-import { VersionEstiloRedis } from './infraestructura/redis/version-estilo-redis.js';
 
 /** R1: el LLM solo dispone de estas siete herramientas. */
 const TOTAL_HERRAMIENTAS = 7;
@@ -72,7 +64,8 @@ const TOTAL_HERRAMIENTAS = 7;
  * el texto de handoff (AGT3); el motor aplica el aviso de datos y registra el turno (AGT2, D8).
  */
 @Module({
-  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule],
+  // Fase 08c: `EstiloModule` aporta `CargadorPrompts` y el estilo editable (`ProveedorEstilo`).
+  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule, EstiloModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
@@ -86,14 +79,6 @@ const TOTAL_HERRAMIENTAS = 7;
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
     PoliticaPidePersona,
-    // Fase 08c: el estilo se lee de `parametro` con el archivo de respaldo y una copia con versión en Redis.
-    { provide: REPOSITORIO_ESTILO, useClass: RepositorioEstiloPrisma },
-    { provide: VERSION_ESTILO, useClass: VersionEstiloRedis },
-    ProveedorEstilo,
-    PublicarEstilo,
-    RestaurarEstilo,
-    ListarHistorialEstilo,
-    CargadorPrompts,
     EnsamblarPrompt,
     BucleHerramientas,
     ContenidoLlm,
