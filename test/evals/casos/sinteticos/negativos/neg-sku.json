@@ -1,0 +1,24 @@
+{
+  "id": "neg-sku",
+  "titulo": "AGT16 — negativo: sinSku falla si la respuesta cita un SKU",
+  "origen": "sintetico",
+  "esperaFallo": "sinSku",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Qué grifo me recomiendas?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Te recomiendo el SKU-GL001, un grifo de cuello alto."
+        }
+      ],
+      "aserciones": {
+        "sinSku": true
+      }
+    }
+  ]
+}

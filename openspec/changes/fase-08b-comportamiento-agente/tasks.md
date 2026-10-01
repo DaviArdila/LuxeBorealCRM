@@ -16,8 +16,8 @@ sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md` (
 
 ## Checklist
 
-- [ ] T1 — Prompt en dos archivos: `reglas` (no negociable) y `estilo` (editable), versión `v2`
-- [ ] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
+- [x] T1 — Prompt en dos archivos: `reglas` (no negociable) y `estilo` (editable), versión `v2`
+- [x] T2 — Estilo nuevo y aserciones de evals «sin emojis» y «sin SKU»
 - [ ] T3 — SKU interno: fuera del catálogo compacto y de los resultados de las herramientas
 - [ ] T4 — Esquema `foto.angulo` e importador (`fotos_angulos`) `[manual]` de esquema ya aprobado
 - [ ] T5 — Collage opcional (apagado por defecto) y sin casillas vacías
@@ -73,14 +73,19 @@ Chain strategy: stacked-to-main
 - **RED**: los dos escenarios nuevos de AGT13 fallan (no existe `estilo`).
 - **Archivos**: `src/modulos/agente/prompts/*`, `infraestructura/prompts/cargador-prompts.ts`,
   `aplicacion/ensamblar-prompt.ts` y sus specs.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: `vitest run ensamblar-prompt.spec.ts` → 4 fallos (orden con `estilo`,
+  reglas intactas, estilo sin emojis y versión `v2`); GREEN: 145/145 en `src/modulos/agente`. `reglas.v2.md`
+  conserva las herramientas tal cual (el bullet de `enviar_fotos` cambia en T6); el log de versión pasa a `v2`.
 
 ## T2 — Estilo nuevo y aserciones de evals
 
 - **Qué**: el estilo ordena sin emojis, viñetas o listas cortas cuando ayuden y sin pegotes; aserciones
   `sin_emojis` y `sin_sku` en `test/evals/` con casos negativos.
 - **RED**: la aserción nueva no existe; una respuesta con emoji o SKU debe fallar.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: `aserciones.spec.ts` → 6 fallos; GREEN: 42/42 en `test/evals` y
+  `npm run evals` (33 pasan, veredicto APROBADA). Ambas son **no críticas** (preferencia del dueño, no regla
+  invariante). Emoji = `Extended_Pictographic` sin ©®™; SKU = patrón `SKU-XXXX` del proyecto. Casos
+  negativos `neg-emojis` y `neg-sku`; `saludo.json` las usa en positivo.
 
 ## T3 — SKU interno
 

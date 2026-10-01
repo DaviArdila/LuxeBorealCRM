@@ -4,9 +4,25 @@
   "origen": "sintetico",
   "turnos": [
     {
-      "mensajes": [{ "tipoContenido": "texto", "texto": "Hola, buenas tardes" }],
-      "guion": [{ "texto": "¡Hola! Bienvenida a Luxe Boreal, ¿qué joya buscas hoy?" }],
-      "aserciones": { "handoff": "prohibido", "menciona": ["joya"] }
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Hola, buenas tardes"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "¡Hola! Bienvenida a Luxe Boreal, ¿qué joya buscas hoy?"
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "menciona": [
+          "joya"
+        ],
+        "sinEmojis": true,
+        "sinSku": true
+      }
     }
   ]
 }

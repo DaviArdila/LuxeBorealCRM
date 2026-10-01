@@ -12,6 +12,8 @@ export const NOMBRES_ASERCION = [
   'textoLiteral',
   'textoAusente',
   'menciona',
+  'sinEmojis',
+  'sinSku',
 ] as const;
 export type NombreAsercion = (typeof NOMBRES_ASERCION)[number];
 
@@ -49,6 +51,8 @@ const aserciones = z
     textoLiteral: z.array(z.object({ herramienta: z.string().min(1), campo: z.string().min(1) }).strict()).optional(),
     textoAusente: z.array(z.string().min(1)).optional(),
     menciona: z.array(z.string().min(1)).optional(),
+    sinEmojis: z.boolean().optional(),
+    sinSku: z.boolean().optional(),
   })
   .strict();
 export type AsercionesTurno = z.infer<typeof aserciones>;
