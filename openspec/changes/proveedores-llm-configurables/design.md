@@ -108,6 +108,8 @@ comprobar en la instalación real que `npm ls @ai-sdk/provider` queda deduplicad
 de `openai(...)` es aceptado por `generateText` (typecheck). Los demás paquetes no se
 verificaron (pospuestos, P37).
 
+**Verificado en T4 (2026-09-30):** `@ai-sdk/openai@4.0.81` instalado con versión exacta; `npm ls @ai-sdk/provider @ai-sdk/provider-utils` muestra una sola copia de `provider` 4.0.19 y de `provider-utils` 5.0.51 (`deduped`), y `generateText` acepta el modelo de `openai(...)` (typecheck). Uso y caché (D8): en el código del paquete, `inputTokens.total` incluye los tokens de caché y `cacheRead` sale de `input_tokens_details.cached_tokens` (Responses) o `prompt_tokens_details.cached_tokens` (Chat), así que `inputTokenDetails.cacheReadTokens` es la fuente y `tokensEntrada` resta esa caché. El modelo por defecto `openai(id)` usa la API Responses. Probado contra un servidor HTTP local; contra la API real queda **a confirmar en T10**, junto con el valor por defecto `store` de Responses (OpenAI guarda la respuesta) y el id directo del modelo.
+
 **Decisión de T1/T2 (frontera):** `plataforma/` no puede importar de `modulos/`
 (`plataforma-no-conoce-modulos`) y `dominio/` solo importa de `dominio/` y `compartido/`. Para que
 la lista de proveedores y la regla de prefijo se declaren una sola vez (D4), la lógica pura vive en

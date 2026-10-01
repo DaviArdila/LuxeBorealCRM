@@ -29,7 +29,7 @@ Detalle, slices y RED de cada una en `openspec/changes/proveedores-llm-configura
 - [x] T1 — Resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*`. Ruta: inline
 - [x] T2 — Configuración por proveedor. Ruta: delegada
 - [x] T3 — Adaptador genérico con OpenRouter como proveedor. Ruta: delegada
-- [ ] T4 — Proveedor `openai` (único directo inicial, P37). Ruta: delegada
+- [x] T4 — Proveedor `openai` (único directo inicial, P37). Ruta: delegada
 - [~] T5 — pospuesta (P37: solo OpenAI): proveedor `anthropic`
 - [~] T6 — pospuesta (P37: solo OpenAI): proveedor `google`
 - [~] T7 — pospuesta (P37: solo OpenAI): proveedor `compatible`
@@ -81,6 +81,15 @@ escritura); T1 y T9 son de un archivo y quedan inline.
   (escritor único). Checks: lint, typecheck, fronteras, contrato:deriva, commits, unit (978),
   integracion (249 de 250; el que falla, `prompts-build`, es `spawnSync npx ENOENT` de Windows, ajeno
   al cambio), e2e (33) y evals (31) en verde. Cableado transitorio en `llm.module.ts` hasta T8.
+
+- 2026-09-30: slice PR3 (rama `proveedores-llm-p3-openai`). T4: `proveedores/openai.ts` con
+  `@ai-sdk/openai` 4.0.81 exacta (`npm ls` sin duplicados de provider/provider-utils) y servidor HTTP
+  falso de la API Responses. RED (modulo inexistente en unit e integracion) -> GREEN (15 unit + 11
+  integracion nuevos); commit `6ca91d1`. Cache verificada en el codigo del paquete; contra la API
+  real, a confirmar en T10 (tambien `store` de Responses). Ruta: delegada (escritor unico).
+  Checks: lint, typecheck, fronteras, contrato:deriva, commits, unit (982), e2e (33), evals (31) en
+  verde; integracion 259/261: `prompts-build` (npx ENOENT en Windows) y `PER10` (timeout por carga,
+  pasa aislado).
 
 ## Próximo paso
 

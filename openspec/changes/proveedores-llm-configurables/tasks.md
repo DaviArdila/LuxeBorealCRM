@@ -37,7 +37,7 @@ slices nuevos después del PR 4.
   `proveedores/openrouter.ts` (mover, no reescribir) y `resolverModelo` en el gateway para el
   `proveedor` de la fila. RED: fila con `proveedor` real; el test de integración de OpenRouter sigue en
   verde sin cambios (no regresión). Ruta: delegada.
-- [ ] **T4 — Proveedor `openai` (LLM18, LLM22, LLM23), único proveedor directo inicial (P37).** Archivo de proveedor + dependencia con versión
+- [x] **T4 — Proveedor `openai` (LLM18, LLM22, LLM23), único proveedor directo inicial (P37).** Archivo de proveedor + dependencia con versión
   exacta. RED: normalización de uso con caché, 429/503 reintentables, 401 no reintentable, metadatos
   idénticos; servidor HTTP falso. **Verificar** contra la API el reporte de caché y el id directo del modelo
   (`gpt-5.6-luna` es el candidato; los precios los carga el usuario). Ruta: delegada.
