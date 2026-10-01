@@ -20,7 +20,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 - [x] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
 - [x] T5 — Comando `npm run prompt:estilo`
 - [x] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
-- [ ] T7 — Guía de operación y cierre documental
+- [x] T7 — Guía de operación y cierre documental
 
 ## Mapeo de escenarios por tarea (AGT13 5 + AGT18 3 + AGT19 3 + AGT20 3 + AGT21 3 + AGT22 3 = 20)
 
@@ -131,4 +131,8 @@ Chain strategy: stacked-to-main
 
 - `docs/operacion/estilo-del-bot.md` (cómo editar, volver atrás y qué no se puede tocar); deltas fusionados en
   `openspec/specs/agente`; `docs/fases/README.md`; P45 anotada; `verify-report.md`; archivar el change.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). Guía en `docs/operacion/estilo-del-bot.md` (qué se puede editar, flujo recomendado con
+  `EVALS_ESTILO`, comandos, motivos de rechazo, volver atrás, síntomas). Delta fusionado en `openspec/specs/agente`
+  (25→30 requisitos, 77→93 escenarios: AGT13 modificado con 1 escenario nuevo y AGT18-AGT22 con 15). `docs/fases/README.md`
+  (08c cerrada con `[manual]`), `docs/PREGUNTAS_ABIERTAS.md` (P45 con su destino), `CLAUDE.md` (comando, `EVALS_ESTILO` y
+  mapa de documentación), `docs/CONTEXTO_SESIONES.md`, `verify-report.md` y change archivado.

@@ -1,7 +1,7 @@
 # Proposal: Fase 08c — El estilo del agente se edita desde la base de datos
 
 - Change: `fase-08c-prompts-en-base-de-datos` · Fase de la hoja de ruta: **08c** · Rama: `fase-08c-prompts-en-base-de-datos`
-- Fecha: 2026-10-01 · Estado: **aprobada** por el dueño (2026-10-01; ADR-0020 aceptado; Q1 y Q2 resueltas)
+- Fecha: 2026-10-01 · Estado: **cerrada con pendiente `[manual]`** (2026-10-01; ver `verify-report.md`)
 - Depende de: **08b cerrada** (el estilo ya es un archivo aparte, `estilo.v2.md`).
 
 ## Intent

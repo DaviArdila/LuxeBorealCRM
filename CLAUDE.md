@@ -39,6 +39,7 @@ Qué pregunta responde cada documento:
 | Por qué se decidió algo | `docs/adr/` |
 | Contrato de la API y su documentación interactiva | `openapi/openapi.json` + Scalar en `/docs` |
 | Qué hacer si algo falla en producción | `docs/operacion/` (desde la Fase 09) |
+| Cómo cambiar el estilo del bot sin desplegar | `docs/operacion/estilo-del-bot.md` |
 | Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
 | Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
 | Investigación y evidencia detrás de una decisión | `docs/analisis/` |

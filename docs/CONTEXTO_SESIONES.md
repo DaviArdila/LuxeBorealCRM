@@ -2,7 +2,7 @@
 
 **Lee esto primero si retomas el proyecto en una sesión nueva o en la nube.** Es un resumen con
 enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.md`](fases/README.md).
-Última actualización: 2026-10-01 (Fase 08b implementada; PRs #43-#48).
+Última actualización: 2026-10-01 (Fases 08b y 08c implementadas; PRs #43-#53).
 
 ## Qué es
 
@@ -19,12 +19,12 @@ enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.m
 | 00a-08 | Cerradas y archivadas en `main`; CI de GitHub en verde en cada merge | La 08 fue PRs #25-#32 |
 | Fuera de fase | Proveedores LLM, semilla de catálogo, lectura de mensajes e infra local: **fusionados en `main`** | PRs #33-#41 |
 | 08b Comportamiento y fotos | **Cerrada con pendientes `[manual]`** (2026-10-01) | `openspec/changes/archive/2026-10-01-fase-08b-comportamiento-agente/`; faltan la corrida real de evals y la prueba por WhatsApp |
-| 08c Prompts en base de datos | **Propuesta** (`idea`) | El `estilo` editable pasa a `parametro` con el `.md` de respaldo ([`odd/tasks/comportamiento-del-bot.md`](../odd/tasks/comportamiento-del-bot.md), slice 3) |
+| 08c Estilo editable desde la base | **Cerrada con pendiente `[manual]`** (2026-10-01) | `openspec/changes/archive/2026-10-01-fase-08c-prompts-en-base-de-datos/`; guía en [`operacion/estilo-del-bot.md`](operacion/estilo-del-bot.md) |
 | 09a Operación sin VPS | **Propuesta** | Kill switch con endpoint, Dockerfile, Sentry/logs, backups en local |
 | 09b Despliegue en VPS | **Propuesta**, bloqueada | Espera a que el dueño compre el VPS |
 | 10, 11, 12, 13, 14 | `idea` | 11-14 van después del corte (P8) |
 
-Tras la 08b quedan 08c, 09a, 09b, 10 (exige `judgment-day`), 11, 12, 13 y 14. Solo el dueño aprueba fases.
+Tras la 08c quedan 09a, 09b, 10 (exige `judgment-day`), 11, 12, 13 y 14. Solo el dueño aprueba fases.
 
 ## Ramas y PRs
 
@@ -45,6 +45,8 @@ ramas remotas con commits sin fusionar. El borrado de ramas remotas lo hace el d
 
 **Fase 08b** (stacked-to-main): #43 spec, #44 prompt (T1, T2), #45 SKU (T3), #46 ángulo y collage (T4, T5), #47 fotos por
 ángulo y pie de foto (T6, T7) y #48 evals, e2e y cierre (T8, T9). Compruébalo con `gh pr list --state all`.
+
+**Fase 08c** (stacked-to-main): #49 spec y ADR-0020, #50 validación y lectura (T1, T2), #51 ensamblador, publicar e historial (T3, T4), #52 comando `prompt:estilo` (T5) y #53 evals, e2e y cierre (T6, T7).
 
 Para el estado vigente usa `gh pr list --state all` y `git branch -a`.
 
@@ -89,7 +91,8 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
   sin emojis ni SKU).
 - Correr los evals reales con el prompt nuevo (`EVALS_MODO=real`, clave de OpenAI; EVL3) y elegir el modelo principal.
 - Responder P41 y las de fases anteriores (P30, P32, P36: set dorado, evals, Telegram).
-- Aprobar la Fase 08c (prompts en base de datos); comprar el VPS antes de la 09b.
+- Probar un estilo candidato con los evals reales (`EVALS_ESTILO`) y publicarlo con `npm run prompt:estilo` si te gusta.
+- Aprobar la 09a (y comprar el VPS antes de la 09b).
 
 ## Decisiones ya tomadas
 
@@ -100,7 +103,7 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
 | SKU interno; el cliente ve nombre con atributos | **Hecho (08b):** el modelo maneja el `id` | P42, AGT16 |
 | Una foto por defecto, otro ángulo bajo demanda con pie de foto | **Hecho (08b):** `foto.angulo`, `enviar_fotos`, pie del backend | R13, AGT9, AGT17, CAT14 |
 | Collage del importador | **Hecho (08b):** opcional y apagado (`CATALOGO_GENERAR_COLLAGE`), sin casillas vacías | P44, IMP15, MED8 |
-| Prompts editables desde la base de datos | Resuelta P45: clave/valor en `parametro` con respaldo `.md`; se construye en la **08c** | P45 |
+| Prompts editables desde la base de datos | **Hecho (08c):** solo el estilo, en `parametro` con respaldo `.md`, copia con versión en Redis e historial de 10 | ADR-0020, P45 |
 | Fases 11-14 después del corte | P8 | [`PREGUNTAS_ABIERTAS.md`](PREGUNTAS_ABIERTAS.md) |
 
 Preguntas pendientes: [`docs/PREGUNTAS_ABIERTAS.md`](PREGUNTAS_ABIERTAS.md).
@@ -132,5 +135,4 @@ Lista completa en la sección «Comandos» de `CLAUDE.md`.
 
 1. El dueño corre los evals reales con el prompt nuevo y verifica el flujo por WhatsApp (los `[manual]` de la 08b).
 2. Decidir el modelo principal con esos evals (`gpt-5.6-luna` es el candidato).
-3. Fase 08c (prompts en base de datos): redactar su change con ADR y spec para aprobación.
-4. Fase 09a (sin VPS); comprar el VPS; Fase 09b; luego Fase 10 (corte).
+3. Fase 09a (sin VPS): redactar su change para aprobación; comprar el VPS; Fase 09b; luego Fase 10 (corte).
