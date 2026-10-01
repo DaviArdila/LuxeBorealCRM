@@ -25,6 +25,9 @@ import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
 import { BucleHerramientas } from './aplicacion/bucle-herramientas.js';
 import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
 import { ProveedorEstilo } from './aplicacion/proveedor-estilo.js';
+import { PublicarEstilo } from './aplicacion/publicar-estilo.js';
+import { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
+import { ListarHistorialEstilo } from './aplicacion/listar-historial-estilo.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
@@ -87,6 +90,9 @@ const TOTAL_HERRAMIENTAS = 7;
     { provide: REPOSITORIO_ESTILO, useClass: RepositorioEstiloPrisma },
     { provide: VERSION_ESTILO, useClass: VersionEstiloRedis },
     ProveedorEstilo,
+    PublicarEstilo,
+    RestaurarEstilo,
+    ListarHistorialEstilo,
     CargadorPrompts,
     EnsamblarPrompt,
     BucleHerramientas,

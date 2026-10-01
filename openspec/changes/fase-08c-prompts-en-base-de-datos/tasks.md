@@ -17,7 +17,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 - [x] T1 — `validarEstilo` (dominio) y ADR-0020 aceptada
 - [x] T2 — Lectura del estilo: `ProveedorEstilo` con respaldo, copia en memoria y versión en Redis
 - [x] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
-- [ ] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
+- [x] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
 - [ ] T5 — Comando `npm run prompt:estilo`
 - [ ] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
 - [ ] T7 — Guía de operación y cierre documental
@@ -92,7 +92,13 @@ Chain strategy: stacked-to-main
 - **Qué**: `PublicarEstilo`, `RestaurarEstilo`, `ListarHistorialEstilo`; `RepositorioEstiloPrisma` escribe las tres
   claves en una transacción y después sube la versión en Redis (AGT21).
 - **RED**: los tres escenarios de AGT21, contra Postgres y Redis reales.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: módulos inexistentes (`publicar-estilo.spec.ts` y `publicar-estilo.spec.ts` de integración);
+  GREEN: unit 174/174 en `agente`, integración 12/12 contra Postgres y Redis reales (AGT21 ×3, versión en Redis, 5
+  publicaciones simultáneas sin perder versiones, historial dañado). `RepositorioEstilo` gana `leerHistorial` y `publicar`
+  (transacción con candado consultivo `pg_advisory_xact_lock` por clave: la primera publicación no tiene filas que bloquear;
+  el driver no admite `$queryRaw` con `void`, por eso `$executeRaw`). `fecha` del historial = cuándo dejó de estar vigente.
+  `PublicarEstilo` valida, guarda y sube la versión (si Redis falla ya está publicado); `RestaurarEstilo` publica el texto
+  viejo como versión nueva y lo valida; `ListarHistorialEstilo` entrega vigente e historial. Registrados en `AgenteModule`.
 
 ## T5 — Comando `prompt:estilo`
 
