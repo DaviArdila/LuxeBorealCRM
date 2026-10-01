@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lead-en-memoria.js';
-import type { EncolarAviso, EntradaAviso } from '../../notificaciones/index.js';
+import type { ObtenerNombreProducto } from '../../catalogo/index.js';
+import type { EncolarAviso, EntradaAviso, ResolverEnlaceConversacion } from '../../notificaciones/index.js';
+import { ArmarDatosAvisoLead } from './armar-datos-aviso-lead.js';
 import { RecordarLeads } from './recordar-leads.js';
 
 // Escenarios LDS5 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/leads/spec.md`.
@@ -16,21 +18,30 @@ class EncolarAvisoFalso {
   }
 }
 
+const ENLACE = 'https://chat.ejemplo.co/app/accounts/1/conversations/2';
+
+function armarDatos(producto: string | null = null): ArmarDatosAvisoLead {
+  return new ArmarDatosAvisoLead(
+    { ejecutar: () => Promise.resolve(ENLACE) } as unknown as ResolverEnlaceConversacion,
+    { ejecutar: () => Promise.resolve(producto) } as unknown as ObtenerNombreProducto,
+  );
+}
+
 const AHORA = new Date('2026-09-30T15:00:00.000Z');
 const config = { LEADS_RECORDATORIO_MIN: 30 } as never;
 const MIN = 60_000;
 
-function armar() {
+function armar(producto: string | null = null) {
   const repositorio = new RepositorioLeadEnMemoria();
   const encolar = new EncolarAvisoFalso();
   const clock = new ClockFalso(AHORA);
-  const caso = new RecordarLeads(repositorio, encolar as unknown as EncolarAviso, clock, config);
+  const caso = new RecordarLeads(repositorio, encolar as unknown as EncolarAviso, armarDatos(producto), clock, config);
   /** Un lead derivado y avisado hace `minutos`. */
-  const derivadoHace = async (minutos: number, conversacionId = 'conv-1') => {
+  const derivadoHace = async (minutos: number, conversacionId = 'conv-1', productoId: string | null = null) => {
     const lead = await repositorio.crear({
       contactoId: `c-${conversacionId}`,
       conversacionId,
-      productoId: null,
+      productoId,
       temperatura: 'caliente',
       senales: ['pide_pagar'],
       resumen: 'Quiere pagar.',
@@ -51,7 +62,7 @@ describe('RecordarLeads (LDS5, D10)', () => {
 
     expect(encolar.avisos).toHaveLength(1);
     expect(encolar.avisos[0]).toMatchObject({ claveIdempotencia: `recordatorio:${lead.id}` });
-    expect(encolar.avisos[0]?.aviso).toMatchObject({ tipo: 'recordatorio', temperatura: 'caliente' });
+    expect(encolar.avisos[0]?.aviso).toMatchObject({ tipo: 'recordatorio', temperatura: 'caliente', enlace: ENLACE });
     expect(repositorio.leads[0]?.recordatorioEn).toEqual(AHORA);
   });
 
@@ -108,5 +119,20 @@ describe('RecordarLeads (LDS5, D10)', () => {
 
     expect(repositorio.leads.find((lead) => lead.id === fallido.id)?.recordatorioEn).toBeNull();
     expect(encolar.avisos).toHaveLength(1);
+  });
+});
+
+describe('RecordarLeads — 08d: producto y enlace (NTF5)', () => {
+  it('el recordatorio lleva el producto y el enlace a la conversación', async () => {
+    const { caso, encolar, derivadoHace } = armar('Grifo mezclador');
+    await derivadoHace(45, 'conv-1', 'p1');
+
+    await caso.ejecutar();
+
+    expect(encolar.avisos[0]?.aviso).toMatchObject({
+      tipo: 'recordatorio',
+      producto: 'Grifo mezclador',
+      enlace: ENLACE,
+    });
   });
 });

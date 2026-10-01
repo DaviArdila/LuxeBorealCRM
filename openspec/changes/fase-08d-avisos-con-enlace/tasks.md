@@ -15,8 +15,8 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
 
 ## Checklist
 
-- [x] T1 — Configuración nueva, `construirEnlaceConversacion` y `armarAviso` ampliado (motivo, producto, enlace)
-- [ ] T2 — Los avisos de lead y el recordatorio llevan enlace y producto (`ObtenerReferenciaConversacion`)
+- [x] T1 — Configuración nueva, `construirEnlaceConversacion` y `armarAviso` ampliado (motivo, producto, enlace) (`89e84fe`)
+- [x] T2 — Los avisos de lead y el recordatorio llevan enlace y producto (`ObtenerReferenciaConversacion`)
 - [ ] T3 — Aviso por todo traspaso sin lead (`AvisoTraspaso`, `EventoHandoff.version`, límite por instancia)
 - [ ] T4 — Marca de «cliente esperando» en `conversaciones` (Redis) y su limpieza
 - [ ] T5 — `BarridoEsperas`, `ObservadorEsperaCliente` y `AvisoEsperaCliente`

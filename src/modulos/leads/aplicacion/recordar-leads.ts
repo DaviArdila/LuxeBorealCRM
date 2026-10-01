@@ -4,6 +4,7 @@ import type { Configuracion } from '../../../plataforma/config/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
 import { EncolarAviso } from '../../notificaciones/index.js';
 import { REPOSITORIO_LEAD, type RepositorioLead } from '../puertos/repositorio-lead.js';
+import { ArmarDatosAvisoLead } from './armar-datos-aviso-lead.js';
 
 const MS_POR_MINUTO = 60_000;
 /** Tope por barrido: un aviso por lead, sin inundar el grupo si se acumularon muchos. */
@@ -23,6 +24,7 @@ export class RecordarLeads {
   constructor(
     @Inject(REPOSITORIO_LEAD) private readonly repositorio: RepositorioLead,
     private readonly encolarAviso: EncolarAviso,
+    private readonly armarDatos: ArmarDatosAvisoLead,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
   ) {}
@@ -39,13 +41,7 @@ export class RecordarLeads {
         await this.encolarAviso.ejecutar({
           claveIdempotencia: `recordatorio:${lead.id}`,
           grupo: `lead:${lead.id}`,
-          aviso: {
-            tipo: 'recordatorio',
-            temperatura: lead.temperatura,
-            senales: lead.senales,
-            resumen: lead.resumen,
-            capturadoFueraHorario: lead.capturadoFueraHorario,
-          },
+          aviso: await this.armarDatos.ejecutar(lead, 'recordatorio'),
         });
         encolados += 1;
       } catch (error) {

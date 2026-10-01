@@ -4,6 +4,7 @@
  */
 export { NotificacionesModule } from './notificaciones.module.js';
 export { EncolarAviso, type EntradaAviso } from './aplicacion/encolar-aviso.js';
+export { ResolverEnlaceConversacion } from './aplicacion/resolver-enlace-conversacion.js';
 export type {
   DatosAviso,
   DatosAvisoEspera,
