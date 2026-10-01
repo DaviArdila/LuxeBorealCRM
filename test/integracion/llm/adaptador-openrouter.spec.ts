@@ -1,8 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
-import { AdaptadorLlmError } from '../../../src/modulos/llm/puertos/adaptador-llm.js';
-import { AdaptadorOpenRouter } from '../../../src/modulos/llm/infraestructura/adaptador-openrouter.js';
+import { AdaptadorLlmError, type AdaptadorLlm } from '../../../src/modulos/llm/puertos/adaptador-llm.js';
+import { AdaptadorAiSdk } from '../../../src/modulos/llm/infraestructura/adaptador-ai-sdk.js';
+import { crearProveedorOpenRouter } from '../../../src/modulos/llm/infraestructura/proveedores/openrouter.js';
 import type {
   DefinicionHerramienta,
   SolicitudGeneracion,
@@ -45,17 +46,22 @@ async function errorAdaptador(promesa: Promise<unknown>): Promise<AdaptadorLlmEr
   throw new Error('El adaptador debía fallar con AdaptadorLlmError');
 }
 
-describe('llm — AdaptadorOpenRouter contra el simulador', () => {
+describe('llm — AdaptadorAiSdk con el proveedor OpenRouter contra el simulador', () => {
   let simulador: SimuladorOpenRouter;
-  let adaptador: AdaptadorOpenRouter;
+  let adaptador: AdaptadorLlm;
 
   beforeAll(async () => {
     Logger.overrideLogger(false);
     simulador = await SimuladorOpenRouter.iniciar();
-    adaptador = new AdaptadorOpenRouter({
+    const proveedor = crearProveedorOpenRouter({
       OPENROUTER_API_KEY: 'clave-de-prueba',
       OPENROUTER_BASE_URL: simulador.url,
     });
+    const generico = new AdaptadorAiSdk();
+    adaptador = {
+      generarConModelo: (modelo, solicitud, limite) =>
+        generico.generarConModelo(proveedor, modelo, solicitud, limite),
+    };
   });
 
   afterAll(async () => {

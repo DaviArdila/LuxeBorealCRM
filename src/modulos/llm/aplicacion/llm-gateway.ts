@@ -20,6 +20,7 @@ import type {
   SolicitudGeneracion,
   UsoReportado,
 } from '../dominio/tipos-llm.js';
+import { PROVEEDORES_LLM_REGISTRADOS, resolverModelo } from '../dominio/resolver-modelo.js';
 import { validarLlamadasHerramienta } from '../dominio/validar-llamadas.js';
 import {
   ADAPTADOR_LLM,
@@ -41,7 +42,6 @@ import { TEMPORIZADOR_LLM, type TemporizadorLlm } from '../puertos/temporizador-
 import { ULTIMO_RECURSO_LLM, type UltimoRecursoLlm } from '../puertos/ultimo-recurso-llm.js';
 import type { ConfigGatewayLlm } from './config-gateway-llm.js';
 
-const PROVEEDOR = 'openrouter';
 // Las filas de intentos que nunca llegaron al proveedor (D9) usan este pseudo-proveedor.
 const PROVEEDOR_PASARELA = 'pasarela';
 const MODELO_CIRCUITO_ABIERTO = 'circuito-abierto';
@@ -405,7 +405,8 @@ export class LlmGateway implements LlmPort {
       ? salida.resultado.uso
       : { tokensEntrada: 0, tokensSalida: 0, tokensCache: 0 };
     return {
-      proveedor: PROVEEDOR,
+      // LLM15: el proveedor real sale del prefijo del id configurado (sin prefijo, OpenRouter).
+      proveedor: resolverModelo(modelo, PROVEEDORES_LLM_REGISTRADOS).proveedor,
       modelo,
       tokensEntrada: uso.tokensEntrada,
       tokensSalida: uso.tokensSalida,
