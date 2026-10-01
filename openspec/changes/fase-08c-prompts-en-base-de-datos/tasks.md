@@ -18,7 +18,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`.
 - [x] T2 — Lectura del estilo: `ProveedorEstilo` con respaldo, copia en memoria y versión en Redis
 - [x] T3 — `EnsamblarPrompt` usa el proveedor y el log lleva la versión del estilo
 - [x] T4 — Publicar, historial y restaurar (casos de uso y repositorio transaccional)
-- [ ] T5 — Comando `npm run prompt:estilo`
+- [x] T5 — Comando `npm run prompt:estilo`
 - [ ] T6 — Evals y e2e del estilo leído de la base; corrida real `[manual]`
 - [ ] T7 — Guía de operación y cierre documental
 
@@ -105,7 +105,12 @@ Chain strategy: stacked-to-main
 - **Qué**: `scripts/prompt-estilo.ts` registrado en `scripts/cli.ts` y en `package.json`; acciones `ver`,
   `historial`, `publicar --archivo`, `restaurar --version`; sin texto del estilo en logs (AGT22).
 - **RED**: los tres escenarios de AGT22.
-- **Estado**: pendiente.
+- **Estado**: hecha (2026-10-01). RED: `prompt-estilo.spec.ts` sin el módulo; GREEN: unit 210/210 (`scripts` + `agente`) e integración
+  de punta a punta 5/5 con el contexto real de Nest, Postgres y Redis, más una corrida real por `npm run prompt:estilo`
+  (ver, publicar, historial, inválido con salida 1). **Desviación**: el comando necesitaba componer el estilo sin el LLM,
+  los leads ni las colas, así que `ProveedorEstilo`, los casos de uso y `CargadorPrompts` pasaron a un `EstiloModule`
+  que `AgenteModule` importa y el barril de `agente` exporta (sin rutas internas desde `scripts/`). `publicar`,
+  `restaurar` e `historial` nunca copian el texto; `ver` sí lo muestra en la terminal de quien lo pide.
 
 ## T6 — Evals y e2e
 

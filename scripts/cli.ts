@@ -9,6 +9,7 @@ import { validarFlujos, type ResultadoValidacionFlujos } from './validar-flujos.
 import { sembrarGeografia, type ResultadoSemillaGeografia } from './sembrar-geografia.js';
 import { importarCatalogo, type ResultadoImportarCatalogoCli } from './importar-catalogo.js';
 import { anonimizarConversacion, type ResultadoAnonimizar } from './evals/anonimizar.js';
+import { promptEstilo, type ResultadoPromptEstiloCli } from './prompt-estilo.js';
 
 /**
  * Único punto de entrada de línea de comandos para los scripts de esta fase (`package.json`:
@@ -34,7 +35,8 @@ type Resultado =
   | ResultadoValidacionFlujos
   | ResultadoSemillaGeografia
   | ResultadoImportarCatalogoCli
-  | ResultadoAnonimizar;
+  | ResultadoAnonimizar
+  | ResultadoPromptEstiloCli;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -81,11 +83,14 @@ async function main(): Promise<void> {
     case 'evals:anonimizar':
       imprimirResultado(await anonimizarConversacion(resto));
       return;
+    case 'prompt:estilo':
+      imprimirResultado(await promptEstilo(resto));
+      return;
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
           'auditoria, contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
-          'semilla:geografia, catalogo:importar, evals:anonimizar.\n',
+          'semilla:geografia, catalogo:importar, evals:anonimizar, prompt:estilo.\n',
       );
       process.exitCode = 1;
   }
