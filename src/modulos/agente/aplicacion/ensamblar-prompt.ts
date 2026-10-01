@@ -14,9 +14,9 @@ export interface PromptEnsamblado {
 }
 
 /**
- * Arma el prompt de sistema en el orden que fija AGT13 (D8 de la Fase 07b): reglas, catálogo compacto
- * sin precios y, al final, la parte variable del turno (horario e instrucciones del contexto inicial).
- * Las dos primeras piezas no dependen de la conversación, así que el prefijo es idéntico entre turnos
+ * Arma el prompt de sistema en el orden que fija AGT13 (D8 de la Fase 07b, D1 de la 08b): reglas no
+ * negociables, estilo, catálogo compacto sin precios y, al final, la parte variable del turno (horario e
+ * instrucciones del contexto inicial). Las tres primeras piezas no dependen de la conversación, así que el prefijo es idéntico entre turnos
  * mientras no cambie el catálogo y el proveedor puede cachearlo (ADR-0002). Las definiciones de las
  * herramientas viajan por el parámetro `tools` del LLM, no en este texto.
  */
@@ -40,7 +40,7 @@ export class EnsamblarPrompt {
       )
       .replace('{{instrucciones}}', entrada.instruccionesTurno.join('\n'))
       .trim();
-    const texto = [this.cargador.reglas.trim(), `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
+    const texto = [this.cargador.reglas.trim(), this.cargador.estilo.trim(), `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
     return { texto, version: this.cargador.version };
   }
 }
