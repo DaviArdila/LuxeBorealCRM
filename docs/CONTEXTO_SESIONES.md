@@ -2,7 +2,7 @@
 
 **Lee esto primero si retomas el proyecto en una sesión nueva o en la nube.** Es un resumen con
 enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.md`](fases/README.md).
-Última actualización: 2026-10-01.
+Última actualización: 2026-10-01 (tras fusionar los PRs #33-#41).
 
 ## Qué es
 
@@ -17,7 +17,7 @@ enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.m
 | Fase | Estado | Nota |
 |---|---|---|
 | 00a-08 | Cerradas y archivadas en `main`; CI de GitHub en verde en cada merge | La 08 fue PRs #25-#32 |
-| Fuera de fase | Ver «Ramas y PRs» abajo | Aún sin fusionar a `main` |
+| Fuera de fase | Proveedores LLM, semilla de catálogo, lectura de mensajes e infra local: **fusionados en `main`** | PRs #33-#41 |
 | 08b Comportamiento del agente | **Propuesta** (`idea`) | [`odd/tasks/comportamiento-del-bot.md`](../odd/tasks/comportamiento-del-bot.md) |
 | 09a Operación sin VPS | **Propuesta** | Kill switch con endpoint, Dockerfile, Sentry/logs, backups en local |
 | 09b Despliegue en VPS | **Propuesta**, bloqueada | Espera a que el dueño compre el VPS |
@@ -25,24 +25,24 @@ enlaces; el estado canónico de las fases vive **solo** en [`docs/fases/README.m
 
 Tras la 08 quedan 08b, 09a, 09b, 10 (exige `judgment-day`), 11, 12, 13 y 14. Solo el dueño aprueba fases.
 
-## Ramas y PRs (verificar siempre con `gh pr list`)
+## Ramas y PRs
 
-Esta tabla envejece: confirma el estado real con `gh pr list --state all` y `git branch -a`.
+Todo el trabajo fuera de fase está fusionado en `main` (merge commit, 2026-10-01). No quedan PRs abiertos ni
+ramas remotas con commits sin fusionar. El borrado de ramas remotas lo hace el dueño en la web.
 
-| Trabajo | Rama | PR | Apila sobre |
-|---|---|---|---|
-| Proveedores LLM: docs (ADR-0019) | `docs/proveedores-llm-directos` | #33 | `main` |
-| Proveedores LLM: resolver y config | `proveedores-llm-p1-resolucion-config` | #34 | #33 |
-| Proveedores LLM: adaptador genérico | `proveedores-llm-p2-adaptador-generico` | #35 | #34 |
-| Proveedores LLM: proveedor OpenAI | `proveedores-llm-p3-openai` | #36 | #35 |
-| Proveedores LLM: enrutador y docs | `proveedores-llm-p4-enrutador-docs` | #37 | #36 |
-| Semilla de catálogo de desarrollo | `chore/datos-semilla-catalogo` | #39 | #37 |
-| Arreglo de lectura de mensajes | `fix/canales-lectura-mensajes` | #40 | #39 |
-| Infra local de Chatwoot (healthcheck) | `chore/infra-chatwoot-local` | #38 | `main` (independiente) |
-| Estado y plan del bot (este documento) | `docs/estado-y-plan-comportamiento-bot` | #41 | #40 |
+| Trabajo | PR | Merge en `main` |
+|---|---|---|
+| Proveedores LLM: docs (ADR-0019) | #33 | `4198440` |
+| Proveedores LLM: resolver y config | #34 | `41cb3f3` |
+| Proveedores LLM: adaptador genérico | #35 | `37ebf39` |
+| Proveedores LLM: proveedor OpenAI | #36 | `4b48d31` |
+| Proveedores LLM: enrutador y docs | #37 | `24eaee4` |
+| Semilla de catálogo de desarrollo | #39 | `5bc414c` |
+| Arreglo de lectura de mensajes | #40 | `989f3b8` |
+| Estado y plan del bot | #41 | `d97de48` |
+| Infra local de Chatwoot (healthcheck) | #38 | `200d6f7` |
 
-Orden de fusión: #33 → #34 → #35 → #36 → #37 → #39 → #40 → #41; el #38 es independiente. Cada PR se reapunta a `main` al
-fusionar el anterior.
+Para el estado vigente usa `gh pr list --state all` y `git branch -a`.
 
 ## Trabajo fuera de fase (resumen)
 
@@ -77,7 +77,7 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
 
 ## Pendientes del dueño
 
-- Fusionar los PRs #33 a #41 (el borrado de ramas remotas lo hace él).
+- Borrar en la web las ramas remotas ya fusionadas.
 - Revocar con `/revoke` en BotFather el token del bot de Telegram (quedó expuesto en una conversación) y
   poner el nuevo en su `.env`.
 - Pasar la app de Meta a modo Activo para recibir mensajes reales.
@@ -123,7 +123,7 @@ Lista completa en la sección «Comandos» de `CLAUDE.md`.
 
 ## Próximos pasos, en orden
 
-1. El dueño fusiona los PRs y verifica el flujo real por WhatsApp.
+1. El dueño verifica el flujo real por WhatsApp con `main` (los PRs ya están fusionados).
 2. Decidir el modelo principal con los evals (`gpt-5.6-luna` es el candidato).
 3. El dueño aprueba la 08b (y la partición de la 09) → se redacta el change de OpenSpec.
 4. Fase 08b por slices: prompt → fotos → prompts en base de datos.
