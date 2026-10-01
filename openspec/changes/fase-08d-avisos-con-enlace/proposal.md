@@ -1,7 +1,7 @@
 # Proposal: Fase 08d — Avisos al asesor con enlace a la conversación
 
 - Change: `fase-08d-avisos-con-enlace` · Fase de la hoja de ruta: **08d** · Rama: `fase-08d-avisos-con-enlace`
-- Fecha: 2026-10-01 · Estado: **spec en revisión** (pendiente de aprobación del dueño)
+- Fecha: 2026-10-01 · Estado: **aprobada (2026-10-01)**, Q1-Q5 con la recomendación de cada una
 - Depende de: **08 cerrada** (leads, outbox, Telegram) y **08c cerrada**.
 
 ## Intent
@@ -72,10 +72,10 @@ Registradas en `docs/PREGUNTAS_ABIERTAS.md` como P46 (Q1) a P50 (Q5).
 
 | Id | Estado | Nota |
 |---|---|---|
-| **Q1** — ¿el aviso lleva el nombre del cliente? | **Abierta** (recomendado: no) | Con el enlace se abre Chatwoot y se ve; evita mandar datos personales a un servicio externo (R14) |
-| **Q2** — tiempo de espera del cliente | **Abierta** (recomendado: 10 min, `ESPERA_CLIENTE_MIN`) | Un solo aviso por espera; se reinicia cuando un asesor responde |
-| **Q3** — dónde se guarda la marca de «cliente esperando» | **Abierta** (recomendado: Redis, sin migración) | La alternativa es una columna nueva en `conversacion`: es decisión de esquema del dueño (ADR si se elige) |
-| **Q4** — URL pública de Chatwoot | **Abierta** | Hoy `CHATWOOT_URL` es `http://localhost:3001`; el celular necesita una URL accesible (VPS o túnel). Variable nueva `CHATWOOT_URL_PUBLICA` con respaldo en `CHATWOOT_URL` |
+| **Q1** — ¿el aviso lleva el nombre del cliente? | **Resuelta (2026-10-01, recomendación aceptada)** (recomendado: no) | Con el enlace se abre Chatwoot y se ve; evita mandar datos personales a un servicio externo (R14) |
+| **Q2** — tiempo de espera del cliente | **Resuelta (2026-10-01, recomendación aceptada)** (recomendado: 10 min, `ESPERA_CLIENTE_MIN`) | Un solo aviso por espera; se reinicia cuando un asesor responde |
+| **Q3** — dónde se guarda la marca de «cliente esperando» | **Resuelta (2026-10-01, recomendación aceptada)** (recomendado: Redis, sin migración) | La alternativa es una columna nueva en `conversacion`: es decisión de esquema del dueño (ADR si se elige) |
+| **Q4** — URL pública de Chatwoot | **Resuelta (2026-10-01, recomendación aceptada)** | Hoy `CHATWOOT_URL` es `http://localhost:3001`; el celular necesita una URL accesible (VPS o túnel). Variable nueva `CHATWOOT_URL_PUBLICA` con respaldo en `CHATWOOT_URL` |
 | **Q5** — el enlace usa el id o el `display_id` de Chatwoot | **`[manual]`** | En la base local coinciden (2); se confirma con el Chatwoot real antes de cerrar |
 
 ## Risks
