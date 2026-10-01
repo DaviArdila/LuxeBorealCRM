@@ -25,6 +25,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0017](0017-historial-agente-redis-por-sesion.md) | Historial corto del agente en Redis, por sesión bot | aceptada | 2026-09-29 |
 | [0018](0018-presupuesto-de-tiempo-del-turno.md) | Presupuesto de tiempo del turno del agente: plazo compartido y tope de vueltas | aceptada | 2026-09-29 |
 | [0019](0019-proveedores-llm-configurables.md) | Proveedores de LLM configurables: conexión directa (primero OpenAI) además de OpenRouter (matiza 0002 y 0014) | aceptada | 2026-09-30 |
+| [0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md) | El estilo del agente se edita desde la base de datos, con el archivo como respaldo | aceptada | 2026-10-01 |
 
 ## Plantilla
 
