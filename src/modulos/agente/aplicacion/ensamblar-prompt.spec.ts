@@ -3,7 +3,8 @@ import type { Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
 
-// Escenarios AGT13 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT13 de `openspec/specs/agente/spec.md`; el estilo separado es de la Fase 08b
+// (`openspec/changes/fase-08b-comportamiento-agente/`).
 
 const CATALOGO = '- SKU-1: Anillo Aurora — Oro laminado\n- SKU-2: Collar Luna — Plata 925';
 
@@ -38,17 +39,44 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(texto).not.toMatch(/\bCOP\b/);
   });
 
-  it('el orden es reglas, catálogo compacto y al final las instrucciones del turno con el horario', async () => {
+  it('AGT13 — El estilo va entre las reglas y el catálogo', async () => {
     const { ensamblar, cargador } = crear();
 
     const { texto } = await ensamblar.ensamblar({ instruccionesTurno: ['INSTRUCCION-DEL-TURNO'] });
 
     const posReglas = texto.indexOf(cargador.reglas.trim());
+    const posEstilo = texto.indexOf(cargador.estilo.trim());
     const posCatalogo = texto.indexOf(CATALOGO);
     const posTurno = texto.indexOf('INSTRUCCION-DEL-TURNO');
     expect(posReglas).toBe(0);
-    expect(posCatalogo).toBeGreaterThan(posReglas);
+    expect(posEstilo).toBeGreaterThan(posReglas);
+    expect(posCatalogo).toBeGreaterThan(posEstilo);
     expect(posTurno).toBeGreaterThan(posCatalogo);
+  });
+
+  it('AGT13 — Cambiar el estilo no cambia las reglas', async () => {
+    const base = crear();
+    const alterno = crear();
+    alterno.cargador.estilo = 'ESTILO-ALTERNO: usa un tono muy formal.';
+
+    const a = await base.ensamblar.ensamblar({ instruccionesTurno: [] });
+    const b = await alterno.ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    const finReglas = a.texto.indexOf(base.cargador.reglas.trim()) + base.cargador.reglas.trim().length;
+    expect(finReglas).toBeGreaterThan(100);
+    expect(b.texto.slice(0, finReglas)).toBe(a.texto.slice(0, finReglas));
+    expect(b.texto).toContain('ESTILO-ALTERNO');
+    expect(a.texto).not.toContain('ESTILO-ALTERNO');
+  });
+
+  it('el estilo ordena sin emojis, viñetas y sin pegotes; las reglas no hablan de estilo', () => {
+    const { cargador } = crear();
+
+    expect(cargador.estilo).toMatch(/sin emojis/i);
+    expect(cargador.estilo).toMatch(/viñetas/i);
+    expect(cargador.estilo).toMatch(/pegot/i);
+    expect(cargador.reglas).not.toMatch(/emoji/i);
+    expect(cargador.reglas).not.toMatch(/Sin listas largas/i);
   });
 
   it('la parte variable dice si es horario de atención', async () => {
@@ -62,7 +90,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   it('entrega la versión del prompt para el log del turno', async () => {
     const { ensamblar } = crear();
 
-    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v1' });
+    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v2' });
   });
 
   it('las reglas incluyen la política de citar políticas, el recargo sin porcentaje y la ubicación', () => {

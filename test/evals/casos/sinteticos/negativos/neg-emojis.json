@@ -1,0 +1,24 @@
+{
+  "id": "neg-emojis",
+  "titulo": "AGT15 — negativo: sinEmojis falla si la respuesta lleva un emoji",
+  "origen": "sintetico",
+  "esperaFallo": "sinEmojis",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Hola"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "¡Hola! Bienvenida a Luxe Boreal 😊 ¿en qué te ayudo?"
+        }
+      ],
+      "aserciones": {
+        "sinEmojis": true
+      }
+    }
+  ]
+}

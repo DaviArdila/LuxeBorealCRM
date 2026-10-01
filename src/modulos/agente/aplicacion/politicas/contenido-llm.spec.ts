@@ -262,7 +262,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v1' });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v2' });
   });
 
   it('AGT12 — el contexto inicial llega al modelo en el prompt del turno', async () => {

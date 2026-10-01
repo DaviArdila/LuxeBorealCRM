@@ -84,9 +84,40 @@ describe('test/evals — evaluarAserciones', () => {
     expect(unica(grabacion({ textoFinal: 'Hola' }), { menciona: ['ciudad'] }).ok).toBe(false);
   });
 
-  it('devuelve un resultado por aserción declarada, en un orden fijo', () => {
-    const r = evaluarAserciones(grabacion(), { menciona: ['hola'], handoff: 'prohibido', dineroConRastro: true });
+  it('AGT15 — Una respuesta con emoji falla la aserción', () => {
+    const r = unica(grabacion({ textoFinal: 'Hola, bienvenida 😊 ¿en qué te ayudo?' }), { sinEmojis: true });
 
-    expect(r.map((x) => x.nombre)).toEqual(['dineroConRastro', 'handoff', 'menciona']);
+    expect(r).toMatchObject({ nombre: 'sinEmojis', ok: false, critica: false });
+    expect(r.detalle).not.toContain('bienvenida');
+  });
+
+  it('AGT15 — Una respuesta sin emojis pasa la aserción', () => {
+    const texto = '¡Hola! Cuesta $389.000 (IVA incl.) © 2026 ™ — 50 % más rápido: sí.';
+
+    expect(unica(grabacion({ textoFinal: texto }), { sinEmojis: true }).ok).toBe(true);
+  });
+
+  it('sinEmojis detecta pictogramas con y sin selector de variación', () => {
+    expect(unica(grabacion({ textoFinal: 'Gracias ❤️' }), { sinEmojis: true }).ok).toBe(false);
+    expect(unica(grabacion({ textoFinal: 'Listo ✅' }), { sinEmojis: true }).ok).toBe(false);
+    expect(unica(grabacion({ textoFinal: 'Un grifo 🚿' }), { sinEmojis: true }).ok).toBe(false);
+  });
+
+  it('AGT16 — Una respuesta con SKU falla la aserción', () => {
+    const r = unica(grabacion({ textoFinal: 'Es el SKU-GL001, un grifo alto.' }), { sinSku: true });
+
+    expect(r).toMatchObject({ nombre: 'sinSku', ok: false, critica: false });
+    expect(r.detalle).not.toContain('GL001');
+  });
+
+  it('una respuesta sin SKU pasa; la palabra sola no cuenta como SKU', () => {
+    expect(unica(grabacion({ textoFinal: 'Es el grifo alto de cuello largo.' }), { sinSku: true }).ok).toBe(true);
+    expect(unica(grabacion({ textoFinal: 'No te muestro el sku interno.' }), { sinSku: true }).ok).toBe(true);
+  });
+
+  it('devuelve un resultado por aserción declarada, en un orden fijo', () => {
+    const r = evaluarAserciones(grabacion(), { sinSku: true, menciona: ['hola'], handoff: 'prohibido', dineroConRastro: true, sinEmojis: true });
+
+    expect(r.map((x) => x.nombre)).toEqual(['dineroConRastro', 'handoff', 'menciona', 'sinEmojis', 'sinSku']);
   });
 });
