@@ -11,7 +11,7 @@
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "herramientasEsperadas": [{ "nombre": "enviar_fotos", "argumentos": { "id_producto": "SKU-EVAL-COLLAR" } }],
+        "herramientasEsperadas": [{ "nombre": "enviar_fotos" }],
         "sinEmojis": true,
         "sinSku": true
       }

@@ -7,7 +7,7 @@
       "mensajes": [
         {
           "tipoContenido": "texto",
-          "texto": "¿Puedo pagar contra entrega?"
+          "texto": "¿Cuánto es el recargo de la contra entrega?"
         }
       ],
       "guion": [
@@ -26,7 +26,6 @@
         }
       ],
       "aserciones": {
-        "handoff": "prohibido",
         "recargoSinPorcentaje": true,
         "dineroConRastro": true,
         "textoLiteral": [

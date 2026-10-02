@@ -7,7 +7,7 @@
       "mensajes": [
         {
           "tipoContenido": "texto",
-          "texto": "¿Me lo muestras de lado?"
+          "texto": "¿Me muestras el collar Luna de lado?"
         }
       ],
       "guion": [
@@ -32,7 +32,6 @@
           {
             "nombre": "enviar_fotos",
             "argumentos": {
-              "id_producto": "SKU-EVAL-COLLAR",
               "angulo": "lateral_izquierdo"
             }
           }
