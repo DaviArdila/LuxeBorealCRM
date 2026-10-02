@@ -342,6 +342,29 @@ describe('modulos/agente/aplicacion — BucleHerramientas, guarda de dinero sin 
     expect(JSON.stringify(aviso.mock.calls)).not.toMatch(/999|888/);
   });
 
+  it('una cifra que dijo el cliente en el turno y el bot repite no dispara reintento ni traspaso', async () => {
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { llm, bucle } = crear([ficha]);
+    llm.encolar(texto('Con tus $300.000 podemos buscar algo'));
+
+    const resultado = await bucle.ejecutar({ ...ENTRADA, textosDelCliente: ['Mi presupuesto es $300.000'] });
+
+    expect(resultado).toMatchObject({ tipo: 'texto', texto: 'Con tus $300.000 podemos buscar algo' });
+    expect(llm.solicitudes).toHaveLength(1);
+    expect(aviso).not.toHaveBeenCalled();
+  });
+
+  it('una cifra inventada sigue bloqueando aunque el cliente haya dicho otra', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { llm, bucle } = crear([ficha]);
+    llm.encolar(texto('Cuesta $999.000'), texto('Mejor $888.000'));
+
+    const resultado = await bucle.ejecutar({ ...ENTRADA, textosDelCliente: ['tengo 200 mil pesos'] });
+
+    expect(resultado).toEqual({ tipo: 'derivar', motivo: 'dinero-sin-rastro' });
+    expect(llm.solicitudes).toHaveLength(2);
+  });
+
   it('el reintento respeta el plazo del turno: con el plazo agotado no llama al LLM', async () => {
     const clock = new ClockFalso(INICIO);
     const solicitudes: SolicitudGeneracion[] = [];

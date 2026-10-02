@@ -133,6 +133,18 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     });
   });
 
+  it('R1 — la cifra que escribió el cliente en la ráfaga del turno no cuenta como dinero sin rastro', async () => {
+    const { llm, politica } = crear();
+    llm.encolar({ respuesta: { texto: 'Con tus $300.000 buscamos algo bonito' } });
+
+    const decision = await politica.evaluar(
+      turno(HOLA, { idMensaje: 'm2', tipoContenido: 'texto', texto: 'mi presupuesto es $300.000' }),
+    );
+
+    expect(decision).toMatchObject({ decision: 'responder', cuentaTurno: true });
+    expect(llm.solicitudes).toHaveLength(1);
+  });
+
   describe('R2 — mensaje_sin_cobertura sale literal desde el backend', () => {
     const MENSAJE = 'Por ahora no llegamos a ese destino.';
     const sinCobertura = () =>
