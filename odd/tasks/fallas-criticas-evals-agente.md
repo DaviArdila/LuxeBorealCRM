@@ -67,7 +67,7 @@ Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por ri
 | T6 | delegada | 26bc1ae | no aplica (RDD no consultado) |
 | T4 | delegada | a21bd8a | idem |
 | T5 | delegada | a689986 | idem |
-| T4b | delegada | cc59afb | pendiente |
+| T4b | delegada | 674d35d | pendiente |
 | T7 | pendiente | — | — |
 
 Siguiente paso: T7 (corrida real y specs delta). Para T7: la guarda de T4 reintenta una vez y traspasa como `fallo-llm`; el negativo de evals `neg-dinero` se reemplazó por dos casos guionados (la guarda lo hace inalcanzable por el agente; la detección sigue en `aserciones.spec`), así que la spec de `agente` (EVL2, «cada aserción con un negativo») y la de AGT/R1 deben reflejarlo; T5 añade el mensaje literal al final del texto; el prompt pasó a `v3` (reglas, estilo y turno). Nota: `test:integracion` falla en `prompts-build.spec.ts` por `spawnSync npx ENOENT` (entorno Windows), ajena a estos cambios.
