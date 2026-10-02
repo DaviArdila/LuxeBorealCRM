@@ -13,9 +13,9 @@ describe('Prompts versionados en el build (T8, D8)', () => {
     execFileSync('npx', ['nest', 'build'], { cwd: RAIZ, stdio: 'pipe' });
 
     const carpeta = path.join(RAIZ, 'dist', 'modulos', 'agente', 'prompts');
-    expect(existsSync(path.join(carpeta, 'reglas.v2.md'))).toBe(true);
-    expect(existsSync(path.join(carpeta, 'estilo.v2.md'))).toBe(true);
-    expect(existsSync(path.join(carpeta, 'turno.v2.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'reglas.v3.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'estilo.v3.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'turno.v3.md'))).toBe(true);
 
     const modulo = (await import(
       pathToFileURL(path.join(RAIZ, 'dist', 'modulos', 'agente', 'infraestructura', 'prompts', 'cargador-prompts.js')).href
@@ -26,6 +26,6 @@ describe('Prompts versionados en el build (T8, D8)', () => {
     expect(cargador.reglas.length).toBeGreaterThan(100);
     expect(cargador.estilo.length).toBeGreaterThan(100);
     expect(cargador.turno).toContain('{{instrucciones}}');
-    expect(cargador.version).toBe('v2');
+    expect(cargador.version).toBe('v3');
   }, 180_000);
 });

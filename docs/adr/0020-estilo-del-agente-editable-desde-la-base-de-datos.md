@@ -10,7 +10,7 @@
 ## Resumen
 
 El **estilo** del agente (tono, longitud, formato, emojis, cómo ofrecer fotos) ya es un archivo aparte,
-`estilo.v2.md` (Fase 08b). Se propone leerlo de `parametro` (`prompt_estilo`) con ese archivo como
+`estilo.v3.md` (Fase 08b). Se propone leerlo de `parametro` (`prompt_estilo`) con ese archivo como
 respaldo, guardar las últimas 10 versiones para volver atrás, validar el texto antes de publicarlo y
 mantener una **copia en memoria** que se invalida al publicar, para que el bot no consulte la base en
 cada mensaje. Las **reglas no negociables** (dinero, datos, herramientas) y la plantilla del turno **no**
@@ -18,7 +18,7 @@ son editables: siguen en código.
 
 ## Contexto
 
-- `CargadorPrompts` lee `reglas`, `estilo` y `turno` de `agente/prompts/*.v2.md` una sola vez al arrancar.
+- `CargadorPrompts` lee `reglas`, `estilo` y `turno` de `agente/prompts/*.v3.md` una sola vez al arrancar.
   Cambiar el estilo exige editar un archivo y desplegar.
 - El agente ya lee textos del negocio de `parametro` con respaldo en código
   (`RepositorioParametroAgentePrisma`, AGT3, R15): una clave ausente, en blanco o que no es texto cae al respaldo.
@@ -50,7 +50,7 @@ son editables: siguen en código.
 
 1. **Qué es editable**: solo el estilo, la clave `prompt_estilo` de `parametro` (texto). `reglas` y `turno` siguen en
    archivos de código, versionados, no editables en ejecución.
-2. **Respaldo**: si `prompt_estilo` no existe, está en blanco o no es texto, rige `estilo.v2.md`. El bot nunca
+2. **Respaldo**: si `prompt_estilo` no existe, está en blanco o no es texto, rige `estilo.v3.md`. El bot nunca
    se queda sin estilo.
 3. **Validación antes de publicar** (función pura): no vacío, hasta 4.000 caracteres, sin valores en pesos
    (R1, R2), sin patrón de SKU (AGT16), sin marcadores de plantilla `{{...}}`. Un texto inválido se rechaza con el motivo.
