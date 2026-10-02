@@ -13,7 +13,7 @@ const esquema = z.object({
 /**
  * `cotizar_envio` (AGT8): envuelve `CotizarEnvio`. Devuelve el rango aproximado y los días ya
  * formateados, si hay contra entrega y, en ese caso, la política literal (CAT10); sin cobertura
- * devuelve el mensaje del negocio y deja el efecto `sin-cobertura`, que después desactiva la
+ * devuelve el mensaje del negocio y deja el efecto `sin-cobertura` con ese mensaje (`ContenidoLlm` lo hace salir literal, R2), que después desactiva la
  * evaluación del lead (AGT11).
  */
 export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
@@ -25,7 +25,7 @@ export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
       const cotizacion = await cotizar.ejecutar(id_producto, { departamento, ciudad: ciudad ?? null });
       return {
         paraElModelo: cotizacionParaElModelo(cotizacion),
-        efectos: cotizacion.cobertura ? [] : [{ tipo: 'sin-cobertura' }],
+        efectos: cotizacion.cobertura ? [] : [{ tipo: 'sin-cobertura', mensaje: cotizacion.mensaje }],
       };
     },
   );

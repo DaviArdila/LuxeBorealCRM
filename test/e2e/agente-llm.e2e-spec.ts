@@ -307,6 +307,28 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(JSON.stringify(cotizacion?.resultado)).not.toMatch(/\d\s?%/);
   }, 40_000);
 
+  it('R2 — Un destino sin cobertura recibe el mensaje del negocio literal aunque el modelo lo parafrasee', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const producto = await sembrarProducto(prisma);
+    await prisma.tarifaEstimada.deleteMany();
+    await prisma.parametro.upsert({
+      where: { clave: 'mensaje_fuera_cobertura' },
+      create: { clave: 'mensaje_fuera_cobertura', valor: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' },
+      update: { valor: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' },
+    });
+    llm.encolar(
+      llamada('c1', 'cotizar_envio', { id_producto: producto.sku, departamento: 'Vaupés', ciudad: 'Mitú' }),
+      { respuesta: { texto: 'Lo siento, por ahora no enviamos a Mitú. ¿Tienes otra dirección?' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el envío a Mitú?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.');
+    expect(contenido(unico)).toContain('¿Tienes otra dirección?');
+  }, 40_000);
+
   it('AGT9 — Sin ángulo llega una sola foto a Chatwoot como imagen después del texto, con su pie de foto', async () => {
     const aplicacion = await arrancar();
     const producto = await sembrarProducto(aplicacion.get(PrismaService), true);

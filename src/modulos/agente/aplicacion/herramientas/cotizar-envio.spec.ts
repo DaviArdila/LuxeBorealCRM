@@ -65,7 +65,7 @@ describe('modulos/agente/aplicacion/herramientas — cotizar_envio', () => {
     );
 
     expect(resultado.paraElModelo).toEqual({ cobertura: false, mensaje_sin_cobertura: 'Por ahora no llegamos allí.' });
-    expect(resultado.efectos).toEqual([{ tipo: 'sin-cobertura' }]);
+    expect(resultado.efectos).toEqual([{ tipo: 'sin-cobertura', mensaje: 'Por ahora no llegamos allí.' }]);
   });
 
   it('su definición exige id_producto y departamento; la ciudad es opcional', () => {

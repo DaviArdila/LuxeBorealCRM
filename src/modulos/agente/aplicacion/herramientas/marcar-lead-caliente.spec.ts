@@ -65,7 +65,7 @@ describe('modulos/agente/aplicacion/herramientas — marcar_lead_caliente', () =
       },
     };
 
-    const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto([{ tipo: 'sin-cobertura' }]));
+    const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto([{ tipo: 'sin-cobertura', mensaje: 'm' }]));
 
     expect(resultado.paraElModelo).toMatchObject({ derivado: false });
     expect(consultas).toBe(0);

@@ -133,6 +133,47 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     });
   });
 
+  describe('R2 — mensaje_sin_cobertura sale literal desde el backend', () => {
+    const MENSAJE = 'Por ahora no llegamos a ese destino.';
+    const sinCobertura = () =>
+      herramienta('cotizar_envio', { cobertura: false, mensaje_sin_cobertura: MENSAJE }, [
+        { tipo: 'sin-cobertura', mensaje: MENSAJE },
+      ]);
+    const cotiza = { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'cotizar_envio', argumentos: {} }] } };
+
+    it('si el modelo no lo cita, el mensaje se añade literal tras su texto y entra al historial así', async () => {
+      const { llm, politica, historial } = crear([sinCobertura()]);
+      llm.encolar(cotiza, { respuesta: { texto: 'No enviamos allá, ¿tienes otra dirección?' } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      const texto = `No enviamos allá, ¿tienes otra dirección?\n\n${MENSAJE}`;
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ paso: 'llm-1', texto }] }, cuentaTurno: true });
+      expect(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).toEqual([
+        { rol: 'usuario', texto: 'hola' },
+        { rol: 'asistente', texto },
+      ]);
+    });
+
+    it('si el modelo ya lo cita literal, no se duplica', async () => {
+      const { llm, politica } = crear([sinCobertura()]);
+      llm.encolar(cotiza, { respuesta: { texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` }] } });
+    });
+
+    it('sin el efecto sin-cobertura el texto del modelo no se toca', async () => {
+      const { llm, politica } = crear([herramienta('cotizar_envio', { cobertura: true })]);
+      llm.encolar(cotiza, { respuesta: { texto: 'Llega en 2 días.' } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: 'Llega en 2 días.' }] } });
+    });
+  });
+
   it('AGT6 — El techo de gasto deriva con su propio texto', async () => {
     const { llm, politica } = crear();
     llm.encolar({ error: new ErrorPasarelaLlm('techo-alcanzado') });

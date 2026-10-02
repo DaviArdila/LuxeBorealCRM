@@ -104,7 +104,7 @@ describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
   it('las herramientas ven los efectos que dejaron las anteriores del mismo turno', async () => {
     const vistos: (readonly EfectoTurno[])[] = [];
     const { llm, bucle } = crear([
-      herramienta('primera', () => Promise.resolve({ paraElModelo: {}, efectos: [{ tipo: 'sin-cobertura' }] })),
+      herramienta('primera', () => Promise.resolve({ paraElModelo: {}, efectos: [{ tipo: 'sin-cobertura', mensaje: 'm' }] })),
       herramienta('segunda', (_args, ctx) => {
         vistos.push(ctx.efectosPrevios);
         return Promise.resolve({ paraElModelo: {}, efectos: [] });
@@ -114,7 +114,7 @@ describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
 
     await bucle.ejecutar(ENTRADA);
 
-    expect(vistos).toEqual([[{ tipo: 'sin-cobertura' }]]);
+    expect(vistos).toEqual([[{ tipo: 'sin-cobertura', mensaje: 'm' }]]);
   });
 
   it('AGT4 — Una herramienta desconocida vuelve al modelo como error', async () => {

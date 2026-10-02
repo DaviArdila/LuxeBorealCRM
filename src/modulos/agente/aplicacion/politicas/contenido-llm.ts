@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
 import { ObtenerMensajeTechoGasto } from '../../../llm/index.js';
+import { asegurarMensajeLiteral } from '../../dominio/asegurar-mensaje-literal.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { textoDelCliente } from '../../dominio/texto-del-cliente.js';
@@ -97,11 +98,16 @@ export class ContenidoLlm implements PoliticaTurno {
       };
     }
     // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
-    await this.historial.agregar(sesion, textoCliente, resultado.texto);
+    // R2: el mensaje de «sin cobertura» sale literal desde el backend, no parafraseado por el modelo.
+    const texto = resultado.efectos.reduce(
+      (acumulado, efecto) => (efecto.tipo === 'sin-cobertura' ? asegurarMensajeLiteral(acumulado, efecto.mensaje) : acumulado),
+      resultado.texto,
+    );
+    await this.historial.agregar(sesion, textoCliente, texto);
     return {
       decision: 'responder',
       respuesta: {
-        pasos: [{ paso: 'llm-1', tipo: 'texto', texto: resultado.texto }, ...pasosDeImagen(resultado.efectos)],
+        pasos: [{ paso: 'llm-1', tipo: 'texto', texto }, ...pasosDeImagen(resultado.efectos)],
       },
       cuentaTurno: true,
     };
