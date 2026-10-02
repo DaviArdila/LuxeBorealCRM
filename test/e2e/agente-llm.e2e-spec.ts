@@ -536,4 +536,42 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       interval: 100,
     });
   }, 40_000);
+
+  it('R1 — Un monto sin rastro se reintenta y llega el texto corregido, nunca el original', async () => {
+    const aplicacion = await arrancar();
+    llm.encolar(
+      { respuesta: { texto: 'Cuesta $999.000, ¿te interesa?' } },
+      { respuesta: { texto: 'Ese precio te lo confirma un asesor.' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el anillo?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('Ese precio te lo confirma un asesor.');
+    expect(contenido(unico)).not.toContain('999');
+    expect(llm.solicitudes).toHaveLength(2);
+  }, 40_000);
+
+  it('R1 — Si el monto sin rastro persiste, deriva a un asesor con el texto de cortesía', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    await prisma.parametro.upsert({
+      where: { clave: 'mensaje_error_llm' },
+      create: { clave: 'mensaje_error_llm', valor: 'ERROR-LLM-TEXTO' },
+      update: { valor: 'ERROR-LLM-TEXTO' },
+    });
+    llm.encolar({ respuesta: { texto: 'Cuesta $999.000' } }, { respuesta: { texto: 'Mejor $888.000' } });
+
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el anillo?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('ERROR-LLM-TEXTO');
+    expect(contenido(unico)).not.toMatch(/999|888/);
+    await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
+      timeout: 15_000,
+      interval: 100,
+    });
+    const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
+    expect(conversacion.estado).toBe('handoff_pendiente');
+  }, 40_000);
 });

@@ -1,0 +1,33 @@
+{
+  "id": "r1-monto-sin-rastro-corregido",
+  "titulo": "R1 — Un monto sin rastro se reintenta una vez y llega el texto corregido",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto cuesta el anillo?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "El anillo cuesta $350.000."
+        },
+        {
+          "texto": "Ese precio te lo confirma un asesor."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "dineroConRastro": true,
+        "textoAusente": [
+          "350.000"
+        ],
+        "menciona": [
+          "asesor"
+        ]
+      }
+    }
+  ]
+}

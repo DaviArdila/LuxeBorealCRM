@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
 import { ObtenerMensajeTechoGasto } from '../../../llm/index.js';
-import { contarMontosSinRastro } from '../../dominio/auditar-dinero.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { textoDelCliente } from '../../dominio/texto-del-cliente.js';
@@ -99,11 +98,6 @@ export class ContenidoLlm implements PoliticaTurno {
     }
     // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
     await this.historial.agregar(sesion, textoCliente, resultado.texto);
-    const montos = contarMontosSinRastro(resultado.texto, resultado.resultadosParaElModelo);
-    if (montos > 0) {
-      // D9, R14: solo la cantidad; el texto de la respuesta nunca va al log.
-      this.logger.warn({ evento: 'agente.dinero-sin-rastro', montos });
-    }
     return {
       decision: 'responder',
       respuesta: {
@@ -118,6 +112,8 @@ export class ContenidoLlm implements PoliticaTurno {
       motivo === 'techo-gasto'
         ? await this.mensajeTechoGasto.ejecutar()
         : await this.parametros.obtenerTexto('mensaje_error_llm');
-    return { pasos: [{ paso: 'handoff-1', tipo: 'texto', texto }], handoff: { motivo } };
+    // `dinero-sin-rastro` es un motivo interno del agente: ante `conversaciones` y el aviso al asesor es un
+    // fallo del bot (`fallo-llm`), el mismo traspaso con el texto de cortesía.
+    return { pasos: [{ paso: 'handoff-1', tipo: 'texto', texto }], handoff: { motivo: motivo === 'dinero-sin-rastro' ? 'fallo-llm' : motivo } };
   }
 }

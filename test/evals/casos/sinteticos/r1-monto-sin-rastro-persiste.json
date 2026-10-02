@@ -1,0 +1,31 @@
+{
+  "id": "r1-monto-sin-rastro-persiste",
+  "titulo": "R1 — Si el monto sin rastro persiste tras el reintento, se traspasa a un asesor",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cuánto cuesta el anillo?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "El anillo cuesta $350.000."
+        },
+        {
+          "texto": "Mejor dicho, $400.000."
+        }
+      ],
+      "aserciones": {
+        "handoff": "esperado",
+        "dineroConRastro": true,
+        "textoAusente": [
+          "350.000",
+          "400.000"
+        ]
+      }
+    }
+  ]
+}

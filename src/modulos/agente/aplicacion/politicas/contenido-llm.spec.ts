@@ -186,14 +186,35 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     expect(llm.solicitudes).toHaveLength(0);
   });
 
-  it('D9 — Un monto sin rastro en las herramientas se avisa en el log sin copiar el texto (R14)', async () => {
+  it('D9 — Un monto sin rastro se reintenta una vez y sale el texto corregido (R14: el log solo lleva la cantidad)', async () => {
     const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const { llm, politica } = crear();
-    llm.encolar({ respuesta: { texto: 'Cuesta $999.000, ¿te interesa?' } });
+    llm.encolar({ respuesta: { texto: 'Cuesta $999.000, ¿te interesa?' } }, { respuesta: { texto: 'Lo confirmo con un asesor.' } });
 
-    await politica.evaluar(turno(HOLA));
+    const decision = await politica.evaluar(turno(HOLA));
 
-    expect(aviso).toHaveBeenCalledWith({ evento: 'agente.dinero-sin-rastro', montos: 1 });
+    expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: 'Lo confirmo con un asesor.' }] }, cuentaTurno: true });
+    expect(aviso).toHaveBeenCalledWith({ evento: 'agente.dinero-sin-rastro', montos: 1, reintento: true });
+    expect(JSON.stringify(aviso.mock.calls)).not.toContain('999');
+  });
+
+  it('R1 — Si el monto sin rastro persiste, hay traspaso con el texto de cortesía y el texto original nunca sale', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { llm, politica, historial } = crear();
+    llm.encolar({ respuesta: { texto: 'Cuesta $999.000' } }, { respuesta: { texto: 'Mejor $888.000' } });
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toEqual({
+      decision: 'responder',
+      respuesta: {
+        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: 'TEXTO-ERROR' }],
+        handoff: { motivo: 'fallo-llm' },
+      },
+      cuentaTurno: false,
+    });
+    expect(JSON.stringify(decision)).not.toMatch(/999|888/);
+    expect(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).toEqual([]);
   });
 
   it('AGT7 — El LLM recibe solo los últimos turnos de la sesión', async () => {
