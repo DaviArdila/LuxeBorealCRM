@@ -17,9 +17,6 @@
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "menciona": [
-          "joya"
-        ],
         "sinEmojis": true,
         "sinSku": true
       }

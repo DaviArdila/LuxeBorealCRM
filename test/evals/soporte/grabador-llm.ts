@@ -8,7 +8,8 @@ import type { GrabacionTurno } from './aserciones.js';
  * casos sin recomponer la aplicación.
  */
 export class GrabadorLlm implements LlmPort {
-  private solicitudes: SolicitudGeneracion[] = [];
+  private llamadasAlLlmContadas = 0;
+  private resultadosDelTurno: ResultadoGrabado[] = [];
   private respuestas: RespuestaGeneracion[] = [];
 
   constructor(private interno: LlmPort) {}
@@ -18,12 +19,16 @@ export class GrabadorLlm implements LlmPort {
   }
 
   reiniciar(): void {
-    this.solicitudes = [];
+    this.llamadasAlLlmContadas = 0;
+    this.resultadosDelTurno = [];
     this.respuestas = [];
   }
 
   async generar(solicitud: SolicitudGeneracion): Promise<RespuestaGeneracion> {
-    this.solicitudes.push(solicitud);
+    this.llamadasAlLlmContadas += 1;
+    // El bucle reutiliza el mismo array de mensajes en todas las vueltas: los resultados nuevos se
+    // copian ahora, antes de que la siguiente vuelta le agregue más mensajes.
+    this.resultadosDelTurno.push(...resultadosNuevos(solicitud.mensajes));
     const respuesta = await this.interno.generar(solicitud);
     this.respuestas.push(respuesta);
     return respuesta;
@@ -31,7 +36,7 @@ export class GrabadorLlm implements LlmPort {
 
   /** Cuántas veces se llamó al LLM desde el último `reiniciar`. */
   get llamadasAlLlm(): number {
-    return this.solicitudes.length;
+    return this.llamadasAlLlmContadas;
   }
 
   /** Arma la grabación del turno con el texto y el handoff de la respuesta del agente. */
@@ -44,13 +49,13 @@ export class GrabadorLlm implements LlmPort {
         llamadas.push({ nombre: llamada.nombre, argumentos: llamada.argumentos });
       }
     }
-    // Cada solicitud arrastra el historial del turno: solo su último mensaje trae resultados nuevos.
-    const resultados = this.solicitudes.flatMap((solicitud) => resultadosNuevos(solicitud.mensajes));
-    return { llamadas, resultados, textoFinal, handoff };
+    return { llamadas, resultados: [...this.resultadosDelTurno], textoFinal, handoff };
   }
 }
 
-function resultadosNuevos(mensajes: readonly MensajeLlm[]): GrabacionTurno['resultados'] {
+type ResultadoGrabado = GrabacionTurno['resultados'][number];
+
+function resultadosNuevos(mensajes: readonly MensajeLlm[]): ResultadoGrabado[] {
   const ultimo = mensajes.at(-1);
   return (ultimo?.resultadosHerramienta ?? []).map((resultado) => ({
     nombre: resultado.nombre,
