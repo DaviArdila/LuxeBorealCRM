@@ -97,9 +97,9 @@ describe('scripts/auditar-dependencias — auditarDependencias (integración rea
     async () => {
       const resultado = await auditarDependencias(raizDelProyecto, { fechaActual: HOY });
 
-      // Hoy (2026-09-24) los cinco hallazgos reales conocidos (deepmerge-ts, lodash, mysql2,
-      // @prisma/config, prisma) están cubiertos por auditoria-excepciones.json con
-      // revisar_antes_de 2026-12-24: el paso MUST quedar en verde con la fecha de este test.
+      // Los hallazgos reales conocidos (deepmerge-ts, lodash, mysql2, @prisma/config, prisma desde
+      // 2026-09-24; braces, micromatch, fast-glob, @stoplight/spectral-cli desde 2026-10-02) están
+      // cubiertos por auditoria-excepciones.json: el paso MUST quedar en verde con la fecha de este test.
       expect(resultado.limpio).toBe(true);
     },
     30_000,
