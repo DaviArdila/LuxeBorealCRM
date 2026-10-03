@@ -70,6 +70,8 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso, telegramFalso: Tele
     CONVERSACIONES_CONCURRENCIA: 10,
     CONVERSACIONES_BARRIDO_MS: 300000,
     HANDOFF_ESPERA_MIN: 30,
+    ESPERA_CLIENTE_MIN: 10,
+    ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
     TELEGRAM_BOT_TOKEN: 'token-telegram-e2e',
@@ -108,7 +110,7 @@ function servidor(app: INestApplication): Server {
 let contador = 40_000; // rango propio: cada archivo e2e usa un rango distinto
 function nuevaConversacion(): { readonly idConversacion: number; readonly idContacto: number } {
   contador += 1;
-  return { idConversacion: contador, idContacto: contador };
+  return { idConversacion: contador, idContacto: contador + 700_000 };
 }
 function nuevoIdMensaje(): number {
   contador += 1;
@@ -269,6 +271,9 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const [aviso] = await esperarAvisos(1);
     expect(aviso).toContain('caliente');
     expect(aviso).not.toContain(String(idContacto));
+    // NTF5: el aviso lleva el enlace que abre la conversación en Chatwoot, en una línea propia.
+    const lineaAtender = aviso.split('\n').find((linea) => linea.startsWith('Atender: '));
+    expect(lineaAtender).toMatch(new RegExp(`/app/accounts/1/conversations/${String(idConversacion)}$`));
     expect(telegramFalso.llamadasRegistradas()[0]?.chatId).toBe('-100555');
   }, 40_000);
 

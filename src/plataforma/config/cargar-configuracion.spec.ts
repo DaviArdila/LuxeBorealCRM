@@ -1073,4 +1073,34 @@ describe('cargarConfiguracion', () => {
       expect(cargarConfiguracion({ ...fuenteValida, AGENTE_MAX_VUELTAS: '8' }).AGENTE_MAX_VUELTAS).toBe(8);
     });
   });
+
+  describe('Avisos al asesor (fase-08d, D1, D5)', () => {
+    it('NTF5 — CHATWOOT_URL_PUBLICA es opcional y vacía cae en CHATWOOT_URL', () => {
+      expect(cargarConfiguracion(fuenteValida).CHATWOOT_URL_PUBLICA).toBeUndefined();
+      expect(cargarConfiguracion({ ...fuenteValida, CHATWOOT_URL_PUBLICA: '' }).CHATWOOT_URL_PUBLICA).toBeUndefined();
+      expect(
+        cargarConfiguracion({ ...fuenteValida, CHATWOOT_URL_PUBLICA: 'https://chat.ejemplo.co' }).CHATWOOT_URL_PUBLICA,
+      ).toBe('https://chat.ejemplo.co');
+    });
+
+    it('NTF5 — CHATWOOT_URL_PUBLICA debe ser una URL', () => {
+      expect(() => cargarConfiguracion({ ...fuenteValida, CHATWOOT_URL_PUBLICA: 'no es una url' })).toThrow(
+        ConfiguracionInvalidaError,
+      );
+    });
+
+    it('NTF7 — la espera del cliente avisa a los 10 minutos y el barrido corre cada 60 s por defecto', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.ESPERA_CLIENTE_MIN).toBe(10);
+      expect(configuracion.ESPERA_CLIENTE_BARRIDO_MS).toBe(60000);
+    });
+
+    it('NTF7 — ESPERA_CLIENTE_MIN menor que 1 y ESPERA_CLIENTE_BARRIDO_MS menor que 10000 se rechazan', () => {
+      expect(() => cargarConfiguracion({ ...fuenteValida, ESPERA_CLIENTE_MIN: '0' })).toThrow(ConfiguracionInvalidaError);
+      expect(() => cargarConfiguracion({ ...fuenteValida, ESPERA_CLIENTE_BARRIDO_MS: '9999' })).toThrow(
+        ConfiguracionInvalidaError,
+      );
+    });
+  });
 });

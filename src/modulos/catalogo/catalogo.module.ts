@@ -11,6 +11,7 @@ import { ListarProductosActivos } from './aplicacion/listar-productos-activos.js
 import { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
 import { ObtenerFotosProducto } from './aplicacion/obtener-fotos-producto.js';
 import { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
+import { ObtenerNombreProducto } from './aplicacion/obtener-nombre-producto.js';
 import { ProcesarFotos } from './aplicacion/procesar-fotos.js';
 import { ResolverGeografiaImportacion } from './aplicacion/resolver-geografia-importacion.js';
 import { CacheCatalogoRedis } from './infraestructura/cache-catalogo-redis.js';
@@ -56,6 +57,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     { provide: REPOSITORIO_IMPORTACION_CATALOGO, useClass: RepositorioImportacionPrisma },
     { provide: CACHE_CATALOGO, useClass: CacheCatalogoRedis },
     ObtenerFichaProducto,
+    ObtenerNombreProducto,
     ListarProductosActivos,
     BuscarProductos,
     ObtenerFotosProducto,
@@ -68,6 +70,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
   ],
   exports: [
     ObtenerFichaProducto,
+    ObtenerNombreProducto,
     ListarProductosActivos,
     BuscarProductos,
     ObtenerFotosProducto,

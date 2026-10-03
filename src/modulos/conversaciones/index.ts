@@ -12,6 +12,11 @@ export {
 export { ObservadoresHandoffModule } from './observadores-handoff.module.js';
 export { ConversacionesModule } from './conversaciones.module.js';
 export {
+  ObtenerReferenciaConversacion,
+  type ReferenciaConversacion,
+} from './aplicacion/obtener-referencia-conversacion.js';
+export { ReferenciaConversacionModule } from './referencia-conversacion.module.js';
+export {
   GENERADOR_RESPUESTA,
   type CapacidadesSalida,
   type ContextoTurno,

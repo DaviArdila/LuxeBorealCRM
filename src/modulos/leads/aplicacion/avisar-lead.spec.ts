@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lead-en-memoria.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
-import type { EncolarAviso, EntradaAviso } from '../../notificaciones/index.js';
+import type { ObtenerNombreProducto } from '../../catalogo/index.js';
+import type { EncolarAviso, EntradaAviso, ResolverEnlaceConversacion } from '../../notificaciones/index.js';
+import { ArmarDatosAvisoLead } from './armar-datos-aviso-lead.js';
 import { AvisarLead } from './avisar-lead.js';
 
 // Escenarios NTF1 (datos personales) y NTF2 (ventana) de
@@ -17,14 +19,23 @@ class EncolarAvisoFalso {
   }
 }
 
+const ENLACE = 'https://chat.ejemplo.co/app/accounts/1/conversations/2';
+
+function armarDatos(producto: string | null = null): ArmarDatosAvisoLead {
+  return new ArmarDatosAvisoLead(
+    { ejecutar: () => Promise.resolve(ENLACE) } as unknown as ResolverEnlaceConversacion,
+    { ejecutar: () => Promise.resolve(producto) } as unknown as ObtenerNombreProducto,
+  );
+}
+
 const AHORA = new Date('2026-09-30T15:00:00.000Z');
 const config = { LEADS_VENTANA_NOTIFICACION_H: 24 } as never;
 
-function armar() {
+function armar(producto: string | null = null) {
   const repositorio = new RepositorioLeadEnMemoria();
   const encolar = new EncolarAvisoFalso();
   const clock = new ClockFalso(AHORA);
-  const caso = new AvisarLead(repositorio, encolar as unknown as EncolarAviso, clock, config);
+  const caso = new AvisarLead(repositorio, encolar as unknown as EncolarAviso, armarDatos(producto), clock, config);
   const crear = (conversacionId: string, sobrescribir: Partial<Parameters<typeof repositorio.crear>[0]> = {}) =>
     repositorio.crear({
       contactoId: 'contacto-1',
@@ -53,6 +64,7 @@ describe('AvisarLead (NTF1, NTF2)', () => {
       senales: ['pide_pagar'],
       resumen: 'Quiere pagar la manilla.',
       capturadoFueraHorario: false,
+      enlace: ENLACE,
     });
     expect(encolar.avisos[0]?.claveIdempotencia).toContain(lead.id);
     expect(repositorio.leads[0]?.notificadoEn).toEqual(AHORA);
@@ -131,6 +143,17 @@ describe('AvisarLead (NTF1, NTF2)', () => {
 
     await caso.ejecutar('conv-1');
 
-    expect(encolar.avisos[0]?.aviso.capturadoFueraHorario).toBe(true);
+    expect(encolar.avisos[0]?.aviso).toMatchObject({ tipo: 'lead', capturadoFueraHorario: true });
+  });
+});
+
+describe('AvisarLead — 08d: producto y enlace (NTF1, NTF5)', () => {
+  it('NTF1 — el aviso nombra el producto de interés, nunca su SKU', async () => {
+    const { caso, encolar, crear } = armar('Regadera fija con brazo');
+    await crear('conv-1', { productoId: 'p1' });
+
+    await caso.ejecutar('conv-1');
+
+    expect(encolar.avisos[0]?.aviso).toMatchObject({ producto: 'Regadera fija con brazo', enlace: ENLACE });
   });
 });

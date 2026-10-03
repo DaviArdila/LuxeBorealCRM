@@ -28,6 +28,7 @@ export { ListarProductosActivos } from './aplicacion/listar-productos-activos.js
 export { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
 export { ObtenerFotosProducto } from './aplicacion/obtener-fotos-producto.js';
 export { ObtenerFichaProducto } from './aplicacion/obtener-ficha-producto.js';
+export { ObtenerNombreProducto } from './aplicacion/obtener-nombre-producto.js';
 export {
   ProductoNoDisponible,
   type FichaProducto,

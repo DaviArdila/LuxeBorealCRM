@@ -86,6 +86,11 @@ export const esquemaConfiguracion = z
     /** Canal Chatwoot (Fase 04, D2/D3/D12 de `design.md`): API de salida y firma del webhook. */
     CHATWOOT_URL: z.string().url().default('http://localhost:3001'),
     CHATWOOT_ACCOUNT_ID: z.coerce.number().int().min(1).default(1),
+    /**
+     * Base de los enlaces a la conversación que llevan los avisos al asesor (Fase 08d, D1, NTF5): la URL por la que
+     * el asesor abre Chatwoot desde su celular. Ausente ⇒ cae en `CHATWOOT_URL`, que en local es `localhost`.
+     */
+    CHATWOOT_URL_PUBLICA: z.preprocess((valor) => (valor === '' ? undefined : valor), z.string().url().optional()),
     /** Vacío por defecto; obligatorio no vacío en production (`superRefine` abajo). */
     CHATWOOT_BOT_TOKEN: z.string().default(''),
     /**
@@ -142,6 +147,10 @@ export const esquemaConfiguracion = z
     CONVERSACIONES_BARRIDO_MS: z.coerce.number().int().min(10000).default(300000),
     /** `MarcaEsperaHandoff` (T8, D12): minutos en `handoff_pendiente` antes del aviso único de espera. */
     HANDOFF_ESPERA_MIN: z.coerce.number().int().min(1).default(30),
+    /** Minutos que un cliente espera bajo control humano antes de avisar al asesor (Fase 08d, D5, NTF7, P47). */
+    ESPERA_CLIENTE_MIN: z.coerce.number().int().min(1).default(10),
+    /** `BarridoEsperas` (Fase 08d, D5): cada cuánto se revisan los clientes que esperan respuesta. */
+    ESPERA_CLIENTE_BARRIDO_MS: z.coerce.number().int().min(10000).default(60000),
     /** `modulos/llm` (Fase 06, T3, D12, R15): perfil `conversacion`; cambiar de modelo es cambiar datos. */
     LLM_CONVERSACION_MODELOS: listaDeModelos('openai/gpt-5.6-luna'),
     /** Por debajo de `LOCK_TURNO_TTL_S · 1000` (LLM3, `superRefine` abajo). */

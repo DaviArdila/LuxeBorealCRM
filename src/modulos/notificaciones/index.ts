@@ -4,4 +4,12 @@
  */
 export { NotificacionesModule } from './notificaciones.module.js';
 export { EncolarAviso, type EntradaAviso } from './aplicacion/encolar-aviso.js';
-export type { DatosAviso } from './dominio/armar-aviso.js';
+export { ResolverEnlaceConversacion } from './aplicacion/resolver-enlace-conversacion.js';
+export type {
+  DatosAviso,
+  DatosAvisoEspera,
+  DatosAvisoLead,
+  DatosAvisoTraspaso,
+  MotivoTraspaso,
+} from './dominio/armar-aviso.js';
+export { construirEnlaceConversacion, type EntradaEnlaceConversacion } from './dominio/enlace-conversacion.js';

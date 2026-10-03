@@ -1,9 +1,11 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
+import { CatalogoModule } from '../catalogo/index.js';
 import { ObservadoresHandoffModule, RegistroObservadoresHandoff } from '../conversaciones/index.js';
 import { HorarioModule } from '../horario/index.js';
 import { NotificacionesModule } from '../notificaciones/index.js';
+import { ArmarDatosAvisoLead } from './aplicacion/armar-datos-aviso-lead.js';
 import { AvisarLead } from './aplicacion/avisar-lead.js';
 import { AvisoLeadEnHandoff } from './aplicacion/aviso-lead-en-handoff.js';
 import { RecordarLeads } from './aplicacion/recordar-leads.js';
@@ -29,6 +31,7 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
   imports: [
     PrismaModule,
     HorarioModule,
+    CatalogoModule,
     NotificacionesModule,
     ObservadoresHandoffModule,
     BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_LEADS }),
@@ -38,6 +41,7 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
     EvaluarPropuestaLead,
     RegistrarPidePersona,
     ObtenerCapturaPendiente,
+    ArmarDatosAvisoLead,
     AvisarLead,
     AvisoLeadEnHandoff,
     CompletarCaptura,

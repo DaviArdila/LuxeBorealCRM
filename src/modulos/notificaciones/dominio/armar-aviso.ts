@@ -1,11 +1,39 @@
+/** Motivos de traspaso sin lead que avisan al asesor (NTF6): el complemento de los motivos que nacen de un lead. */
+export type MotivoTraspaso =
+  | 'tope-turnos'
+  | 'fallo-llm'
+  | 'techo-gasto'
+  | 'audio-repetido'
+  | 'argumentos-invalidos'
+  | 'plazo-agotado';
+
 /** Lo que un aviso al asesor sabe de un lead (D9 de la Fase 08): nunca datos de contacto (R14). */
-export interface DatosAviso {
+export interface DatosAvisoLead {
   readonly tipo: 'lead' | 'recordatorio';
   readonly temperatura: string;
   readonly senales: readonly string[];
   readonly resumen: string;
   readonly capturadoFueraHorario: boolean;
+  /** Nombre del producto de interés (nunca su SKU, AGT16). */
+  readonly producto?: string;
+  readonly enlace?: string;
 }
+
+/** Un traspaso a una persona que no nació de un lead (NTF6): solo se sabe el motivo. */
+export interface DatosAvisoTraspaso {
+  readonly tipo: 'traspaso';
+  readonly motivo: MotivoTraspaso;
+  readonly enlace?: string;
+}
+
+/** Un cliente que escribió bajo control humano y no recibe respuesta (NTF7). */
+export interface DatosAvisoEspera {
+  readonly tipo: 'espera';
+  readonly esperaMin: number;
+  readonly enlace?: string;
+}
+
+export type DatosAviso = DatosAvisoLead | DatosAvisoTraspaso | DatosAvisoEspera;
 
 const OMITIDO = '[dato omitido]';
 const LARGO_MAXIMO_RESUMEN = 400;
@@ -30,12 +58,20 @@ function sinDatosPersonales(texto: string): string {
     );
 }
 
-/**
- * Arma el texto plano del aviso (NTF1, D9): temperatura, señales y resumen del lead, sin teléfono,
- * cédula, correo ni dirección. Texto plano, sin `parse_mode`, para que nada del cliente se interprete
- * como formato (matriz de amenazas de la Fase 08).
- */
-export function armarAviso(datos: DatosAviso): string {
+const TITULO_TRASPASO: Readonly<Record<MotivoTraspaso, string>> = {
+  'tope-turnos': 'el bot llegó al tope de turnos con un cliente.',
+  'fallo-llm': 'el bot no pudo responder por una falla técnica.',
+  'techo-gasto': 'el bot dejó de responder por el techo de gasto.',
+  'audio-repetido': 'el cliente insiste con audios y el bot no los procesa.',
+  'argumentos-invalidos': 'el bot no pudo completar una consulta.',
+  'plazo-agotado': 'el bot se quedó sin tiempo para responder.',
+};
+
+function lineaAtender(enlace: string | undefined): string[] {
+  return enlace === undefined ? [] : [`Atender: ${enlace}`];
+}
+
+function armarAvisoLead(datos: DatosAvisoLead): string {
   const titulo =
     datos.tipo === 'recordatorio'
       ? `Lead ${datos.temperatura} sin atender: nadie lo ha recogido todavía.`
@@ -44,10 +80,38 @@ export function armarAviso(datos: DatosAviso): string {
   if (datos.capturadoFueraHorario) {
     lineas.push('Dejó sus datos fuera de horario: hay que contactarlo para confirmar.');
   }
+  if (datos.producto !== undefined && datos.producto.trim().length > 0) {
+    lineas.push(`Producto: ${sinDatosPersonales(datos.producto.trim())}`);
+  }
   if (datos.senales.length > 0) {
     lineas.push(`Señales: ${datos.senales.join(', ')}`);
   }
   const resumen = sinDatosPersonales(datos.resumen).slice(0, LARGO_MAXIMO_RESUMEN);
   lineas.push(`Resumen: ${resumen}`);
+  lineas.push(...lineaAtender(datos.enlace));
   return lineas.join('\n');
+}
+
+/**
+ * Arma el texto plano del aviso (NTF1, D9; NTF5-NTF7 de la Fase 08d): el motivo en claro, el producto, las señales y
+ * el resumen del lead, y el enlace a la conversación en una línea propia. Nunca lleva teléfono, cédula, correo,
+ * dirección ni nombre del cliente. Texto plano, sin `parse_mode`, para que nada del cliente se interprete como
+ * formato (matriz de amenazas de la Fase 08) y Telegram vuelva tocable la URL.
+ */
+export function armarAviso(datos: DatosAviso): string {
+  if (datos.tipo === 'traspaso') {
+    return [
+      `Traspaso: ${TITULO_TRASPASO[datos.motivo]}`,
+      'Un asesor debe continuar la conversación.',
+      ...lineaAtender(datos.enlace),
+    ].join('\n');
+  }
+  if (datos.tipo === 'espera') {
+    const minutos = Math.max(0, Math.floor(datos.esperaMin));
+    return [
+      `Cliente esperando: escribió hace ${minutos} min y nadie ha respondido.`,
+      ...lineaAtender(datos.enlace),
+    ].join('\n');
+  }
+  return armarAvisoLead(datos);
 }
