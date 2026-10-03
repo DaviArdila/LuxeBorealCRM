@@ -137,6 +137,6 @@ Lista completa en la sección «Comandos» de `CLAUDE.md`.
 
 ## Próximos pasos, en orden
 
-1. El dueño corre los evals reales con el prompt nuevo y verifica el flujo por WhatsApp (los `[manual]` de la 08b) y los avisos con enlace (los de la 08d).
+1. El dueño corre los evals reales con el prompt nuevo (cómo, y el resultado del 2026-10-02, en [`operacion/dinero-sin-rastro-y-evals-reales.md`](operacion/dinero-sin-rastro-y-evals-reales.md)) y verifica el flujo por WhatsApp (los `[manual]` de la 08b) y los avisos con enlace (los de la 08d).
 2. Decidir el modelo principal con esos evals (`gpt-5.6-luna` es el candidato).
 3. Fase 09a (sin VPS): redactar su change para aprobación; comprar el VPS; Fase 09b; luego Fase 10 (corte).
