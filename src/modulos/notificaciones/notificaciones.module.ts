@@ -1,6 +1,11 @@
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { OutboxModule, RegistroManejadoresOutbox } from '../../plataforma/outbox/index.js';
-import { ReferenciaConversacionModule } from '../conversaciones/index.js';
+import {
+  ObservadoresHandoffModule,
+  ReferenciaConversacionModule,
+  RegistroObservadoresHandoff,
+} from '../conversaciones/index.js';
+import { AvisoTraspaso } from './aplicacion/aviso-traspaso.js';
 import { EncolarAviso, TIPO_OUTBOX_NOTIFICACION_TELEGRAM } from './aplicacion/encolar-aviso.js';
 import { PublicarNotificacionTelegram } from './aplicacion/publicar-notificacion-telegram.js';
 import { ResolverEnlaceConversacion } from './aplicacion/resolver-enlace-conversacion.js';
@@ -14,12 +19,13 @@ import { NOTIFICADOR } from './puertos/notificador.js';
  * lectura mínima de `conversaciones`) para armar el enlace a Chatwoot (NTF5); no instancia nada más de ese módulo.
  */
 @Module({
-  imports: [OutboxModule, ReferenciaConversacionModule],
+  imports: [OutboxModule, ReferenciaConversacionModule, ObservadoresHandoffModule],
   providers: [
     { provide: NOTIFICADOR, useClass: NotificadorTelegram },
     PublicarNotificacionTelegram,
     EncolarAviso,
     ResolverEnlaceConversacion,
+    AvisoTraspaso,
   ],
   exports: [EncolarAviso, ResolverEnlaceConversacion],
 })
@@ -27,9 +33,13 @@ export class NotificacionesModule implements OnModuleInit {
   constructor(
     private readonly registroManejadoresOutbox: RegistroManejadoresOutbox,
     private readonly publicarNotificacionTelegram: PublicarNotificacionTelegram,
+    private readonly registroObservadoresHandoff: RegistroObservadoresHandoff,
+    private readonly avisoTraspaso: AvisoTraspaso,
   ) {}
 
   onModuleInit(): void {
     this.registroManejadoresOutbox.registrar(TIPO_OUTBOX_NOTIFICACION_TELEGRAM, this.publicarNotificacionTelegram);
+    // NTF6: avisa de los traspasos que no nacen de un lead, solo después de confirmada la transición (NTF3).
+    this.registroObservadoresHandoff.registrar(this.avisoTraspaso);
   }
 }

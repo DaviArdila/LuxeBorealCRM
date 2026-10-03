@@ -6,6 +6,11 @@ export interface EventoHandoff {
   readonly conversacionId: string;
   readonly contactoId: string;
   readonly motivo: MotivoHandoff;
+  /**
+   * Versión de la conversación **antes** de la transición (NTF6, D3 de la Fase 08d): identifica la sesión bot que
+   * termina. Cada traspaso posterior tiene otra, así que sirve de parte de la clave de idempotencia de un aviso.
+   */
+  readonly version: number;
 }
 
 /** Un módulo de arriba (p. ej. `leads`) que reacciona a un handoff confirmado. */
