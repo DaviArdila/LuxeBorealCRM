@@ -73,3 +73,27 @@ describe('modulos/agente/dominio — contarMontosSinRastro: otras formas de escr
     expect(sinRastro(texto)).toBe(0);
   });
 });
+
+describe('modulos/agente/dominio — contarMontosSinRastro: cifras que dijo el cliente en el turno', () => {
+  it('una cifra que el cliente escribió y el bot repite tiene rastro', () => {
+    expect(contarMontosSinRastro('Con tus $300.000 te alcanza para este', [], ['Mi presupuesto es $300.000'])).toBe(0);
+  });
+
+  it('coincide por valor aunque cambie el formato: «200 mil pesos» del cliente y $200.000 del bot', () => {
+    expect(contarMontosSinRastro('Tienes $200.000 disponibles', [], ['tengo 200 mil pesos'])).toBe(0);
+    expect(contarMontosSinRastro('Tienes 200 mil pesos', [], ['mi tope es $200.000'])).toBe(0);
+  });
+
+  it('una cifra que no está ni en herramientas ni en lo que escribió el cliente sigue sin rastro', () => {
+    expect(contarMontosSinRastro('Cuesta $999.000', [{ precio_texto: '$271.000' }], ['tengo $300.000'])).toBe(1);
+    expect(contarMontosSinRastro('Cuesta $999.000', [], [])).toBe(1);
+  });
+
+  it('solo cuentan las cifras del cliente que son dinero: un número suelto no respalda un monto', () => {
+    expect(contarMontosSinRastro('Cuesta $300.000', [], ['quiero 300 unidades'])).toBe(1);
+  });
+
+  it('los falsos positivos conocidos siguen sin contar con textos del cliente', () => {
+    expect(contarMontosSinRastro('Llega en 2 días hábiles desde 2024', [], ['hola'])).toBe(0);
+  });
+});

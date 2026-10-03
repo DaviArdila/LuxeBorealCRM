@@ -31,4 +31,26 @@ describe('test/evals — armarResumen (EVL1 determinismo)', () => {
     expect(resumen).toContain('Costo estimado: 0.1234 USD');
     expect(resumen).toContain('openai/gpt-5.6-luna');
   });
+
+  it('en modo real dice cuántos casos se omitieron y por qué', () => {
+    const resumen = armarResumen(
+      [{ id: 'a', titulo: 'Caso A', resultados: [OK('menciona')] }],
+      { aprobada: true, criticasFallidas: 0, porcentajeNoCriticas: 1 },
+      'real',
+      { costoUsd: 0, modelosPorCaso: {}, omitidos: ['r1-x', 'r1-y'] },
+    );
+
+    expect(resumen).toContain('Casos omitidos: 2 (solo guionado: el LLM real no puede reproducir su guion): r1-x, r1-y');
+  });
+
+  it('sin casos omitidos no agrega la línea', () => {
+    const resumen = armarResumen(
+      [{ id: 'a', titulo: 'Caso A', resultados: [OK('menciona')] }],
+      { aprobada: true, criticasFallidas: 0, porcentajeNoCriticas: 1 },
+      'real',
+      { costoUsd: 0, modelosPorCaso: {}, omitidos: [] },
+    );
+
+    expect(resumen).not.toContain('Casos omitidos');
+  });
 });

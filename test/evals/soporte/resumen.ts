@@ -10,6 +10,8 @@ export interface CasoResumen {
 export interface ExtrasReal {
   readonly costoUsd: number;
   readonly modelosPorCaso: Readonly<Record<string, readonly string[]>>;
+  /** `id` de los casos `soloGuionado` que el modo real no ejecutó. */
+  readonly omitidos?: readonly string[];
 }
 
 /**
@@ -39,6 +41,12 @@ export function armarResumen(
     `Veredicto: ${veredicto.aprobada ? 'APROBADA' : 'REPROBADA'} — críticas fallidas: ${String(veredicto.criticasFallidas)}, ` +
       `no críticas que pasan: ${(veredicto.porcentajeNoCriticas * 100).toFixed(1)} %`,
   );
+  if (extras?.omitidos !== undefined && extras.omitidos.length > 0) {
+    lineas.push(
+      `Casos omitidos: ${String(extras.omitidos.length)} (solo guionado: el LLM real no puede reproducir su guion): ` +
+        [...extras.omitidos].sort().join(', '),
+    );
+  }
   if (extras !== undefined) {
     lineas.push(`Costo estimado: ${extras.costoUsd.toFixed(4)} USD`);
   }

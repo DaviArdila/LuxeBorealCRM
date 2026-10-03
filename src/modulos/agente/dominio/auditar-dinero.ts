@@ -41,10 +41,24 @@ function montosDelTexto(texto: string): number[] {
  * herramienta del mismo turno (R1: todo dato citado se rastrea). Reconoce `$`, `COP`, «pesos» y «mil» /
  * «millones», y compara el valor completo (no los dígitos sueltos), así `$389.000`, `389000` y
  * `$ 389.000` coinciden sin depender del formato, y `15 mil pesos` coincide con `$15.000`. Devuelve una
- * cantidad, nunca el texto (R14); no bloquea la respuesta.
+ * cantidad, nunca el texto (R14).
+ *
+ * `textosDelCliente` son los mensajes del cliente del turno en curso: un monto que el propio cliente escribió
+ * («tengo 200 mil pesos») y el bot repite no es un dato inventado por el modelo, así que cuenta como rastro.
+ * Se leen con el mismo parser de dinero (un número suelto del cliente no respalda nada) y solo sirven para
+ * esta comparación; nunca el historial ni lo que dijo el bot.
  */
-export function contarMontosSinRastro(textoFinal: string, resultadosParaElModelo: readonly unknown[]): number {
+export function contarMontosSinRastro(
+  textoFinal: string,
+  resultadosParaElModelo: readonly unknown[],
+  textosDelCliente: readonly string[] = [],
+): number {
   const respaldados = new Set<number>();
+  for (const textoCliente of textosDelCliente) {
+    for (const monto of montosDelTexto(textoCliente)) {
+      respaldados.add(monto);
+    }
+  }
   for (const resultado of resultadosParaElModelo) {
     const serializado = JSON.stringify(resultado ?? null);
     for (const numero of serializado.match(NUMERO) ?? []) {

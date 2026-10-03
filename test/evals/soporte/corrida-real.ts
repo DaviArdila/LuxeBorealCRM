@@ -7,7 +7,7 @@ import { ClockSistema, RelojModule } from '../../../src/plataforma/reloj/index.j
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 import type { ResultadoAsercion } from './aserciones.js';
 import { componerAgente, configuracionEvals } from './componer-agente.js';
-import type { CasoEval } from './esquema-caso.js';
+import { separarPorModoReal, type CasoEval } from './esquema-caso.js';
 import { ejecutarCaso } from './ejecutar-caso.js';
 import { GrabadorLlm } from './grabador-llm.js';
 import { armarResumen, type CasoResumen } from './resumen.js';
@@ -36,6 +36,8 @@ export interface CorridaReal {
   readonly resumenes: readonly CasoResumen[];
   readonly costoUsd: number;
   readonly modelosPorCaso: Readonly<Record<string, readonly string[]>>;
+  /** `id` de los casos `soloGuionado` omitidos en esta corrida. */
+  readonly omitidos: readonly string[];
   readonly texto: string;
 }
 
@@ -71,6 +73,8 @@ export function leerLlmRealDeEntorno(entorno: Readonly<Record<string, string | u
  */
 export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promise<CorridaReal> {
   const repeticiones = opciones.repeticiones ?? REPETICIONES_REAL;
+  const { ejecutables, omitidos: casosOmitidos } = separarPorModoReal(opciones.casos);
+  const omitidos = casosOmitidos.map((caso) => caso.id);
   const base = configuracionEvals({});
   const configuracion: Configuracion = {
     ...base,
@@ -103,7 +107,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
 
     const acumulado = new Map<string, ResultadoAsercion[]>();
     const conversacionesPorCaso = new Map<string, string[]>();
-    for (const caso of opciones.casos) {
+    for (const caso of ejecutables) {
       for (let repeticion = 0; repeticion < repeticiones; repeticion += 1) {
         const resultados = await ejecutarCaso({
           caso,
@@ -117,7 +121,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
       }
     }
 
-    const resumenes = opciones.casos.map((caso) => ({
+    const resumenes = ejecutables.map((caso) => ({
       id: caso.id,
       titulo: caso.titulo,
       resultados: acumulado.get(caso.id) ?? [],
@@ -129,7 +133,14 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
     for (const [casoId, conversaciones] of conversacionesPorCaso) {
       modelosPorCaso[casoId] = [...new Set(usos.filter((u) => u.conversacionId !== null && conversaciones.includes(u.conversacionId)).map((u) => u.modelo))].sort();
     }
-    return { veredicto, resumenes, costoUsd, modelosPorCaso, texto: armarResumen(resumenes, veredicto, 'real', { costoUsd, modelosPorCaso }) };
+    return {
+      veredicto,
+      resumenes,
+      costoUsd,
+      modelosPorCaso,
+      omitidos,
+      texto: armarResumen(resumenes, veredicto, 'real', { costoUsd, modelosPorCaso, omitidos }),
+    };
   } finally {
     await app.close();
     await moduloLlm.close();

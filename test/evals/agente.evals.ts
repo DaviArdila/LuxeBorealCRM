@@ -155,8 +155,19 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del mod
         'saludo-real.json',
       );
 
+      const soloGuionado = parsearCaso(
+        {
+          id: 'premisa-de-guion',
+          titulo: 'EVL4 — caso: su premisa es un guion',
+          origen: 'sintetico',
+          soloGuionado: true,
+          turnos: [{ mensajes: [{ tipoContenido: 'texto', texto: 'Hola' }], guion: [{ texto: 'Hola' }], aserciones: { handoff: 'prohibido' } }],
+        },
+        'premisa-de-guion.json',
+      );
+
       const corrida = await ejecutarCorridaReal({
-        casos: [caso],
+        casos: [caso, soloGuionado],
         apiKey: 'clave-de-prueba',
         modelos: ['openai/gpt-5.6-luna'],
         precios: { 'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
@@ -168,6 +179,8 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del mod
       expect(corrida.costoUsd).toBeCloseTo(3 * 0.0008, 6);
       expect(corrida.texto).toContain('Costo estimado: 0.0024 USD');
       expect(corrida.texto).toContain('openai/gpt-5.6-luna');
+      expect(corrida.omitidos).toEqual(['premisa-de-guion']);
+      expect(corrida.texto).toContain('Casos omitidos: 1 (solo guionado');
     } finally {
       await simulador.cerrar();
     }

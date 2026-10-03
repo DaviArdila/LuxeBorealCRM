@@ -32,6 +32,11 @@ export interface EntradaBucle {
   readonly contactoId: string;
   readonly systemPrompt: string;
   readonly mensajes: readonly MensajeLlm[];
+  /**
+   * Mensajes del cliente del turno en curso (la ráfaga agrupada por debounce es un mismo turno). Sus cifras
+   * cuentan como rastro en la auditoría de dinero; el historial previo y lo que dijo el bot no (R1/R2).
+   */
+  readonly textosDelCliente?: readonly string[];
 }
 
 export type MotivoDerivacionBucle =
@@ -113,7 +118,7 @@ export class BucleHerramientas {
         // R1/R2: un monto sin rastro en las herramientas del turno no llega al cliente. Un solo reintento con
         // un mensaje correctivo (usa la misma vuelta, el mismo plazo y el mismo techo de gasto); si persiste,
         // se deriva. Riesgo conocido: un falso positivo cuesta una llamada más o, si persiste, un traspaso.
-        const montos = contarMontosSinRastro(texto, resultadosParaElModelo);
+        const montos = contarMontosSinRastro(texto, resultadosParaElModelo, entrada.textosDelCliente);
         if (montos === 0) {
           return { tipo: 'texto', texto, efectos, resultadosParaElModelo };
         }

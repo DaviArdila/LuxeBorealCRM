@@ -70,6 +70,7 @@ export class ContenidoLlm implements PoliticaTurno {
       sesion,
       contactoId,
       systemPrompt: prompt.texto,
+      textosDelCliente: [textoCliente],
       mensajes: [
         ...previos.map((turno) => ({ rol: turno.rol, texto: turno.texto })),
         { rol: 'usuario', texto: textoCliente },
@@ -118,8 +119,14 @@ export class ContenidoLlm implements PoliticaTurno {
       motivo === 'techo-gasto'
         ? await this.mensajeTechoGasto.ejecutar()
         : await this.parametros.obtenerTexto('mensaje_error_llm');
-    // `dinero-sin-rastro` es un motivo interno del agente: ante `conversaciones` y el aviso al asesor es un
-    // fallo del bot (`fallo-llm`), el mismo traspaso con el texto de cortesía.
-    return { pasos: [{ paso: 'handoff-1', tipo: 'texto', texto }], handoff: { motivo: motivo === 'dinero-sin-rastro' ? 'fallo-llm' : motivo } };
+    return { pasos: [{ paso: 'handoff-1', tipo: 'texto', texto }], handoff: { motivo: motivoDeHandoff(motivo) } };
   }
+}
+
+/**
+ * `dinero-sin-rastro` es un motivo interno del agente: ante `conversaciones` y el aviso al asesor es un
+ * fallo del bot (`fallo-llm`), el mismo traspaso con el texto de cortesía. Los demás motivos coinciden.
+ */
+function motivoDeHandoff(motivo: MotivoDerivacionBucle): Exclude<MotivoDerivacionBucle, 'dinero-sin-rastro'> {
+  return motivo === 'dinero-sin-rastro' ? 'fallo-llm' : motivo;
 }
