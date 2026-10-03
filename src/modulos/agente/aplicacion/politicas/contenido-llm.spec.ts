@@ -133,6 +133,47 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     });
   });
 
+  describe('R2 — mensaje_sin_cobertura sale literal desde el backend', () => {
+    const MENSAJE = 'Por ahora no llegamos a ese destino.';
+    const sinCobertura = () =>
+      herramienta('cotizar_envio', { cobertura: false, mensaje_sin_cobertura: MENSAJE }, [
+        { tipo: 'sin-cobertura', mensaje: MENSAJE },
+      ]);
+    const cotiza = { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'cotizar_envio', argumentos: {} }] } };
+
+    it('si el modelo no lo cita, el mensaje se añade literal tras su texto y entra al historial así', async () => {
+      const { llm, politica, historial } = crear([sinCobertura()]);
+      llm.encolar(cotiza, { respuesta: { texto: 'No enviamos allá, ¿tienes otra dirección?' } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      const texto = `No enviamos allá, ¿tienes otra dirección?\n\n${MENSAJE}`;
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ paso: 'llm-1', texto }] }, cuentaTurno: true });
+      expect(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).toEqual([
+        { rol: 'usuario', texto: 'hola' },
+        { rol: 'asistente', texto },
+      ]);
+    });
+
+    it('si el modelo ya lo cita literal, no se duplica', async () => {
+      const { llm, politica } = crear([sinCobertura()]);
+      llm.encolar(cotiza, { respuesta: { texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` }] } });
+    });
+
+    it('sin el efecto sin-cobertura el texto del modelo no se toca', async () => {
+      const { llm, politica } = crear([herramienta('cotizar_envio', { cobertura: true })]);
+      llm.encolar(cotiza, { respuesta: { texto: 'Llega en 2 días.' } });
+
+      const decision = await politica.evaluar(turno(HOLA));
+
+      expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: 'Llega en 2 días.' }] } });
+    });
+  });
+
   it('AGT6 — El techo de gasto deriva con su propio texto', async () => {
     const { llm, politica } = crear();
     llm.encolar({ error: new ErrorPasarelaLlm('techo-alcanzado') });
@@ -186,14 +227,35 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     expect(llm.solicitudes).toHaveLength(0);
   });
 
-  it('D9 — Un monto sin rastro en las herramientas se avisa en el log sin copiar el texto (R14)', async () => {
+  it('D9 — Un monto sin rastro se reintenta una vez y sale el texto corregido (R14: el log solo lleva la cantidad)', async () => {
     const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const { llm, politica } = crear();
-    llm.encolar({ respuesta: { texto: 'Cuesta $999.000, ¿te interesa?' } });
+    llm.encolar({ respuesta: { texto: 'Cuesta $999.000, ¿te interesa?' } }, { respuesta: { texto: 'Lo confirmo con un asesor.' } });
 
-    await politica.evaluar(turno(HOLA));
+    const decision = await politica.evaluar(turno(HOLA));
 
-    expect(aviso).toHaveBeenCalledWith({ evento: 'agente.dinero-sin-rastro', montos: 1 });
+    expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: 'Lo confirmo con un asesor.' }] }, cuentaTurno: true });
+    expect(aviso).toHaveBeenCalledWith({ evento: 'agente.dinero-sin-rastro', montos: 1, reintento: true });
+    expect(JSON.stringify(aviso.mock.calls)).not.toContain('999');
+  });
+
+  it('R1 — Si el monto sin rastro persiste, hay traspaso con el texto de cortesía y el texto original nunca sale', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { llm, politica, historial } = crear();
+    llm.encolar({ respuesta: { texto: 'Cuesta $999.000' } }, { respuesta: { texto: 'Mejor $888.000' } });
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toEqual({
+      decision: 'responder',
+      respuesta: {
+        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: 'TEXTO-ERROR' }],
+        handoff: { motivo: 'fallo-llm' },
+      },
+      cuentaTurno: false,
+    });
+    expect(JSON.stringify(decision)).not.toMatch(/999|888/);
+    expect(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).toEqual([]);
   });
 
   it('AGT7 — El LLM recibe solo los últimos turnos de la sesión', async () => {
@@ -264,7 +326,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v2', versionEstilo: 3 });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v3', versionEstilo: 3 });
     // R14: ningún registro del turno lleva el texto del estilo.
     expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });

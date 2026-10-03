@@ -5,7 +5,8 @@
  */
 export type EfectoTurno =
   | { readonly tipo: 'enviar-imagen'; readonly claveObjeto: string; readonly leyenda?: string }
-  | { readonly tipo: 'sin-cobertura' }
+  /** Sin cobertura de envío; lleva el mensaje del negocio, que debe llegar literal al cliente (R2). */
+  | { readonly tipo: 'sin-cobertura'; readonly mensaje: string }
   | { readonly tipo: 'datos-contacto-guardados' }
   | { readonly tipo: 'lead-propuesto'; readonly temperatura: 'tibio' | 'caliente' }
   /** La escala confirmó y hay que derivar dentro de horario (D4 de la Fase 08): `ContenidoLlm` lo vuelve handoff. */

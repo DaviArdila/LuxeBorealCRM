@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../plataforma/config/index.js';
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
 import { ErrorPasarelaLlm, LLM_PORT } from '../../llm/index.js';
@@ -8,6 +8,7 @@ import type {
   MensajeLlm,
   ResultadoHerramienta,
 } from '../../llm/index.js';
+import { contarMontosSinRastro } from '../dominio/auditar-dinero.js';
 import type { EfectoTurno } from '../dominio/efectos.js';
 import type { SesionHerramienta } from '../dominio/herramienta.js';
 import { RegistroHerramientas } from './registro-herramientas.js';
@@ -16,6 +17,15 @@ import { RegistroHerramientas } from './registro-herramientas.js';
 const MARGEN_LOCK_S = 5;
 /** Segunda llamada inválida del turno = el modelo no se corrige: se deriva (AGT4). */
 const INVALIDAS_PARA_DERIVAR = 2;
+/**
+ * Mensaje de sistema (rol `usuario`: el puerto solo tiene dos roles) del único reintento por dinero sin
+ * rastro. No repite el texto ni el monto que escribió el modelo (R14: nada del cliente ni de la respuesta).
+ */
+const MENSAJE_CORRECTIVO_DINERO =
+  'Aviso del sistema: tu respuesta anterior incluía un monto en pesos que no sale de ninguna herramienta ' +
+  'llamada en este turno, y no se envió al cliente. Escribe de nuevo la respuesta: si necesitas un precio, ' +
+  'llama la herramienta que corresponda y cita su texto exacto; si no puedes obtenerlo, no menciones ' +
+  'cifras y ofrece confirmarlo con un asesor.';
 
 export interface EntradaBucle {
   readonly sesion: SesionHerramienta;
@@ -24,7 +34,13 @@ export interface EntradaBucle {
   readonly mensajes: readonly MensajeLlm[];
 }
 
-export type MotivoDerivacionBucle = 'fallo-llm' | 'techo-gasto' | 'argumentos-invalidos' | 'plazo-agotado';
+export type MotivoDerivacionBucle =
+  | 'fallo-llm'
+  | 'techo-gasto'
+  | 'argumentos-invalidos'
+  | 'plazo-agotado'
+  /** R1/R2: el texto final citó dinero sin rastro en las herramientas aun después del único reintento. */
+  | 'dinero-sin-rastro';
 
 export type ResultadoBucle =
   | {
@@ -45,6 +61,8 @@ export type ResultadoBucle =
  */
 @Injectable()
 export class BucleHerramientas {
+  private readonly logger = new Logger(BucleHerramientas.name);
+
   constructor(
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly registro: RegistroHerramientas,
@@ -63,6 +81,7 @@ export class BucleHerramientas {
     const resultadosParaElModelo: unknown[] = [];
     const definiciones = this.registro.definiciones();
     let invalidas = 0;
+    let reintentoDinero = false;
 
     for (let vuelta = 0; vuelta < this.configuracion.AGENTE_MAX_VUELTAS; vuelta += 1) {
       const plazoMs = restanteMs();
@@ -88,9 +107,24 @@ export class BucleHerramientas {
       const rechazadas = respuesta.llamadasInvalidas ?? [];
       if (validas.length === 0 && rechazadas.length === 0) {
         const texto = respuesta.texto?.trim() ?? '';
-        return texto.length === 0
-          ? { tipo: 'derivar', motivo: 'fallo-llm' }
-          : { tipo: 'texto', texto, efectos, resultadosParaElModelo };
+        if (texto.length === 0) {
+          return { tipo: 'derivar', motivo: 'fallo-llm' };
+        }
+        // R1/R2: un monto sin rastro en las herramientas del turno no llega al cliente. Un solo reintento con
+        // un mensaje correctivo (usa la misma vuelta, el mismo plazo y el mismo techo de gasto); si persiste,
+        // se deriva. Riesgo conocido: un falso positivo cuesta una llamada más o, si persiste, un traspaso.
+        const montos = contarMontosSinRastro(texto, resultadosParaElModelo);
+        if (montos === 0) {
+          return { tipo: 'texto', texto, efectos, resultadosParaElModelo };
+        }
+        // D9, R14: solo la cantidad y si hubo reintento; el texto de la respuesta nunca va al log.
+        this.logger.warn({ evento: 'agente.dinero-sin-rastro', montos, reintento: !reintentoDinero });
+        if (reintentoDinero) {
+          return { tipo: 'derivar', motivo: 'dinero-sin-rastro' };
+        }
+        reintentoDinero = true;
+        mensajes.push({ rol: 'asistente', texto }, { rol: 'usuario', texto: MENSAJE_CORRECTIVO_DINERO });
+        continue;
       }
 
       mensajes.push({

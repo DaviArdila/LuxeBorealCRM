@@ -103,7 +103,7 @@ El modelo más seguro hoy es `gpt-5.6-luna`; el prompt necesita trabajo (08b). D
 | Tema | Decisión | Dónde |
 |---|---|---|
 | Proveedores LLM | OpenAI directo además de OpenRouter; claves en `.env` | [ADR-0019](adr/0019-proveedores-llm-configurables.md), P37-P40 |
-| Sin emojis, tono, estructura | **Hecho (08b):** `estilo.v2.md`, editable; las reglas no negociables van en `reglas.v2.md` | AGT13, AGT15 |
+| Sin emojis, tono, estructura | **Hecho (08b):** `estilo.v3.md`, editable; las reglas no negociables van en `reglas.v3.md` (v3: cita literal) | AGT13, AGT15 |
 | SKU interno; el cliente ve nombre con atributos | **Hecho (08b):** el modelo maneja el `id` | P42, AGT16 |
 | Una foto por defecto, otro ángulo bajo demanda con pie de foto | **Hecho (08b):** `foto.angulo`, `enviar_fotos`, pie del backend | R13, AGT9, AGT17, CAT14 |
 | Collage del importador | **Hecho (08b):** opcional y apagado (`CATALOGO_GENERAR_COLLAGE`), sin casillas vacías | P44, IMP15, MED8 |

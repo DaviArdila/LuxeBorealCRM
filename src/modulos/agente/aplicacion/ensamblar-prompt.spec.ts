@@ -86,7 +86,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     const resultado = await ensamblar.ensamblar({ instruccionesTurno: [] });
 
-    expect(resultado).toMatchObject({ version: 'v2', versionEstilo: 5 });
+    expect(resultado).toMatchObject({ version: 'v3', versionEstilo: 5 });
     expect(JSON.stringify({ version: resultado.version, versionEstilo: resultado.versionEstilo })).not.toContain('ESTILO-PUBLICADO');
   });
 
@@ -111,7 +111,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   it('entrega la versión del prompt para el log del turno', async () => {
     const { ensamblar } = crear();
 
-    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v2' });
+    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v3' });
   });
 
   it('las reglas incluyen la política de citar políticas, el recargo sin porcentaje y la ubicación', () => {
@@ -125,5 +125,17 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.reglas).toMatch(/enviar_fotos/);
     expect(cargador.reglas).toMatch(/ángulo/i);
     expect(cargador.reglas).not.toMatch(/collage/i);
+  });
+
+  it('las reglas exigen citar literal los textos de las herramientas y no repetir llamadas (v3)', () => {
+    const { cargador } = crear();
+
+    expect(cargador.reglas).toMatch(/palabra por palabra/i);
+    for (const campo of ['precio_texto', 'rango_texto', 'dias_texto', 'mensaje_sin_cobertura', 'politica_contraentrega_texto']) {
+      expect(cargador.reglas).toContain(`\`${campo}\``);
+    }
+    expect(cargador.reglas).toMatch(/nunca dentro de ella/i);
+    expect(cargador.reglas).toMatch(/no llames a otra herramienta para lo mismo/i);
+    expect(cargador.reglas).toMatch(/no lo adivines/i);
   });
 });

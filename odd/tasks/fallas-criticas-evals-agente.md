@@ -41,10 +41,10 @@ Ruta por tarea: **delegada** (un escritor), por el disparador de 2+ archivos no 
       `textoAusente` sin frases del cliente, `r2-recargo-sin-porcentaje` según D1, giro del negocio en
       `saludo`).
 - [x] **T3** `auditar-dinero.ts` detecta `COP`, «pesos», «mil» y miles con separador; valida el valor completo.
-- [ ] **T4** Guarda: `dinero-sin-rastro` bloquea (un reintento con mensaje correctivo; si persiste, traspaso
+- [x] **T4** Guarda: `dinero-sin-rastro` bloquea (un reintento con mensaje correctivo; si persiste, traspaso
       con texto de cortesía).
-- [ ] **T5** Guarda: `mensaje_sin_cobertura` sale literal desde el backend.
-- [ ] **T6** Regla no negociable de cita literal en `reglas` (nueva versión del prompt) y evals guionadas.
+- [x] **T5** Guarda: `mensaje_sin_cobertura` sale literal desde el backend.
+- [x] **T6** Regla no negociable de cita literal en `reglas` (nueva versión del prompt) y evals guionadas.
 - [ ] **T7** Cierre: corrida real contra el umbral, specs delta de `agente` y guía de operación.
 
 Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por riesgo de falsos positivos.
@@ -62,6 +62,9 @@ Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por ri
 | T1 | delegada | 3ef526d | no aplica (RDD no consultado) |
 | T2 | delegada | faff942 | idem |
 | T3 | delegada | 484d0d2 | idem |
-| T4-T7 | pendiente | — | — |
+| T6 | delegada | 26bc1ae | no aplica (RDD no consultado) |
+| T4 | delegada | a21bd8a | idem |
+| T5 | delegada | a689986 | idem |
+| T7 | pendiente | — | — |
 
-Siguiente paso: T6, luego T4, T5 y T7. Nota: `test:integracion` falla en `prompts-build.spec.ts` por `spawnSync npx ENOENT` (entorno Windows), ajena a estos cambios.
+Siguiente paso: T7 (corrida real y specs delta). Para T7: la guarda de T4 reintenta una vez y traspasa como `fallo-llm`; el negativo de evals `neg-dinero` se reemplazó por dos casos guionados (la guarda lo hace inalcanzable por el agente; la detección sigue en `aserciones.spec`), así que la spec de `agente` (EVL2, «cada aserción con un negativo») y la de AGT/R1 deben reflejarlo; T5 añade el mensaje literal al final del texto; el prompt pasó a `v3` (reglas, estilo y turno). Nota: `test:integracion` falla en `prompts-build.spec.ts` por `spawnSync npx ENOENT` (entorno Windows), ajena a estos cambios.

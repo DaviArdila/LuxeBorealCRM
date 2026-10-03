@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Injectable, type OnModuleInit } from '@nestjs/common';
 
-/** Versión de los archivos de `prompts/`: el sufijo `.v1.md`. Un cambio de prompt sube la versión. */
-const VERSION_PROMPT = 'v2';
+/** Versión de los archivos de `prompts/`: el sufijo `.v3.md`. Un cambio de prompt sube la versión. */
+const VERSION_PROMPT = 'v3';
 
 /**
  * Carga una sola vez, al arrancar, los archivos versionados del prompt (D8 de la Fase 07b, AGT13): `reglas`
