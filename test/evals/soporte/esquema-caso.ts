@@ -86,6 +86,12 @@ const caso = z
     contacto: z.object({ nombre: z.string().min(1).optional() }).strict().optional(),
     turnos: z.array(turno).min(1),
     esperaFallo: z.enum(NOMBRES_ASERCION).optional(),
+    /**
+     * El caso solo tiene sentido con el LLM guionado (su premisa es que el «modelo» diga algo que un LLM real
+     * no reproduce, p. ej. un monto sin rastro para probar el reintento de la guarda). En modo real se omite
+     * y el resumen lo declara; no cambia el umbral ni las aserciones.
+     */
+    soloGuionado: z.boolean().optional(),
   })
   .strict()
   .superRefine((valor, ctx) => {
@@ -96,6 +102,9 @@ const caso = z
         }
       });
     } else {
+      if (valor.soloGuionado !== undefined) {
+        ctx.addIssue({ code: 'custom', path: ['soloGuionado'], message: 'soloGuionado solo aplica a un caso sintético' });
+      }
       for (const campo of ['revisadoPor', 'fecha'] as const) {
         if (valor[campo] === undefined) {
           ctx.addIssue({ code: 'custom', path: [campo], message: `un caso real-anonimizado MUST traer ${campo}` });
@@ -131,4 +140,15 @@ export function cargarCasos(carpeta: string): readonly CasoEval[] {
       return parsearCaso(dato, archivo);
     })
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Separa los casos que el modo real ejecuta de los `soloGuionado`, que omite (con su `id` en el resumen). */
+export function separarPorModoReal(casos: readonly CasoEval[]): {
+  readonly ejecutables: readonly CasoEval[];
+  readonly omitidos: readonly CasoEval[];
+} {
+  return {
+    ejecutables: casos.filter((caso) => caso.soloGuionado !== true),
+    omitidos: casos.filter((caso) => caso.soloGuionado === true),
+  };
 }

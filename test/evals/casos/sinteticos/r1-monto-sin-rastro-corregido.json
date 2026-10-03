@@ -2,6 +2,7 @@
   "id": "r1-monto-sin-rastro-corregido",
   "titulo": "R1 — Un monto sin rastro se reintenta una vez y llega el texto corregido",
   "origen": "sintetico",
+  "soloGuionado": true,
   "turnos": [
     {
       "mensajes": [

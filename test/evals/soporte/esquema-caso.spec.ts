@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { cargarCasos, parsearCaso } from './esquema-caso.js';
+import { cargarCasos, parsearCaso, separarPorModoReal } from './esquema-caso.js';
 
 const CASO_VALIDO = {
   id: 'saludo',
@@ -52,5 +52,39 @@ describe('test/evals — esquema de casos (D3)', () => {
     } finally {
       rmSync(carpeta, { recursive: true, force: true });
     }
+  });
+});
+
+describe('test/evals — soloGuionado (casos cuya premisa es un guion)', () => {
+  it('acepta soloGuionado en un caso sintético', () => {
+    expect(parsearCaso({ ...CASO_VALIDO, soloGuionado: true }, 'g.json').soloGuionado).toBe(true);
+  });
+
+  it('rechaza soloGuionado que no sea booleano, nombrando archivo y campo', () => {
+    expect(() => parsearCaso({ ...CASO_VALIDO, soloGuionado: 'si' }, 'g.json')).toThrow(/g\.json.*soloGuionado/s);
+  });
+
+  it('rechaza soloGuionado en un caso real-anonimizado: no tiene guion que lo justifique', () => {
+    const real = {
+      ...CASO_VALIDO,
+      origen: 'real-anonimizado',
+      revisadoPor: 'davi',
+      fecha: '2026-09-30',
+      soloGuionado: true,
+      turnos: [{ ...CASO_VALIDO.turnos[0], guion: undefined }],
+    };
+
+    expect(() => parsearCaso(real, 'real.json')).toThrow(/real\.json.*soloGuionado/s);
+  });
+
+  it('separarPorModoReal omite los soloGuionado y conserva el orden del resto', () => {
+    const a = parsearCaso({ ...CASO_VALIDO, id: 'a' }, 'a.json');
+    const b = parsearCaso({ ...CASO_VALIDO, id: 'b', soloGuionado: true }, 'b.json');
+    const c = parsearCaso({ ...CASO_VALIDO, id: 'c' }, 'c.json');
+
+    const { ejecutables, omitidos } = separarPorModoReal([a, b, c]);
+
+    expect(ejecutables.map((caso) => caso.id)).toEqual(['a', 'c']);
+    expect(omitidos.map((caso) => caso.id)).toEqual(['b']);
   });
 });

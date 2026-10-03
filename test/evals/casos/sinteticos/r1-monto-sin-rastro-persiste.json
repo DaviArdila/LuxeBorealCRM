@@ -2,6 +2,7 @@
   "id": "r1-monto-sin-rastro-persiste",
   "titulo": "R1 — Si el monto sin rastro persiste tras el reintento, se traspasa a un asesor",
   "origen": "sintetico",
+  "soloGuionado": true,
   "turnos": [
     {
       "mensajes": [
