@@ -1,7 +1,7 @@
 # Proposal: Fase 08d — Avisos al asesor con enlace a la conversación
 
 - Change: `fase-08d-avisos-con-enlace` · Fase de la hoja de ruta: **08d** · Rama: `fase-08d-avisos-con-enlace`
-- Fecha: 2026-10-01 · Estado: **aprobada (2026-10-01)**, Q1-Q5 con la recomendación de cada una
+- Fecha: 2026-10-01 · Estado: **cerrada con pendiente `[manual]`** (2026-10-01; ver `verify-report.md`)
 - Depende de: **08 cerrada** (leads, outbox, Telegram) y **08c cerrada**.
 
 ## Intent

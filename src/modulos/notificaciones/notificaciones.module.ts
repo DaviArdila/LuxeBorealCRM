@@ -3,8 +3,10 @@ import { OutboxModule, RegistroManejadoresOutbox } from '../../plataforma/outbox
 import {
   ObservadoresHandoffModule,
   ReferenciaConversacionModule,
+  RegistroObservadoresEspera,
   RegistroObservadoresHandoff,
 } from '../conversaciones/index.js';
+import { AvisoEsperaCliente } from './aplicacion/aviso-espera-cliente.js';
 import { AvisoTraspaso } from './aplicacion/aviso-traspaso.js';
 import { EncolarAviso, TIPO_OUTBOX_NOTIFICACION_TELEGRAM } from './aplicacion/encolar-aviso.js';
 import { PublicarNotificacionTelegram } from './aplicacion/publicar-notificacion-telegram.js';
@@ -26,6 +28,7 @@ import { NOTIFICADOR } from './puertos/notificador.js';
     EncolarAviso,
     ResolverEnlaceConversacion,
     AvisoTraspaso,
+    AvisoEsperaCliente,
   ],
   exports: [EncolarAviso, ResolverEnlaceConversacion],
 })
@@ -35,11 +38,15 @@ export class NotificacionesModule implements OnModuleInit {
     private readonly publicarNotificacionTelegram: PublicarNotificacionTelegram,
     private readonly registroObservadoresHandoff: RegistroObservadoresHandoff,
     private readonly avisoTraspaso: AvisoTraspaso,
+    private readonly registroObservadoresEspera: RegistroObservadoresEspera,
+    private readonly avisoEsperaCliente: AvisoEsperaCliente,
   ) {}
 
   onModuleInit(): void {
     this.registroManejadoresOutbox.registrar(TIPO_OUTBOX_NOTIFICACION_TELEGRAM, this.publicarNotificacionTelegram);
     // NTF6: avisa de los traspasos que no nacen de un lead, solo después de confirmada la transición (NTF3).
     this.registroObservadoresHandoff.registrar(this.avisoTraspaso);
+    // NTF7: avisa de un cliente que espera respuesta bajo control humano (lo dispara `BarridoEsperas`).
+    this.registroObservadoresEspera.registrar(this.avisoEsperaCliente);
   }
 }

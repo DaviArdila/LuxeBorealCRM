@@ -15,6 +15,7 @@ import { ContadorRateLimit } from '../infraestructura/redis/contador-rate-limit.
 import { MarcaEsperaHandoff } from '../infraestructura/redis/marca-espera-handoff.js';
 import { MarcaMensajeProcesado } from '../infraestructura/redis/marca-mensaje-procesado.js';
 import type { MensajeTurno } from '../puertos/generador-respuesta.js';
+import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../puertos/marca-espera-cliente.js';
 import { INTERRUPTOR_GLOBAL, type InterruptorGlobal } from '../puertos/interruptor-global.js';
 import {
   REPOSITORIO_PARAMETRO_CONVERSACIONES,
@@ -52,6 +53,7 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     private readonly marcaEsperaHandoff: MarcaEsperaHandoff,
     private readonly marcaMensajeProcesado: MarcaMensajeProcesado,
     private readonly transicionarConversacion: TransicionarConversacion,
+    @Inject(MARCA_ESPERA_CLIENTE) private readonly marcaEsperaCliente: MarcaEsperaCliente,
   ) {}
 
   async consumir(evento: EventoCanal): Promise<void> {
@@ -115,6 +117,9 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     const dentroDelLimite = await this.contadorRateLimit.verificarLimite(conversacion.contactoId);
     if (!dentroDelLimite) return;
 
+    if (conversacion.estado === 'humano' || conversacion.estado === 'handoff_pendiente') {
+      await this.registrarEsperaDelCliente(conversacion);
+    }
     if (conversacion.estado === 'handoff_pendiente') {
       await this.avisarEsperaSiCorresponde(conversacion);
       return;
@@ -134,6 +139,22 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     };
     await this.buffer.push(conversacion.id, JSON.stringify(mensaje));
     await this.colaTurno.encolarConDebounce(conversacion.id);
+  }
+
+  /**
+   * CNV12 (Fase 08d): un mensaje del cliente bajo control humano deja constancia de que espera respuesta, con el instante
+   * del primero sin contestar y sin guardar su contenido (R14). Es de apoyo: si el almacén falla, el mensaje sigue su
+   * camino y solo queda un `warn`; nunca se pierde ni se reintenta por esto.
+   */
+  private async registrarEsperaDelCliente(conversacion: Conversacion): Promise<void> {
+    try {
+      await this.marcaEsperaCliente.registrar(conversacion.id, this.clock.ahora());
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.espera-cliente-registro-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
+    }
   }
 
   /**

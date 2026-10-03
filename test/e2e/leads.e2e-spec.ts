@@ -11,6 +11,8 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../../src/app.module.js';
 import { configurarAplicacion, OPCIONES_APLICACION } from '../../src/configurar-aplicacion.js';
+import { BarridoEsperas } from '../../src/modulos/conversaciones/infraestructura/colas/barrido-esperas.js';
+import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import { LLM_PORT } from '../../src/modulos/llm/index.js';
 import { ALMACENAMIENTO } from '../../src/modulos/medios/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
@@ -29,7 +31,11 @@ const SECRETO = 'secreto-e2e-leads';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
 const DEBOUNCE_MS = 200;
 
-function configuracionDePrueba(chatwootFalso: ChatwootFalso, telegramFalso: TelegramFalso): Configuracion {
+function configuracionDePrueba(
+  chatwootFalso: ChatwootFalso,
+  telegramFalso: TelegramFalso,
+  extra: Partial<Configuracion> = {},
+): Configuracion {
   return {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -78,6 +84,7 @@ function configuracionDePrueba(chatwootFalso: ChatwootFalso, telegramFalso: Tele
     TELEGRAM_CHAT_ID: '-100555',
     TELEGRAM_API_URL: telegramFalso.url(),
     LEADS_BARRIDO_MS: 1000,
+    ...extra,
   };
 }
 
@@ -87,10 +94,11 @@ async function crearAplicacion(
   telegramFalso: TelegramFalso,
   llm: FakePuertoLlm,
   almacenamiento: AlmacenamientoEnMemoria,
+  extra: Partial<Configuracion> = {},
 ): Promise<INestApplication> {
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIGURACION)
-    .useValue(configuracionDePrueba(chatwootFalso, telegramFalso))
+    .useValue(configuracionDePrueba(chatwootFalso, telegramFalso, extra))
     .overrideProvider(LLM_PORT)
     .useValue(llm)
     .overrideProvider(ALMACENAMIENTO)
@@ -217,10 +225,10 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     await telegramFalso.detener();
   });
 
-  async function arrancar(): Promise<INestApplication> {
+  async function arrancar(extra: Partial<Configuracion> = {}): Promise<INestApplication> {
     llm = new FakePuertoLlm();
     almacenamiento = new AlmacenamientoEnMemoria();
-    app = await crearAplicacion(chatwootFalso, telegramFalso, llm, almacenamiento);
+    app = await crearAplicacion(chatwootFalso, telegramFalso, llm, almacenamiento, extra);
     return app;
   }
 
@@ -495,5 +503,72 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(telegramFalso.llamadasRegistradas()).toHaveLength(1);
     const lead = await prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } });
     expect(lead.recordatorioEn).not.toBeNull();
+  }, 60_000);
+
+  it('NTF6 — El tope de turnos pasa a un asesor y avisa por Telegram con el motivo y el enlace, sin crear un lead', async () => {
+    const aplicacion = await arrancar({ AGENTE_TOPE_TURNOS: 1 });
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar({ respuesta: { texto: 'Hola, ¿en qué te ayudo?' } });
+    const { idConversacion, idContacto } = nuevaConversacion();
+
+    const idPrimero = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), idPrimero, 'Hola');
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: idPrimero });
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(0); // un turno normal no avisa a nadie
+
+    const idSegundo = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), idSegundo, '¿Tienen regaderas?');
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: idSegundo });
+    await esperarMensajes(chatwootFalso, idConversacion, 2); // el texto de traspaso al cliente
+
+    const [aviso] = await esperarAvisos(1);
+    expect(aviso.startsWith('Traspaso:')).toBe(true);
+    expect(aviso).toContain('tope de turnos');
+    const lineaAtender = aviso.split('\n').find((linea) => linea.startsWith('Atender: '));
+    expect(lineaAtender).toMatch(new RegExp(`/app/accounts/1/conversations/${String(idConversacion)}$`));
+    expect(aviso).not.toContain(String(idContacto));
+    const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
+    expect(conversacion.estado).toBe('handoff_pendiente');
+    await expect(prisma.lead.count({ where: { contactoId: conversacion.contactoId } })).resolves.toBe(0);
+  }, 60_000);
+
+  it('NTF7 — Un cliente que escribe bajo control humano y no recibe respuesta provoca un aviso de espera con el enlace', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const { idConversacion, idContacto } = nuevaConversacion();
+    const contacto = await prisma.contacto.create({ data: { chatwootContactId: idContacto } });
+    const conversacion = await prisma.conversacion.create({
+      data: { contactoId: contacto.id, chatwootConversationId: idConversacion, canal: 'whatsapp', estado: 'humano' },
+    });
+    const marca = aplicacion.get<MarcaEsperaCliente>(MARCA_ESPERA_CLIENTE);
+    const ahora = new ClockSistema().ahora();
+
+    // El cliente escribe con la conversación en humano: el bot calla y queda registrada la espera (CNV12).
+    const idMensaje = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, 'Quiero comprarla');
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje });
+    const lejos = new Date(ahora.getTime() + 3_600_000);
+    await vi.waitFor(
+      async () => {
+        const esperas = await marca.vencidas(lejos, 1000);
+        expect(esperas.some((espera) => espera.conversacionId === conversacion.id)).toBe(true);
+      },
+      { timeout: 15_000, interval: 100 },
+    );
+    expect(mensajesPosteados(chatwootFalso, idConversacion)).toHaveLength(0);
+
+    // Pasan 11 minutos sin respuesta: se retrocede el instante de la espera (el reloj de la app no se adelanta, el
+    // webhook firmado depende de él) y corre el barrido.
+    await marca.cerrar(conversacion.id);
+    await marca.registrar(conversacion.id, new Date(ahora.getTime() - 11 * 60_000));
+    await aplicacion.get(BarridoEsperas).ejecutarBarrido();
+
+    const [aviso] = await esperarAvisos(1);
+    expect(aviso.startsWith('Cliente esperando:')).toBe(true);
+    expect(aviso).toContain('hace 11 min');
+    const lineaAtender = aviso.split('\n').find((linea) => linea.startsWith('Atender: '));
+    expect(lineaAtender).toMatch(new RegExp(`/app/accounts/1/conversations/${String(idConversacion)}$`));
+    expect(aviso).not.toContain('Quiero comprarla'); // R14: el aviso nunca lleva el contenido del mensaje
   }, 60_000);
 });

@@ -7,6 +7,8 @@ import { ConsumidorConversaciones } from '../../../src/modulos/conversaciones/ap
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
 import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
+import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
+import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
@@ -214,6 +216,7 @@ async function crearAplicacion(
       ColaTurno,
       ProcesarTurno,
       RegistroObservadoresHandoff,
+      { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       ConsumidorConversaciones,
     ],
@@ -561,5 +564,96 @@ describe('ConsumidorConversaciones (T5, integración, D5/CNV2/CNV4/CNV5/R8/R13)'
 
     expect(await buffer.tamano(id)).toBe(1);
     expect(buffer.intentos).toBe(2);
+  });
+});
+
+describe('ConsumidorConversaciones — 08d: cliente esperando (CNV12)', () => {
+  let app: INestApplication | undefined;
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await app?.close();
+    app = undefined;
+  });
+
+  const LEJOS = new Date('2100-01-01T00:00:00Z');
+
+  async function esperasDe(id: string) {
+    if (app === undefined) throw new Error('la aplicación no arrancó');
+    const marca = app.get<MarcaEsperaCliente>(MARCA_ESPERA_CLIENTE);
+    return (await marca.vencidas(LEJOS, 1000)).filter((espera) => espera.conversacionId === id);
+  }
+
+  async function arrancar(estado: 'bot' | 'humano' | 'handoff_pendiente') {
+    const contexto = await crearAplicacion();
+    app = contexto.app;
+    const prisma = app.get(PrismaService);
+    const consumidor = app.get(ConsumidorConversaciones);
+    const conversacion = await crearConversacion(prisma, estado);
+    return { consumidor, prisma, ...conversacion };
+  }
+
+  it('CNV12 — el primer mensaje del cliente en humano abre la espera; uno posterior no cambia su instante', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('humano');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+    const primera = await esperasDe(id);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e2'));
+
+    expect(primera).toHaveLength(1);
+    expect(Number.isNaN(primera[0]?.desde.getTime())).toBe(false);
+    expect(await esperasDe(id)).toEqual(primera);
+  });
+
+  it('CNV12 — en handoff pendiente el cliente que escribe también queda esperando', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('handoff_pendiente');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+
+    expect(await esperasDe(id)).toHaveLength(1);
+  });
+
+  it('CNV12 — una conversación en bot no abre espera', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('bot');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+
+    expect(await esperasDe(id)).toEqual([]);
+  });
+
+  it('CNV12 — el eco humano (un asesor escribió) cierra la espera', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('humano');
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+    expect(await esperasDe(id)).toHaveLength(1);
+
+    await consumidor.consumir(eventoMensajeHumano(chatwootConversationId, 'asesor-1'));
+
+    expect(await esperasDe(id)).toEqual([]);
+  });
+
+  it('CNV12 — que Chatwoot resuelva la conversación cierra la espera', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('humano');
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+
+    await consumidor.consumir(eventoCambioEstado(chatwootConversationId, 'resuelta'));
+
+    expect(await esperasDe(id)).toEqual([]);
+  });
+
+  it('CNV12 — un fallo al registrar la espera no pierde el mensaje ni lanza', async () => {
+    const { consumidor, chatwootConversationId } = await arrancar('humano');
+    vi.spyOn(app!.get<MarcaEsperaCliente>(MARCA_ESPERA_CLIENTE), 'registrar').mockRejectedValue(new Error('redis caído'));
+
+    await expect(consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'))).resolves.toBeUndefined();
+  });
+
+  it('CNV12 — con el interruptor global apagado no se registra espera', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('humano');
+    vi.spyOn(app!.get<InterruptorGlobalRedis>(INTERRUPTOR_GLOBAL), 'estaActivo').mockResolvedValue(false);
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+
+    expect(await esperasDe(id)).toEqual([]);
   });
 });

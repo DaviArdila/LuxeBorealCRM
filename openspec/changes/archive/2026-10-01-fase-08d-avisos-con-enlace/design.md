@@ -1,6 +1,6 @@
 # Design: Fase 08d — Avisos al asesor con enlace a la conversación
 
-- Change: `fase-08d-avisos-con-enlace` · Fecha: 2026-10-01 · Estado: **diseño aprobado (2026-10-01)**
+- Change: `fase-08d-avisos-con-enlace` · Fecha: 2026-10-01 · Estado: **implementado (2026-10-01)**
 - Proposal: `proposal.md` · Specs: `notificaciones` (NTF1 y NTF2 modificados; NTF5-NTF7), `conversaciones` (CNV12)
 - ADRs: ninguno nuevo (ver D4: solo habría ADR si el dueño elige la columna de la Q3)
 

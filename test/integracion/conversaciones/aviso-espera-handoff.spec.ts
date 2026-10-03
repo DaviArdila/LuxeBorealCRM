@@ -9,6 +9,8 @@ import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
+import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
+import { MARCA_ESPERA_CLIENTE } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import { BufferTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestructura/redis/contador-rate-limit.js';
@@ -149,6 +151,7 @@ async function crearAplicacion(): Promise<{
       ColaTurno,
       ProcesarTurno,
       RegistroObservadoresHandoff,
+      { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       ConsumidorConversaciones,
     ],

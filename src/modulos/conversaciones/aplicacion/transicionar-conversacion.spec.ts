@@ -1,6 +1,7 @@
 import type { SalidaCanal, SolicitudCambioEstado, SolicitudEtiquetas } from '../../canales/index.js';
 import type { Configuracion } from '../../../plataforma/config/index.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
+import { MarcaEsperaClienteEnMemoria } from '../../../../test/fakes/marca-espera-cliente-en-memoria.js';
 import { TransicionInvalida } from '../dominio/maquina-estados.js';
 import type { Conversacion, RepositorioConversacion } from '../puertos/repositorio-conversacion.js';
 import { ConflictoDeVersionPersistente, TransicionarConversacion } from './transicionar-conversacion.js';
@@ -77,8 +78,9 @@ function crearCasoDeUso(
   repositorio: RepositorioConversacionFalso,
   clock: ClockFalso,
   salida: SalidaCanal = new SalidaCanalFalsa(),
+  marcaEspera = new MarcaEsperaClienteEnMemoria(),
 ) {
-  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA, salida);
+  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA, salida, marcaEspera);
 }
 
 describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () => {
@@ -201,5 +203,62 @@ describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () =>
     await casoDeUso.ejecutar(conversacionDePrueba({ estado: 'bot', version: 4 }), 'handoff_pendiente', 'regla_handoff_explicita');
 
     expect(salida.etiquetas).toEqual([]);
+  });
+});
+
+describe('TransicionarConversacion — 08d: la espera del cliente se cierra (CNV12)', () => {
+  const AHORA = new Date('2026-10-01T10:00:00Z');
+
+  async function transicionarA(
+    destino: Parameters<TransicionarConversacion['ejecutar']>[1],
+    origen: Parameters<TransicionarConversacion['ejecutar']>[2],
+    marca = new MarcaEsperaClienteEnMemoria(),
+  ) {
+    await marca.registrar('conv-1', AHORA);
+    const repositorio = new RepositorioConversacionFalso();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: destino, version: 2 }));
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(AHORA), new SalidaCanalFalsa(), marca);
+    await casoDeUso.ejecutar(conversacionDePrueba(), destino, origen);
+    return marca;
+  }
+
+  it('CNV12 — volver a bot por vencimiento (ttl) borra la espera', async () => {
+    const marca = await transicionarA('bot', 'ttl');
+
+    expect(marca.pendientes.has('conv-1')).toBe(false);
+  });
+
+  it('CNV12 — volver a bot porque Chatwoot resolvió la conversación borra la espera', async () => {
+    const marca = await transicionarA('bot', 'chatwoot_resolved');
+
+    expect(marca.pendientes.has('conv-1')).toBe(false);
+  });
+
+  it('CNV12 — un eco humano (un asesor escribió) borra la espera, también la ya avisada', async () => {
+    const marca = new MarcaEsperaClienteEnMemoria();
+    await marca.registrar('conv-1', AHORA);
+    await marca.reclamarAviso('conv-1');
+
+    await transicionarA('humano', 'eco_humano', marca);
+
+    expect(marca.avisadas.has('conv-1')).toBe(false);
+    expect(marca.pendientes.has('conv-1')).toBe(false);
+  });
+
+  it('CNV12 — pasar a handoff pendiente no toca la espera: el cliente sigue sin respuesta', async () => {
+    const marca = await transicionarA('handoff_pendiente', 'regla_handoff_explicita');
+
+    expect(marca.pendientes.has('conv-1')).toBe(true);
+  });
+
+  it('CNV12 — un fallo al cerrar la espera no hace fallar la transición', async () => {
+    const marca = new MarcaEsperaClienteEnMemoria();
+    marca.fallar = true;
+    const repositorio = new RepositorioConversacionFalso();
+    const actualizada = conversacionDePrueba({ estado: 'bot', version: 2 });
+    repositorio.programarRespuestas(actualizada);
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(AHORA), new SalidaCanalFalsa(), marca);
+
+    await expect(casoDeUso.ejecutar(conversacionDePrueba(), 'bot', 'ttl')).resolves.toEqual(actualizada);
   });
 });
