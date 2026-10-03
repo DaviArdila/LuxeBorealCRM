@@ -47,7 +47,10 @@ Ruta por tarea: **delegada** (un escritor), por el disparador de 2+ archivos no 
 - [x] **T6** Regla no negociable de cita literal en `reglas` (nueva versión del prompt) y evals guionadas.
 - [x] **T4b** La guarda de dinero acepta como rastro las cifras que escribió el cliente en el turno (hallazgo R4
       de la revisión nativa); extracción de `motivoDeHandoff` en `contenido-llm.ts`. Ruta: delegada.
-- [ ] **T7** Cierre: corrida real contra el umbral, specs delta de `agente` y guía de operación.
+- [x] **T7** Cierre: casos `soloGuionado` (f781f9f), change `fix-fallas-criticas-evals-agente` con delta de `agente`
+      (71bd811) y guía `docs/operacion/dinero-sin-rastro-y-evals-reales.md` (73eaa90). Ruta: delegada.
+      La corrida real de 2026-10-02 quedó REPROBADA (2 críticas en `r2-sin-cobertura`): la aceptación de
+      0 críticas **no se cumple**; la causa de esas 2 no está investigada.
 
 Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por riesgo de falsos positivos.
 
@@ -68,6 +71,6 @@ Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por ri
 | T4 | delegada | a21bd8a | idem |
 | T5 | delegada | a689986 | idem |
 | T4b | delegada | 674d35d | pendiente |
-| T7 | pendiente | — | — |
+| T7 | delegada | f781f9f, 71bd811, 73eaa90 | pendiente |
 
-Siguiente paso: T7 (corrida real y specs delta). Para T7: la guarda de T4 reintenta una vez y traspasa como `fallo-llm`; el negativo de evals `neg-dinero` se reemplazó por dos casos guionados (la guarda lo hace inalcanzable por el agente; la detección sigue en `aserciones.spec`), así que la spec de `agente` (EVL2, «cada aserción con un negativo») y la de AGT/R1 deben reflejarlo; T5 añade el mensaje literal al final del texto; el prompt pasó a `v3` (reglas, estilo y turno). Nota: `test:integracion` falla en `prompts-build.spec.ts` por `spawnSync npx ENOENT` (entorno Windows), ajena a estos cambios.
+Siguiente paso: investigar las 2 críticas de `r2-sin-cobertura` (`marcar_lead_caliente` y traspaso `lead-caliente`) y repetir la corrida real; no hay evidencia de que el bot esté listo para clientes. Push, PR y merge son decisión del usuario.
