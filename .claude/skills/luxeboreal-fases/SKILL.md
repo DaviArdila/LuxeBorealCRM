@@ -12,8 +12,13 @@ para una fase de este proyecto.
 Desde Gentle AI 4.0.0 (2026-10-02) no existen los agentes ni las skills `sdd-*` ni el CLI `openspec`
 (verificado con `gentle-ai sync`, que no los instala). El orquestador redacta los artefactos a mano
 con la estructura de abajo, sin comandos intermedios, y los implementa con el flujo ODD: el
-seguimiento vive en `odd/tasks/<fase>.md` (espejo en Engram) y la revisión la hace
-`gentle-ai review` nativo.
+seguimiento de una fase vive en el `tasks.md` de su change (espejo en Engram) y la revisión la
+hace `gentle-ai review` nativo.
+
+**Cuándo aplica esta skill.** Solo a las **fases del roadmap** (`docs/fases/README.md`), que exigen
+spec aprobada por el dueño. El trabajo fuera de fase (arreglos, mejoras, mantenimiento) va solo con
+ODD y `odd/tasks/<nombre>.md`, sin change de OpenSpec; si cambia un comportamiento ya especificado,
+actualiza también `openspec/specs/<dominio>/spec.md` en el mismo commit.
 
 Preflight de esta migración (actualizado 2026-10-02): **pace automático**, **artefactos híbridos** (OpenSpec en el repo +
 Engram como espejo de recuperación, proyecto `luxeborealcrm`), **estrategia de PR `auto-chain`** (cadena `stacked-to-main`).
