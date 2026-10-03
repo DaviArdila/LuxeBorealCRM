@@ -108,17 +108,19 @@ secretos o configuración del repo).
 - **Idioma**: la convención del proyecto es español para nombres de dominio y documentación; los
   sufijos técnicos de NestJS van en inglés (skill `luxeboreal-arquitectura` §8). Los
   agentes/subagentes no cambian los artefactos a inglés.
-- **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/`, recorrido con el
-  ciclo `sdd-new/sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify →
-  sdd-archive` (skill `luxeboreal-fases`; detalle de artefactos en
-  `.claude/skills/_shared/sdd-orchestrator-workflow.md`). Preflight de esta migración (actualizado 2026-09-23): pace
+- **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/` (proposal, specs,
+  design, tasks, verify-report). Desde Gentle AI 4.0.0 (2026-10-02) ya no existen los agentes ni las
+  skills `sdd-*` ni el CLI `openspec`: el orquestador redacta esos artefactos a mano, con la misma
+  estructura, y los implementa con el flujo ODD (`odd/tasks/<fase>.md`; método en la skill
+  `luxeboreal-fases`). Preflight de esta migración (actualizado 2026-10-02): pace
   **automático**, artefactos **híbridos** (OpenSpec en el repo + Engram, proyecto
   `luxeborealcrm` — correr las sesiones desde la raíz del repo; si la detección automática de
   proyecto falla, pasarlo explícito), estrategia de PR **`auto-chain`** con
   cadena `stacked-to-main`. Equivalencia de estados
-  de `docs/fases/README.md`: `spec en revisión` ≈ propose+spec+design+tasks; `aprobada` ≈ el usuario
-  las aprueba; `en curso` ≈ apply (cada tarea de `tasks.md` cierra con un commit de unidad de
-  trabajo); `cerrada` ≈ verify+archive (fusiona los delta specs en `openspec/specs/`).
+  de `docs/fases/README.md`: `spec en revisión` ≈ proposal+specs+design+tasks redactados; `aprobada` ≈
+  el usuario las aprueba; `en curso` ≈ implementación (cada tarea de `tasks.md` cierra con un commit de
+  unidad de trabajo); `cerrada` ≈ `verify-report.md` + archivo del change (fusiona los delta specs en
+  `openspec/specs/`).
 - **TDD estricto**: por tarea, RED observado → GREEN → REFACTOR; runner Vitest (ESM, `npm test`),
   registrado en la spec de cada fase.
 - **Entrega**: presupuesto de ~400 líneas cambiadas por PR (skills `work-unit-commits`,
