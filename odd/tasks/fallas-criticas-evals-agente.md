@@ -64,13 +64,37 @@ Orden: T1 → T2 → T3 → T6 → T4 → T5 → T7. T4 va después de T1 por ri
 
 | Tarea | Ruta | Commit | Revisión nativa |
 |---|---|---|---|
-| T1 | delegada | 3ef526d | no aplica (RDD no consultado) |
+| T1 | delegada | 3ef526d | aprobada (rango T1-T6, riesgo alto) |
 | T2 | delegada | faff942 | idem |
 | T3 | delegada | 484d0d2 | idem |
-| T6 | delegada | 26bc1ae | no aplica (RDD no consultado) |
+| T6 | delegada | 26bc1ae | idem |
 | T4 | delegada | a21bd8a | idem |
 | T5 | delegada | a689986 | idem |
-| T4b | delegada | 674d35d | pendiente |
-| T7 | delegada | f781f9f, 71bd811, 73eaa90 | pendiente |
+| T4b | delegada | 674d35d | aprobada (rango T4b-T7, riesgo medio) |
+| T7 | delegada | f781f9f, 71bd811, 73eaa90 | idem |
 
-Siguiente paso: investigar las 2 críticas de `r2-sin-cobertura` (`marcar_lead_caliente` y traspaso `lead-caliente`) y repetir la corrida real; no hay evidencia de que el bot esté listo para clientes. Push, PR y merge son decisión del usuario.
+Revisión nativa: T1-T6 aprobada con 0 hallazgos bloqueantes y 3 informativos (el falso positivo por cifra del
+cliente se corrigió en T4b); T4b-T7 aprobada con 1 informativo (R3: falta una prueba con dos mensajes de la
+ráfaga, cada uno con su cifra; trabajo posterior, no bloquea).
+
+## Entrega
+
+Estrategia: `auto-chain`, cadena `stacked-to-main`. Tres PRs apilados sobre `main` (la cadena 08d ya entró):
+
+| PR | Rama | Contiene | Líneas |
+|---|---|---|---|
+| 1/3 | `fix/agente-fallas-criticas-evals-p1` | T1-T3: arnés, casos y parser de montos | 266 |
+| 2/3 | `fix/agente-fallas-criticas-evals-p2` | T6, T4, T5: regla de cita literal, guarda de dinero, mensaje literal | 515 |
+| 3/3 | `fix/agente-fallas-criticas-evals-p3` | T4b y T7: cifra del cliente, arnés real, specs y guía | 568 |
+
+**Excepción de tamaño (~400 líneas).** El PR 2/3 pasa por el renombrado de los tres prompts de `v2` a `v3`
+(`VERSION_PROMPT` es una sola constante, así que `estilo` y `turno` se mueven con `reglas`) y el 3/3 lleva
+documentación (specs y guía). Partirlos separaría una guarda de su prueba. Cada uno ya pasó revisión nativa.
+
+## Pendiente
+
+- Decisión del dueño: ¿un cliente que pide envío a un destino sin cobertura debe pasar a un asesor como lead
+  caliente? Causa de las 2 críticas de `r2-sin-cobertura` en la corrida real del 2026-10-02.
+- Repetir la corrida real cuando se decida; no hay evidencia de que el bot esté listo para clientes.
+- Carrera intermitente en `MarcaMensajeProcesado.conectarSiHaceFalta` (no cubre `connecting`/`reconnecting` con
+  `enableOfflineQueue: false`): falló una vez en CI (`CNV12`), hipótesis sin reproducir.
