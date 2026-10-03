@@ -33,5 +33,33 @@
     "motivo": "Severidad heredada de @prisma/config y mysql2 (sin aviso propio). Mismo origen y mismo remedio: bajar a prisma 6.19.3 (major, fuera de alcance de 00b). Revisar cuando Prisma publique un parche en la serie 7.x o el proyecto decida migrar de mayor.",
     "fecha": "2026-09-24",
     "revisar_antes_de": "2026-12-24"
+  },
+  {
+    "id": "1240992",
+    "paquete": "braces",
+    "motivo": "braces <=3.0.3 (GHSA-vfj7-8cjw-p6xm, agotamiento de pila con patrones muy anidados): dependencia transitiva de @stoplight/spectral-cli (fast-glob -> micromatch -> braces), herramienta de desarrollo que solo lintea el contrato OpenAPI en local y en CI; no se despliega. Sin parche publicado: 3.0.3 es la última versión.",
+    "fecha": "2026-10-02",
+    "revisar_antes_de": "2027-01-02"
+  },
+  {
+    "id": "npm-audit:micromatch",
+    "paquete": "micromatch",
+    "motivo": "Severidad heredada únicamente de braces (sin aviso propio). Mismo origen y mismo remedio que la excepción de braces: esperar un parche de braces.",
+    "fecha": "2026-10-02",
+    "revisar_antes_de": "2027-01-02"
+  },
+  {
+    "id": "npm-audit:fast-glob",
+    "paquete": "fast-glob",
+    "motivo": "Severidad heredada de micromatch y braces (sin aviso propio). Mismo origen y mismo remedio que la excepción de braces.",
+    "fecha": "2026-10-02",
+    "revisar_antes_de": "2027-01-02"
+  },
+  {
+    "id": "npm-audit:@stoplight/spectral-cli",
+    "paquete": "@stoplight/spectral-cli",
+    "motivo": "Severidad heredada de fast-glob (sin aviso propio); fija fast-glob ~3.2.12 incluso en su última versión (6.17.0). Solo se usa en desarrollo para npm run contrato:lint. Revisar cuando braces publique un parche o si se cambia de linter de OpenAPI.",
+    "fecha": "2026-10-02",
+    "revisar_antes_de": "2027-01-02"
   }
 ]
