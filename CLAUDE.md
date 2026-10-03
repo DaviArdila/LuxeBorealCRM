@@ -51,8 +51,16 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 
 ## Cómo se trabaja
 
-- **Nada se implementa sin una spec de fase aprobada por el usuario.** Si una tarea no está en la
-  spec de la fase en curso, se pregunta antes de hacerla.
+- **Dos rutas, según el tipo de trabajo** (ambas con el flujo ODD de Gentle AI: explorar primero,
+  tareas con seguimiento, TDD y un commit por unidad de trabajo):
+  - **Fase del roadmap** (`docs/fases/README.md`): **nada se implementa sin una spec de fase
+    aprobada por el usuario** (change de OpenSpec, ver «Flujo de trabajo»). Si una tarea no está en
+    esa spec, se pregunta antes de hacerla.
+  - **Trabajo fuera de fase** (arreglos, mejoras puntuales, mantenimiento): solo ODD, sin change de
+    OpenSpec; el seguimiento va en `odd/tasks/<nombre>.md`. No necesita aprobación previa de una
+    spec, pero sí la del usuario sobre el alcance cuando toca una regla de negocio, el esquema de
+    datos o una decisión del dueño. Si el arreglo cambia un comportamiento ya especificado, se
+    actualiza también la spec del dominio en `openspec/specs/` en el mismo commit.
 - **Se trabaja una fase a la vez**, en el orden de `docs/fases/README.md`. No se adelanta trabajo de
   fases futuras "porque ya estamos aquí".
 - **El prototipo es referencia, no fuente para copiar.** Se lee su código y sus tests para entender el
@@ -70,7 +78,8 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
 - Al cerrar una tarea: checklist de cierre de la skill `luxeboreal-arquitectura`.
 - **Un commit por unidad de trabajo** (comportamiento + sus tests + su documentación juntos),
   Conventional Commits, sin atribución de IA ni líneas `Co-Authored-By`. Se trabaja en una rama de
-  fase (`fase-NN-<nombre>`), nunca directo en `main`. Nunca `.env`, tokens ni secretos. Push, PR y merge
+  fase (`fase-NN-<nombre>`) o, fuera de fase, en una rama con prefijo del tipo (`fix/`, `chore/`,
+  `docs/`), nunca directo en `main`. Nunca `.env`, tokens ni secretos. Push, PR y merge
   siguen la sección «Publicar y encadenar fases», que recoge la autorización vigente del usuario.
 
 ## Publicar y encadenar fases
@@ -108,17 +117,22 @@ secretos o configuración del repo).
 - **Idioma**: la convención del proyecto es español para nombres de dominio y documentación; los
   sufijos técnicos de NestJS van en inglés (skill `luxeboreal-arquitectura` §8). Los
   agentes/subagentes no cambian los artefactos a inglés.
-- **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/`, recorrido con el
-  ciclo `sdd-new/sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify →
-  sdd-archive` (skill `luxeboreal-fases`; detalle de artefactos en
-  `.claude/skills/_shared/sdd-orchestrator-workflow.md`). Preflight de esta migración (actualizado 2026-09-23): pace
+- **Modelo híbrido (decisión del usuario, 2026-10-02).** Gentle AI 4.0.0 retiró SDD y OpenSpec: ya
+  no existen los agentes ni las skills `sdd-*` ni el CLI `openspec`, y ODD es su único flujo. Este
+  proyecto conserva la puerta de aprobación del dueño para las fases, así que: **ODD ejecuta todo**
+  y **OpenSpec queda como formato de la spec de fase**, redactado a mano.
+- **Fase = change de OpenSpec**: cada fase es `openspec/changes/fase-NN-<nombre>/` (proposal, specs,
+  design, tasks, verify-report). El `tasks.md` del change hace de documento de seguimiento ODD de la
+  fase (no se duplica en `odd/tasks/`); el método está en la skill `luxeboreal-fases`. Al archivar,
+  los delta specs se fusionan a mano en `openspec/specs/`. Preflight de esta migración (actualizado 2026-10-02): pace
   **automático**, artefactos **híbridos** (OpenSpec en el repo + Engram, proyecto
   `luxeborealcrm` — correr las sesiones desde la raíz del repo; si la detección automática de
   proyecto falla, pasarlo explícito), estrategia de PR **`auto-chain`** con
   cadena `stacked-to-main`. Equivalencia de estados
-  de `docs/fases/README.md`: `spec en revisión` ≈ propose+spec+design+tasks; `aprobada` ≈ el usuario
-  las aprueba; `en curso` ≈ apply (cada tarea de `tasks.md` cierra con un commit de unidad de
-  trabajo); `cerrada` ≈ verify+archive (fusiona los delta specs en `openspec/specs/`).
+  de `docs/fases/README.md`: `spec en revisión` ≈ proposal+specs+design+tasks redactados; `aprobada` ≈
+  el usuario las aprueba; `en curso` ≈ implementación (cada tarea de `tasks.md` cierra con un commit de
+  unidad de trabajo); `cerrada` ≈ `verify-report.md` + archivo del change (fusiona los delta specs en
+  `openspec/specs/`).
 - **TDD estricto**: por tarea, RED observado → GREEN → REFACTOR; runner Vitest (ESM, `npm test`),
   registrado en la spec de cada fase.
 - **Entrega**: presupuesto de ~400 líneas cambiadas por PR (skills `work-unit-commits`,

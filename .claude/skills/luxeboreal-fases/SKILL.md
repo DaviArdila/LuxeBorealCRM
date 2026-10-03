@@ -1,35 +1,44 @@
 ---
 name: luxeboreal-fases
-description: Método para planear, escribir, ejecutar y cerrar las fases de LuxeBorealCRM (migración de ChatLuxeCRM a NestJS) con el ciclo SDD de Gentle-AI sobre OpenSpec — qué agente sdd-* produce cada artefacto de una fase, cómo reunir el material antes de proponerla, cómo decidir qué migra del prototipo y qué no, cómo dimensionarla y cómo cerrarla. Úsala cuando el usuario pida planear una fase, arrancar o continuar el ciclo SDD de una fase, revisar sus specs/tasks, cerrarla, o decidir si algo del prototipo se migra.
+description: Método para planear, escribir, ejecutar y cerrar las fases de LuxeBorealCRM (migración de ChatLuxeCRM a NestJS) con changes de OpenSpec redactados a mano y el flujo ODD de Gentle AI 4 — qué artefacto produce cada etapa de una fase, cómo reunir el material antes de proponerla, cómo decidir qué migra del prototipo y qué no, cómo dimensionarla y cómo cerrarla. Úsala cuando el usuario pida planear una fase, arrancar o continuar una fase, revisar sus specs/tasks, cerrarla, o decidir si algo del prototipo se migra.
 ---
 
 # Fases de LuxeBorealCRM
 
 La hoja de ruta y el estado están en `docs/fases/README.md`; el detalle de cada fase vive en su
 change de OpenSpec, `openspec/changes/fase-NN-<nombre>/`. Esta skill dice **cómo** usar ese ciclo
-para una fase de este proyecto — el mecanismo genérico del ciclo SDD (comandos, artefactos,
-gatekeeper de modo de ejecución) está en `.claude/skills/_shared/sdd-orchestrator-workflow.md`; no
-se repite aquí.
+para una fase de este proyecto.
 
-Preflight de esta migración (actualizado 2026-09-23): **pace automático**, **artefactos híbridos** (OpenSpec en el repo +
+Desde Gentle AI 4.0.0 (2026-10-02) no existen los agentes ni las skills `sdd-*` ni el CLI `openspec`
+(verificado con `gentle-ai sync`, que no los instala). El orquestador redacta los artefactos a mano
+con la estructura de abajo, sin comandos intermedios, y los implementa con el flujo ODD: el
+seguimiento de una fase vive en el `tasks.md` de su change (espejo en Engram) y la revisión la
+hace `gentle-ai review` nativo.
+
+**Cuándo aplica esta skill.** Solo a las **fases del roadmap** (`docs/fases/README.md`), que exigen
+spec aprobada por el dueño. El trabajo fuera de fase (arreglos, mejoras, mantenimiento) va solo con
+ODD y `odd/tasks/<nombre>.md`, sin change de OpenSpec; si cambia un comportamiento ya especificado,
+actualiza también `openspec/specs/<dominio>/spec.md` en el mismo commit.
+
+Preflight de esta migración (actualizado 2026-10-02): **pace automático**, **artefactos híbridos** (OpenSpec en el repo +
 Engram como espejo de recuperación, proyecto `luxeborealcrm`), **estrategia de PR `auto-chain`** (cadena `stacked-to-main`).
 
-## 1. Qué produce cada fase del ciclo SDD
+## 1. Qué produce cada etapa de una fase
 
-| Fase SDD | Agente | Artefacto en `openspec/changes/fase-NN-<nombre>/` |
-|---|---|---|
-| Explorar + proponer | `sdd-new` / `sdd-propose` | `exploration.md` (opcional), `proposal.md` |
-| Especificar | `sdd-spec` | `specs/<dominio>/spec.md` (delta sobre `openspec/specs/<dominio>/spec.md`) |
-| Diseñar | `sdd-design` | `design.md` |
-| Desglosar tareas | `sdd-tasks` | `tasks.md` |
-| Implementar | `sdd-apply` | actualiza `tasks.md` (marca `[x]`, hash de commit) + código |
-| Verificar | `sdd-verify` | `verify-report.md` |
-| Archivar | `sdd-archive` | mueve el change a `archive/YYYY-MM-DD-fase-NN-<nombre>/`, fusiona los delta specs en `openspec/specs/<dominio>/spec.md` |
+| Etapa | Artefacto en `openspec/changes/fase-NN-<nombre>/` |
+|---|---|
+| Explorar + proponer | `exploration.md` (opcional), `proposal.md` |
+| Especificar | `specs/<dominio>/spec.md` (delta sobre `openspec/specs/<dominio>/spec.md`) |
+| Diseñar | `design.md` |
+| Desglosar tareas | `tasks.md` |
+| Implementar | actualiza `tasks.md` (marca `[x]`, hash de commit) + código |
+| Verificar | `verify-report.md` |
+| Archivar | mueve el change a `archive/YYYY-MM-DD-fase-NN-<nombre>/` y fusiona los delta specs en `openspec/specs/<dominio>/spec.md` a mano |
 
 Reglas de contenido por artefacto (máximo de tareas, formato de escenarios, slices de PR, checklist
 de verificación, etc.) están en `openspec/config.yaml` §`rules`; no se duplican aquí.
 
-## 2. Reunir el material antes de proponer (`sdd-new`/`sdd-propose`)
+## 2. Reunir el material antes de proponer
 
 En este orden:
 
@@ -47,11 +56,11 @@ En este orden:
    la respuesta**: se deja como pregunta abierta en la proposal y se le pregunta al usuario antes de
    seguir.
 
-Con ese material, `sdd-propose` llena la proposal siguiendo `openspec/config.yaml` §proposal (tabla
+Con ese material se llena la proposal siguiendo `openspec/config.yaml` §proposal (tabla
 "Qué se migra del prototipo" con el criterio de la sección 2 de esta skill, alcance explícito, plan
 de rollback, preguntas bloqueantes). Con ritmo automático, las fases de planeación corren seguidas y
 solo se detienen ante una decisión de producto o un fallo; con ritmo interactivo, tras cada fase se
-presenta un resumen corto y el usuario decide si se sigue. La puerta que **siempre** aplica, sin excepciones: `sdd-apply` no arranca hasta que el
+presenta un resumen corto y el usuario decide si se sigue. La puerta que **siempre** aplica, sin excepciones: la implementación no arranca hasta que el
 usuario aprueba los cuatro artefactos (proposal, specs, design, tasks); solo el usuario pasa el
 change a `aprobada` (`docs/fases/README.md`).
 
@@ -75,7 +84,7 @@ Preguntas, en orden:
 - Cómo partir: por capa vertical que se pueda probar sola (primero la entrada con un procesador
   que solo registra; después el procesamiento), nunca por capa técnica horizontal sin prueba.
 
-## 5. Durante la fase (`sdd-apply`)
+## 5. Durante la fase (implementación)
 
 - Estado `en curso` en `docs/fases/README.md` (equivalencia completa en ese archivo).
 - Rama de la fase, `fase-NN-<nombre>`, nunca directo en `main`.
@@ -96,7 +105,7 @@ Preguntas, en orden:
   completa (transcripción íntegra, forecast completo, pregunta explícita de excepción) sigue siendo
   obligatoria.
 
-## 6. Cerrar la fase (`sdd-verify → sdd-archive`)
+## 6. Cerrar la fase (verificar y archivar)
 
 1. Checklist de cierre de la skill `luxeboreal-arquitectura` (§12: `npm run verify` en verde, e2e si
    aplica, cada escenario con su test, `MODELO_DATOS.md` al día si cambió el esquema, ADR si hubo decisión,
@@ -104,12 +113,12 @@ Preguntas, en orden:
    fuera de sitio, un commit por unidad de trabajo).
 2. Si la spec declara "Review requerida: RDD + judgment-day" (fases 04, 05, 06, 10): correr la
    skill `judgment-day` sobre el rango de commits de la fase antes de cerrar.
-3. `sdd-verify` escribe `verify-report.md` con, además de lo que ya pide `openspec/config.yaml`
+3. Se escribe `verify-report.md` con, además de lo que ya pide `openspec/config.yaml`
    §verify: el resultado de cada criterio de aceptación, los commits/PRs de la fase, el resultado de
    la review (RDD y, si aplicó, el veredicto de `judgment-day`), las desviaciones respecto a la spec
    y por qué, los ADR creados, y una sección explícita **"Qué aprendimos que cambia las fases
    siguientes"** — este último punto es obligatorio incluso si la respuesta es "nada".
-4. `sdd-archive` mueve el change a `archive/` (fusiona los delta specs en `openspec/specs/`) y
+4. Se mueve el change a `archive/` (fusiona los delta specs en `openspec/specs/`) y
    actualiza `docs/fases/README.md` (estado `cerrada`, nota con la ruta del change archivado) y las
    filas correspondientes de `docs/migracion/inventario.md`.
 5. Si lo aprendido afecta a fases futuras, proponer el ajuste de la tabla de fases al usuario.
