@@ -3,7 +3,7 @@ import { HealthIndicatorService } from '@nestjs/terminus';
 import type { HealthIndicatorResult } from '@nestjs/terminus';
 import { CONFIGURACION } from '../config/index.js';
 import type { Configuracion } from '../config/index.js';
-import { REDIS_CLIENTE } from '../redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE } from '../redis/index.js';
 import type { ClienteRedis } from '../redis/index.js';
 import { conTimeout } from './con-timeout.js';
 
@@ -37,16 +37,13 @@ export class IndicadorRedis {
 
   /**
    * `lazyConnect: true` + `enableOfflineQueue: false` (D12, `redis.module.ts`): el primer
-   * comando emitido antes de conectar se rechaza en vez de esperar, así que hay que conectar
-   * primero. `connect()` NO es idempotente — rechaza con "Redis is already
-   * connecting/connected" si el estado ya es `connecting`/`connect`/`ready`
-   * (`node_modules/ioredis/built/Redis.js`, `_connect()`) — por eso solo se llama cuando el
-   * estado todavía no está en curso (`wait`, `close` o `end`).
+   * comando emitido antes del `ready` se rechaza en vez de esperar, así que primero se asegura la
+   * conexión con `asegurarConexion`, que conecta si hace falta y espera el `ready` si otro uso
+   * del cliente ya está conectando (antes ese caso daba `down` aunque Redis estuviera sano). El
+   * plazo total sigue acotado por `HEALTH_TIMEOUT_MS` en {@link comprobar}.
    */
   private async conectarYPing(): Promise<void> {
-    if (this.cliente.status === 'wait' || this.cliente.status === 'close' || this.cliente.status === 'end') {
-      await this.cliente.connect();
-    }
+    await asegurarConexion(this.cliente);
     await this.cliente.ping();
   }
 }

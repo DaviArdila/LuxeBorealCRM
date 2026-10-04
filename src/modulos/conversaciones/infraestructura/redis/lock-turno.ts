@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 
 function claveLock(idConversacion: string): string {
   return `turno:${idConversacion}:lock`;
@@ -20,7 +20,7 @@ export class LockTurno {
 
   /** `true` si este llamador adquirió el lock; `false` si ya estaba tomado por otro. */
   async adquirir(idConversacion: string): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const resultado = await this.redis.set(
       claveLock(idConversacion),
       '1',
@@ -32,13 +32,7 @@ export class LockTurno {
   }
 
   async liberar(idConversacion: string): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.del(claveLock(idConversacion));
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

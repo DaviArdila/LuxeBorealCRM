@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 
 function claveMarca(idMensaje: string): string {
   return `mensaje:${idMensaje}:procesado`;
@@ -30,21 +30,15 @@ export class MarcaMensajeProcesado {
 
   /** `true` si la marca de este `idMensaje` ya existe (lectura de solo consulta, no la crea). */
   async estaProcesado(idMensaje: string): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const valor = await this.redis.get(claveMarca(idMensaje));
     return valor !== null;
   }
 
   /** `true` si esta llamada creó la marca (primera vez que se ve este `idMensaje`); `false` si ya existía. */
   async marcarSiEsPrimeraVez(idMensaje: string): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const resultado = await this.redis.set(claveMarca(idMensaje), '1', 'EX', TTL_MARCA_S, 'NX');
     return resultado === 'OK';
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

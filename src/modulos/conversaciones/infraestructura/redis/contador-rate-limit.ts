@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import { CLOCK, type Clock } from '../../../../plataforma/reloj/index.js';
 
 function claveHora(idContacto: string, ahora: Date): string {
@@ -30,7 +30,7 @@ export class ContadorRateLimit {
 
   /** `true` si el contacto sigue dentro de `RATE_LIMIT_POR_HORA` y `RATE_LIMIT_POR_DIA`. */
   async verificarLimite(idContacto: string): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const ahora = this.clock.ahora();
 
     const conteoHora = await this.incrementarConTtl(claveHora(idContacto, ahora), TTL_HORA_S);
@@ -45,11 +45,5 @@ export class ContadorRateLimit {
       await this.redis.expire(clave, ttlS);
     }
     return conteo;
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import type { ClaveSesion } from '../../puertos/contadores-sesion.js';
 import type { HistorialConversacion, TurnoHistorial } from '../../puertos/historial-conversacion.js';
 
@@ -34,7 +34,7 @@ export class HistorialRedis implements HistorialConversacion {
     if (turnos <= 0) {
       return [];
     }
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const entradas = await this.redis.lrange(claveHistorial(sesion), -2 * turnos, -1);
     return entradas.flatMap((entrada): TurnoHistorial[] => {
       try {
@@ -51,7 +51,7 @@ export class HistorialRedis implements HistorialConversacion {
     if (maximo === 0) {
       return;
     }
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const clave = claveHistorial(sesion);
     await this.redis
       .multi()
@@ -63,11 +63,5 @@ export class HistorialRedis implements HistorialConversacion {
       .ltrim(clave, -maximo, -1)
       .expire(clave, this.configuracion.AGENTE_SESION_TTL_H * 3600)
       .exec();
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }
