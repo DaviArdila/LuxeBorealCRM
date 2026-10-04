@@ -24,7 +24,7 @@ cita su commit al cerrarse.
 - [x] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
 - [x] T7 — Pantalla «Estilo del bot» (área `bot`)
 - [x] T8 — Pantalla «Mensajes fijos» (área `bot`)
-- [ ] T9 — `npm run ci` con el cliente
+- [x] T9 — `npm run ci` con el cliente
 - [ ] T10 — Guía de operación, cierre documental y recorrido real `[manual]`
 
 ## Mapeo de escenarios por tarea (CLT 26 + AGT 8 + CFN 10 + CI 3 = 47)
@@ -425,6 +425,24 @@ cita su commit al cerrarse.
   de npm para `cliente/package-lock.json`); `ci:hook` sin cambios; `npm run flujos` en verde.
 - Tests en `test/fronteras/` de que `ci` incluye `cliente:ci` y de que `fronteras` sigue limitado a `src` y `scripts`.
 - Forecast: ~150 líneas.
+
+- **Hecho (T9).** `cliente:ci` (`npm ci`, lint, tests y build dentro de `cliente/`, `auditoria:cliente`, `cliente:deriva` y las dos
+  pruebas de la raíz que necesitan las dependencias del cliente) como último paso de `npm run ci`; `ci:hook` y `fronteras`
+  sin cambios; `ci.yml` sigue llamando solo a `npm run ci` y cachea también `cliente/package-lock.json`.
+  `auditarDependencias` acepta `directorio` y un ejecutor inyectable; `scripts/cli.ts` gana `auditoria:cliente`.
+- Pruebas (7 nuevas): `test/fronteras/ci-cliente.spec.ts` (5: `ci` termina en `cliente:ci` con `&&`, el orden de sus pasos, el hook
+  sin cliente, `fronteras` solo `src` y `scripts`, el workflow) y 2 en `auditar-dependencias.spec.ts` (audita el
+  directorio pedido con las excepciones de la raíz; un paquete alto sin excepción falla y se nombra). RED observado: 5 de las 7
+  fallaban antes del cambio (las otras dos, hook y `fronteras`, ya se cumplían y quedan como regresión).
+  `npm run cliente:ci` completo en local: verde; `npm run flujos` (actionlint): verde.
+- **Decisión a revisar por el dueño:** la auditoría del cliente encontró 4 vulnerabilidades altas, todas por el mismo aviso
+  de `braces` (GHSA-vfj7-8cjw-p6xm, sin parche) que ya tenía excepción en la raíz: `braces` y `micromatch` ya estaban cubiertas;
+  se agregaron dos excepciones más, `@boundaries/elements` y `eslint-plugin-boundaries` (heredadas, herramienta de desarrollo
+  del lint del cliente que no se despliega), con revisión antes del 2027-01-04 como las demás. La alternativa era dejar la
+  CI roja o quitar el plugin de fronteras de D10; si no la aceptas, se revierte ese archivo y se elige otra.
+- **Desviaciones:** (1) `cliente:ci` también corre las dos pruebas de `test/fronteras/cliente-*.spec.ts` (se saltan en el paso
+  de la raíz porque el cliente aún no está instalado). (2) `auditoria:cliente` es un script propio en vez de un parámetro de
+  `auditoria`, para que `ci` y el spec lo nombren sin argumentos.
 
 ### T10 — Guía y cierre
 

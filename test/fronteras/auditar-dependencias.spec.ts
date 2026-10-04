@@ -105,3 +105,36 @@ describe('scripts/auditar-dependencias — auditarDependencias (integración rea
     30_000,
   );
 });
+
+describe('CI10 — auditarDependencias sobre el cliente', () => {
+  const hallazgoDeCliente = {
+    vulnerabilities: { 'eslint-plugin-boundaries': { severity: 'high' }, braces: { severity: 'high' } },
+  };
+
+  it('CI10 — Audita el directorio pedido y aplica las excepciones versionadas de la raíz', async () => {
+    const directoriosAuditados: string[] = [];
+
+    const resultado = await auditarDependencias(raizDelProyecto, {
+      fechaActual: HOY,
+      directorio: 'cliente',
+      ejecutarAuditoria: (cwd) => {
+        directoriosAuditados.push(cwd);
+        return hallazgoDeCliente;
+      },
+    });
+
+    expect(directoriosAuditados).toEqual([path.join(raizDelProyecto, 'cliente')]);
+    expect(resultado.limpio).toBe(true);
+  });
+
+  it('CI10 — Una vulnerabilidad alta del cliente sin excepción hace fallar y nombra el paquete', async () => {
+    const resultado = await auditarDependencias(raizDelProyecto, {
+      fechaActual: HOY,
+      directorio: 'cliente',
+      ejecutarAuditoria: () => ({ vulnerabilities: { 'paquete-nuevo-del-cliente': { severity: 'high' } } }),
+    });
+
+    expect(resultado.limpio).toBe(false);
+    expect(resultado.mensaje).toContain('paquete-nuevo-del-cliente');
+  });
+});

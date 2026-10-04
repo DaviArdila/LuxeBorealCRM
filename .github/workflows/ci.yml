@@ -28,6 +28,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          # El cliente tiene su propio package-lock: `cliente:ci` corre `npm ci` dentro de `cliente/` (CI10).
+          cache-dependency-path: |
+            package-lock.json
+            cliente/package-lock.json
 
       - name: Instalar dependencias
         run: npm ci

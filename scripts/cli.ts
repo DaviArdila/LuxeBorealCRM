@@ -68,6 +68,9 @@ async function main(): Promise<void> {
     case 'auditoria':
       imprimirResultado(await auditarDependencias());
       return;
+    case 'auditoria:cliente':
+      imprimirResultado(await auditarDependencias(undefined, { directorio: 'cliente' }));
+      return;
     case 'contrato:generar':
       imprimirResultado(await generarContrato());
       return;
@@ -107,7 +110,7 @@ async function main(): Promise<void> {
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
-          'auditoria, contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
+          'auditoria, auditoria:cliente, cliente:generar, cliente:deriva, contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
           'semilla:geografia, catalogo:importar, evals:anonimizar, prompt:estilo, usuario:crear, mensajes:sembrar.\n',
       );
       process.exitCode = 1;

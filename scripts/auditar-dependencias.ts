@@ -156,6 +156,14 @@ function ejecutarNpmAuditJson(raiz: string): unknown {
 export interface OpcionesAuditarDependencias {
   readonly umbral?: Severidad;
   readonly fechaActual?: Date;
+  /**
+   * Subdirectorio de la raíz cuyas dependencias se auditan (`cliente`, Fase 11b, CI10). Las
+   * excepciones siguen siendo las de `auditoria-excepciones.json` de la raíz: un solo lugar para
+   * aceptar un riesgo y para vencerlo.
+   */
+  readonly directorio?: string;
+  /** Sustituye a `npm audit --json` (tests: sin red). Recibe el directorio donde correría. */
+  readonly ejecutarAuditoria?: (directorio: string) => unknown;
 }
 
 export async function auditarDependencias(
@@ -164,8 +172,10 @@ export async function auditarDependencias(
 ): Promise<ResultadoAuditoria> {
   const umbral = opciones.umbral ?? 'high';
   const fechaActual = opciones.fechaActual ?? new Date();
+  const directorio = opciones.directorio === undefined ? raiz : path.join(raiz, opciones.directorio);
+  const ejecutarAuditoria = opciones.ejecutarAuditoria ?? ejecutarNpmAuditJson;
   const [hallazgos, excepciones] = await Promise.all([
-    Promise.resolve(parsearHallazgosNpmAudit(ejecutarNpmAuditJson(raiz))),
+    Promise.resolve(parsearHallazgosNpmAudit(ejecutarAuditoria(directorio))),
     cargarExcepciones(raiz),
   ]);
   return evaluarHallazgos(hallazgos, excepciones, umbral, fechaActual);
