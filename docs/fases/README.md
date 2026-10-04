@@ -51,6 +51,21 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
                                                        11 Usuarios/Auth ─▶ 12 Inventario ─▶ 13 Ventas y envíos ─▶ 14 API del back office
 ```
 
+Orden vigente desde el 2026-10-03 (decisión del dueño): la 11 se adelanta antes de 09 y 10, partida en 11a, 11b y
+11c, para probar y ajustar el bot desde una pantalla; las 12-14 siguen después del corte (P8 enmendada). El mapa de
+arriba queda como historia del plan original.
+
+```
+Cerradas: 00a 00b 01 02 03 04 05 06 07a 07b 07c 08 08b 08c 08d
+
+11a Autenticación ─▶ 11b Cliente Angular ─▶ 11c Bot configurable ─▶ 09a Operación sin VPS
+                                          09b VPS ─▶ 10 Corte ─▶ 12 Inventario ─▶ 13 Ventas ─▶ 14 API v1
+```
+
+La 09a puede correr en paralelo si el dueño lo pide; la 09b sigue bloqueada hasta que exista el VPS. Hasta la 09b el
+cliente solo corre en local. Riesgo aceptado: el kill switch R16 y los backups (09a) siguen sin existir, lo cual es
+aceptable mientras el bot no atiende clientes reales.
+
 ## Fases
 
 | # | Fase | Objetivo (una frase) | Sale con… (verificación) | Estado |
@@ -74,7 +89,10 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 | 09a | Operación sin VPS (**propuesta pendiente de aprobación del usuario**: parte la 09) | Kill switch R16 con endpoint de admin protegido por token (hoy solo existe la lectura CNV4 de `bot:activo`), Dockerfile de producción, Sentry y logs JSON con rotación, scripts de backup y restore probados en local | Endpoint que apaga y enciende el bot con test; imagen Docker que arranca en local; restore de un backup probado | idea |
 | 09b | Despliegue en VPS (**propuesta pendiente de aprobación del usuario**; bloqueada hasta que el dueño compre el VPS) | Despliegue en Dokploy, dominio o túnel fijo, Uptime Kuma y stack de producción en el VPS | Stack de producción arriba en el VPS; restore de backup probado allí | idea |
 | 10 | Corte | Modo sombra (~1 semana) antes del corte: el servicio nuevo recibe los mismos eventos por un segundo Agent Bot/webhook, genera respuestas sin enviarlas y compara decisiones (tools, traspasos, leads) con el prototipo; luego apuntar el Agent Bot real al servicio nuevo, período de observación, apagar el prototipo | 1 semana con tráfico real sin incidentes; plan de reversa probado | idea |
-| 11 | Usuarios y autenticación | Usuarios, roles (admin/asesor), login para el back office | Endpoints protegidos por rol con tests | idea |
+| 11 | Usuarios y autenticación (**partida en 11a, 11b y 11c** y adelantada antes de 09/10 por decisión del dueño, 2026-10-03) | Usuarios, roles (admin/asesor), login para el back office | Ver 11a, 11b y 11c | — |
+| 11a | Usuarios y autenticación (`openspec/changes/fase-11a-autenticacion/`; ADR-0021 `propuesta`) | Módulo `usuarios`: inicio y cierre de sesión con cookie httpOnly y sesión en Redis, guardia global, `@Roles('admin')`, CSRF por `SameSite=Strict` + encabezado propio, límite de intentos y `npm run usuario:crear`. Depende de 08d cerrada | Con un usuario creado por comando, `POST /api/v1/auth/sesion` deja la cookie, `GET /api/v1/auth/yo` responde, un asesor recibe `403` en una ruta de admin y cerrar sesión invalida la cookie al instante; contrato con `cookieAuth` y deriva en verde | spec en revisión |
+| 11b | Cliente Angular (`openspec/changes/fase-11b-cliente-angular/`; ADR-0022 `propuesta`) | Cliente en `cliente/` (Angular + PrimeNG, cliente HTTP generado con `ng-openapi-gen`), pantallas de inicio de sesión, **Estilo del bot** y **Mensajes fijos** con sus endpoints de admin, semilla de mensajes fijos y `npm run ci` con el cliente. Depende de 11a cerrada | El dueño inicia sesión en local, publica un estilo y edita un mensaje fijo, y el siguiente mensaje del bot usa ambos sin reiniciar; un asesor no ve esas pantallas y el servidor lo rechaza | spec en revisión |
+| 11c | Bot configurable | Perfil del bot, escenarios con pasos ordenados, ejemplos y categorías del menú, editables desde el cliente. Necesita su propio ADR de esquema. Depende de 11b cerrada | Por definir al escribir su spec | idea |
 | 12 | Inventario | Ledger de movimientos con `stock` como caché en la misma transacción | Conciliación ledger = stock en tests | idea |
 | 13 | Ventas y envíos | Ciclos de estado de venta y envío con sus efectos sobre el inventario (MODELO_DATOS §6) | Cada transición genera los movimientos correctos | idea |
 | 14 | API del back office | Estabilizar la API v1 y probar un cliente generado | Un cliente generado desde `openapi.json` compila y consume la API; ningún cambio incompatible sale sin pasar a `/api/v2` | idea |
@@ -83,6 +101,10 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
 > **Decidido (P8, 2026-09-22):** las fases 11-14 van **después del corte**. Mientras tanto el
 > catálogo se carga con la hoja de Sheets + importador (Fase 03). La primera pantalla podría ser una
 > Dashboard App dentro de Chatwoot (P14, se decide en la Fase 11).
+>
+> **Enmendado (P8 y P14, 2026-10-03):** la Fase 11 se adelanta **antes** de 09 y 10 (partida en 11a, 11b y 11c);
+> las 12-14 siguen después del corte. La primera pantalla es un cliente propio en Angular dentro de `cliente/`
+> (ADR-0022), que más adelante podría embeberse como Dashboard App de Chatwoot.
 
 > **Propuesta (2026-10-01, sin aprobar):** añadir la Fase 08b y partir la 09 en 09a (sin VPS) y 09b
 > (con VPS). Tras la 08 quedarían 08b, 09a, 09b, 10 (corte, exige `judgment-day`), 11, 12, 13 y 14 (las

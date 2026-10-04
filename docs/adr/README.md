@@ -26,6 +26,8 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0018](0018-presupuesto-de-tiempo-del-turno.md) | Presupuesto de tiempo del turno del agente: plazo compartido y tope de vueltas | aceptada | 2026-09-29 |
 | [0019](0019-proveedores-llm-configurables.md) | Proveedores de LLM configurables: conexión directa (primero OpenAI) además de OpenRouter (matiza 0002 y 0014) | aceptada | 2026-09-30 |
 | [0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md) | El estilo del agente se edita desde la base de datos, con el archivo como respaldo | aceptada | 2026-10-01 |
+| [0021](0021-sesion-cookie-redis.md) | Sesión en cookie httpOnly guardada en Redis, no JWT | propuesta | 2026-10-03 |
+| [0022](0022-cliente-angular-en-el-repo.md) | Cliente de back office en Angular, dentro de este repo (`cliente/`) (enmienda el doc 06) | propuesta | 2026-10-03 |
 
 ## Plantilla
 

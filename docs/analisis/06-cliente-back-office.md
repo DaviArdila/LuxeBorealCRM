@@ -1,5 +1,10 @@
 # 06 · Cliente futuro de back office: recomendación de tecnología
 
+> **Enmendado (2026-10-03) por [ADR-0022](../adr/0022-cliente-angular-en-el-repo.md)** (`propuesta`): el dueño eligió
+> **Angular + PrimeNG en `cliente/`, dentro de este repo**, en lugar de React + Vite en un repo aparte. Siguen
+> vigentes de este documento las garantías de la API, la regla de seguridad y los requisitos de importación y
+> exportación; la recomendación de tecnología y la sección «Repo separado» quedan reemplazadas.
+
 - Fecha: 2026-09-23 · Estado: **recomendación, no se construye**; decisión final al inicio de la
   Fase 11, junto con P14 (`docs/PREGUNTAS_ABIERTAS.md`)
 - Pregunta: si algún día se construye un cliente de inventario y ventas para el back office, ¿con
