@@ -42,6 +42,7 @@ Qué pregunta responde cada documento:
 | Cómo cambiar el estilo del bot sin desplegar | `docs/operacion/estilo-del-bot.md` |
 | Qué avisos le llegan al asesor por Telegram y cómo abrir la conversación | `docs/operacion/avisos-al-asesor.md` |
 | Qué pasa si el bot dice un monto sin rastro y cómo correr las evals reales | `docs/operacion/dinero-sin-rastro-y-evals-reales.md` |
+| Cómo crear usuarios, cuánto dura una sesión y qué hacer si alguien queda bloqueado | `docs/operacion/usuarios-y-sesiones.md` |
 | Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
 | Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
 | Investigación y evidencia detrás de una decisión | `docs/analisis/` |
@@ -202,6 +203,7 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run evals` | Vitest, proyecto `evals`: casos JSON contra el agente completo (Postgres + Redis reales) con un LLM guionado, sin red ni costo; umbral 100 % (Fase 07c). `EVALS_MODO=real` (con `OPENROUTER_API_KEY`, nunca en CI) lo corre contra el LLM real, 3 repeticiones, e imprime el costo; `EVALS_ESTILO=<ruta>` publica ese estilo candidato en la base de la corrida para medirlo antes de publicarlo con `prompt:estilo` |
 | `npm run evals:anonimizar` | Convierte una conversación cruda de Chatwoot (`.evals-crudo/`, ignorado por git) en un caso del set dorado con marcadores estables; no escribe nada si sobrevive un dato personal (R14) |
 | `npm run prompt:estilo` | Edita el estilo del bot sin desplegar (Fase 08c): `-- ver`, `-- historial`, `-- publicar --archivo <ruta>` y `-- restaurar --version <n>`; valida el texto, guarda las últimas 10 versiones y no escribe el texto en logs. Tras publicar, correr los evals reales (EVL3) |
+| `npm run usuario:crear` | Crea un usuario del back office (Fase 11a): `-- --email <correo> --nombre <nombre> --rol admin\|asesor`; pide la contraseña dos veces sin mostrarla (mínimo 12 caracteres), exige una terminal interactiva, guarda solo el hash argon2id y no pisa un correo existente |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
 | `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |
 

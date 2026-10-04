@@ -7,7 +7,7 @@ import { RepositorioUsuarioEnMemoria } from '../../../../test/fakes/repositorio-
 import type { Usuario } from '../dominio/usuario.js';
 import { IniciarSesion } from './iniciar-sesion.js';
 
-// Escenarios USR1 y USR8 de `openspec/changes/fase-11a-autenticacion/specs/usuarios/spec.md` (T4).
+// Escenarios USR1 y USR8 de `openspec/specs/usuarios/spec.md` (T4).
 
 const IP = '203.0.113.7';
 const CONTRASENA = 'clave-correcta-del-dueno';

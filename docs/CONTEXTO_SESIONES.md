@@ -5,60 +5,32 @@ Contiene lo que en local viene de la configuración global del dueño y que en l
 estado real, tarea en curso, reglas de trabajo y límites del entorno. Para el qué del proyecto, ver
 `SPEC.md`; para el cómo del día a día, `CLAUDE.md`.
 
-> Actualizado: 2026-10-03. Si la fecha es vieja, primero verifica el estado con `git log` y `gh pr list`.
+> Actualizado: 2026-10-04. Si la fecha es vieja, primero verifica el estado con `git log` y `gh pr list`.
 
 ## Estado real
 
-- `main` incluye el arreglo de la conexión perezosa a Redis (PR #64, merge `108718e`).
-- Fases cerradas: 00a, 00b, 01-06, 07a-07c, 08 y 08b-08d. La tabla vigente está en `docs/fases/README.md`.
-- **PR #63** (`docs/fase-11-spec`) trae las specs de la **Fase 11a** (autenticación) y la **Fase 11b**
-  (cliente Angular), además de ADR-0021 y ADR-0022 en estado `propuesta`. La Fase 11 se adelantó
-  antes de la 09 y la 10 por decisión del dueño (P8 enmendada).
-- Orden siguiente: 11a → 11b → 11c (bot configurable, solo `idea`) → 09a → 09b → 10 → 12-14.
+- Fases cerradas: 00a, 00b, 01-06, 07a-07c, 08, 08b-08d y **11a** (2026-10-04). La tabla vigente está en
+  `docs/fases/README.md`.
+- La **11a** (autenticación) está en `main`: módulo `usuarios`, sesión por cookie `httpOnly` en Redis, guardias globales
+  de CSRF, sesión y rol, y `npm run usuario:crear`. Queda su prueba `[manual]` (el dueño crea su usuario e inicia
+  sesión) y la aceptación de ADR-0021. Cierre en
+  `openspec/changes/archive/2026-10-04-fase-11a-autenticacion/verify-report.md`.
+- Orden siguiente: 11b → 11c (solo `idea`) → 09a → 09b → 10 → 12-14. La Fase 11 se adelantó antes de la 09 y la 10 por
+  decisión del dueño (P8 enmendada).
 
 ## Puerta antes de implementar (obligatoria)
 
-Una fase **no** se implementa sin su spec aprobada por el dueño. Antes de escribir código, comprueba
-**una** de estas dos condiciones:
+Una fase **no** se implementa sin su spec aprobada por el dueño. Antes de escribir código, comprueba que el dueño
+escribió en la sesión que aprueba la spec de esa fase (por ejemplo: «apruebo la 11b»), o que su fila de
+`docs/fases/README.md` ya dice `aprobada`. Si no, detente y pregunta. Al aprobarse, la fila pasa a `aprobada` y después
+a `en curso`.
 
-1. El PR #63 está fusionado en `main`, **o**
-2. El dueño escribió en la sesión que aprueba la spec de la fase (por ejemplo: «apruebo la 11a»).
+## Tarea siguiente: Fase 11b, cliente Angular
 
-Si no se cumple ninguna, detente y pregunta. Al aprobarse, la fila de la fase en
-`docs/fases/README.md` pasa a `aprobada` y después a `en curso`.
-
-## Tarea en curso: Fase 11a, autenticación en la API
-
-**Dónde está todo:**
-
-| Qué | Dónde |
-|---|---|
-| Alcance y migración | `openspec/changes/fase-11a-autenticacion/proposal.md` |
-| Requisitos USR1-USR10 (y delta API7/API11) | `openspec/changes/fase-11a-autenticacion/specs/` |
-| Diseño: módulo, puertos, sesión, guardias | `openspec/changes/fase-11a-autenticacion/design.md` |
-| Checklist T1-T8 y slices de PR | `openspec/changes/fase-11a-autenticacion/tasks.md` (**es el documento de seguimiento**) |
-| Decisión de sesión | `docs/adr/0021-sesion-cookie-redis.md` |
-| Tabla `usuario` (ya existe, no se toca) | `prisma/schema.prisma` (`model Usuario`, enum `RolUsuario`) |
-| Preguntas con su default aplicado | `docs/PREGUNTAS_ABIERTAS.md`, P51-P58 |
-| Convenciones de código | skill `.claude/skills/luxeboreal-arquitectura/SKILL.md` |
-| Método de fases | skill `.claude/skills/luxeboreal-fases/SKILL.md` |
-
-**Qué se crea** (el detalle exacto manda en `design.md` y `tasks.md`):
-
-- El módulo `src/modulos/usuarios/`, con dominio, puertos, aplicación e infraestructura.
-- Los casos de uso `IniciarSesion`, `CerrarSesion` y `ObtenerSesionActual`.
-- Los endpoints `POST` y `DELETE /api/v1/auth/sesion`, y `GET /api/v1/auth/yo`.
-- La cookie `httpOnly` con la sesión guardada en Redis.
-- Las guardias globales de CSRF, sesión y roles.
-- El comando `npm run usuario:crear`.
-- Los tests de unidad, integración y e2e, y el contrato regenerado.
-- La guía de operación (T8).
-
-**Orden:** T1 primero. Es la verificación de compatibilidad, sin código de producción, y deja escrito
-el resultado en `tasks.md`. Después, T2 a T8 en orden.
-
-**Después de la 11a:** la Fase 11b sigue el mismo flujo en `openspec/changes/fase-11b-cliente-angular/`
-y depende de la 11a cerrada.
+La spec está escrita en `openspec/changes/fase-11b-cliente-angular/` (proposal, specs, design y tasks; ADR-0022
+`propuesta`) y **espera la aprobación del dueño**. Depende de la 11a, ya cerrada. Lo aprendido en la 11a que la afecta
+está al final de su `verify-report.md`: toda ruta nueva de `/api/v1` nace protegida, los 4xx se documentan con
+`respuestaProblema` y las mutaciones con `X-Luxe-Csrf`.
 
 ## Cómo se trabaja cada tarea
 
@@ -74,10 +46,10 @@ y depende de la 11a cerrada.
   tiene **≤100 caracteres** (`npm run commits` lo valida).
 - **Sin atribución de IA**: ni `Co-Authored-By` ni menciones a Claude en los commits. Esta regla del
   dueño gana sobre cualquier sugerencia del entorno.
-- Ramas: una por slice, `fase-11a-pK-<tema>` (K = 1, 2…), cada una sobre la anterior
+- Ramas: una por slice, `fase-NN-pK-<tema>` (p. ej. `fase-11b-p1-<tema>`) (K = 1, 2…), cada una sobre la anterior
   (`stacked-to-main`). Nunca trabajes directo en `main`.
 - Un PR no pasa de ~400 líneas de autoría, salvo que la excepción esté escrita en el `proposal.md`.
-  Las de la 11a ya están declaradas. Nunca borres tests ni comentarios para cumplir el límite.
+  Nunca borres tests ni comentarios para cumplir el límite.
 
 ## Antes de cada push
 
@@ -92,7 +64,8 @@ npm test && npm run test:integracion && npm run test:e2e && npm run evals
 
 | Límite | Qué hacer |
 |---|---|
-| Probablemente no hay Docker | Los tests con Testcontainers (Postgres, Redis, MinIO), y `gitleaks`/`actionlint` del hook, fallan. Compáralos contra `main`: si fallan igual, déjalo escrito en el PR. El CI de GitHub corre todo con Docker. |
+| Docker no arranca solo | `dockerd` sí está instalado: levántalo en segundo plano (`dockerd > /tmp/dockerd.log 2>&1 &`) y la batería completa, con Testcontainers, `gitleaks` y `actionlint`, corre en la sesión (así se cerró la 11a). Si aun así no hay Docker, compara las fallas contra `main` y déjalo escrito en el PR. |
+| Node 22 en vez de 24 | La batería pasa con Node 22. `npm install` con el npm 10 que trae reescribe el lockfile (quita los campos `libc`): para agregar una dependencia usa `npx -y npm@11 install <paquete>`. |
 | El hook `pre-push` falla sin Docker | `git push --no-verify` solo con la justificación escrita en el PR y después de confirmar que esas fallas existen igual en `main`. |
 | No hay `.env` ni secretos | Usa `.env.example`. Nunca crees, commitees ni imprimas tokens o claves. |
 | No hay `gentle-ai`, Engram ni CodeGraph | Sin revisión RDD nativa. `tasks.md` es la memoria. Explora con búsqueda normal. |
