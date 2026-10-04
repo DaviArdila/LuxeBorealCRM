@@ -56,13 +56,13 @@ describe('API1/PLT7 — verificarDerivaContrato() contra los documentos commitea
   it(
     'PLT7 — Un cambio en /health sin regenerar el contrato se detecta aunque el documento público esté vacío',
     async () => {
-      // Confirma la premisa del escenario: el documento público hoy no tiene endpoints de
-      // negocio, así que un cambio en /health (excluido de él, API8) nunca podría detectarse
-      // comparando solo ese archivo.
+      // Confirma la premisa del escenario: /health no está en el documento público (API8), así
+      // que un cambio en él nunca podría detectarse comparando solo ese archivo. Desde la Fase 11a
+      // el público ya no está vacío (lleva las rutas de auth), pero sigue sin /health.
       const publicoOriginal = JSON.parse(await readFile(rutaPublico, 'utf8')) as {
         readonly paths: Record<string, unknown>;
       };
-      expect(publicoOriginal.paths).toEqual({});
+      expect(publicoOriginal.paths).not.toHaveProperty('/health');
 
       const internoOriginal = await readFile(rutaInterno, 'utf8');
       expect(internoOriginal).toContain('/health');
@@ -81,7 +81,7 @@ describe('API1/PLT7 — verificarDerivaContrato() contra los documentos commitea
 
         expect(resultado.limpio).toBe(false);
         // La falla se explica por el documento interno (el único que contiene /health), no por
-        // el público, que sigue coincidiendo (paths: {} en ambos lados, sin tocarse).
+        // el público, que sigue coincidiendo (sin tocarse).
         expect(resultado.mensaje).toContain('openapi/openapi.interno.json difiere');
         expect(resultado.mensaje).toContain('openapi/openapi.json coincide byte a byte');
       } finally {

@@ -12,4 +12,6 @@ export const CONFIGURACION_DOCUMENTO = new DocumentBuilder()
   .setOpenAPIVersion('3.1.0')
   .addServer('/')
   .addTag('internal', 'Operaciones internas no destinadas al cliente de back office.')
+  // API11 (Fase 11a): sesión por cookie httpOnly; cada operación protegida lo aplica con `@ApiCookieAuth`.
+  .addCookieAuth('luxe_sesion', { type: 'apiKey', in: 'cookie', name: 'luxe_sesion' }, 'cookieAuth')
   .build();

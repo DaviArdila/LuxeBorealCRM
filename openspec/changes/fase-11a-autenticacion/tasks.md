@@ -19,7 +19,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - [x] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
 - [x] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
 - [x] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
-- [ ] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
+- [x] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
 - [ ] T7 — Comando `npm run usuario:crear`
 - [ ] T8 — Guía de operación, cierre documental y prueba real `[manual]`
 
@@ -224,6 +224,80 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
   `/health` sin cookie, logs capturados sin correo ni cookie.
 - **`size:exception`** (fila «T6 supera ~400 líneas» de la tabla de Risks de `proposal.md`): controlador, contrato
   regenerado y e2e van juntos. Forecast: ~500 líneas (≈ 60 % tests y contrato generado).
+- **Cerrada (2026-10-04).** RED con los tests nuevos y sin controlador. Contrato
+  (`npx vitest run --project unit test/contrato/autenticacion.spec.ts`):
+
+  ```
+       × API11 — El documento público declara `cookieAuth` 295ms
+       × API11 — Una operación protegida exige la cookie en el contrato 127ms
+       × API11 — El inicio de sesión es público en el contrato 51ms
+       × toda operación de /api/v1 declara su seguridad, y toda mutación salvo el webhook exige X-Luxe-Csrf 117ms
+       × las respuestas 401 y 403 de las operaciones protegidas van en problem+json 50ms
+  ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected undefined to deeply equal { type: 'apiKey', in: 'cookie', …(1) }
+  AssertionError: expected undefined to be 'obtenerSesionActual' // Object.is equality
+  AssertionError: expected undefined to be 'iniciarSesion' // Object.is equality
+  AssertionError: expected 1 to be greater than or equal to 4
+  AssertionError: expected 0 to be greater than 0
+        Tests  5 failed (5)
+  ```
+
+  E2E (`npx vitest run --project e2e test/e2e/autenticacion.e2e-spec.ts`):
+
+  ```
+       × inicia sesión, consulta la sesión actual y la cierra: recorrido completo 2520ms
+       × una contraseña incorrecta responde 401 credenciales-invalidas en problem+json y sin cookie 159ms
+       × el intento que pasa el límite responde 429 demasiados-intentos con Retry-After 179ms
+       × un cuerpo sin correo válido responde 400 validacion-fallida sin repetir el valor 86ms
+       × USR2 — La cookie lleva los atributos de seguridad 3ms
+       × USR2 — En desarrollo la cookie no exige HTTPS 217ms
+       × USR2 — La cookie solo contiene el identificador de la sesión 93ms
+       × USR4 — Cerrar sesión borra la clave y vacía la cookie 108ms
+       × USR4 — La cookie de una sesión cerrada ya no sirve 94ms
+       × USR4 — Cerrar sesión sin sesión también responde 204 74ms
+       × USR5 — La sesión válida devuelve el usuario 94ms
+       × USR5 — Sin sesión la consulta se rechaza 80ms
+       × USR6 — El webhook de Chatwoot sigue respondiendo sin cookie 99ms
+       × API7 — Rol insuficiente rechazado en el servidor 111ms
+       × USR9 — Un inicio de sesión fallido no escribe el correo en los logs 88ms
+       × USR9 — Los logs de una petición no contienen la cookie 87ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+  Error: la respuesta no trae la cookie luxe_sesion
+  AssertionError: expected 404 to be 401 // Object.is equality
+  AssertionError: expected 404 to be 429 // Object.is equality
+  AssertionError: expected 404 to be 400 // Object.is equality
+  ConfiguracionInvalidaError: Configuración inválida o incompleta: CHATWOOT_BOT_TOKEN (valor), TELEGRAM_BOT_TOKEN (valor), TELEGRAM_CHAT_ID (valor), OPENROUTER_API_KEY (valor)
+  Error: la respuesta no trae la cookie luxe_sesion
+  Error: la respuesta no trae la cookie luxe_sesion
+  Error: la respuesta no trae la cookie luxe_sesion
+  Error: la respuesta no trae la cookie luxe_sesion
+  AssertionError: expected 404 to be 204 // Object.is equality
+  Error: la respuesta no trae la cookie luxe_sesion
+  AssertionError: expected 404 to be 401 // Object.is equality
+  AssertionError: expected 201 to be 200 // Object.is equality
+  Error: la respuesta no trae la cookie luxe_sesion
+  AssertionError: expected 0 to be greater than 0
+  Error: la respuesta no trae la cookie luxe_sesion
+        Tests  16 failed | 2 passed (18)
+  ```
+
+  Dos de esas fallas eran del propio test y se corrigieron antes del GREEN: la configuración `production` exigía
+  sus secretos (se pasan valores ficticios) y el webhook responde `201`, no `200` (se acepta 2xx como en
+  `canal-chatwoot.e2e-spec.ts`). Tras el GREEN, los dos de USR9 seguían sin líneas: `nestjs-pino` crea su logger
+  raíz una vez por proceso con el destino de la primera app, así que el e2e usa un único stream por archivo.
+  GREEN: e2e 18/18, `test/contrato` 20/20 (incluye API11), `npm test` 174 archivos; `typecheck`, `lint`,
+  `fronteras`, `contrato:deriva`, `contrato:lint` (0 errores; 16 avisos de descripción y etiquetas, del mismo tipo
+  que los que ya tenían `/health` y el webhook) y `contrato:diff` (sin cambios incompatibles) verdes.
+- Detalles: `respuestaProblema` en `plataforma/documentacion` documenta los 4xx en problem+json;
+  `DocumentarSesionRequerida` y `DocumentarCsrf` en `usuarios/interfaz`; `addCookieAuth` en
+  `CONFIGURACION_DOCUMENTO`. El webhook declara `security: []` (es `@Publico()`). `Retry-After` se pone antes de
+  lanzar `demasiados-intentos` y el filtro lo conserva. La ruta de admin de API7 es un *fixture* del e2e: la 11a aún
+  no trae ninguna propia. **Desviación:** dos tests existentes asumían el documento público vacío
+  (`documento-interno.spec.ts` y el escenario PLT7 de `verificar-deriva-contrato.spec.ts`); su premisa pasa a «el
+  público no tiene `/health`», que es lo que de verdad protegen. Commit: ver historial (`feat(usuarios): endpoints`).
+- **`size:exception` (anticipada, cifra real):** ~710 líneas de autoría sin contar los dos documentos OpenAPI
+  generados (~1.110): ~450 de tests (e2e y contrato), ~180 de producción y ~70 de este archivo. Supera los ~500 del
+  forecast por el e2e (18 escenarios con arranque completo).
 
 ### T7 — Comando `npm run usuario:crear`
 

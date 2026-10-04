@@ -11,7 +11,7 @@ import { construirDocumentosContrato } from '../../scripts/generar-contrato.js';
  * `errores.spec.ts` y `convenciones.spec.ts`, ya existentes en este mismo directorio.
  */
 describe('API8 — /health en el documento interno vs. el documento público (D1, D6)', () => {
-  it('el documento interno contiene /health etiquetado internal; el público no, y queda con paths: {}', async () => {
+  it('el documento interno contiene /health etiquetado internal; el público no, y solo trae las rutas de auth', async () => {
     const documentos = await construirDocumentosContrato();
     const interno = JSON.parse(documentos.interno) as {
       readonly paths: Record<string, { readonly get?: { readonly tags?: readonly string[] } }>;
@@ -21,7 +21,8 @@ describe('API8 — /health en el documento interno vs. el documento público (D1
     expect(interno.paths).toHaveProperty('/health');
     expect(interno.paths['/health']?.get?.tags).toContain('internal');
     expect(publico.paths).not.toHaveProperty('/health');
-    expect(publico.paths).toEqual({});
+    // Desde la Fase 11a el público ya no queda vacío: lleva los endpoints de sesión que consume el cliente (API11).
+    expect(Object.keys(publico.paths).sort()).toEqual(['/api/v1/auth/sesion', '/api/v1/auth/yo']);
   });
 
   it('el esquema documentado de /health viene de esquemaRespuestaSalud, no del genérico de Terminus', async () => {

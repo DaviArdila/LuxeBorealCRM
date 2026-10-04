@@ -38,7 +38,7 @@ export class WebhookChatwootController {
   @SinCsrf()
   @UseGuards(GuardiaFirmaChatwoot)
   @ApiTags('internal')
-  @ApiOperation({ operationId: 'recibirWebhookChatwoot' })
+  @ApiOperation({ operationId: 'recibirWebhookChatwoot', security: [] })
   @respuestaDesdeZod(esquemaRespuestaWebhookChatwoot, {
     description: 'Estado del evento recibido: registrado, duplicado o ignorado.',
   })
