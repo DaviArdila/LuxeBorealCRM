@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Publico, SinCsrf } from '../../../src/modulos/usuarios/index.js';
 import { esquemaCrearEjemplo, type CrearEjemplo, type Ejemplo } from './esquemas.js';
 
 /** Fecha literal fija (no `new Date()`): la respuesta del fixture es determinista a propósito. */
@@ -14,8 +15,13 @@ const FECHA_DE_PRUEBA = '2024-01-01T00:00:00.000Z';
  * `obtenerEjemploInterno` ya lleva `@ApiTags('internal')` (D1) aunque el filtro que la usa para
  * excluirla del documento público todavía no exista (T3): la etiqueta se declara ahora, tal como
  * fija `tasks.md` para T2, para que T3 la consuma sin volver a tocar este archivo.
+ *
+ * `@Publico()` y `@SinCsrf()` (Fase 11a): estos tests miden la validación y los errores, no la autenticación; sin
+ * ellos las guardias globales responderían 401/403 antes de llegar al pipe.
  */
 @Controller('ejemplos')
+@Publico()
+@SinCsrf()
 export class ContratoFixtureController {
   @Get()
   @ApiOperation({ operationId: 'listarEjemplos' })
