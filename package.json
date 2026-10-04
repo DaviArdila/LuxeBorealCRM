@@ -33,6 +33,8 @@
     "herramienta": "vite-node --config vitest.config.ts",
     "contrato:generar": "npm run herramienta -- scripts/cli.ts contrato:generar",
     "contrato:deriva": "npm run herramienta -- scripts/cli.ts contrato:deriva",
+    "cliente:generar": "npm run herramienta -- scripts/cli.ts cliente:generar",
+    "cliente:deriva": "npm run herramienta -- scripts/cli.ts cliente:deriva",
     "contrato:lint": "spectral lint openapi/openapi.json openapi/openapi.interno.json --ruleset .spectral.yaml --fail-severity error",
     "contrato:diff": "npm run herramienta -- scripts/cli.ts contrato:diff",
     "secretos": "npm run herramienta -- scripts/cli.ts secretos --arbol",

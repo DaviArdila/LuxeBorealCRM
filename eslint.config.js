@@ -61,6 +61,8 @@ export default tseslint.config(
       'coverage/',
       'src/plataforma/prisma/generado/',
       'test/fronteras/fixtures/',
+      // El cliente Angular (Fase 11b) tiene su propio lint, config y dependencias (D8).
+      'cliente/',
       '.kilo/',
     ],
   },

@@ -11,6 +11,7 @@ import { importarCatalogo, type ResultadoImportarCatalogoCli } from './importar-
 import { anonimizarConversacion, type ResultadoAnonimizar } from './evals/anonimizar.js';
 import { promptEstilo, type ResultadoPromptEstiloCli } from './prompt-estilo.js';
 import { usuarioCrear, type ResultadoUsuarioCrearCli } from './usuario-crear.js';
+import { generarCliente, verificarDerivaCliente, type ResultadoCliente } from './generar-cliente.js';
 import { sembrarMensajesFijos, type ResultadoSembrarMensajesFijosCli } from './sembrar-mensajes-fijos.js';
 
 /**
@@ -40,7 +41,8 @@ type Resultado =
   | ResultadoAnonimizar
   | ResultadoPromptEstiloCli
   | ResultadoUsuarioCrearCli
-  | ResultadoSembrarMensajesFijosCli;
+  | ResultadoSembrarMensajesFijosCli
+  | ResultadoCliente;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -71,6 +73,12 @@ async function main(): Promise<void> {
       return;
     case 'contrato:deriva':
       imprimirResultado(await verificarDerivaContrato());
+      return;
+    case 'cliente:generar':
+      imprimirResultado(await generarCliente());
+      return;
+    case 'cliente:deriva':
+      imprimirResultado(await verificarDerivaCliente());
       return;
     case 'contrato:diff':
       imprimirResultado(await compararContrato());
