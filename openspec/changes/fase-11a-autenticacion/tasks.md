@@ -17,7 +17,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - [x] T1 — Verificación de compatibilidad (argon2, cookies, `cookieAuth`, consola sin eco), sin código de producción
 - [x] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
 - [x] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
-- [ ] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
+- [x] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
 - [ ] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
 - [ ] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
 - [ ] T7 — Comando `npm run usuario:crear`
@@ -106,6 +106,60 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
   `Clock`), `CerrarSesion`, `ObtenerSesionActual` (aplica duración máxima, lee usuario de la base).
 - Unitarias con puertos falsos y `ClockFalso`; transcripción completa de RED (seguridad).
 - Forecast: ~350 líneas.
+- **Cerrada (2026-10-04).** RED en dos pasos. (1) Sin implementación: `Error: Cannot find module
+  './iniciar-sesion.js'` (y `./obtener-sesion-actual.js`, `./cerrar-sesion.js`). (2) Con esqueletos que compilan y
+  devuelven `{ resultado: 'sin-implementar' }`, transcripción completa de
+  `npx vitest run --project unit src/modulos/usuarios/aplicacion`:
+
+  ```
+       × borra la sesión indicada y deja las demás 32ms
+       × una sesión vigente devuelve el usuario leído de la base y renueva la última actividad 13ms
+       × USR3 — Una sesión vence al llegar a su duración máxima 1ms
+       × sin id de sesión o con una sesión desconocida da null 1ms
+       × un usuario desactivado o borrado invalida la sesión y la borra (D2) 1ms
+       × el rol sale de la base, no de la sesión: un cambio de rol se ve en la siguiente lectura 2ms
+       × USR1 — Credenciales válidas abren la sesión 11ms
+       × USR1 — El correo se compara sin distinguir mayúsculas 2ms
+       × USR1 — Una contraseña incorrecta se rechaza sin decir por qué 1ms
+       × USR1 — Un correo inexistente responde igual que una contraseña incorrecta 2ms
+       × USR1 — Un usuario inactivo no inicia sesión 1ms
+       × USR1 — El último acceso se registra con el reloj inyectado 1ms
+       × USR8 — El sexto intento fallido se bloquea 1ms
+       × USR8 — Pasada la ventana se puede volver a intentar 1ms
+       × USR8 — Un éxito reinicia el contador 1ms
+       × el límite cuenta por el correo normalizado: cambiar mayúsculas no da intentos nuevos 1ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected [ 'sesion-a', 'sesion-b' ] to deeply equal [ 'sesion-b' ]
+  AssertionError: expected { resultado: 'sin-implementar' } to deeply equal { resultado: 'sesion-abierta', …(2) }
+  AssertionError: expected 'sin-implementar' to be 'sesion-abierta' // Object.is equality
+  AssertionError: expected { resultado: 'sin-implementar' } to deeply equal { resultado: 'credenciales-invalidas' }
+  AssertionError: expected [] to deeply equal [ 'clave-de-prueba-123' ]
+  AssertionError: expected { resultado: 'sin-implementar' } to deeply equal { resultado: 'credenciales-invalidas' }
+  AssertionError: expected [] to deeply equal [ { …(2) } ]
+  AssertionError: expected 'sin-implementar' to be 'demasiados-intentos' // Object.is equality
+  AssertionError: expected 'sin-implementar' to be 'sesion-abierta' // Object.is equality
+  AssertionError: expected 'sin-implementar' to be 'sesion-abierta' // Object.is equality
+  AssertionError: expected 'sin-implementar' to be 'demasiados-intentos' // Object.is equality
+  AssertionError: expected { rol: 'sin-implementar' } to deeply equal { …(4) }
+  AssertionError: expected { rol: 'sin-implementar' } to be null
+  AssertionError: expected { rol: 'sin-implementar' } to be null
+  AssertionError: expected { rol: 'sin-implementar' } to be null
+  AssertionError: expected 'sin-implementar' to be 'admin' // Object.is equality
+   Test Files  3 failed (3)
+        Tests  16 failed | 2 passed (18)
+  ```
+
+  Los dos que pasan con el esqueleto son los de «no hace nada» («un inicio de sesión fallido no registra acceso» y
+  «sin sesión o con una sesión que ya no existe no falla»); se quedan porque fijan ese comportamiento. GREEN: 35
+  tests en `src/modulos/usuarios`; `npm test` (173 archivos, 1285 tests), `typecheck`, `lint` y `fronteras` verdes.
+- Detalles: el usuario inactivo también verifica la contraseña (el tiempo no lo distingue de uno activo); el límite
+  cuenta por el correo normalizado; un éxito llama a `reiniciar` después de crear la sesión; el log de éxito solo
+  lleva el id del usuario (USR9). Fakes nuevos en `test/fakes/`: `RepositorioUsuarioEnMemoria`,
+  `AlmacenSesionesEnMemoria`, `HasheadorContrasenaFalso`, `LimiteIntentosEnMemoria` (con la ventana del `ClockFalso`).
+  Commit: ver historial (`feat(usuarios): casos de uso`).
+- **`size:exception` (escrita al cerrar):** ~580 líneas, de ellas ~140 de producción, ~300 de tests unitarios, ~130
+  de fakes reutilizables (T5 y T6 los usan) y ~40 de la transcripción del RED en este archivo. Se deja como un PR
+  (p3) en vez de recortar tests.
 
 ### T5 — Guardias y decoradores
 
