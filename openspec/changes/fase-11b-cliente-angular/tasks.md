@@ -21,7 +21,7 @@ cita su commit al cerrarse.
 - [x] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
 - [x] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
 - [x] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
-- [ ] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
+- [x] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
 - [ ] T7 — Pantalla «Estilo del bot» (área `bot`)
 - [ ] T8 — Pantalla «Mensajes fijos» (área `bot`)
 - [ ] T9 — `npm run ci` con el cliente
@@ -356,6 +356,26 @@ cita su commit al cerrarse.
   la lectura de problem+json de `nucleo/` (D11) que usan las pantallas siguientes.
 - Tests de componentes y servicios con `HttpTestingController`.
 - Forecast: ~450 líneas (al límite; si lo pasa, la excepción se escribe al cerrar).
+
+- **Hecho (T6).** En `nucleo/`: `SesionServicio` (signal con el usuario de `/yo`; `cargar` trata el `401` como «sin sesión»,
+  `iniciar`, `cerrar`, `expirar`; no guarda nada en el navegador), `guardiaDeSesion` y `guardiaDeRol`, `csrfInterceptor`
+  (CLT6), `erroresHttpInterceptor` (`401` → `/entrar`, `403` → aviso sin cerrar sesión), `AvisosServicio`, `leerProblema`
+  (D11, con `Retry-After`), `AREAS_REGISTRADAS` (token que `app.config.ts` provee desde el registro) y `provideApiMismoOrigen`.
+  `sesion/entrar.component.ts` (CLT4: mensaje genérico, espera por `Retry-After` con el envío deshabilitado, sin guardar
+  correo ni contraseña), `shell/` con barra, menú por rol, «Cerrar sesión», aviso de permiso, inicio y 404; `app.routes.ts`
+  con `/entrar` diferida, shell tras `guardiaDeSesion` y la guardia de rol de cada área.
+- Pruebas (37 nuevas en el cliente, 46 en total): `csrf.interceptor` (6), `problema` (4), `sesion.servicio` (8),
+  `guardias` (4), `errores-http.interceptor` (3), `entrar.component` (5), `shell.component` (5) y `app.routes` (5, con la
+  guardia real contra `HttpTestingController`). RED observado: la primera corrida falló en compilación porque ninguno de los
+  módulos existía; después, 6 fallos reales de las pantallas (cierre de sesión por el selector del botón de PrimeNG, espera
+  de promesas en las pruebas, `//api` por el `rootUrl` por defecto).
+- **Desviaciones:** (1) El shell recibe las áreas por un token (`AREAS_REGISTRADAS`) en vez de importar el registro: así
+  el escenario «un área de prueba aparece en el menú sin tocar el shell» se prueba de verdad. (2) La ruta de inicio de
+  sesión se carga en diferido: con ella en el arranque el bundle inicial pasaba de 600 kB (587 kB ahora, bajo el aviso).
+  (3) `cerrar()` propaga el error del servidor pero deja al cliente sin sesión; la barra navega a `/entrar` en cualquier caso.
+  (4) Los escenarios de la spec dicen `/estilo`; las rutas reales son `/bot/estilo` y `/bot/mensajes-fijos`.
+- **`size:exception` (escrita al cerrar):** ~1.040 líneas de autoría, ≈ 650 de pruebas (37 tests de servicios, guardias,
+  interceptores y pantallas con `HttpTestingController`) y ≈ 390 de código y notas, frente al forecast de ~450. Nada se recortó.
 
 ### T7 — Pantalla «Estilo del bot»
 
