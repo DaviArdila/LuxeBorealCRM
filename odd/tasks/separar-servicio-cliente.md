@@ -1,7 +1,8 @@
 # Separar `servicio/` y `cliente/` en el repositorio
 
 Trabajo fuera de fase (ODD), pedido por el dueño el 2026-10-04. Decisión en
-`docs/adr/0023-estructura-servicio-y-cliente.md` (`propuesta`). **Estado: en curso.**
+`docs/adr/0023-estructura-servicio-y-cliente.md` (`propuesta`). **Estado: implementado y verificado** (T1–T5,
+2026-10-04). Queda T6, la prueba del dueño en Windows.
 
 ## Objetivo
 
@@ -59,7 +60,28 @@ Limitación del entorno de la sesión: no hay Docker, así que integración, e2e
 - [x] T4 — Documentación vigente: `CLAUDE.md` (estructura y comandos por aplicación), `README.md`,
   `docs/CONTEXTO_SESIONES.md`, guías de `docs/operacion/`, skill `luxeboreal-arquitectura`, nota en ADR-0022 y
   comentarios de `.env.example`. Los `verify-report` archivados no se tocan.
-- [ ] T5 — Verificación final: clon limpio, hooks reales y CI completo en GitHub
+- [x] T5 — Verificación final
+  - `npm run ci` de la raíz completo en la sesión, con Docker (`dockerd` levantado a mano): 1386 unitarios, 1742 de
+    cobertura (unitarios e integración), 81 e2e, 36 evals (+1 omitida), secretos, commits, fronteras, lint y diff del
+    contrato, auditorías, actionlint y el `ci` del cliente. Código de salida 0.
+  - CI de GitHub, comparado con `main` (run 290): cobertura 1753 (13 omitidos) → 1742 (ninguno omitido; los del cliente
+    corren ahora en el cliente), e2e 81 = 81, evals 37 = 37, cliente 65 = 65, herramientas del cliente 14 → 19.
+  - Clon limpio de la rama: `npm run instalar` sin dejar cambios (primero dejaba `cliente/package-lock.json`
+    modificado; corregido con `npm ci`, commit `32c0ab6`), builds, `contrato:deriva` y `api:deriva` en verde.
+  - La aplicación de verdad, desde el clon: `docker compose -f servicio/docker-compose.yml up`, migraciones aplicadas,
+    `npm --prefix servicio run start:dev` → `GET /health` 200 (Postgres y Redis `up`); `npm --prefix cliente start` sirve
+    la app y el proxy lleva `/api/v1/auth/yo` a la API (401 RFC 9457 sin sesión).
+  - Hooks con git real: `commit-msg` rechaza «arreglo cosas» y acepta un mensaje convencional; `pre-push` corre
+    `ci:hook` en `servicio/` y deja pasar el push, y con un test roto lo bloquea y no llega al remoto.
+
+## Hallazgos que ya existían en `main` (no se cambian aquí)
+
+- Los hooks de `.githooks/` están guardados sin permiso de ejecución (modo 644). En Windows no importa; en Linux o
+  macOS git los ignora. Arreglo propuesto: `git update-index --chmod=+x .githooks/*`.
+- `cliente/package-lock.json` no registra el campo `engines` que declara `cliente/package.json`: un `npm install` lo
+  agrega. Con `npm ci` no pasa; se corrige solo la próxima vez que se agregue una dependencia al cliente.
+- `prisma.config.ts` lee `DATABASE_URL` del entorno y no del `.env`: los comandos del CLI de Prisma
+  (`prisma:aplicar`, `prisma:migrar`) necesitan la variable exportada en la terminal.
 - [ ] T6 `[manual]` — Prueba del dueño en Windows (ver la lista al final)
 
 ## Prueba del dueño en Windows
