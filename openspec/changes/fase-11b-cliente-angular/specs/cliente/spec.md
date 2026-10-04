@@ -214,7 +214,7 @@ Fase que lo implementa: 11b
 El cliente MUST organizarse en **áreas** de negocio bajo `src/app/areas/<area>/` (en esta fase solo `bot`, con «Estilo
 del bot» y «Mensajes fijos»), más `nucleo/` (transversal sin pantallas), `compartido/` (interfaz sin dominio), `shell/`
 (marco y menú) y el cliente generado. Cada área MUST declarar su título, roles, entradas del menú y un cargador de sus
-rutas en un único archivo de definición, y MUST registrarse con una sola línea en `areas/registro.ts`; el shell MUST
+rutas en un único archivo de definición, y MUST registrarse con una sola línea en `areas/registro/registro.ts`; el shell MUST
 armar las rutas y el menú desde ese registro, filtrado por el rol de `obtenerSesionActual`. Las rutas de cada área MUST
 cargarse en diferido. El lint del cliente MUST rechazar que un área importe de otra área, que `nucleo/` o
 `compartido/` importen de un área y que el shell importe de un área algo distinto del registro.
@@ -223,7 +223,7 @@ Fase que lo implementa: 11b
 
 #### Scenario: Un área registrada aparece en el menú de su rol
 
-- Dado un área de prueba registrada en `areas/registro.ts` con rol `admin` y una entrada de menú,
+- Dado un área de prueba registrada en `areas/registro/registro.ts` con rol `admin` y una entrada de menú,
 - Cuando un admin abre el cliente,
 - Entonces el menú muestra esa entrada y su ruta abre la pantalla del área, sin cambios en el shell.
 

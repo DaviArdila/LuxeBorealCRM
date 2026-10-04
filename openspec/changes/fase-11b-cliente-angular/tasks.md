@@ -16,7 +16,7 @@ cita su commit al cerrarse.
 
 ## Checklist
 
-- [ ] T1 — Verificación de compatibilidad (Angular, PrimeNG, runner, `ng-openapi-gen` con OpenAPI 3.1, fronteras por lint), sin código de producción
+- [x] T1 — Verificación de compatibilidad (Angular, PrimeNG, runner, `ng-openapi-gen` con OpenAPI 3.1, fronteras por lint), sin código de producción
 - [ ] T2 — Endpoints de admin del estilo en `agente` y contrato
 - [ ] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
 - [ ] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
@@ -54,6 +54,24 @@ cita su commit al cerrarse.
   `primeng` 22.1.2 (pide `@angular/core ^22.1.0`), `angular-eslint` 22.5.0, `eslint-plugin-boundaries` 7.2.0,
   `ng-openapi-gen` 1.1.0. El CLI de Angular 22 pide Node `^22.22.3 || ^24.15.0`.
 - Si `ng-openapi-gen` falla, se elige la alternativa, se anota y se ajusta ADR-0022 antes de seguir.
+- **Cerrada (2026-10-04).** Resultado en la tabla «Registro de compatibilidad» de `design.md`: Angular 22.2.1,
+  PrimeNG 22.1.2, Vitest 5 + jsdom, `ng-openapi-gen` 1.1.0 (funciona con OpenAPI 3.1; determinista),
+  `angular-eslint` 22.5.0 y `eslint-plugin-boundaries` 7.2.0 con resolvedor de TypeScript. Evidencia: un proyecto
+  temporal fuera del repo con `ng new --zoneless`, `ng test --watch=false` (4 tests en verde: `HttpTestingController`
+  con el interceptor de CSRF, PrimeNG sin Zone.js y un test de tipos) y `ng build`; `ng-openapi-gen` contra el
+  `openapi/openapi.json` real y `diff -r` entre dos corridas; `eslint` con 5 fixtures que violan las fronteras (las 5
+  fallan) y los archivos válidos (pasan). Sin código de producción ni tests en el repo (tarea de verificación).
+- **Hallazgos que cambian T5-T8 (ya aplicados a `design.md`):**
+  1. El CLI de Angular 22 exige Node ≥ 22.22.3 / ≥ 24.15: `cliente/package.json` declara `engines.node >=24.15.0`.
+  2. El tema Aura con PrimeNG pasa del presupuesto de 1 MB si todo va en el bundle inicial: T5 fija los presupuestos
+     (inicial: aviso 600 kB, error 1 MB) y las pantallas viajan en el chunk de su área (CLT9).
+  3. `eslint-plugin-boundaries` no actúa sin resolvedor de TypeScript, y se enteró probando: T5 lo instala y su
+     fixture de «import entre áreas» es la prueba de que las reglas siguen activas.
+  4. El registro de áreas pasa a una carpeta (`areas/registro/registro.ts`) porque el plugin clasifica carpetas.
+  5. Sin modelos con nombre en el contrato: D13 (`nucleo/tipos.ts` con `RespuestaDe`).
+  6. `Api.invoke()` devuelve `Promise`, no `Observable`: los servicios de pantalla usan `async`/`await` sobre signals.
+  7. `ng-openapi-gen` con `excludeParameters: ["X-Luxe-Csrf"]` (D12) confirmado.
+- Forecast cumplido: sin cambios de producción.
 - Forecast: sin cambios de producción, sin riesgo de presupuesto.
 
 ### T2 — Endpoints del estilo
@@ -88,9 +106,10 @@ cita su commit al cerrarse.
   `proxy.conf.json`, `ng-openapi-gen.json`; scripts de raíz `cliente:generar` y `cliente:deriva`; la raíz ignora
   `cliente/**` en su lint.
 - Estructura de D7: `nucleo/` (tipo `DefinicionArea`), `compartido/`, `shell/` (marco y menú vacíos todavía),
-  `areas/registro.ts` y `areas/bot/` con su `area.ts` y `bot.routes.ts` apuntando a pantallas provisionales; rutas
+  `areas/registro/registro.ts` y `areas/bot/` con su `area.ts` y `bot.routes.ts` apuntando a pantallas provisionales; rutas
   diferidas en `app.routes.ts` (D9).
-- Fronteras de D10 en el lint del cliente, cada regla con un fixture que la viola (como
+- `engines.node >=24.15.0`, presupuestos de bundle explícitos (T1) y `nucleo/tipos.ts` con `RespuestaDe` (D13).
+- Fronteras de D10 en el lint del cliente (con `eslint-import-resolver-typescript`), cada regla con un fixture que la viola (como
   `test/fronteras/dependency-cruiser.spec.ts` en el servidor).
 - Test de `cliente:deriva` con un contrato alterado (en `test/fronteras/`, como `contrato:deriva`) y comprobación de
   que el build deja el área `bot` en un archivo aparte.
@@ -101,7 +120,7 @@ cita su commit al cerrarse.
 
 - Pantalla de inicio de sesión (CLT4), `SesionServicio` con un signal del usuario de `/yo`, guardias de ruta por sesión
   y por rol (CLT5), interceptor de `X-Luxe-Csrf` y de `401`/`403` (CLT6), cerrar sesión.
-- El shell gana el menú armado desde `areas/registro.ts` y el rol (CLT9), la barra con el usuario y «Cerrar sesión», y
+- El shell gana el menú armado desde `areas/registro/registro.ts` y el rol (CLT9), la barra con el usuario y «Cerrar sesión», y
   la lectura de problem+json de `nucleo/` (D11) que usan las pantallas siguientes.
 - Tests de componentes y servicios con `HttpTestingController`.
 - Forecast: ~450 líneas (al límite; si lo pasa, la excepción se escribe al cerrar).
