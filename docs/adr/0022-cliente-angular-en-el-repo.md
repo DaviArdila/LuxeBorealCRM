@@ -43,20 +43,22 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 ## Decisión (A + 1)
 
-1. **Angular** estable más reciente, componentes standalone, signals, sin Zone.js. La versión exacta se fija en la
-   primera tarea de la Fase 11b (verificación de compatibilidad).
-2. **PrimeNG** como librería de componentes.
+1. **Angular** estable más reciente, componentes standalone, signals, sin Zone.js. Fijado en la Fase 11b (T1,
+   2026-10-04): **Angular 22.2.1**, TypeScript 6, Vitest 5 + jsdom como runner de tests; el CLI exige Node ≥ 22.22.3 o
+   ≥ 24.15, así que `cliente/package.json` declara `engines.node >=24.15.0`.
+2. **PrimeNG** (22.1.2, tema Aura) como librería de componentes.
 3. **`cliente/`** en este repo, con su `package.json`, lockfile, lint y tests propios. El servidor no importa nada de
    `cliente/` ni el cliente nada de `src/`, `scripts/` o `test/`.
 4. **Cliente HTTP generado** con `ng-openapi-gen` desde `openapi/openapi.json` (`npm run cliente:generar`), commiteado y
    verificado por deriva en CI. Si `ng-openapi-gen` no maneja OpenAPI 3.1, la Fase 11b elige otra herramienta y
-   actualiza este ADR.
+   actualiza este ADR. **Verificado en T1: `ng-openapi-gen` 1.1.0 sí maneja el contrato real y es determinista**, así que se
+   usa; no hizo falta la alternativa.
 5. **Mismo origen**: en desarrollo, `proxy.conf.json` reenvía `/api` a la API local; en producción, el mismo dominio
    (la forma concreta se decide en la 09b).
 6. **CI**: `npm run ci` agrega lint, tests, build, auditoría y deriva del cliente; `dependency-cruiser` sigue limitado a
    `src/` y `scripts/`.
 7. **Organizado por áreas** (agregado el 2026-10-04): el cliente crece por áreas de negocio en `src/app/areas/<area>/`
-   (bot, luego inventario, ventas…), cada una con rutas cargadas en diferido y registrada en `areas/registro.ts`; el
+   (bot, luego inventario, ventas…), cada una con rutas cargadas en diferido y registrada en `areas/registro/registro.ts`; el
    shell arma rutas y menú desde ese registro. `nucleo/` y `compartido/` son las únicas piezas comunes, y el lint del
    cliente prohíbe los imports entre áreas (detalle en el `design.md` de la Fase 11b, D7, D9 y D10).
 
@@ -64,7 +66,7 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 1. Carpeta `cliente/src/app/areas/<area>/` con su `area.ts` (título, ícono, roles, entradas del menú y cargador
    diferido de sus rutas) y su `<area>.routes.ts`.
-2. Una línea en `areas/registro.ts`. El shell, el menú y `app.routes.ts` no se tocan.
+2. Una línea en `areas/registro/registro.ts`. El shell, el menú y `app.routes.ts` no se tocan.
 3. Lo que el área necesite de otra área se pide a la API; lo que se repita entre áreas sube a `compartido/` (interfaz)
    o a `nucleo/` (transversal).
 4. Sus endpoints llegan por `npm run cliente:generar`, en el mismo commit que cambia el contrato.

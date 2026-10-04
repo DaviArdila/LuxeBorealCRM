@@ -1,6 +1,6 @@
 # Design: Fase 11b — Cliente Angular: estilo del bot y mensajes fijos
 
-- Change: `fase-11b-cliente-angular` · Fecha: 2026-10-03 · Estado: **spec en revisión**
+- Change: `fase-11b-cliente-angular` · Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
 - Proposal: `proposal.md` · Specs: `cliente` (CLT1-CLT9, dominio nuevo), `agente` (AGT23),
   `configuracion-negocio` (CFN1-CFN3), `integracion-continua` (CI10)
 - ADRs: [0022](../../../docs/adr/0022-cliente-angular-en-el-repo.md) nuevo (`propuesta`); se apoya en 0008, 0020 y 0021.
@@ -26,12 +26,14 @@ cliente no sabe cómo está hecho el servidor: solo usa el código generado desd
 
 | Pieza | Candidata | Qué se verifica | Resultado |
 |---|---|---|---|
-| Angular | versión estable más reciente a la fecha de T1 | `ng new` standalone y zoneless; Node LTS del repo | pendiente |
-| Componentes | PrimeNG compatible con esa versión de Angular | tabla, editor de texto, diálogo de confirmación, mensajes | pendiente |
-| Runner de tests del cliente | el que trae por defecto esa versión del CLI (Vitest desde Angular 21, a confirmar) | corre sin navegador en CI | pendiente |
-| Generador del cliente HTTP | `ng-openapi-gen` | lee el `openapi.json` real (OpenAPI 3.1) y genera servicios por `operationId` | pendiente |
-| Lint | `angular-eslint` | regla de imports prohibidos hacia `../src`, `../scripts`, `../test` (CLT1) | pendiente |
-| Fronteras del cliente | `eslint-plugin-boundaries` (o `no-restricted-imports`) | las reglas de D10 con fixtures que las violan (CLT9) | pendiente |
+| Angular | versión estable más reciente a la fecha de T1 | `ng new` standalone y zoneless; Node LTS del repo | **Angular 22.2.1** (`@angular/cli` 22.2.1, TypeScript 6.0.3). `ng new --zoneless` genera una app sin Zone.js; `ng build` termina (216 kB iniciales). El CLI pide Node `^22.22.3 \|\| ^24.15.0`: la sesión en la nube trae 22.22.0, así que T1 se corrió con Node 24.21 (el `.nvmrc` de la CI es `24`, cumple). `cliente/package.json` declara `engines.node >=24.15.0` |
+| Componentes | PrimeNG compatible con esa versión de Angular | tabla, editor de texto, diálogo de confirmación, mensajes | **PrimeNG 22.1.2** con `@primeuix/themes` 3.0.1 (tema Aura) y `@angular/cdk` 22. Un componente de prueba con `p-table`, `pTextarea`, `p-confirmdialog` y `p-message` renderiza sin Zone.js bajo el runner y compila en producción. **Peso**: tema Aura + PrimeNG en la configuración suben el bundle inicial a ≈ 364 kB (83 kB transferidos); un área cargada en diferido deja el inicial en 451 kB y las pantallas en un archivo aparte de ≈ 700 kB (111 kB transferidos). Con todo en el bundle inicial se pasaba de 1 MB y el build fallaba por el presupuesto por defecto: **T5 fija los presupuestos a propósito** (inicial: aviso 600 kB, error 1 MB) y CLT9 los respeta |
+| Runner de tests del cliente | el que trae por defecto esa versión del CLI | corre sin navegador en CI | **Vitest 5.0.3 + jsdom 30** (`ng test --watch=false`), sin navegador. Probado: `HttpTestingController`, `TestBed` zoneless, componentes PrimeNG y un test de tipos con `@ts-expect-error` |
+| Generador del cliente HTTP | `ng-openapi-gen` | lee el `openapi.json` real (OpenAPI 3.1) y genera servicios por `operationId` | **`ng-openapi-gen` 1.1.0 funciona**: lee `openapi.json` (3.1) y genera `Api` (`providedIn: 'root'`, `invoke()` devuelve `Promise`) y una función por `operationId` (`iniciarSesion`, `cerrarSesion`, `obtenerSesionActual`). `excludeParameters: ["X-Luxe-Csrf"]` quita el encabezado de los parámetros (D12); con un interceptor, la mutación lo lleva y la lectura no (probado con `HttpTestingController`). **Determinista**: dos corridas dan carpetas idénticas (`diff -r`), así que `cliente:deriva` es viable. **Hallazgo**: reporta «0 models»: los esquemas de respuesta van en línea en el contrato, así que no hay interfaces con nombre; D13 lo resuelve con un tipo auxiliar. No hizo falta la alternativa (`@hey-api/openapi-ts`) |
+| Lint | `angular-eslint` | regla de imports prohibidos hacia `../src`, `../scripts`, `../test` (CLT1) | **`angular-eslint` 22.5.0** con ESLint 9.39 y `typescript-eslint` 8.71. `no-restricted-imports` con un patrón regex rechaza `../../../../../src/algo` con el mensaje de CLT1. Tal cual viene, `@angular-eslint/prefer-inject` obliga a `inject()` (se usa en todo el cliente) |
+| Fronteras del cliente | `eslint-plugin-boundaries` (o `no-restricted-imports`) | las reglas de D10 con fixtures que las violan (CLT9) | **`eslint-plugin-boundaries` 7.2.0 sirve**, con tres requisitos que se descubrieron probando: (1) un **resolvedor** (`eslint-import-resolver-typescript` con `settings['import/resolver']`); sin él los imports sin extensión quedan sin resolver y ninguna regla actúa, sin avisar; (2) elementos de carpeta con `partialMatch: false` y la regla `boundaries/dependencies` con `policies` (la API `rules`/`mode` está deprecada); (3) para varios tipos, `types: { anyOf: [...] }` (plural). Probado con 5 fixtures que la violan (entre áreas, `nucleo`→área, `compartido`→`nucleo`, `shell`→área, import del servidor) y con los archivos válidos (área→`nucleo`/`compartido`/su propia carpeta, registro→área, `shell`→registro) que pasan sin errores. La configuración verificada está en D10 |
+
+Probado el 2026-10-04 con Node 24.21 en Linux x64, en un proyecto temporal fuera del repo que no se commitea.
 
 Si `ng-openapi-gen` no maneja OpenAPI 3.1, se evalúan `@hey-api/openapi-ts` y `openapi-generator` (generador
 `typescript-angular`) y se anota aquí; ADR-0022 se ajusta antes de seguir.
@@ -113,7 +115,7 @@ cliente/
     ├── shell/            marco de la app: barra superior, menú lateral armado con las áreas y el rol, inicio, 404
     ├── sesion/           pantalla de inicio de sesión (pública, fuera del shell) (CLT4)
     ├── areas/
-    │   ├── registro.ts   lista de áreas: lo único que el shell conoce de ellas
+    │   ├── registro/     `registro.ts`: lista de áreas, lo único que el shell conoce de ellas
     │   └── bot/          área «Bot» (11b)
     │       ├── area.ts           definición: título, ícono, roles, entradas del menú, cargador diferido
     │       ├── bot.routes.ts     rutas hijas del área
@@ -124,7 +126,7 @@ cliente/
 ```
 
 Lo que viene después cabe sin mover nada: la 11c agrega `areas/bot/perfil/` y `areas/bot/escenarios/`; la 12 agrega
-`areas/inventario/`; la 13, `areas/ventas/`. Cada una es una carpeta nueva y una línea en `areas/registro.ts`.
+`areas/inventario/`; la 13, `areas/ventas/`. Cada una es una carpeta nueva y una línea en `areas/registro/registro.ts`.
 
 Componentes standalone, signals para el estado, sin Zone.js, detección `OnPush`. Nombres de dominio en español,
 sufijos de Angular en inglés (`*.component.ts`, `*.service.ts`), igual que en el servidor (skill
@@ -146,7 +148,7 @@ El `eslint.config` de la raíz agrega `cliente/**` a sus ignorados; `.dependency
 
 **Choice**: cada área exporta en su `area.ts` una `DefinicionArea` (tipo de `nucleo/`):
 `{ id, titulo, icono, roles, menu: [{ titulo, ruta, roles }], rutas: () => import('./bot.routes') }`.
-`areas/registro.ts` las lista; `app.routes.ts` crea una ruta `loadChildren` por área dentro del shell, protegida por
+`areas/registro/registro.ts` las lista; `app.routes.ts` crea una ruta `loadChildren` por área dentro del shell, protegida por
 la guardia de rol con los `roles` del área, y el shell arma el menú con las entradas que el rol de `/yo` puede ver.
 **Alternatives**: (a) rutas y menú escritos a mano en el shell (cada área nueva toca el shell y el menú por separado y
 se olvidan); (b) módulos federados o micro-frontends (complejidad de equipos grandes, no de un dueño con un cliente).
@@ -155,23 +157,51 @@ ella, así el arranque no crece con cada fase. El menú y las rutas siguen solo 
 
 ### D10: fronteras del cliente verificadas por lint
 
-**Choice**: `eslint-plugin-boundaries` (lo confirma T1; si no sirve, `no-restricted-imports` con patrones) con estos
-tipos de elemento y reglas, todas `error`:
+**Choice**: `eslint-plugin-boundaries` 7 con `eslint-import-resolver-typescript` (T1 los verificó con fixtures que
+violan cada regla). Elementos de carpeta con `partialMatch: false`; la regla `boundaries/dependencies` en `error` con
+`default: 'disallow'`:
 
-| Elemento | Puede importar |
-|---|---|
-| `api` (generado) | nada de la app |
-| `nucleo` | `api` |
-| `compartido` | nada de la app (solo Angular y PrimeNG) |
-| `sesion` | `nucleo`, `compartido`, `api` |
-| `shell` | `nucleo`, `compartido`, `areas/registro.ts` |
-| `area` (`areas/<x>/`) | `nucleo`, `compartido`, `api`, su propia carpeta; **nunca otra área** |
-| cualquier archivo | nunca `../src`, `../scripts` ni `../test` del servidor (CLT1) |
+| Elemento | Carpeta | Puede importar |
+|---|---|---|
+| `api` (generado) | `api/` | solo `api` |
+| `nucleo` | `nucleo/` | `nucleo`, `api` |
+| `compartido` | `compartido/` | solo `compartido` (más Angular y PrimeNG) |
+| `sesion` | `sesion/` | `sesion`, `nucleo`, `compartido`, `api` |
+| `shell` | `shell/` | `shell`, `nucleo`, `compartido`, `registro` |
+| `registro` | `areas/registro/` | `nucleo`, las definiciones de las áreas |
+| `area` | `areas/<x>/` | `nucleo`, `compartido`, `api` y **su propia carpeta**; nunca otra área |
+| cualquier archivo | | nunca `../src`, `../scripts` ni `../test` del servidor (CLT1, `no-restricted-imports`) |
+
+Los archivos de la raíz de `src/app/` (`app.ts`, `app.config.ts`, `app.routes.ts`) no son un elemento: componen la app
+y no están restringidos. Configuración verificada (fragmento de `eslint.config.js`):
+
+```js
+settings: {
+  'import/resolver': { typescript: { project: './tsconfig.json' } },   // sin esto ninguna regla actúa
+  'boundaries/include': ['src/app/**/*'],
+  'boundaries/elements': [
+    { type: 'registro', pattern: 'src/app/areas/registro', partialMatch: false },  // antes que `area`
+    { type: 'area', pattern: 'src/app/areas/*', partialMatch: false, capture: ['area'] },
+    { type: 'api', pattern: 'src/app/api', partialMatch: false },
+    // nucleo, compartido, sesion y shell, igual
+  ],
+},
+rules: {
+  'boundaries/dependencies': ['error', { default: 'disallow', policies: [
+    { from: { element: { type: 'nucleo' } }, allow: { to: { element: { types: { anyOf: ['nucleo', 'api'] } } } } },
+    { from: { element: { type: 'area' } }, allow: { to: { element: { types: { anyOf: ['nucleo', 'compartido', 'api'] } } } } },
+    { from: { element: { type: 'area' } },   // su propia carpeta
+      allow: { to: { element: { type: 'area', captured: { area: '{{ from.element.captured.area }}' } } } } },
+    // el resto, según la tabla
+  ] }],
+}
+```
 
 Si dos áreas necesitan lo mismo, la pieza sube a `compartido/` (si es de interfaz) o a `nucleo/` (si es transversal).
 Si un área necesita datos de otro dominio, los pide a la API, como en el servidor: el contrato es la frontera.
 **Alternatives**: confiar en la convención (es lo que la estructura plana dejaba abierto); Nx con etiquetas por
-librería (exige reorganizar el repo, descartado en ADR-0022).
+librería (exige reorganizar el repo, descartado en ADR-0022); solo `no-restricted-imports` con patrones (no sabe de
+«la propia área», habría que repetir una regla por área).
 **Rationale**: es el equivalente de `dependency-cruiser` en el servidor; sin una regla que falle, la estructura se
 erosiona con la primera prisa.
 
@@ -192,6 +222,18 @@ toda mutación (CLT6). **Hallazgo previo a T1 (2026-10-04)**: `ng-openapi-gen` 1
 (OpenAPI 3.1) y genera `iniciarSesion`, `cerrarSesion` y `obtenerSesionActual`; sin esa opción, cada función exigía
 `'X-Luxe-Csrf': '1'` como parámetro. T1 lo confirma con la versión de Angular elegida.
 **Rationale**: el encabezado es una regla transversal, no un dato de cada pantalla.
+
+### D13: tipos de respuesta derivados del cliente generado
+
+**Choice**: `ng-openapi-gen` entrega 0 modelos con nombre porque el servidor documenta las respuestas con
+`respuestaDesdeZod` en línea. `nucleo/tipos.ts` exporta `RespuestaDe<typeof funcionGenerada>`, que extrae el tipo del
+cuerpo de la respuesta (probado en T1: un rol fuera de `'admin' | 'asesor'` no compila); cada servicio de pantalla
+declara su alias (`type PerfilUsuario = RespuestaDe<typeof obtenerSesionActual>`).
+**Alternatives**: registrar esquemas con nombre en `components` desde el servidor (cambia `plataforma/documentacion` y
+el contrato público de todas las fases, fuera del alcance de la 11b); interfaces escritas a mano en el cliente (se
+desalinean del contrato, que es justo lo que `cliente:deriva` evita).
+**Rationale**: los tipos siguen saliendo del contrato; si más adelante el servidor nombra sus esquemas, los alias se
+reemplazan por los modelos generados sin tocar las pantallas.
 
 ## Módulos tocados
 
