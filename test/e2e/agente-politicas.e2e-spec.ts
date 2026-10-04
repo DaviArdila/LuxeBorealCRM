@@ -24,6 +24,7 @@ import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-
 import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { iniciarSesionComo } from '../soporte/sesion-e2e.js';
 
 const SECRETO = 'secreto-e2e-agente-politicas';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -240,6 +241,32 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
       interval: 100,
     });
     expect(await estadoDe(idConversacion)).toBe('handoff_pendiente');
+  }, 40_000);
+
+  it('CFN2 — Un texto editado por la API rige en el siguiente mensaje del bot, sin reiniciar', async () => {
+    const aplicacion = await arrancar();
+    const servidor = aplicacion.getHttpServer() as Server;
+    const admin = await iniciarSesionComo(servidor, aplicacion.get(PrismaService), 'admin');
+    // El texto de traspaso depende del horario de atención; se editan los dos para que el escenario no dependa de la hora.
+    for (const [clave, texto] of [
+      ['mensaje_handoff', 'EDITADO-POR-API-DENTRO'],
+      ['mensaje_handoff_fuera_horario', 'EDITADO-POR-API-FUERA'],
+    ] as const) {
+      const guardado = await request(servidor)
+        .put(`/api/v1/mensajes-fijos/${clave}`)
+        .set('x-luxe-csrf', '1')
+        .set('cookie', admin.cookie)
+        .send({ texto });
+      expect(guardado.status).toBe(200);
+    }
+    const { idConversacion, idContacto } = nuevaConversacion();
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
+
+    const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
+    expect(mensajes[1]).toMatch(/^EDITADO-POR-API-(DENTRO|FUERA)$/);
   }, 40_000);
 
   it('R12 — Imagen entrante', async () => {

@@ -19,7 +19,7 @@ cita su commit al cerrarse.
 - [x] T1 — Verificación de compatibilidad (Angular, PrimeNG, runner, `ng-openapi-gen` con OpenAPI 3.1, fronteras por lint), sin código de producción
 - [x] T2 — Endpoints de admin del estilo en `agente` y contrato
 - [x] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
-- [ ] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
+- [x] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
 - [ ] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
 - [ ] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
 - [ ] T7 — Pantalla «Estilo del bot» (área `bot`)
@@ -163,7 +163,8 @@ cita su commit al cerrarse.
 - **`size:exception` (escrita al cerrar):** ~760 líneas de autoría sin contar los dos OpenAPI generados (~2.070) ni la
   transcripción del RED en este archivo: ≈ 620 de tests (el e2e HTTP de 10 escenarios, el contrato, el controlador y el
   helper de sesión) y ≈ 140 de producción, frente al forecast de ~400. Nada se recortó.
- — Catálogos y módulo `mensajes-fijos`
+
+### T3 — Catálogos y módulo `mensajes-fijos`
 
 - `agente`, `conversaciones`, `catalogo` y `llm` mueven su texto de respaldo a `dominio/` con descripción y lo exportan
   por su barril; sus repositorios lo siguen usando (los tests existentes de AGT3 y similares deben seguir verdes).
@@ -222,13 +223,91 @@ cita su commit al cerrarse.
   integración de 10 escenarios y los dobles) y ≈ 380 de producción, de las que ≈ 120 son el catálogo de cuatro módulos
   que se **movió** (los textos de respaldo ya existían en sus repositorios) frente al forecast de ~400. El presupuesto
   nunca se cumple recortando tests ni comentarios.
- — Endpoints de mensajes fijos y semilla
+
+### T4 — Endpoints de mensajes fijos y semilla
 
 - `MensajesFijosController` con los dos endpoints, `@Roles('admin')`, códigos `mensaje-fijo-invalido` y
   `mensaje-fijo-desconocido`; `MensajesFijosModule` en `AppModule`; contrato regenerado en el mismo commit.
 - `scripts/sembrar-mensajes-fijos.ts` en `scripts/cli.ts` y `mensajes:sembrar` en `package.json`.
 - E2E: lista con origen, editar `mensaje_handoff` y verlo en el siguiente traspaso, clave desconocida, asesor, logs.
 - Forecast: ~350 líneas.
+- **Cerrada (2026-10-04).** RED por capas, antes de implementar. Unitarias y contrato (`npx vitest run --project unit
+  src/plataforma/errores/catalogo-codigos.spec.ts src/modulos/mensajes-fijos/interfaz scripts/sembrar-mensajes-fijos.spec.ts
+  test/contrato/mensajes-fijos.spec.ts`):
+
+  ```
+       × mensaje-fijo-invalido responde 422 7ms
+       × mensaje-fijo-desconocido responde 404 1ms
+       × las dos operaciones existen con su operationId, exigen la cookie y documentan 401 y 403 en problem+json 291ms
+       × guardarMensajeFijo pide X-Luxe-Csrf, la clave en la ruta y documenta 400, 404 y 422 en problem+json 132ms
+       × el cuerpo de guardarMensajeFijo es { texto } y la respuesta de la lista trae clave, descripcion, texto, origen y actualizado 51ms
+   FAIL  |unit| scripts/sembrar-mensajes-fijos.spec.ts [ scripts/sembrar-mensajes-fijos.spec.ts ]
+  Error: Cannot find module './sembrar-mensajes-fijos.js' imported from /home/user/LuxeBorealCRM/scripts/sembrar-mensajes-fijos.spec.ts
+   FAIL  |unit| src/modulos/mensajes-fijos/interfaz/mensajes-fijos.controller.spec.ts [ src/modulos/mensajes-fijos/interfaz/mensajes-fijos.controller.spec.ts ]
+  Error: Cannot find module './mensajes-fijos.controller.js' imported from /home/user/LuxeBorealCRM/src/modulos/mensajes-fijos/interfaz/mensajes-fijos.controller.spec.ts
+  ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+   FAIL  |unit| test/contrato/mensajes-fijos.spec.ts > CFN1/CFN2 — los mensajes fijos en el contrato público > las dos operaciones existen con su operationId, exigen la cookie y documentan 401 y 403 en problem+json
+  AssertionError: listarMensajesFijos: expected undefined to be 'listarMensajesFijos' // Object.is equality
+   FAIL  |unit| test/contrato/mensajes-fijos.spec.ts > CFN1/CFN2 — los mensajes fijos en el contrato público > guardarMensajeFijo pide X-Luxe-Csrf, la clave en la ruta y documenta 400, 404 y 422 en problem+json
+  AssertionError: expected undefined to be true // Object.is equality
+   FAIL  |unit| test/contrato/mensajes-fijos.spec.ts > CFN1/CFN2 — los mensajes fijos en el contrato público > el cuerpo de guardarMensajeFijo es { texto } y la respuesta de la lista trae clave, descripcion, texto, origen y actualizado
+  TypeError: Cannot read properties of undefined (reading 'schema')
+   FAIL  |unit| src/plataforma/errores/catalogo-codigos.spec.ts > plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2) > mensaje-fijo-invalido responde 422
+  AssertionError: expected undefined to be 422 // Object.is equality
+   FAIL  |unit| src/plataforma/errores/catalogo-codigos.spec.ts > plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2) > mensaje-fijo-desconocido responde 404
+  AssertionError: expected undefined to be 404 // Object.is equality
+   Test Files  4 failed (4)
+        Tests  5 failed | 9 passed (14)
+  ```
+
+  E2E con la app completa, antes de que existieran las rutas (`npx vitest run --project e2e
+  test/e2e/mensajes-fijos.e2e-spec.ts test/e2e/agente-politicas.e2e-spec.ts -t "Mensajes fijos por la API|CFN2"`):
+
+  ```
+       × CFN2 — Un texto editado por la API rige en el siguiente mensaje del bot, sin reiniciar 634ms
+       × CFN1 — La lista trae los diez mensajes: el editado con origen base y el resto con su respaldo 747ms
+       × CFN1 — Una clave fuera de la lista no aparece 246ms
+       × CFN1 — Un asesor no ve los mensajes fijos y tampoco los edita 139ms
+       × CFN2 — Guardar devuelve el mensaje con origen base y la fecha de la edición 141ms
+       × CFN2 — Un texto inválido se rechaza con 422, su motivo, y el texto vigente no cambia 121ms
+       × CFN2 — Una clave desconocida responde 404 y no escribe nada 118ms
+       × un cuerpo con la forma equivocada responde 400 validacion-fallida 139ms
+       × sin sesión responde 401 y una edición sin el encabezado anti-CSRF responde 403 128ms
+       × CFN2 — Guardar un mensaje no escribe el texto en los logs: solo la clave y el id del usuario 156ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 404 to be 200 // Object.is equality
+  TypeError: Cannot read properties of undefined (reading 'map')
+  AssertionError: expected 404 to be 403 // Object.is equality
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 404 to be 422 // Object.is equality
+  AssertionError: expected undefined to be 'mensaje-fijo-desconocido' // Object.is equality
+  AssertionError: expected 404 to be 400 // Object.is equality
+  AssertionError: expected 404 to be 401 // Object.is equality
+  AssertionError: expected undefined to match object { clave: 'mensaje_handoff', …(1) }
+   Test Files  2 failed (2)
+        Tests  10 failed | 6 skipped (16)
+  ```
+
+  GREEN: errores, controlador, script y contrato 79/79; e2e 16/16 (10 de `mensajes-fijos.e2e-spec.ts` más el escenario
+  de `agente-politicas`); integración del comando real 2/2 (`sembrar-cli.spec.ts`); `typecheck`, `lint`, `fronteras`,
+  `contrato:generar`/`deriva`/`lint`/`diff` verdes. Prueba manual del comando por `npm` contra un Postgres 16 temporal
+  migrado: `mensajes:sembrar: 10 insertadas, 0 ya existían.` y, la segunda vez, `0 insertadas, 10 ya existían.`
+- Detalles: `MensajesFijosController` en `mensajes-fijos/interfaz/` (`@Roles('admin')` en la clase,
+  `DocumentarRutaDeAdmin`, `UsuarioActual`), `MensajesFijosModule` registrado en `AppModule`; los logs llevan
+  `evento`, `clave` y `usuarioId`, nunca el texto (el e2e comprueba también que no aparece el correo). El escenario
+  «un texto editado rige en el siguiente mensaje» se prueba de punta a punta en `agente-politicas.e2e-spec.ts`: el
+  admin edita por la API `mensaje_handoff` **y** `mensaje_handoff_fuera_horario` (cuál se envía depende de la hora) y,
+  tras un segundo audio, el cliente recibe el texto editado sin reiniciar nada. El comando
+  (`scripts/sembrar-mensajes-fijos.ts`, registrado en `scripts/cli.ts`) informa solo conteos.
+- **Desviaciones:** (1) El esquema de `guardarMensajeFijo` limita el texto a 4.000 caracteres con `400` y deja a
+  `validarMensajeFijo` el tope de 1.000, el texto en blanco, los pesos y las plantillas con `422`, como en el estilo.
+  (2) **Corrección documental:** al agregar las notas de T2 y T3 se perdieron por error los encabezados `### T3` y
+  `### T4` de este archivo (el de T3 llegó así a `main` en #73); se restauran en este commit.
+  Commit: ver historial (`feat(mensajes-fijos): endpoints`).
+- **`size:exception` (escrita al cerrar):** ~650 líneas de autoría sin este archivo ni los dos OpenAPI generados
+  (~1.170): ≈ 570 de tests (el e2e HTTP de 10 escenarios, contrato, controlador, script y la integración del comando) y
+  ≈ 80 de producción, frente al forecast de ~350.
 
 ### T5 — Andamio del cliente
 
