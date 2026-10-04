@@ -6,6 +6,7 @@ import { IndicadorPostgres } from '../../src/plataforma/salud/indicador-postgres
 import { IndicadorRedis } from '../../src/plataforma/salud/indicador-redis.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 
 /**
@@ -76,6 +77,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
+      ...CONFIGURACION_AUTH_DE_PRUEBA,
     });
 
     const resultado = await modulo.get(IndicadorPostgres).comprobar();
@@ -128,6 +130,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
+      ...CONFIGURACION_AUTH_DE_PRUEBA,
     });
 
     const inicio = performance.now();
@@ -184,6 +187,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
+      ...CONFIGURACION_AUTH_DE_PRUEBA,
     });
 
     const resultado = await modulo.get(IndicadorRedis).comprobar();
@@ -236,6 +240,7 @@ describe('Indicadores de salud (T9, integración)', () => {
       ESPERA_CLIENTE_BARRIDO_MS: 60000,
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
       ...CONFIGURACION_LLM_DE_PRUEBA,
+      ...CONFIGURACION_AUTH_DE_PRUEBA,
     });
 
     const inicio = performance.now();

@@ -207,6 +207,14 @@ export const esquemaConfiguracion = z
     LEADS_RECORDATORIO_MIN: z.coerce.number().int().min(1).max(1440).default(30),
     /** Barrido de recordatorios (D10): cada cuánto se revisan los leads sin atender. */
     LEADS_BARRIDO_MS: z.coerce.number().int().min(1000).default(60000),
+    /** `modulos/usuarios` (Fase 11a, USR3, P51): minutos sin actividad tras los que vence una sesión. */
+    SESION_INACTIVIDAD_MIN: z.coerce.number().int().min(5).max(10080).default(720),
+    /** Horas desde la creación tras las que vence una sesión aunque tenga actividad (USR3, P51). */
+    SESION_DURACION_MAX_H: z.coerce.number().int().min(1).max(720).default(168),
+    /** Inicios de sesión fallidos por correo e IP antes de bloquear la pareja (USR8, P53). */
+    AUTH_INTENTOS_MAX: z.coerce.number().int().min(1).max(50).default(5),
+    /** Ventana del contador de fallos, en minutos; el bloqueo vence con ella (USR8, P53). */
+    AUTH_VENTANA_MIN: z.coerce.number().int().min(1).max(1440).default(15),
   })
   .superRefine((datos, ctx) => {
     if (datos.NODE_ENV === 'production' && datos.DOCS_HABILITADO) {
@@ -249,6 +257,13 @@ export const esquemaConfiguracion = z
         code: 'custom',
         path: ['LLM_CONVERSACION_TIMEOUT_MS'],
         message: 'LLM_CONVERSACION_TIMEOUT_MS MUST ser menor que LOCK_TURNO_TTL_S · 1000 (LLM3).',
+      });
+    }
+    if (datos.SESION_DURACION_MAX_H * 60 < datos.SESION_INACTIVIDAD_MIN) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SESION_DURACION_MAX_H'],
+        message: 'SESION_DURACION_MAX_H MUST cubrir al menos SESION_INACTIVIDAD_MIN (USR3).',
       });
     }
     if (datos.LLM_REINTENTO_BASE_MS > datos.LLM_REINTENTO_MAX_MS) {

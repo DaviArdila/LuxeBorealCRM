@@ -30,6 +30,7 @@ import { RedisModule } from '../../../src/plataforma/redis/index.js';
 import { CLOCK, RelojModule, type Clock } from '../../../src/plataforma/reloj/index.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 /** Doble en memoria de `EnviarRespuestaTurno`, registrado como provider real (T4: sin T6 todavía). */
@@ -108,6 +109,7 @@ async function crearAplicacion(
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
     ...configuracionParcial,
   };
 

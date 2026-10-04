@@ -68,6 +68,10 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   HANDOFF_ESPERA_MIN: 30,
   ESPERA_CLIENTE_MIN: 10,
   ESPERA_CLIENTE_BARRIDO_MS: 60000,
+  SESION_INACTIVIDAD_MIN: 720,
+  SESION_DURACION_MAX_H: 168,
+  AUTH_INTENTOS_MAX: 5,
+  AUTH_VENTANA_MIN: 15,
   // Fase 06, T3: `llm` aún no está en `AppModule`; los valores solo cumplen `esquemaConfiguracion`.
   LLM_CONVERSACION_MODELOS: ['openai/gpt-5.6-luna'],
   LLM_CONVERSACION_TIMEOUT_MS: 15000,

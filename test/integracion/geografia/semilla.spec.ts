@@ -15,6 +15,7 @@ import {
 } from '../../../src/plataforma/config/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 const RUTA_DIVIPOLA = path.join(import.meta.dirname, '../../../prisma/datos/divipola.json');
@@ -89,6 +90,7 @@ async function crearCasoDeUso(): Promise<SembrarGeografia> {
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
   };
 
   const modulo = await Test.createTestingModule({

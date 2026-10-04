@@ -99,4 +99,24 @@ describe('plataforma/observabilidad — crearOpcionesLogger', () => {
     const req = linea.req as { headers: { authorization: string } };
     expect(req.headers.authorization).toBe('[REDACTADO]');
   });
+
+  it('USR9 — Los logs de una petición no contienen la cookie', () => {
+    const { stream, lineas } = crearStreamMemoria();
+    const logger = crearLoggerDePrueba(stream);
+    const valorSesion = 'q'.repeat(43);
+
+    logger.info(
+      {
+        req: { headers: { cookie: `luxe_sesion=${valorSesion}` } },
+        res: { headers: { 'set-cookie': [`luxe_sesion=${valorSesion}; Path=/; HttpOnly`] } },
+      },
+      'petición atendida',
+    );
+
+    const linea = ultimaLinea(lineas);
+
+    expect(JSON.stringify(linea)).not.toContain(valorSesion);
+    expect((linea.req as { headers: { cookie: string } }).headers.cookie).toBe('[REDACTADO]');
+    expect((linea.res as { headers: Record<string, unknown> }).headers['set-cookie']).toBe('[REDACTADO]');
+  });
 });

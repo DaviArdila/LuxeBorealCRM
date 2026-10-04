@@ -1,6 +1,6 @@
 # Design: Fase 11a — Usuarios y autenticación
 
-- Change: `fase-11a-autenticacion` · Fecha: 2026-10-03 · Estado: **spec en revisión**
+- Change: `fase-11a-autenticacion` · Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
 - Proposal: `proposal.md` · Specs: `usuarios` (USR1-USR10, dominio nuevo), `api` (API7 modificado, API11)
 - ADRs: [0021](../../../docs/adr/0021-sesion-cookie-redis.md) nuevo (`propuesta`); se apoya en 0008, 0010 y 0011.
 
@@ -28,11 +28,14 @@ Como en la Fase 00a, nada se escribe hasta confirmar estas dependencias con la v
 
 | Pieza | Candidata | Qué se verifica | Resultado |
 |---|---|---|---|
-| Hash de contraseñas | `@node-rs/argon2` (binarios precompilados) o `argon2` (node-gyp) | instala sin compilar en Windows y en Linux; `hash`/`verify` argon2id con m=19456 KiB, t=2, p=1 | pendiente |
-| Lectura de cookies | `cookie-parser` o el paquete `cookie` leído en la guardia | funciona con Express 5 y `NestExpressApplication` 12; no rompe `rawBody` del webhook | pendiente |
-| Escritura de cookies | `res.cookie()` de Express 5 vía `@Res({ passthrough: true })` | atributos `HttpOnly`, `SameSite=Strict`, `Secure`; vaciado con `clearCookie` | pendiente |
-| Contrato | `@nestjs/swagger` 12 `addCookieAuth` / `@ApiCookieAuth` / `@ApiSecurity` | `security: []` en operaciones públicas; Spectral sin errores nuevos | pendiente |
-| Consola sin eco | `node:readline` con salida silenciada | lee la contraseña sin mostrarla en PowerShell y en bash | pendiente |
+| Hash de contraseñas | `@node-rs/argon2` (binarios precompilados) o `argon2` (node-gyp) | instala sin compilar en Windows y en Linux; `hash`/`verify` argon2id con m=19456 KiB, t=2, p=1 | **`@node-rs/argon2` 2.2.1.** Instala sin compilar en Linux x64 (`argon2-linux-x64-gnu`); trae binario `win32-x64-msvc` entre sus `optionalDependencies`. `hash` con m=19456, t=2, p=1 da `$argon2id$v=19$m=19456,t=2,p=1$…` (~90 ms); `verify` acepta la correcta y rechaza otra. `Algorithm` es un `const enum` ambiental que `isolatedModules` no deja usar: se omite `algorithm`, porque argon2id ya es el valor por defecto, y los tests comprueban el prefijo `$argon2id$` |
+| Lectura de cookies | `cookie-parser` o el paquete `cookie` leído en la guardia | funciona con Express 5 y `NestExpressApplication` 12; no rompe `rawBody` del webhook | **`cookie` 2.0.1** (`parseCookie`, ESM con tipos) leído en `GuardiaSesion` sobre `req.headers.cookie`, sin middleware global. Con `OPCIONES_APLICACION` (`rawBody: true`) y prefijo `api/v1`, un `POST` JSON conserva `req.rawBody` intacto (8 bytes de `{"a": 1}`) |
+| Escritura de cookies | `res.cookie()` de Express 5 vía `@Res({ passthrough: true })` | atributos `HttpOnly`, `SameSite=Strict`, `Secure`; vaciado con `clearCookie` | **Sirve tal cual** (Express 5.2.1). `res.cookie` da `luxe_sesion=<43>; Path=/; HttpOnly; Secure; SameSite=Strict`, sin `Expires` ni `Max-Age`. `clearCookie` da `luxe_sesion=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Strict` y responde `204` |
+| Contrato | `@nestjs/swagger` 12 `addCookieAuth` / `@ApiCookieAuth` / `@ApiSecurity` | `security: []` en operaciones públicas; Spectral sin errores nuevos | **`@nestjs/swagger` 12.0.2.** `addCookieAuth('luxe_sesion', { type: 'apiKey', in: 'cookie', name: 'luxe_sesion' }, 'cookieAuth')` declara el esquema; `@ApiCookieAuth('cookieAuth')` da `security: [{ cookieAuth: [] }]`. **`@ApiSecurity({})` no sirve** (da `[{}]`): para `security: []` se usa `@ApiOperation({ security: [] })`. Spectral se comprueba en T6 con el contrato real |
+| Consola sin eco | `node:readline` con salida silenciada | lee la contraseña sin mostrarla en PowerShell y en bash | **`node:readline`** con un `Writable` que descarta la salida mientras se pide la contraseña. En bash con TTY (`script -qc`) no se muestra nada de lo tecleado y se lee completa; sin TTY (`echo x \| node …`) termina con código 2 sin leer. **PowerShell no se pudo probar en la nube**: queda dentro de la prueba `[manual]` de T8 |
+
+Probado el 2026-10-04 con Node 22.22 (sin Node 24 en la sesión) sobre Linux x64, en un script y un spec temporales
+que no se commitean.
 
 Si una candidata falla, se usa la otra y se anota aquí; si ninguna sirve, se detiene la fase y se avisa al dueño.
 

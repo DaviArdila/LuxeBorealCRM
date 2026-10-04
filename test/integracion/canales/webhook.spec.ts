@@ -11,6 +11,7 @@ import { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { cargarFixtureChatwoot, firmarComoChatwoot } from '../../soporte/chatwoot.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
 const SECRETO_DE_PRUEBA = 'secreto-de-prueba-webhook';
@@ -78,6 +79,7 @@ function configuracionDePrueba(): Configuracion {
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
   };
 }
 

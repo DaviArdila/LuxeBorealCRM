@@ -4,6 +4,7 @@ import type { Configuracion } from '../../../../plataforma/config/index.js';
 import { FalloCanal } from '../../puertos/adaptador-canal.js';
 import { ClienteChatwoot } from './cliente-chatwoot.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../../../../test/soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../../../../test/soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../../../../test/soporte/configuracion-llm-de-prueba.js';
 
 function configuracionDePrueba(parcial: Partial<Configuracion> = {}): Configuracion {
@@ -52,6 +53,7 @@ function configuracionDePrueba(parcial: Partial<Configuracion> = {}): Configurac
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
     ...parcial,
   };
 }
