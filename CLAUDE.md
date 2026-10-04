@@ -207,8 +207,10 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run mensajes:sembrar` | Inserta en `parametro` los diez mensajes fijos del bot que no tienen fila, con su texto de respaldo (Fase 11b); idempotente, nunca pisa un texto editado e informa solo cuántas insertó y cuántas ya existían |
 | `npm run cliente:generar` | Regenera `cliente/src/app/api/` (cliente HTTP de Angular) desde `openapi/openapi.json` con `ng-openapi-gen`; lo generado no se edita a mano (Fase 11b) |
 | `npm run cliente:deriva` | Genera en una carpeta temporal y compara byte a byte con `cliente/src/app/api/`; falla si difiere y nombra los archivos (Fase 11b) |
+| `npm run auditoria:cliente` | Lo mismo que `auditoria` pero sobre las dependencias de `cliente/`, con las mismas excepciones versionadas de la raíz (Fase 11b) |
+| `npm run cliente:ci` | Pasos del cliente: `npm ci`, lint, tests y build dentro de `cliente/`, `auditoria:cliente`, `cliente:deriva` y las pruebas de la raíz que necesitan sus dependencias; es el último paso de `npm run ci` y no está en `ci:hook` (Fase 11b) |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
-| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |
+| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows + `cliente:ci` |
 
 
 ## Reglas críticas
