@@ -29,3 +29,15 @@ export interface UsuarioNuevo {
   readonly passwordHash: string;
   readonly rol: Rol;
 }
+
+/** Lo que el usuario puede ver de sí mismo (USR1, USR5): nunca el hash. */
+export interface PerfilUsuario {
+  readonly id: string;
+  readonly nombre: string;
+  readonly email: string;
+  readonly rol: Rol;
+}
+
+export function perfilDe(usuario: Usuario): PerfilUsuario {
+  return { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol };
+}
