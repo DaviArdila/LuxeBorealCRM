@@ -3,7 +3,7 @@ import angular from 'angular-eslint';
 import boundaries from 'eslint-plugin-boundaries';
 import tseslint from 'typescript-eslint';
 
-// Fronteras de D10 (openspec/changes/fase-11b-cliente-angular/design.md), probadas con código que
+// Fronteras de D10 (openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/design.md), probadas con código que
 // las viola en test/fronteras/cliente-fronteras.spec.ts de la raíz. Sin el resolvedor de TypeScript
 // los imports sin extensión quedan sin resolver y ninguna regla de fronteras actúa, sin avisar.
 const ELEMENTOS = [

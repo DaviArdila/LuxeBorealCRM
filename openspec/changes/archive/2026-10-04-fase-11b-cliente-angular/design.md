@@ -1,9 +1,9 @@
 # Design: Fase 11b — Cliente Angular: estilo del bot y mensajes fijos
 
-- Change: `fase-11b-cliente-angular` · Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
+- Change: `fase-11b-cliente-angular` · Fecha: 2026-10-03 · Estado: **cerrada (2026-10-04)**
 - Proposal: `proposal.md` · Specs: `cliente` (CLT1-CLT9, dominio nuevo), `agente` (AGT23),
   `configuracion-negocio` (CFN1-CFN3), `integracion-continua` (CI10)
-- ADRs: [0022](../../../docs/adr/0022-cliente-angular-en-el-repo.md) nuevo (`propuesta`); se apoya en 0008, 0020 y 0021.
+- ADRs: [0022](../../../../docs/adr/0022-cliente-angular-en-el-repo.md) nuevo (`propuesta`); se apoya en 0008, 0020 y 0021.
 
 ## Technical Approach
 

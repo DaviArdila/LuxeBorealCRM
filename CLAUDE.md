@@ -43,6 +43,7 @@ Qué pregunta responde cada documento:
 | Qué avisos le llegan al asesor por Telegram y cómo abrir la conversación | `docs/operacion/avisos-al-asesor.md` |
 | Qué pasa si el bot dice un monto sin rastro y cómo correr las evals reales | `docs/operacion/dinero-sin-rastro-y-evals-reales.md` |
 | Cómo crear usuarios, cuánto dura una sesión y qué hacer si alguien queda bloqueado | `docs/operacion/usuarios-y-sesiones.md` |
+| Cómo levantar el cliente del back office, qué hace cada pantalla y cómo agregar un área | `docs/operacion/cliente-back-office.md` |
 | Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
 | Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
 | Investigación y evidencia detrás de una decisión | `docs/analisis/` |
