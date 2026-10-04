@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AgenteModule } from './modulos/agente/index.js';
 import { CanalesModule } from './modulos/canales/index.js';
 import { ConversacionesModule } from './modulos/conversaciones/index.js';
+import { UsuariosModule } from './modulos/usuarios/index.js';
 import { ColasModule } from './plataforma/colas/index.js';
 import { ConfiguracionModule } from './plataforma/config/index.js';
 import { ErroresModule } from './plataforma/errores/index.js';
@@ -24,7 +25,8 @@ import { SaludModule } from './plataforma/salud/index.js';
  * `ConsumidorRegistrador` (el consumidor "de por defecto" de `canales`) deje de ser el consumidor
  * real de eventos de canal. `AgenteModule` (Fase 07a, ADR-0016) implementa el puerto
  * `GENERADOR_RESPUESTA` de `conversaciones` y se compone aquí con `conGenerador`, el único lugar que
- * conoce a los dos; el módulo de la pasarela LLM no se cablea hasta la 07b.
+ * conoce a los dos; el módulo de la pasarela LLM no se cablea hasta la 07b. `UsuariosModule` (Fase 11a, D3)
+ * registra las guardias globales de CSRF, sesión y roles: toda ruta de `/api/v1` exige sesión salvo `@Publico()`.
  */
 @Module({
   imports: [
@@ -35,6 +37,7 @@ import { SaludModule } from './plataforma/salud/index.js';
     PrismaModule,
     RedisModule,
     SaludModule,
+    UsuariosModule,
     ColasModule,
     CanalesModule,
     ConversacionesModule.conGenerador(AgenteModule),

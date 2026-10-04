@@ -60,6 +60,7 @@
     "@scalar/nestjs-api-reference": "^1.2.23",
     "ai": "7.0.122",
     "bullmq": "^6.3.9",
+    "cookie": "^2.0.1",
     "csv-parse": "^7.0.3",
     "ioredis": "^6.0.0",
     "nestjs-pino": "^5.2.0",

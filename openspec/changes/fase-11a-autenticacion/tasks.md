@@ -18,7 +18,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - [x] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
 - [x] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
 - [x] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
-- [ ] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
+- [x] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
 - [ ] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
 - [ ] T7 — Comando `npm run usuario:crear`
 - [ ] T8 — Guía de operación, cierre documental y prueba real `[manual]`
@@ -169,6 +169,51 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - Integración con un controlador *fixture* en `test/integracion/` que expone una ruta abierta, una protegida y una
   de admin.
 - Forecast: ~400 líneas.
+- **Cerrada (2026-10-04).** RED en dos pasos con `npx vitest run --project integracion
+  test/integracion/usuarios/guardias.spec.ts`. (1) Sin el barril: `Error: Cannot find module
+  '../../../src/modulos/usuarios/index.js'`. (2) Con decoradores, barril y `UsuariosModule` pero **sin** registrar las
+  guardias como `APP_GUARD` (tras corregir el propio test, que no llamaba a `asegurarConexion` antes de sembrar en
+  Redis):
+
+  ```
+       × USR6 — Una ruta protegida sin sesión se rechaza 114ms
+       × una cookie con un id desconocido se rechaza igual que sin cookie 31ms
+       × USR3 — La actividad renueva el vencimiento 235ms
+       × USR3 — Una sesión inactiva vence 79ms
+       × una sesión creada hace más de SESION_DURACION_MAX_H horas se rechaza y se borra 55ms
+       × USR6 — Un asesor no entra a una ruta de admin 47ms
+       × USR6 — Un usuario desactivado pierde el acceso en su siguiente petición 59ms
+       × USR6 — Un cambio de rol aplica sin volver a iniciar sesión 48ms
+       × USR7 — Una mutación sin el encabezado se rechaza 40ms
+       × USR7 — El inicio de sesión exige el encabezado 36ms
+       × el encabezado anti-CSRF debe valer 1 26ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 11 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected 200 to be 401 // Object.is equality
+  AssertionError: expected 200 to be 401 // Object.is equality
+  AssertionError: expected 1200 to be greater than 43195
+  AssertionError: expected 200 to be 401 // Object.is equality
+  AssertionError: expected 200 to be 401 // Object.is equality
+  AssertionError: expected 200 to be 403 // Object.is equality
+  AssertionError: expected 200 to be 401 // Object.is equality
+  AssertionError: expected 200 to be 403 // Object.is equality
+  AssertionError: expected 204 to be 403 // Object.is equality
+  AssertionError: expected 200 to be 403 // Object.is equality
+  AssertionError: expected 200 to be 403 // Object.is equality
+   Test Files  1 failed (1)
+        Tests  11 failed | 4 passed (15)
+  ```
+
+  Los 4 que pasan sin guardias son los de «deja pasar» (ruta `@Publico()`, admin en ruta de admin, mutación con
+  encabezado, lectura sin encabezado). GREEN: 34 tests en `test/integracion/usuarios`; `test/contrato` 15/15;
+  `typecheck`, `lint`, `fronteras` y `contrato:deriva` verdes.
+- Detalles: `GuardiaSesion` lee la cookie con `parseCookie` (paquete `cookie` 2, agregado con npm 11) y delega en
+  `ObtenerSesionActual`; deja el perfil en `solicitud.usuario`. Las rutas fuera de `/api/v1` no pasan por las
+  guardias de sesión ni de CSRF (D3). El webhook gana `@Publico()` y `@SinCsrf()` y `AppModule` importa
+  `UsuariosModule`. **Desviación:** el controlador *fixture* de `test/contrato/` también gana `@Publico()` y
+  `@SinCsrf()`: sus 7 tests (API2-API4) miden la validación y los errores, no la autenticación, y sin eso respondían
+  401/403 antes del pipe. Commit: ver historial (`feat(usuarios): guardias`).
+- **`size:exception` (escrita al cerrar):** ~540 líneas, de ellas ~250 del test de integración con su controlador
+  *fixture*, ~200 de producción y ~40 de la transcripción del RED; el forecast ya marcaba T5 «al límite».
 
 ### T6 — Controlador, cookie, contrato y e2e
 
