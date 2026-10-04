@@ -25,7 +25,7 @@ cita su commit al cerrarse.
 - [x] T7 — Pantalla «Estilo del bot» (área `bot`)
 - [x] T8 — Pantalla «Mensajes fijos» (área `bot`)
 - [x] T9 — `npm run ci` con el cliente
-- [ ] T10 — Guía de operación, cierre documental y recorrido real `[manual]`
+- [x] T10 — Guía de operación, cierre documental y recorrido real `[manual]`
 
 ## Mapeo de escenarios por tarea (CLT 26 + AGT 8 + CFN 10 + CI 3 = 47)
 
@@ -455,6 +455,19 @@ cita su commit al cerrarse.
 - **`[manual]`**: el dueño levanta API y cliente, inicia sesión, publica un estilo, edita `mensaje_handoff` y comprueba
   por WhatsApp (o con el simulador) que el siguiente mensaje usa ambos; un usuario asesor no ve las pantallas.
 - Forecast: sin cambios de producción, sin riesgo de presupuesto.
+
+- **Hecho (T10).** `docs/operacion/cliente-back-office.md` (levantar API y cliente, qué hace cada pantalla, qué ves si algo falla, comandos,
+  cómo se agrega una pantalla y qué falta); `CLAUDE.md` (mapa de documentación); sección «Cliente» (§13) y el punto 10 del
+  checklist en la skill `luxeboreal-arquitectura`; `docs/fases/README.md`, `docs/CONTEXTO_SESIONES.md`,
+  `docs/migracion/inventario.md` y P56-P58 resueltas en `docs/PREGUNTAS_ABIERTAS.md`; `verify-report.md`; los deltas fusionados en
+  `openspec/specs/` (dominio nuevo `cliente` con CLT1-CLT9 y los requisitos nuevos de `agente`, `configuracion-negocio` e
+  `integracion-continua`) y el change archivado en `openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/`.
+  `docs/analisis/06-cliente-back-office.md` no cambió: lo que decidió sigue vigente.
+- Prueba nueva: `test/fronteras/cliente-proxy.spec.ts` (3, CLT3: el proxy reenvía `/api` al puerto de `.env.example`, `npm start` lo usa y el cliente
+  llama a rutas relativas). Ya se cumplían al escribirla (el proxy existía desde T5): quedan como regresión, sin RED.
+- **`[manual]` pendiente (dueño):** levantar API y cliente en local (guía), iniciar sesión, publicar un estilo, editar
+  `mensaje_handoff` y comprobar por WhatsApp o con el simulador que el siguiente mensaje usa ambos; con un usuario `asesor`,
+  que no ve las pantallas de administración. Aceptar ADR-0022 y las dos excepciones de auditoría de T9.
 
 ## Review Workload Forecast
 

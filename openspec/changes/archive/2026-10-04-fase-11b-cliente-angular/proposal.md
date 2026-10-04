@@ -1,9 +1,9 @@
 # Proposal: Fase 11b — Cliente Angular: estilo del bot y mensajes fijos
 
 - Change: `fase-11b-cliente-angular` · Fase de la hoja de ruta: **11b** · Rama: `fase-11b-cliente-angular`
-- Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
+- Fecha: 2026-10-03 · Estado: **cerrada (2026-10-04)**
 - Depende de: **11a cerrada** (sesión, guardias y roles).
-- ADR: [0022](../../../docs/adr/0022-cliente-angular-en-el-repo.md) (cliente Angular en `cliente/`, `propuesta`).
+- ADR: [0022](../../../../docs/adr/0022-cliente-angular-en-el-repo.md) (cliente Angular en `cliente/`, `propuesta`).
 
 ## Intent
 

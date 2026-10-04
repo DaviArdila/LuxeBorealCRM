@@ -9,13 +9,18 @@ estado real, tarea en curso, reglas de trabajo y límites del entorno. Para el q
 
 ## Estado real
 
-- Fases cerradas: 00a, 00b, 01-06, 07a-07c, 08, 08b-08d y **11a** (2026-10-04). La tabla vigente está en
+- Fases cerradas: 00a, 00b, 01-06, 07a-07c, 08, 08b-08d, **11a** y **11b** (2026-10-04). La tabla vigente está en
   `docs/fases/README.md`.
 - La **11a** (autenticación) está en `main`: módulo `usuarios`, sesión por cookie `httpOnly` en Redis, guardias globales
   de CSRF, sesión y rol, y `npm run usuario:crear`. Queda su prueba `[manual]` (el dueño crea su usuario e inicia
   sesión) y la aceptación de ADR-0021. Cierre en
   `openspec/changes/archive/2026-10-04-fase-11a-autenticacion/verify-report.md`.
-- Orden siguiente: 11b → 11c (solo `idea`) → 09a → 09b → 10 → 12-14. La Fase 11 se adelantó antes de la 09 y la 10 por
+- La **11b** (cliente Angular) está en `main`: `cliente/` por áreas con inicio de sesión, «Estilo del bot» y «Mensajes fijos»
+  (solo `admin`), los endpoints de admin de `agente` y del módulo `mensajes-fijos`, `npm run mensajes:sembrar` y `cliente:ci`
+  dentro de `npm run ci`. Queda su prueba `[manual]` (el dueño recorre las pantallas), la aceptación de ADR-0022 y de dos
+  excepciones de auditoría nuevas. Cierre en `openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/verify-report.md`;
+  guía en `docs/operacion/cliente-back-office.md`.
+- Orden siguiente: 11c (solo `idea`, necesita su spec y un ADR de esquema) → 09a → 09b → 10 → 12-14. La Fase 11 se adelantó antes de la 09 y la 10 por
   decisión del dueño (P8 enmendada).
 
 ## Puerta antes de implementar (obligatoria)
@@ -25,12 +30,12 @@ escribió en la sesión que aprueba la spec de esa fase (por ejemplo: «apruebo 
 `docs/fases/README.md` ya dice `aprobada`. Si no, detente y pregunta. Al aprobarse, la fila pasa a `aprobada` y después
 a `en curso`.
 
-## Tarea siguiente: Fase 11b, cliente Angular
+## Tarea siguiente: Fase 11c o 09a (decide el dueño)
 
-La spec está escrita en `openspec/changes/fase-11b-cliente-angular/` (proposal, specs, design y tasks; ADR-0022
-`propuesta`) y **espera la aprobación del dueño**. Depende de la 11a, ya cerrada. Lo aprendido en la 11a que la afecta
-está al final de su `verify-report.md`: toda ruta nueva de `/api/v1` nace protegida, los 4xx se documentan con
-`respuestaProblema` y las mutaciones con `X-Luxe-Csrf`.
+La 11b está cerrada. La **11c** (bot configurable) es solo una idea: necesita su spec, un ADR de esquema y la aprobación del
+dueño. La **09a** (operación sin VPS) sigue en su orden de `docs/fases/README.md`. Lo aprendido en la 11b que las afecta
+está al final de su `verify-report.md`: un área nueva del cliente es una carpeta y una línea, y cada cambio de endpoint pide
+`npm run contrato:generar` y `npm run cliente:generar`.
 
 ## Cómo se trabaja cada tarea
 

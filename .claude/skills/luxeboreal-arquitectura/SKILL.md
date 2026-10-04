@@ -299,3 +299,42 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 9. Si cambió un endpoint: `openapi/openapi.json` y `openapi/openapi.interno.json` regenerados y
    commiteados en el mismo commit (`npm run contrato:generar`), `contrato:lint` (Spectral) y
    `contrato:diff` (oasdiff contra `main`) en verde (§10).
+10. Si cambió algo de `cliente/` o del contrato que consume: `npm run cliente:generar` y `npm run cliente:ci` en
+    verde (§13).
+
+## 13. Cliente (`cliente/`, desde la Fase 11b)
+
+El back office es una app Angular aislada del servidor: su propio `package.json`, lockfile, lint y tests. Su única
+relación con el servidor es el contrato (`openapi/openapi.json`). Guía para quien la usa: `docs/operacion/cliente-back-office.md`.
+
+- **Estructura por áreas** (`cliente/src/app/`): `api/` (generado, no se edita), `nucleo/` (transversal sin pantallas:
+  sesión, guardias, interceptores, `leerProblema`, `DefinicionArea`), `compartido/` (interfaz sin dominio),
+  `shell/` (marco y menú), `sesion/` (inicio de sesión) y `areas/<area>/` (una funcionalidad de negocio). Componentes
+  standalone, signals, sin Zone.js, `OnPush`; sufijos de Angular en inglés para componentes (`*.component.ts`) y en español para lo propio (`*.servicio.ts`, `*.interceptor.ts`).
+- **Fronteras** (`cliente/eslint.config.js`, probadas en `test/fronteras/cliente-fronteras.spec.ts`):
+
+  | Carpeta | Puede importar |
+  |---|---|
+  | `api` | solo `api` |
+  | `nucleo` | `nucleo`, `api` |
+  | `compartido` | solo `compartido` |
+  | `sesion` | `sesion`, `nucleo`, `compartido`, `api` |
+  | `shell` | `shell`, `nucleo`, `compartido`, `registro` |
+  | `areas/registro` | `nucleo`, las definiciones de las áreas |
+  | `areas/<x>` | `nucleo`, `compartido`, `api` y su propia carpeta; **nunca otra área** |
+
+  Nada importa de `src/`, `scripts/` ni `test/` del servidor (CLT1). Si dos áreas necesitan lo mismo, la pieza sube a
+  `compartido/` o a `nucleo/`; si un área necesita datos de otro dominio, los pide a la API.
+- **Agregar un área**: carpeta `areas/<area>/` con `area.ts` (`DefinicionArea`: id, título, ícono, roles, menú y
+  `rutas: () => import('./<area>.routes')`), sus rutas y sus pantallas, más **una línea** en `areas/registro/registro.ts`.
+  No se toca el shell. Las rutas del área se cargan en diferido y la guardia de rol sale de `area.roles`.
+- **Contrato**: tras cambiar un endpoint, `npm run contrato:generar` y `npm run cliente:generar`, y se commitean los dos
+  (`cliente:deriva` falla si no). Los tipos de respuesta salen de `RespuestaDe<typeof funcionGenerada>`
+  (`nucleo/tipos.ts`); no se escriben a mano. El encabezado `X-Luxe-Csrf` lo pone el interceptor, no cada pantalla.
+- **Permisos**: el cliente solo refleja lo que dice el servidor (`GET /api/v1/auth/yo`); ocultar una ruta no la protege.
+  Nada de contraseñas, correos ni tokens en `localStorage`, `sessionStorage` ni en la URL.
+- **Estado**: un servicio con signals por pantalla que envuelve las funciones generadas; sin store global hasta que dos
+  áreas compartan estado vivo (con su propio ADR). Los errores problem+json se leen con `leerProblema`, y el motivo del
+  servidor se muestra tal cual, sin validar de nuevo en el cliente.
+- **Tests**: Vitest + `HttpTestingController` (sin navegador), con el nombre `<R#> — <escenario>`. `npm run cliente:ci` es
+  el último paso de `npm run ci`; `ci:hook` no lo incluye.
