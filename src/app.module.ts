@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AgenteModule } from './modulos/agente/index.js';
 import { CanalesModule } from './modulos/canales/index.js';
 import { ConversacionesModule } from './modulos/conversaciones/index.js';
+import { MensajesFijosModule } from './modulos/mensajes-fijos/index.js';
 import { UsuariosModule } from './modulos/usuarios/index.js';
 import { ColasModule } from './plataforma/colas/index.js';
 import { ConfiguracionModule } from './plataforma/config/index.js';
@@ -27,6 +28,7 @@ import { SaludModule } from './plataforma/salud/index.js';
  * `GENERADOR_RESPUESTA` de `conversaciones` y se compone aquí con `conGenerador`, el único lugar que
  * conoce a los dos; el módulo de la pasarela LLM no se cablea hasta la 07b. `UsuariosModule` (Fase 11a, D3)
  * registra las guardias globales de CSRF, sesión y roles: toda ruta de `/api/v1` exige sesión salvo `@Publico()`.
+ * `MensajesFijosModule` (Fase 11b, T4) expone los textos fijos del bot al admin; depende de los barriles de los dueños.
  */
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { SaludModule } from './plataforma/salud/index.js';
     ColasModule,
     CanalesModule,
     ConversacionesModule.conGenerador(AgenteModule),
+    MensajesFijosModule,
   ],
 })
 export class AppModule {}

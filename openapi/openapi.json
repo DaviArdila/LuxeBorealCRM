@@ -1594,6 +1594,589 @@
           "Auth"
         ]
       }
+    },
+    "/api/v1/mensajes-fijos": {
+      "get": {
+        "operationId": "listarMensajesFijos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "mensajes": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "actualizado": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "clave": {
+                            "type": "string"
+                          },
+                          "descripcion": {
+                            "type": "string"
+                          },
+                          "origen": {
+                            "enum": [
+                              "base",
+                              "respaldo"
+                            ],
+                            "type": "string"
+                          },
+                          "texto": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "clave",
+                          "descripcion",
+                          "texto",
+                          "origen",
+                          "actualizado"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "mensajes"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Cada mensaje con su descripción, su texto vigente, su origen (base o respaldo) y la fecha de su última edición."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sin sesión válida (peticion-no-autenticada)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sin el rol admin (rol-insuficiente)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Lista los mensajes fijos editables del bot",
+        "tags": [
+          "MensajesFijos"
+        ]
+      }
+    },
+    "/api/v1/mensajes-fijos/{clave}": {
+      "put": {
+        "operationId": "guardarMensajeFijo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "clave",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Anti-CSRF: siempre `1`.",
+            "in": "header",
+            "name": "X-Luxe-Csrf",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "texto": {
+                    "maxLength": 4000,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "texto"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "actualizado": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "clave": {
+                      "type": "string"
+                    },
+                    "descripcion": {
+                      "type": "string"
+                    },
+                    "origen": {
+                      "enum": [
+                        "base",
+                        "respaldo"
+                      ],
+                      "type": "string"
+                    },
+                    "texto": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "clave",
+                    "descripcion",
+                    "texto",
+                    "origen",
+                    "actualizado"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "El mensaje guardado, con origen base y la fecha de la edición."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "El cuerpo no cumple el esquema (validacion-fallida)."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sin sesión válida (peticion-no-autenticada)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sin el rol admin (rol-insuficiente) o sin el encabezado anti-CSRF (encabezado-csrf-ausente)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "La clave no está en la lista de mensajes editables (mensaje-fijo-desconocido)."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "El texto incumple las reglas de CFN2 (mensaje-fijo-invalido); el motivo va en `detail`."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Guarda el texto de un mensaje fijo",
+        "tags": [
+          "MensajesFijos"
+        ]
+      }
     }
   },
   "components": {

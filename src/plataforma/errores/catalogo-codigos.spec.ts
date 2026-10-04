@@ -36,3 +36,15 @@ describe('plataforma/errores — códigos del estilo del bot (Fase 11b, AGT23)',
     expect(entrada?.title.length).toBeGreaterThan(0);
   });
 });
+
+describe('plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2)', () => {
+  it.each([
+    ['mensaje-fijo-invalido', 422],
+    ['mensaje-fijo-desconocido', 404],
+  ] as const)('%s responde %i', (codigo, status) => {
+    const entrada = (CATALOGO_CODIGOS as Readonly<Record<string, { status: number; title: string }>>)[codigo];
+
+    expect(entrada?.status).toBe(status);
+    expect(entrada?.title.length).toBeGreaterThan(0);
+  });
+});
