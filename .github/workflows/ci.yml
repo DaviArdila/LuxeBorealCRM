@@ -33,11 +33,10 @@ jobs:
             servicio/package-lock.json
             cliente/package-lock.json
 
-      # El servicio vive en `servicio/` con su propio package.json (ADR-0023).
+      # Cada aplicación se instala con su propio lockfile; la raíz no tiene dependencias (ADR-0023).
       - name: Instalar dependencias
-        working-directory: servicio
-        run: npm ci
+        run: npm run instalar:ci
 
+      # `npm run ci` de la raíz: el ci del servicio, el del cliente y la auditoría del cliente.
       - name: Ejecutar la secuencia completa de CI
-        working-directory: servicio
         run: npm run ci

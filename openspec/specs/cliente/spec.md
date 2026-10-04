@@ -22,35 +22,36 @@ Fase que lo implementa: 11b
 
 #### Scenario: El cliente compila sin el servidor
 
-- Dado `cliente/` con sus dependencias instaladas y sin `node_modules` en la raíz,
+- Dado `cliente/` con sus dependencias instaladas y sin las del servicio (`servicio/node_modules`),
 - Cuando se corre el build de producción del cliente,
 - Entonces termina con éxito.
 
 #### Scenario: Un import del servidor desde el cliente se rechaza
 
-- Dado un archivo de `cliente/src/` que importa algo de `../src/`,
+- Dado un archivo de `cliente/src/` que importa algo de `../servicio/` (o de `src/`, `scripts/` o `test/` del servidor),
 - Cuando corre el lint del cliente,
 - Entonces falla y nombra el import prohibido.
 
 ### Requirement: CLT2 — Cliente HTTP generado desde el contrato, con verificación de deriva
 
 El código que llama a la API MUST generarse con `ng-openapi-gen` desde `openapi/openapi.json` con
-`npm run cliente:generar`, en una carpeta del cliente que nadie edita a mano y que se commitea. MUST existir una
-verificación (`npm run cliente:deriva`) que regenera en memoria y falla si el resultado difiere de lo commiteado. Las
-pantallas MUST llamar a la API solo a través de ese código generado.
+`npm run api:generar` (script del propio cliente, ADR-0023), en una carpeta del cliente que nadie edita a mano y que
+se commitea. MUST existir una verificación (`npm run api:deriva`, parte del `ci` del cliente) que regenera en una
+carpeta temporal y falla si el resultado difiere de lo commiteado. Las pantallas MUST llamar a la API solo a través de
+ese código generado.
 
 Fase que lo implementa: 11b
 
 #### Scenario: El cliente generado coincide con el contrato
 
 - Dado el contrato y el cliente generado commiteados juntos,
-- Cuando se corre `npm run cliente:deriva`,
+- Cuando se corre `npm run api:deriva` en `cliente/`,
 - Entonces termina con éxito.
 
 #### Scenario: Un endpoint nuevo sin regenerar el cliente se detecta
 
-- Dado un cambio en `openapi/openapi.json` sin correr `npm run cliente:generar`,
-- Cuando se corre `npm run cliente:deriva`,
+- Dado un cambio en `openapi/openapi.json` sin correr `npm run api:generar`,
+- Cuando se corre `npm run api:deriva` en `cliente/`,
 - Entonces falla y nombra los archivos que difieren.
 
 ### Requirement: CLT3 — En desarrollo el cliente y la API comparten origen

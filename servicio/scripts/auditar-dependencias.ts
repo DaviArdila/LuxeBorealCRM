@@ -157,9 +157,9 @@ export interface OpcionesAuditarDependencias {
   readonly umbral?: Severidad;
   readonly fechaActual?: Date;
   /**
-   * Subdirectorio de la raíz cuyas dependencias se auditan (`cliente`, Fase 11b, CI10). Las
-   * excepciones siguen siendo las de `auditoria-excepciones.json` de la raíz: un solo lugar para
-   * aceptar un riesgo y para vencerlo.
+   * Subdirectorio de `raiz` cuyas dependencias se auditan (`cliente`, CI10). Cada aplicación acepta
+   * sus propios riesgos (ADR-0023): las excepciones salen del `auditoria-excepciones.json` del
+   * directorio auditado, no de otra aplicación.
    */
   readonly directorio?: string;
   /** Sustituye a `npm audit --json` (tests: sin red). Recibe el directorio donde correría. */
@@ -176,7 +176,16 @@ export async function auditarDependencias(
   const ejecutarAuditoria = opciones.ejecutarAuditoria ?? ejecutarNpmAuditJson;
   const [hallazgos, excepciones] = await Promise.all([
     Promise.resolve(parsearHallazgosNpmAudit(ejecutarAuditoria(directorio))),
-    cargarExcepciones(raiz),
+    cargarExcepciones(directorio),
   ]);
   return evaluarHallazgos(hallazgos, excepciones, umbral, fechaActual);
+}
+
+/**
+ * Lee `--directorio <ruta>` de los argumentos del comando `auditoria` (relativo a la raíz del
+ * repositorio, p. ej. `cliente`). Sin él, la auditoría es la del servicio.
+ */
+export function leerDirectorioDeArgumentos(argumentos: readonly string[]): string | undefined {
+  const indice = argumentos.indexOf('--directorio');
+  return indice === -1 ? undefined : argumentos[indice + 1];
 }

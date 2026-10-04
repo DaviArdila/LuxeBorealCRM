@@ -24,7 +24,6 @@
     "dist",
     "coverage",
     "node_modules",
-    "cliente",
     "test/fronteras/fixtures"
   ]
 }

@@ -33,10 +33,6 @@
     "herramienta": "vite-node --config vitest.config.ts",
     "contrato:generar": "npm run herramienta -- scripts/cli.ts contrato:generar",
     "contrato:deriva": "npm run herramienta -- scripts/cli.ts contrato:deriva",
-    "cliente:generar": "npm run herramienta -- scripts/cli.ts cliente:generar",
-    "cliente:deriva": "npm run herramienta -- scripts/cli.ts cliente:deriva",
-    "auditoria:cliente": "npm run herramienta -- scripts/cli.ts auditoria:cliente",
-    "cliente:ci": "npm --prefix ../cliente ci && npm --prefix ../cliente run lint && npm --prefix ../cliente test && npm --prefix ../cliente run build && npm run auditoria:cliente && npm run cliente:deriva && npm test -- test/fronteras/cliente-fronteras.spec.ts test/fronteras/cliente-deriva.spec.ts",
     "contrato:lint": "spectral lint ../openapi/openapi.json ../openapi/openapi.interno.json --ruleset ../.spectral.yaml --fail-severity error",
     "contrato:diff": "npm run herramienta -- scripts/cli.ts contrato:diff",
     "secretos": "npm run herramienta -- scripts/cli.ts secretos --arbol",
@@ -48,7 +44,7 @@
     "catalogo:importar": "npm run herramienta -- scripts/cli.ts catalogo:importar",
     "changelog": "git-cliff --config ../cliff.toml --repository .. --output ../CHANGELOG.md",
     "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
-    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run evals && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos && npm run cliente:ci"
+    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run evals && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.81",

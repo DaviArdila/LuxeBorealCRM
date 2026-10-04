@@ -2,24 +2,25 @@
 
 **Resumen.** El cliente es una app web (Angular) que vive en `cliente/` y habla con la API por el contrato. Hoy tiene
 tres pantallas: iniciar sesión, **Estilo del bot** y **Mensajes fijos**, solo para el rol `admin`. En desarrollo se
-levantan la API y el cliente, y el navegador ve un solo origen. Qué se decidió y por qué:
-[ADR-0022](../adr/0022-cliente-angular-en-el-repo.md).
+levantan la API (`servicio/`) y el cliente, y el navegador ve un solo origen. Qué se decidió y por qué:
+[ADR-0022](../adr/0022-cliente-angular-en-el-repo.md) y [ADR-0023](../adr/0023-estructura-servicio-y-cliente.md).
 
 ## Levantarlo en local
 
-Hace falta Node 24.15 o más y Docker para la base y Redis.
+Hace falta Node 24.15 o más y Docker para la base y Redis. Los comandos se corren desde la raíz del repositorio.
 
 | Paso | Comando |
 |---|---|
-| 1. Base de datos y Redis | `docker compose up -d postgres redis` |
-| 2. Tablas | `npm run prisma:aplicar` |
-| 3. Mensajes fijos del bot (una vez) | `npm run mensajes:sembrar` |
-| 4. Tu usuario administrador (una vez) | `npm run usuario:crear -- --email tu@correo.co --nombre "Tu nombre" --rol admin` |
-| 5. La API (puerto 3000) | `npm run start:dev` |
-| 6. Dependencias del cliente (una vez) | `npm --prefix cliente ci` |
+| 1. Dependencias de las dos aplicaciones (una vez) | `npm run instalar` |
+| 2. Base de datos y Redis | `docker compose -f servicio/docker-compose.yml up -d postgres redis` |
+| 3. Tablas | `npm --prefix servicio run prisma:aplicar` |
+| 4. Mensajes fijos del bot (una vez) | `npm --prefix servicio run mensajes:sembrar` |
+| 5. Tu usuario administrador (una vez) | `npm --prefix servicio run usuario:crear -- --email tu@correo.co --nombre "Tu nombre" --rol admin` |
+| 6. La API (puerto 3000) | `npm --prefix servicio run start:dev` |
 | 7. El cliente | `npm --prefix cliente start` y abre <http://localhost:4200> |
 
-El cliente reenvía todo lo que empieza con `/api` a la API (`cliente/proxy.conf.json`). Si cambias `PORT` en `.env`,
+El cliente reenvía todo lo que empieza con `/api` a la API (`cliente/proxy.conf.json`). Si cambias `PORT` en
+`servicio/.env`,
 cambia también el destino de ese archivo. Con `NODE_ENV=development` (el valor de `.env.example`) la cookie de sesión
 funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 
@@ -45,8 +46,8 @@ lo dejes vacío ni le quites que habla con un asistente automatizado.
 | «No tienes permiso para hacer eso» | Tu usuario es `asesor` o cambió de rol | Pídele a un admin. La sesión sigue abierta |
 | «Correo o contraseña incorrectos» | No distingue entre un correo que no existe y una contraseña errada, a propósito | Revisa los dos; tras 5 fallos esperas 15 minutos |
 | Un motivo en rojo al publicar o guardar | El servidor rechazó el texto (por ejemplo, un valor en pesos) | Corrige el texto; lo escrito sigue ahí |
-| Los diez mensajes dicen «Texto de respaldo» | Todavía no editaste ninguno, o no corriste la semilla | Es normal: el bot usa el respaldo. `npm run mensajes:sembrar` los deja listos para editar |
-| El cliente no llega a la API | La API no está arriba o el puerto del proxy no coincide | Revisa el paso 5 y `cliente/proxy.conf.json` |
+| Los diez mensajes dicen «Texto de respaldo» | Todavía no editaste ninguno, o no corriste la semilla | Es normal: el bot usa el respaldo. `npm --prefix servicio run mensajes:sembrar` los deja listos para editar |
+| El cliente no llega a la API | La API no está arriba o el puerto del proxy no coincide | Revisa el paso 6 y `cliente/proxy.conf.json` |
 
 Un usuario `asesor` entra, pero no ve ninguna pantalla de administración y, si abre la dirección a mano, vuelve al
 inicio. Aunque se la sepa, el servidor le responde `403`: el menú solo refleja lo que el servidor permite.
@@ -59,12 +60,14 @@ inicio. Aunque se la sepa, el servidor le responde `403`: el menú solo refleja 
 | `npm --prefix cliente test` | Tests del cliente (Vitest, sin navegador) |
 | `npm --prefix cliente run lint` | Lint del cliente, con las reglas de fronteras entre áreas |
 | `npm --prefix cliente run build` | Build de producción en `cliente/dist/` |
-| `npm run cliente:generar` | Regenera el cliente HTTP desde `openapi/openapi.json`; **hazlo cada vez que cambie el contrato** |
-| `npm run cliente:deriva` | Comprueba que el cliente generado coincide con el contrato |
-| `npm run cliente:ci` | Todo lo anterior más la auditoría de dependencias; es el último paso de `npm run ci` |
+| `npm --prefix cliente run api:generar` | Regenera el cliente HTTP desde `openapi/openapi.json`; **hazlo cada vez que cambie el contrato** |
+| `npm --prefix cliente run api:deriva` | Comprueba que el cliente generado coincide con el contrato |
+| `npm --prefix cliente run test:herramientas` | Prueba las fronteras del lint, el proxy y la generación del cliente HTTP |
+| `npm --prefix cliente run ci` | Todo lo anterior en orden; `npm run ci` de la raíz lo corre después del servicio |
+| `npm run auditoria:cliente` | Auditoría de dependencias del cliente con sus excepciones (`cliente/auditoria-excepciones.json`) |
 
-Si cambias un endpoint de la API: `npm run contrato:generar` y luego `npm run cliente:generar`, y commitea los dos
-resultados. Sin eso, `npm run ci` falla en la deriva.
+Si cambias un endpoint de la API: `npm --prefix servicio run contrato:generar` y luego
+`npm --prefix cliente run api:generar`, y commitea los dos resultados. Sin eso, `npm run ci` falla en la deriva.
 
 ## Cómo se agrega una pantalla nueva
 

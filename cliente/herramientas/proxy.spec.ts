@@ -1,17 +1,22 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolverRaizRepositorio, resolverRaizServicio } from '../../scripts/herramientas.js';
 
-const raiz = resolverRaizRepositorio();
+/**
+ * CLT3: el proxy de desarrollo del cliente apunta al puerto que el servicio declara en su
+ * `.env.example`. Es la única prueba del cliente que lee un archivo del servicio, porque lo que
+ * verifica es justamente que los dos coincidan (ADR-0023).
+ */
+const cliente = path.resolve(import.meta.dirname, '..');
+const servicio = path.resolve(cliente, '..', 'servicio');
 
 async function leerJson<T>(...partes: string[]): Promise<T> {
-  return JSON.parse(await readFile(path.join(raiz, ...partes), 'utf8')) as T;
+  return JSON.parse(await readFile(path.join(cliente, ...partes), 'utf8')) as T;
 }
 
 describe('CLT3 — En desarrollo el cliente y la API comparten origen', () => {
   it('CLT3 — El proxy del servidor de desarrollo reenvía /api al puerto de la API', async () => {
-    const proxy = await leerJson<Record<string, { target: string; changeOrigin: boolean }>>('cliente', 'proxy.conf.json');
-    const env = await readFile(path.join(resolverRaizServicio(), '.env.example'), 'utf8');
+    const proxy = await leerJson<Record<string, { target: string; changeOrigin: boolean }>>('proxy.conf.json');
+    const env = await readFile(path.join(servicio, '.env.example'), 'utf8');
     const puerto = /^PORT=(\d+)$/m.exec(env)?.[1];
 
     expect(Object.keys(proxy)).toEqual(['/api']);
@@ -21,13 +26,13 @@ describe('CLT3 — En desarrollo el cliente y la API comparten origen', () => {
   });
 
   it('CLT3 — npm start del cliente usa ese proxy', async () => {
-    const paquete = await leerJson<{ scripts: Record<string, string> }>('cliente', 'package.json');
+    const paquete = await leerJson<{ scripts: Record<string, string> }>('package.json');
 
     expect(paquete.scripts['start']).toContain('--proxy-config proxy.conf.json');
   });
 
   it('CLT3 — El cliente no llama a otro origen: la configuración de la API usa rutas relativas', async () => {
-    const config = await readFile(path.join(raiz, 'cliente', 'src', 'app', 'nucleo', 'configuracion-api.ts'), 'utf8');
+    const config = await readFile(path.join(cliente, 'src', 'app', 'nucleo', 'configuracion-api.ts'), 'utf8');
 
     expect(config).toContain("provideApiConfiguration('')");
   });

@@ -1,22 +1,20 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { resolverRaizRepositorio } from '../../scripts/herramientas.js';
 
 /**
  * D10/CLT9 de la Fase 11b: las fronteras del cliente las hace cumplir el lint del propio cliente
  * (`cliente/eslint.config.js`). Cada regla se prueba con código que la viola, sobre rutas reales de
  * `cliente/src/app/`: el archivo no tiene que existir, pero lo que importa sí (el resolvedor lo
- * busca en disco). Necesita las dependencias del cliente; `cliente:ci` (T9) las instala.
+ * busca en disco). Corre con `npm run test:herramientas` del cliente (ADR-0023).
  */
-const raiz = resolverRaizRepositorio();
-const cliente = path.join(raiz, 'cliente');
+const cliente = path.resolve(import.meta.dirname, '..');
 const hayLint = existsSync(path.join(cliente, 'node_modules', 'eslint-plugin-boundaries'));
 
 /**
  * Corre el ESLint del cliente como un proceso con su propio directorio de trabajo: el plugin de
  * fronteras resuelve las rutas de `boundaries/include` contra `process.cwd()`, así que la clase
- * `ESLint` dentro de Vitest (cuyo cwd es la raíz del repo) no vería ningún archivo.
+ * `ESLint` dentro de Vitest no vería ningún archivo si su cwd fuera otro.
  */
 async function reglasQueFallan(codigo: string, archivo: string): Promise<string[]> {
   const bin = path.join(cliente, 'node_modules', 'eslint', 'bin', 'eslint.js');

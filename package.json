@@ -1,0 +1,16 @@
+{
+  "name": "luxeborealcrm-repositorio",
+  "version": "0.0.1",
+  "description": "Raíz del repositorio de LuxeBorealCRM: encadena las dos aplicaciones (servicio/ y cliente/), sin dependencias propias (ADR-0023).",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "instalar": "npm --prefix servicio install && npm --prefix cliente install",
+    "instalar:ci": "npm --prefix servicio ci && npm --prefix cliente ci",
+    "auditoria:cliente": "npm --prefix servicio run auditoria -- --directorio cliente",
+    "ci": "npm --prefix servicio run ci && npm --prefix cliente run ci && npm run auditoria:cliente"
+  }
+}

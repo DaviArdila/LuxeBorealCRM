@@ -61,19 +61,5 @@
     "motivo": "Severidad heredada de fast-glob (sin aviso propio); fija fast-glob ~3.2.12 incluso en su última versión (6.17.0). Solo se usa en desarrollo para npm run contrato:lint. Revisar cuando braces publique un parche o si se cambia de linter de OpenAPI.",
     "fecha": "2026-10-02",
     "revisar_antes_de": "2027-01-02"
-  },
-  {
-    "id": "npm-audit:@boundaries/elements",
-    "paquete": "@boundaries/elements",
-    "motivo": "Severidad heredada de micromatch y braces (GHSA-vfj7-8cjw-p6xm, agotamiento de pila con patrones muy anidados; sin parche publicado). Dependencia transitiva de eslint-plugin-boundaries, que solo se usa en el lint de cliente/ (fronteras entre áreas, Fase 11b); no se despliega ni procesa datos externos. Mismo origen y remedio que la excepción de braces: esperar un parche.",
-    "fecha": "2026-10-04",
-    "revisar_antes_de": "2027-01-04"
-  },
-  {
-    "id": "npm-audit:eslint-plugin-boundaries",
-    "paquete": "eslint-plugin-boundaries",
-    "motivo": "Severidad heredada de @boundaries/elements y micromatch (sin aviso propio). Herramienta de desarrollo del lint de cliente/ (Fase 11b, D10), no se despliega. npm sugiere bajar a la 1.1.1 (cambio de major sin la API de policies que usa D10). Revisar cuando braces publique un parche o si se cambia de plugin de fronteras.",
-    "fecha": "2026-10-04",
-    "revisar_antes_de": "2027-01-04"
   }
 ]

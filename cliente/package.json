@@ -8,7 +8,11 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:herramientas": "vitest run --config vitest.herramientas.config.ts",
+    "api:generar": "node herramientas/api.mjs generar",
+    "api:deriva": "node herramientas/api.mjs deriva",
+    "ci": "npm run lint && npm test && npm run test:herramientas && npm run build && npm run api:deriva"
   },
   "private": true,
   "packageManager": "npm@11.19.0",
