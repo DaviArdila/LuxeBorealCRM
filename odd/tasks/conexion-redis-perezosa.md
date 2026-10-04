@@ -159,7 +159,7 @@ La única falla de integración es `test/integracion/agente/prompts-build.spec.t
 `spawnSync npx ENOENT` en Windows (`execFileSync('npx')` sin shell). Falla igual en el commit base
 `c6e74c4` y no tiene relación con Redis.
 
-Commit: ver la línea «Commit» de abajo.
+Commit de la unidad de trabajo: `93d479b` (`fix(redis): esperar el ready en la conexion perezosa compartida`).
 
 ## Mientras tanto
 
