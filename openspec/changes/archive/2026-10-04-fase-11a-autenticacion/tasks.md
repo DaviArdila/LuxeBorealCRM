@@ -21,7 +21,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - [x] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
 - [x] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
 - [x] T7 — Comando `npm run usuario:crear`
-- [ ] T8 — Guía de operación, cierre documental y prueba real `[manual]`
+- [x] T8 — Guía de operación, cierre documental y prueba real `[manual]` (queda pendiente solo la parte `[manual]`)
 
 ## Mapeo de escenarios por tarea (USR 37 + API 5 = 42)
 
@@ -349,6 +349,13 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - **`[manual]`**: el dueño crea su usuario con el comando e inicia sesión desde Scalar o `curl` contra su entorno local.
   Incluye comprobar en PowerShell que la contraseña no se muestra al teclearla (T1 solo pudo probar bash).
 - Forecast: sin cambios de producción, sin riesgo de presupuesto.
+- **Cerrada (2026-10-04), salvo la parte `[manual]`.** `docs/operacion/usuarios-y-sesiones.md`; `CLAUDE.md` (comando y
+  mapa de documentación); `docs/fases/README.md` (11a `cerrada`); `docs/migracion/inventario.md` (fila 64);
+  `docs/PREGUNTAS_ABIERTAS.md` (P51-P54 resueltas al aprobar la 11a); `verify-report.md`; delta specs fusionadas
+  (`openspec/specs/usuarios/spec.md` nuevo, API7 reemplazado y API11 agregado en `openspec/specs/api/spec.md`) y change
+  archivado. `docs/CONTEXTO_SESIONES.md` actualizado. Commit: el que archiva el change (`docs(fase-11a): cierre`).
+- **Pendiente `[manual]`:** crear el usuario del dueño, iniciar sesión desde Scalar o `curl` y comprobar el no-eco en
+  PowerShell.
 
 ## Review Workload Forecast
 

@@ -1,6 +1,6 @@
 # Design: Fase 11a — Usuarios y autenticación
 
-- Change: `fase-11a-autenticacion` · Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
+- Change: `fase-11a-autenticacion` · Fecha: 2026-10-03 · Estado: **cerrada (2026-10-04)**, ver `verify-report.md`
 - Proposal: `proposal.md` · Specs: `usuarios` (USR1-USR10, dominio nuevo), `api` (API7 modificado, API11)
 - ADRs: [0021](../../../docs/adr/0021-sesion-cookie-redis.md) nuevo (`propuesta`); se apoya en 0008, 0010 y 0011.
 
