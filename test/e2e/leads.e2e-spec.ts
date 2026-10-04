@@ -24,6 +24,7 @@ import { cargarFixtureChatwoot, firmarComoChatwoot } from '../soporte/chatwoot.j
 import { ChatwootFalso } from '../soporte/chatwoot-falso.js';
 import { TelegramFalso } from '../soporte/telegram-falso.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 
@@ -80,6 +81,7 @@ function configuracionDePrueba(
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
     TELEGRAM_BOT_TOKEN: 'token-telegram-e2e',
     TELEGRAM_CHAT_ID: '-100555',
     TELEGRAM_API_URL: telegramFalso.url(),

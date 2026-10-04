@@ -1103,4 +1103,51 @@ describe('cargarConfiguracion', () => {
       );
     });
   });
+
+  describe('Sesiones y límite de intentos (fase-11a, T2, design.md «Configuración nueva»)', () => {
+    function nombresRechazados(fuente: Readonly<Record<string, string | undefined>>): readonly string[] {
+      try {
+        cargarConfiguracion(fuente);
+      } catch (error) {
+        if (error instanceof ConfiguracionInvalidaError) {
+          return error.variables.map((variable) => variable.nombre);
+        }
+        throw error;
+      }
+      return [];
+    }
+
+    it('USR3/USR8 — usa 720 min de inactividad, 168 h de máximo, 5 intentos y 15 min por defecto (P51, P53)', () => {
+      const configuracion = cargarConfiguracion(fuenteValida);
+
+      expect(configuracion.SESION_INACTIVIDAD_MIN).toBe(720);
+      expect(configuracion.SESION_DURACION_MAX_H).toBe(168);
+      expect(configuracion.AUTH_INTENTOS_MAX).toBe(5);
+      expect(configuracion.AUTH_VENTANA_MIN).toBe(15);
+    });
+
+    it('rechaza cada variable fuera de su rango', () => {
+      expect(nombresRechazados({ ...fuenteValida, SESION_INACTIVIDAD_MIN: '4' })).toContain('SESION_INACTIVIDAD_MIN');
+      expect(nombresRechazados({ ...fuenteValida, SESION_INACTIVIDAD_MIN: '10081' })).toContain(
+        'SESION_INACTIVIDAD_MIN',
+      );
+      expect(nombresRechazados({ ...fuenteValida, SESION_DURACION_MAX_H: '0' })).toContain('SESION_DURACION_MAX_H');
+      expect(nombresRechazados({ ...fuenteValida, SESION_DURACION_MAX_H: '721' })).toContain('SESION_DURACION_MAX_H');
+      expect(nombresRechazados({ ...fuenteValida, AUTH_INTENTOS_MAX: '0' })).toContain('AUTH_INTENTOS_MAX');
+      expect(nombresRechazados({ ...fuenteValida, AUTH_INTENTOS_MAX: '51' })).toContain('AUTH_INTENTOS_MAX');
+      expect(nombresRechazados({ ...fuenteValida, AUTH_VENTANA_MIN: '0' })).toContain('AUTH_VENTANA_MIN');
+      expect(nombresRechazados({ ...fuenteValida, AUTH_VENTANA_MIN: '1441' })).toContain('AUTH_VENTANA_MIN');
+    });
+
+    it('USR3 — la duración máxima no puede ser menor que la inactividad', () => {
+      // 600 min de inactividad = 10 h; un máximo de 9 h haría que la inactividad nunca aplicara.
+      expect(
+        nombresRechazados({ ...fuenteValida, SESION_INACTIVIDAD_MIN: '600', SESION_DURACION_MAX_H: '9' }),
+      ).toEqual(['SESION_DURACION_MAX_H']);
+      expect(
+        cargarConfiguracion({ ...fuenteValida, SESION_INACTIVIDAD_MIN: '600', SESION_DURACION_MAX_H: '10' })
+          .SESION_DURACION_MAX_H,
+      ).toBe(10);
+    });
+  });
 });

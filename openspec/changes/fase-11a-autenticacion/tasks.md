@@ -15,7 +15,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 ## Checklist
 
 - [x] T1 — Verificación de compatibilidad (argon2, cookies, `cookieAuth`, consola sin eco), sin código de producción
-- [ ] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
+- [x] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
 - [ ] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
 - [ ] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
 - [ ] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
@@ -64,6 +64,20 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - `plataforma/errores`: los cinco códigos nuevos con su requisito en el comentario.
 - `plataforma/observabilidad`: `req.headers.cookie` y `res.headers["set-cookie"]` en la redacción de pino.
 - RED: pruebas del dominio y del esquema Zod. Forecast: ~250 líneas (60 % tests).
+- **Cerrada (2026-10-04).** RED observado con `npx vitest run --project unit src/modulos/usuarios
+  src/plataforma/errores/catalogo-codigos.spec.ts`: 4 archivos con `Error: Cannot find module './usuario.js'`
+  (y `./contrasena.js`, `./sesion.js`, `./generar-id-sesion.js`) y 6 tests de `catalogo-codigos.spec.ts` con
+  `AssertionError: expected undefined to be 401` (403, 429). Config: 3 tests con `expected undefined to be 720`,
+  `expected [] to include 'SESION_INACTIVIDAD_MIN'` y `expected [] to deeply equal [ 'SESION_DURACION_MAX_H' ]`.
+  GREEN: `npm test` (170 archivos, 1267 tests), `typecheck`, `lint`, `fronteras` y `contrato:deriva` en verde.
+- Desviaciones: (1) la redacción de `req.headers.cookie` y `res.headers["set-cookie"]` **ya existía** desde la
+  00a; el test `USR9 — Los logs de una petición no contienen la cookie` pasó en verde a la primera y queda como
+  regresión. (2) `validarContrasenaNueva` también rechaza más de 200 caracteres (motivo `larga`), el mismo tope
+  del inicio de sesión: si no, se podría crear una contraseña que nunca serviría para entrar. (3) `generarIdSesion`
+  vive en `infraestructura/` (usa `node:crypto`). (4) Las cuatro variables nuevas entran a las ~40
+  configuraciones literales de los tests con el bloque `CONFIGURACION_AUTH_DE_PRUEBA`
+  (`test/soporte/configuracion-auth-de-prueba.ts`), como ya se hacía con las de LLM. Commit: ver historial
+  (`feat(usuarios): dominio`).
 
 ### T3 — Adaptadores
 

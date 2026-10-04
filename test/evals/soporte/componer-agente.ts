@@ -4,6 +4,7 @@ import { AppModule } from '../../../src/app.module.js';
 import { LLM_PORT, type LlmPort } from '../../../src/modulos/llm/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
+import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
@@ -60,6 +61,7 @@ export function configuracionEvals(opciones: Pick<OpcionesComposicion, 'urlOpenR
     ESPERA_CLIENTE_BARRIDO_MS: 60000,
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
+    ...CONFIGURACION_AUTH_DE_PRUEBA,
     ...(opciones.urlOpenRouter === undefined ? {} : { OPENROUTER_BASE_URL: opciones.urlOpenRouter }),
     ...opciones.sobrescribir,
   };
