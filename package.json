@@ -26,6 +26,7 @@
     "evals": "vitest run --project evals",
     "evals:anonimizar": "npm run herramienta -- scripts/cli.ts evals:anonimizar",
     "prompt:estilo": "npm run herramienta -- scripts/cli.ts prompt:estilo",
+    "usuario:crear": "npm run herramienta -- scripts/cli.ts usuario:crear",
     "test:cobertura": "vitest run --project unit --project integracion --coverage",
     "verify": "npm run prisma:generar && npm run lint && npm run typecheck && npm run fronteras && npm run contrato:deriva && vitest run --project unit --project integracion",
     "herramienta": "vite-node --config vitest.config.ts",

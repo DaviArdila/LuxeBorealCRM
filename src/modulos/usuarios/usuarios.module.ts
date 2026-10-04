@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
 import { CerrarSesion } from './aplicacion/cerrar-sesion.js';
+import { CrearUsuario } from './aplicacion/crear-usuario.js';
 import { IniciarSesion } from './aplicacion/iniciar-sesion.js';
 import { ObtenerSesionActual } from './aplicacion/obtener-sesion-actual.js';
 import { HasheadorArgon2 } from './infraestructura/hasheador-argon2.js';
@@ -34,10 +35,11 @@ import { REPOSITORIO_USUARIO } from './puertos/repositorio-usuario.js';
     IniciarSesion,
     CerrarSesion,
     ObtenerSesionActual,
+    CrearUsuario,
     { provide: APP_GUARD, useClass: GuardiaCsrf },
     { provide: APP_GUARD, useClass: GuardiaSesion },
     { provide: APP_GUARD, useClass: GuardiaRoles },
   ],
-  exports: [ObtenerSesionActual],
+  exports: [ObtenerSesionActual, CrearUsuario],
 })
 export class UsuariosModule {}

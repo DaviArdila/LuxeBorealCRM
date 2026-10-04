@@ -20,7 +20,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 - [x] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
 - [x] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
 - [x] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
-- [ ] T7 — Comando `npm run usuario:crear`
+- [x] T7 — Comando `npm run usuario:crear`
 - [ ] T8 — Guía de operación, cierre documental y prueba real `[manual]`
 
 ## Mapeo de escenarios por tarea (USR 37 + API 5 = 42)
@@ -305,6 +305,40 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
   `LectorContrasenaConsola` sin eco y con exigencia de TTY; script `usuario:crear` en `package.json`.
 - Unitarias de `CrearUsuario` con lector falso; integración contra Postgres real (correo repetido no pisa nada).
 - Forecast: ~300 líneas.
+- **Cerrada (2026-10-04).** RED en dos pasos con `npx vitest run --project unit
+  src/modulos/usuarios/aplicacion/crear-usuario.spec.ts scripts/usuario-crear.spec.ts`. (1) `Error: Cannot find
+  module './crear-usuario.js'` y `'./usuario-crear.js'`. (2) Con un esqueleto de `CrearUsuario` que siempre responde
+  `{ creado: false, motivo: 'sin-implementar' }`:
+
+  ```
+       × crea el usuario con el correo en minúsculas y solo el hash de la contraseña 7ms
+       × USR10 — Una contraseña corta o que no coincide se rechaza 3ms
+       × USR10 — Un correo repetido no pisa al usuario existente 1ms
+       × USR10 — Sin terminal interactiva el comando no corre 1ms
+       × rechaza un correo sin formato válido o un nombre vacío sin pedir la contraseña 1ms
+  ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected false to be true // Object.is equality
+  AssertionError: expected { creado: false, …(1) } to deeply equal { creado: false, motivo: 'corta' }
+  AssertionError: expected { creado: false, …(1) } to deeply equal { creado: false, …(1) }
+  AssertionError: expected { creado: false, …(1) } to deeply equal { creado: false, …(1) }
+  AssertionError: expected { creado: false, …(1) } to deeply equal { creado: false, …(1) }
+        Tests  5 failed (5)
+  ```
+
+  GREEN: 51 unitarias en `src/modulos/usuarios` + `scripts/usuario-crear.spec.ts`, 36 de integración en
+  `test/integracion/usuarios` (incluye `USR10 — Crear el primer administrador` con Postgres y argon2id reales);
+  `typecheck`, `lint` y `fronteras` verdes. Prueba real del comando: sin TTY (`echo x | npm run usuario:crear …`)
+  termina con código 1 sin leer; con `--contrasena` lo rechaza; con TTY (`script -qc`) contra un Postgres 16
+  temporal migrado con `prisma:aplicar`, pide la contraseña dos veces sin mostrarla y deja `admin@ejemplo.co`,
+  `admin`, activo, con hash `$argon2id$`.
+- Detalles: un correo repetido se detecta antes de pedir la contraseña (y el repositorio lo vuelve a comprobar al
+  insertar); también se rechazan un correo sin formato válido y un nombre vacío; el mensaje de éxito solo lleva id y
+  rol. **Desviación de D7:** `LectorContrasena` es un puerto, pero se pasa como argumento de
+  `CrearUsuario.ejecutar` en vez de inyectarse con un token: solo el comando lo tiene y así `CrearUsuario` puede
+  vivir en `UsuariosModule` sin un proveedor de consola. `LectorContrasenaConsola` vive en `scripts/usuario-crear.ts`.
+  Commit: ver historial (`feat(usuarios): comando`).
+- **`size:exception` (escrita al cerrar):** ~490 líneas (≈ 250 de tests y el lector falso, ≈ 200 de producción)
+  frente a ~300; con T8, que es solo documentación, el PR p6 queda en torno a 600.
 
 ### T8 — Guía y cierre
 
