@@ -1,7 +1,7 @@
 # Proposal: Fase 11a — Usuarios y autenticación
 
 - Change: `fase-11a-autenticacion` · Fase de la hoja de ruta: **11a** · Rama: `fase-11a-autenticacion`
-- Fecha: 2026-10-03 · Estado: **spec en revisión** (pendiente de aprobación del dueño)
+- Fecha: 2026-10-03 · Estado: **aprobada por el dueño (2026-10-04), en curso**
 - Depende de: **08d cerrada**. No depende de 09 ni de 10: el dueño adelantó la 11 antes del corte (2026-10-03).
 - ADR: [0021](../../../docs/adr/0021-sesion-cookie-redis.md) (sesión en cookie httpOnly guardada en Redis, `propuesta`).
 

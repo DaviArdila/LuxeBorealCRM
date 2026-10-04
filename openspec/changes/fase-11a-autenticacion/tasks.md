@@ -6,15 +6,15 @@ Review requerida (por commit de unidad de trabajo): **RDD**. `judgment-day` **no
 TDD estricto: RED observado → GREEN → REFACTOR. Runner **Vitest** (`npm test`, `npm run test:integracion`,
 `npm run test:e2e`); `npm run verify` al cerrar cada slice. Sin cambio de esquema de base de datos.
 
-Rama: `fase-11a-autenticacion` (desde `main`). Un commit de unidad de trabajo por tarea, Conventional Commits
-(encabezado y líneas del cuerpo ≤ 100 caracteres: `npm run commits` antes de subir), sin atribución de IA. Antes de
-cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cerrarse.
+Ramas: una por slice, `fase-11a-pK-<tema>`, apiladas desde `main` (`stacked-to-main`, ver «Suggested split»). Un
+commit de unidad de trabajo por tarea, Conventional Commits (encabezado y líneas del cuerpo ≤ 100 caracteres:
+`npm run commits` antes de subir), sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cerrarse.
 
 **Resultado: 8 tareas, dentro del límite de 10.**
 
 ## Checklist
 
-- [ ] T1 — Verificación de compatibilidad (argon2, cookies, `cookieAuth`, consola sin eco), sin código de producción
+- [x] T1 — Verificación de compatibilidad (argon2, cookies, `cookieAuth`, consola sin eco), sin código de producción
 - [ ] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
 - [ ] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
 - [ ] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
@@ -47,6 +47,13 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
 - Prueba en una rama descartable o en un script temporal fuera de `src/`; nada de eso se commitea salvo la tabla.
 - Si una candidata falla, se anota la alternativa elegida; si ninguna sirve, se detiene la fase y se avisa al dueño.
 - Forecast: sin cambios de producción, sin riesgo de presupuesto.
+- **Cerrada (2026-10-04).** Resultado en la tabla «Registro de compatibilidad» de `design.md`: `@node-rs/argon2`
+  2.2.1, `cookie` 2.0.1 (`parseCookie` en la guardia), `res.cookie`/`clearCookie` de Express 5.2.1,
+  `@ApiOperation({ security: [] })` para las rutas públicas (`@ApiSecurity({})` da `[{}]`) y `node:readline`
+  silenciado. Evidencia: script temporal de argon2 y un spec temporal de Nest con `OPCIONES_APLICACION`
+  (`rawBody` intacto, `Set-Cookie` con los atributos, `401` sin cookie, `security` del documento), ambos borrados;
+  lectura sin eco con `script -qc` en bash. Desviación: PowerShell no está en la nube, pasa a la prueba `[manual]`
+  de T8. Sin código de producción ni tests (tarea de verificación). Commit: ver historial (`docs(fase-11a)`).
 
 ### T2 — Dominio, configuración y códigos de error
 
@@ -106,6 +113,7 @@ cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al cer
   `docs/migracion/inventario.md` (fila 64, parte de usuarios), `docs/PREGUNTAS_ABIERTAS.md`, `verify-report.md` y
   archivo del change (fusiona `usuarios` como dominio nuevo y API7/API11 en `openspec/specs/api/spec.md`).
 - **`[manual]`**: el dueño crea su usuario con el comando e inicia sesión desde Scalar o `curl` contra su entorno local.
+  Incluye comprobar en PowerShell que la contraseña no se muestra al teclearla (T1 solo pudo probar bash).
 - Forecast: sin cambios de producción, sin riesgo de presupuesto.
 
 ## Review Workload Forecast
