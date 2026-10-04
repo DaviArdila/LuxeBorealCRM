@@ -1,13 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
+import { MENSAJE_ESPERA_HANDOFF_POR_DEFECTO } from '../../dominio/textos-fijos.js';
 import type { RepositorioParametroConversaciones } from '../../puertos/repositorio-parametro-conversaciones.js';
-
-/**
- * Sin texto real de negocio todavía (pendiente de que el usuario lo cargue, igual que los demás
- * parámetros — R15, mismo hallazgo abierto que `RepositorioParametroCatalogoPrisma` de la Fase 02).
- */
-const MENSAJE_ESPERA_HANDOFF_POR_DEFECTO =
-  'Seguimos aquí. Un asesor te va a atender en breve, gracias por tu paciencia.';
 
 /**
  * Adaptador Prisma del puerto {@link RepositorioParametroConversaciones} (D13): lee `parametro` por

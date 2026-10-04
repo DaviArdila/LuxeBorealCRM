@@ -1,15 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../plataforma/prisma/index.js';
 import { validarFactorVolumetrico } from '../dominio/envio.js';
+import { MENSAJE_FUERA_COBERTURA_POR_DEFECTO } from '../dominio/textos-fijos.js';
 import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
-
-/**
- * Mensaje de fuera de cobertura cuando `parametro.mensaje_fuera_cobertura` no existe o no es un
- * texto no vacío: ningún dato de negocio se pierde (R15 sigue permitiendo sobrescribirlo desde
- * `parametro`), solo evita que `CotizarEnvio` (T8) se quede sin texto que citar al cliente.
- */
-const MENSAJE_FUERA_COBERTURA_POR_DEFECTO =
-  'Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega.';
 
 /**
  * Adaptador Prisma del puerto {@link RepositorioParametroCatalogo} (design.md D4): lee `parametro`

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
+import { MENSAJE_TECHO_GASTO_POR_DEFECTO } from '../../dominio/textos-fijos.js';
 import type {
   EstadoTecho,
   RepositorioParametroLlm,
@@ -8,13 +9,6 @@ import type {
 const CLAVE_MENSAJE_TECHO_GASTO = 'mensaje_techo_gasto';
 const CLAVE_ESTADO_TECHO = 'llm_estado_techo';
 const CLAVE_TECHO_MENSUAL_USD = 'llm_techo_mensual_usd';
-
-/**
- * Texto por defecto (P22): neutro, no revela el límite de gasto y no promete una hora de respuesta.
- * El negocio lo reemplaza en `parametro.mensaje_techo_gasto` sin desplegar (R15).
- */
-const MENSAJE_TECHO_GASTO_POR_DEFECTO =
-  'Gracias por escribirnos. En este momento te atiende directamente un asesor, que te responderá en breve.';
 
 function esEstadoTecho(valor: unknown): valor is EstadoTecho {
   if (typeof valor !== 'object' || valor === null) {
