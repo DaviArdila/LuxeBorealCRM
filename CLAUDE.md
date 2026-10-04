@@ -205,6 +205,8 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run prompt:estilo` | Edita el estilo del bot sin desplegar (Fase 08c): `-- ver`, `-- historial`, `-- publicar --archivo <ruta>` y `-- restaurar --version <n>`; valida el texto, guarda las últimas 10 versiones y no escribe el texto en logs. Tras publicar, correr los evals reales (EVL3) |
 | `npm run usuario:crear` | Crea un usuario del back office (Fase 11a): `-- --email <correo> --nombre <nombre> --rol admin\|asesor`; pide la contraseña dos veces sin mostrarla (mínimo 12 caracteres), exige una terminal interactiva, guarda solo el hash argon2id y no pisa un correo existente |
 | `npm run mensajes:sembrar` | Inserta en `parametro` los diez mensajes fijos del bot que no tienen fila, con su texto de respaldo (Fase 11b); idempotente, nunca pisa un texto editado e informa solo cuántas insertó y cuántas ya existían |
+| `npm run cliente:generar` | Regenera `cliente/src/app/api/` (cliente HTTP de Angular) desde `openapi/openapi.json` con `ng-openapi-gen`; lo generado no se edita a mano (Fase 11b) |
+| `npm run cliente:deriva` | Genera en una carpeta temporal y compara byte a byte con `cliente/src/app/api/`; falla si difiere y nombra los archivos (Fase 11b) |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
 | `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |
 

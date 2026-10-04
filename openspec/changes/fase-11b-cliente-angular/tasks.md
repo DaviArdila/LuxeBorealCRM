@@ -20,7 +20,7 @@ cita su commit al cerrarse.
 - [x] T2 — Endpoints de admin del estilo en `agente` y contrato
 - [x] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
 - [x] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
-- [ ] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
+- [x] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
 - [ ] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
 - [ ] T7 — Pantalla «Estilo del bot» (área `bot`)
 - [ ] T8 — Pantalla «Mensajes fijos» (área `bot`)
@@ -324,6 +324,29 @@ cita su commit al cerrarse.
   que el build deja el área `bot` en un archivo aparte.
 - **`size:exception`** (fila «T5 supera ~400 líneas» de la tabla de Risks de `proposal.md`): lo generado por el CLI y
   por `ng-openapi-gen` no cuenta como autoría. Forecast: ~350 líneas de autoría.
+
+- **Hecho (T5).** `cliente/` creado con `ng new` (Angular 22.2.1, zoneless, standalone, Vitest 5 + jsdom, Node 24.21), PrimeNG
+  22.1.2 con Aura, `primeicons`, `ng-openapi-gen` 1.1.0 (`excludeParameters: ["X-Luxe-Csrf"]`, genera las 9 operaciones
+  vigentes), `angular-eslint` 22.5, `eslint-plugin-boundaries` 7.2 con `eslint-import-resolver-typescript`.
+  Estructura de D7: `nucleo/` (`DefinicionArea`, `Rol`, `RespuestaDe`), `shell/` (marco vacío), `areas/registro/registro.ts`,
+  `areas/bot/` (`area.ts`, `bot.routes.ts` y dos pantallas provisionales), rutas diferidas por área en `app.routes.ts`.
+  Presupuestos: inicial 600 kB / 1 MB; el build deja `bot` en chunks aparte (inicial 400 kB).
+  Raíz: `cliente:generar` y `cliente:deriva` (`scripts/generar-cliente.ts`), `tsconfig.json` y el lint de la raíz
+  ignoran `cliente/`.
+- Pruebas: `test/fronteras/cliente-deriva.spec.ts` (4: coincide, contrato alterado nombra el archivo, regenerar no deja
+  deriva, falta de dependencias explica cómo instalar), `test/fronteras/cliente-fronteras.spec.ts` (10: cinco imports
+  que violan D10, CLT1 con código del servidor y cuatro permitidos) y en el cliente 9 tests (registro, rutas diferidas,
+  `RespuestaDe` con `@ts-expect-error`, `App`). RED observado: la primera corrida de las fronteras falló 5/10 porque el
+  plugin resuelve `boundaries/include` contra `process.cwd()` (dentro de Vitest es la raíz del repo); el test pasa a
+  lanzar el ESLint del cliente como proceso con su `cwd`.
+- **Desviaciones:** (1) `eslint.config.js` del cliente lleva `"type": "module"` en su `package.json` (sin él Node avisa en cada
+  corrida). (2) Los dos archivos de test de `test/fronteras/` se saltan (`skipIf`) si `cliente/node_modules` no existe: la
+  raíz no instala el cliente; T9 hace que `cliente:ci` los corra con las dependencias instaladas. (3) Las pantallas de
+  `areas/bot/` son provisionales (T7 y T8). (4) Se quitó el README y `.vscode/` que genera el CLI. (5) El andamio se escribió
+  junto con sus pruebas de comportamiento, no antes: el RED observado es el de las fronteras; el de `cliente:deriva`
+  (falla con contrato alterado) se probó contra el generador real.
+- **`size:exception` (escrita al cerrar):** lo que generan el CLI y `ng-openapi-gen` (y `package-lock.json`) no cuenta como
+  autoría; ver conteo en el PR.
 
 ### T6 — Sesión en el cliente
 
