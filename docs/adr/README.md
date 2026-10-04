@@ -28,6 +28,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md) | El estilo del agente se edita desde la base de datos, con el archivo como respaldo | aceptada | 2026-10-01 |
 | [0021](0021-sesion-cookie-redis.md) | Sesión en cookie httpOnly guardada en Redis, no JWT | propuesta | 2026-10-03 |
 | [0022](0022-cliente-angular-en-el-repo.md) | Cliente de back office en Angular, dentro de este repo (`cliente/`) (enmienda el doc 06) | propuesta | 2026-10-03 |
+| [0023](0023-estructura-servicio-y-cliente.md) | Estructura del repositorio: `servicio/` y `cliente/` como aplicaciones hermanas (enmienda 0022) | propuesta | 2026-10-04 |
 
 ## Plantilla
 

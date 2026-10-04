@@ -57,6 +57,13 @@ describe.skipIf(!hayLint)('CLT9 — Las fronteras del cliente fallan en el lint'
 
       expect(await reglasQueFallan(codigo, 'nucleo/servidor.ts')).toContain('no-restricted-imports');
     });
+
+    it('CLT1 — importar desde la carpeta servicio/ (ADR-0023) también falla', async () => {
+      const codigo =
+        "import { AppModule } from '../../../../servicio/src/app.module';\nexport const x = AppModule;\n";
+
+      expect(await reglasQueFallan(codigo, 'nucleo/servidor.ts')).toContain('no-restricted-imports');
+    });
   });
 
   describe('imports permitidos', () => {

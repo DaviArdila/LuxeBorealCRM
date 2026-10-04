@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolverRaizRepositorio } from '../../scripts/herramientas.js';
+import { resolverRaizRepositorio, resolverRaizServicio } from '../../scripts/herramientas.js';
 
 const raiz = resolverRaizRepositorio();
+const raizServicio = resolverRaizServicio();
 
 async function scripts(): Promise<Record<string, string>> {
-  const paquete = JSON.parse(await readFile(path.join(raiz, 'package.json'), 'utf8')) as {
+  const paquete = JSON.parse(await readFile(path.join(raizServicio, 'package.json'), 'utf8')) as {
     scripts: Record<string, string>;
   };
   return paquete.scripts;
@@ -24,10 +25,10 @@ describe('CI10 — La secuencia de CI incluye el cliente de back office', () => 
 
     const pasos = clienteCi.split(' && ');
     expect(pasos.slice(0, 5)).toEqual([
-      'npm --prefix cliente ci',
-      'npm --prefix cliente run lint',
-      'npm --prefix cliente test',
-      'npm --prefix cliente run build',
+      'npm --prefix ../cliente ci',
+      'npm --prefix ../cliente run lint',
+      'npm --prefix ../cliente test',
+      'npm --prefix ../cliente run build',
       'npm run auditoria:cliente',
     ]);
     expect(pasos).toContain('npm run cliente:deriva');
@@ -53,6 +54,12 @@ describe('CI10 — La secuencia de CI incluye el cliente de back office', () => 
 
     const comandos = [...flujo.matchAll(/^\s+run:\s*(.+)$/gm)].map((coincidencia) => coincidencia[1]);
     expect(comandos).toEqual(['npm ci', 'npm run ci']);
+    // Ambos pasos corren dentro de la carpeta del servicio (ADR-0023).
+    expect([...flujo.matchAll(/^\s+working-directory:\s*(.+)$/gm)].map((c) => c[1])).toEqual([
+      'servicio',
+      'servicio',
+    ]);
+    expect(flujo).toContain('servicio/package-lock.json');
     expect(flujo).toContain('cliente/package-lock.json');
   });
 });

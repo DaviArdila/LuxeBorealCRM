@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import path from 'node:path';
 
 /**
  * Imágenes Docker fijadas (etiqueta + digest exactos) para los binarios Go que la Fase 00b usa sin
@@ -46,6 +47,17 @@ export function resolverRaizRepositorio(directorioDesdeDondeResolver: string = p
     );
   }
   return raiz;
+}
+
+/**
+ * Resuelve la carpeta del servicio (`servicio/`, ADR-0023): la que tiene su `package.json`, su
+ * `prisma/` y sus `auditoria-excepciones.json`. Se calcula desde la ubicación de este archivo
+ * (`servicio/scripts/`), no desde `process.cwd()`, para que no dependa de dónde se lance el comando.
+ * Lo que pertenece al repositorio entero (`openapi/`, `.github/`, `cliente/`) se sigue resolviendo
+ * con `resolverRaizRepositorio`.
+ */
+export function resolverRaizServicio(): string {
+  return path.resolve(import.meta.dirname, '..');
 }
 
 export interface OpcionesEjecutarHerramienta {

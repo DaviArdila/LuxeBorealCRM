@@ -2,7 +2,7 @@ import load from '@commitlint/load';
 import lint from '@commitlint/lint';
 import type { ParserOptions } from 'conventional-commits-parser';
 import { execFileSync } from 'node:child_process';
-import { resolverRaizRepositorio } from './herramientas.js';
+import { resolverRaizRepositorio, resolverRaizServicio } from './herramientas.js';
 
 /**
  * `commits` (CI2, D8, D13). Verifica con `commitlint` cada commit del rango
@@ -95,7 +95,7 @@ export async function verificarCommits(
     };
   }
 
-  const config = await load({}, { cwd: opciones.directorioConfiguracion ?? raiz });
+  const config = await load({}, { cwd: opciones.directorioConfiguracion ?? resolverRaizServicio() });
   const invalidos: string[] = [];
 
   for (const sha of rango) {

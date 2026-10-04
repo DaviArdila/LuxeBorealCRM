@@ -22,11 +22,14 @@ import { describe, expect, it } from 'vitest';
  * typecheck reales — esos ya tienen su propia cobertura dedicada (`eslint.spec.ts`, etc.).
  */
 
-const raizDelProyecto = path.join(import.meta.dirname, '..', '..');
-const prePushReal = readFileSync(path.join(raizDelProyecto, '.githooks', 'pre-push'), 'utf8');
+// El hook vive en la raíz del repositorio y el `package.json` con `ci:hook` en `servicio/`
+// (ADR-0023): el repositorio aislado reproduce esa misma forma.
+const raizDelServicio = path.join(import.meta.dirname, '..', '..');
+const raizDelRepositorio = path.join(raizDelServicio, '..');
+const prePushReal = readFileSync(path.join(raizDelRepositorio, '.githooks', 'pre-push'), 'utf8');
 
 const pasosReales = (
-  JSON.parse(readFileSync(path.join(raizDelProyecto, 'package.json'), 'utf8')) as {
+  JSON.parse(readFileSync(path.join(raizDelServicio, 'package.json'), 'utf8')) as {
     readonly scripts: Readonly<Record<string, string>>;
   }
 ).scripts['ci:hook']
@@ -63,8 +66,9 @@ async function crearRepoConHookYRemoto(
     ...scriptsAtomicos,
     'ci:hook': pasosCiHook.join(' && '),
   };
+  await mkdir(path.join(origen, 'servicio'), { recursive: true });
   await writeFile(
-    path.join(origen, 'package.json'),
+    path.join(origen, 'servicio', 'package.json'),
     JSON.stringify({ name: 'luxe-prepush-simulado', private: true, scripts }, null, 2),
     'utf8',
   );

@@ -2,10 +2,28 @@ import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import {
   construirArgumentosDocker,
   resolverRaizRepositorio,
+  resolverRaizServicio,
 } from '../../scripts/herramientas.js';
+
+/**
+ * El servicio vive en `servicio/` dentro del repositorio (ADR-0023): lo que es del repositorio
+ * (`openapi/`, `.github/`, `cliente/`, el historial) se resuelve con `resolverRaizRepositorio`, y lo
+ * que es del servicio (`package.json`, `prisma/`, `auditoria-excepciones.json`) con
+ * `resolverRaizServicio`.
+ */
+describe('scripts/herramientas — resolverRaizServicio', () => {
+  it('devuelve la carpeta del servicio, la que tiene su package.json, dentro del repositorio', () => {
+    const raizServicio = resolverRaizServicio();
+
+    expect(existsSync(path.join(raizServicio, 'package.json'))).toBe(true);
+    expect(existsSync(path.join(raizServicio, 'prisma', 'schema.prisma'))).toBe(true);
+    expect(raizServicio).toBe(path.join(resolverRaizRepositorio(), 'servicio'));
+  });
+});
 
 /**
  * `scripts/herramientas.ts` (D10, matriz de amenazas de `tasks.md`: "Selección del repositorio

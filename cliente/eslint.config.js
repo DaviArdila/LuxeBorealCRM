@@ -31,13 +31,14 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
-      // CLT1: el cliente jamás importa código del servidor; su única relación es el contrato.
+      // CLT1: el cliente jamás importa código del servidor; su única relación es el contrato. El
+      // servidor vive en `servicio/` (ADR-0023); `src|scripts|test` cubren las rutas de antes.
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              regex: '(^|/)\\.\\./(\\.\\./)*(src|scripts|test)(/|$)',
+              regex: '(^|/)\\.\\./(\\.\\./)*(servicio|src|scripts|test)(/|$)',
               message: 'CLT1: el cliente no importa código del servidor; usa el cliente generado desde el contrato.',
             },
           ],

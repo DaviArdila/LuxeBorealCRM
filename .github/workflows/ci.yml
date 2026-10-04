@@ -28,13 +28,16 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          # El cliente tiene su propio package-lock: `cliente:ci` corre `npm ci` dentro de `cliente/` (CI10).
+          # Cada aplicación tiene su propio package-lock (ADR-0023): `servicio/` y `cliente/` (CI10).
           cache-dependency-path: |
-            package-lock.json
+            servicio/package-lock.json
             cliente/package-lock.json
 
+      # El servicio vive en `servicio/` con su propio package.json (ADR-0023).
       - name: Instalar dependencias
+        working-directory: servicio
         run: npm ci
 
       - name: Ejecutar la secuencia completa de CI
+        working-directory: servicio
         run: npm run ci

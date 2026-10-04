@@ -2,4 +2,12 @@
 # CI2 (D13 de openspec/changes/fase-00b-ci-contrato-api/design.md): valida el mensaje de commit
 # con commitlint (Conventional Commits + regla propia sin-atribucion-ia) en el momento en que se
 # escribe, no diez commits después. Instalado vía D9 (core.hooksPath), nunca copiado a mano.
-npx --no-install commitlint --edit "$1"
+# commitlint y su configuración viven en `servicio/` (ADR-0023): el hook entra ahí, y la ruta del
+# mensaje, que git pasa relativa a la raíz del repositorio, se vuelve absoluta antes de entrar.
+raiz="$(git rev-parse --show-toplevel)"
+case "$1" in
+  /*) mensaje="$1" ;;
+  *) mensaje="$raiz/$1" ;;
+esac
+cd "$raiz/servicio" || exit 1
+npx --no-install commitlint --edit "$mensaje"

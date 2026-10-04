@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Levanta Chatwoot en local (infra/chatwoot/docker-compose.yml). Idempotente.
-# Uso: bash scripts/chatwoot-up.sh          (primera vez genera infra/chatwoot/.env y prepara la BD)
-#      bash scripts/chatwoot-up.sh down     (apaga; los datos quedan en los volúmenes)
+# Uso: bash infra/chatwoot/chatwoot-up.sh          (primera vez genera infra/chatwoot/.env y prepara la BD)
+#      bash infra/chatwoot/chatwoot-up.sh down     (apaga; los datos quedan en los volúmenes)
 set -euo pipefail
-RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIR="$RAIZ/infra/chatwoot"
 COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name chatwoot-local)
 
@@ -28,7 +28,7 @@ if [ "$PRIMERA_VEZ" = "1" ]; then
   "${COMPOSE[@]}" run --rm rails bundle exec rails db:chatwoot_prepare
 fi
 echo "→ Rol y bases de LuxeBorealCRM en el mismo Postgres (idempotente)"
-bash "$RAIZ/scripts/postgres-crear-bases.sh"
+bash "$DIR/postgres-crear-bases.sh"
 echo "→ Levantando rails y sidekiq"
 "${COMPOSE[@]}" up -d
 printf "→ Esperando a que Chatwoot responda"
@@ -45,7 +45,7 @@ cat <<P
 Primera vez — pasos manuales (2 min):
   1. Abre http://localhost:3001 y crea la cuenta (registro habilitado en infra/chatwoot/.env).
   2. Perfil (abajo a la izquierda) → Configuración del perfil → "Token de acceso" → copiar.
-  3. bash scripts/chatwoot-bootstrap.sh <ese token>   → crea inbox de pruebas + Agent Bot y te da las variables para .env
+  3. bash infra/chatwoot/chatwoot-bootstrap.sh <ese token>   → crea inbox de pruebas + Agent Bot y te da las variables para servicio/.env
   4. (Opcional) Pon ENABLE_ACCOUNT_SIGNUP=false en infra/chatwoot/.env y vuelve a correr este script.
 P
 fi

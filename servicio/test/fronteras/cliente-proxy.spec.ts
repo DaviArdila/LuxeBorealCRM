@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolverRaizRepositorio } from '../../scripts/herramientas.js';
+import { resolverRaizRepositorio, resolverRaizServicio } from '../../scripts/herramientas.js';
 
 const raiz = resolverRaizRepositorio();
 
@@ -11,7 +11,7 @@ async function leerJson<T>(...partes: string[]): Promise<T> {
 describe('CLT3 — En desarrollo el cliente y la API comparten origen', () => {
   it('CLT3 — El proxy del servidor de desarrollo reenvía /api al puerto de la API', async () => {
     const proxy = await leerJson<Record<string, { target: string; changeOrigin: boolean }>>('cliente', 'proxy.conf.json');
-    const env = await readFile(path.join(raiz, '.env.example'), 'utf8');
+    const env = await readFile(path.join(resolverRaizServicio(), '.env.example'), 'utf8');
     const puerto = /^PORT=(\d+)$/m.exec(env)?.[1];
 
     expect(Object.keys(proxy)).toEqual(['/api']);

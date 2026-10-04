@@ -69,7 +69,7 @@ async function main(): Promise<void> {
       imprimirResultado(await auditarDependencias());
       return;
     case 'auditoria:cliente':
-      imprimirResultado(await auditarDependencias(undefined, { directorio: 'cliente' }));
+      imprimirResultado(await auditarDependencias(undefined, { directorio: '../cliente' }));
       return;
     case 'contrato:generar':
       imprimirResultado(await generarContrato());

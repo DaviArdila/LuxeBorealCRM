@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolverRaizRepositorio } from './herramientas.js';
+import { resolverRaizServicio } from './herramientas.js';
 
 /**
  * `auditoria` (CI4, D14). `npm audit --json` con un umbral de severidad explícito
@@ -167,7 +167,7 @@ export interface OpcionesAuditarDependencias {
 }
 
 export async function auditarDependencias(
-  raiz: string = resolverRaizRepositorio(),
+  raiz: string = resolverRaizServicio(),
   opciones: OpcionesAuditarDependencias = {},
 ): Promise<ResultadoAuditoria> {
   const umbral = opciones.umbral ?? 'high';
