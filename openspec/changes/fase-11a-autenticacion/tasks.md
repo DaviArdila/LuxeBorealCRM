@@ -16,7 +16,7 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
 
 - [x] T1 — Verificación de compatibilidad (argon2, cookies, `cookieAuth`, consola sin eco), sin código de producción
 - [x] T2 — Dominio, configuración y códigos de error del módulo `usuarios`
-- [ ] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
+- [x] T3 — Adaptadores: `RepositorioUsuarioPrisma`, `HasheadorArgon2`, `AlmacenSesionesRedis`, `LimiteIntentosRedis`
 - [ ] T4 — Casos de uso `IniciarSesion`, `CerrarSesion`, `ObtenerSesionActual`
 - [ ] T5 — Guardias globales (`GuardiaCsrf`, `GuardiaSesion`, `GuardiaRoles`) y decoradores
 - [ ] T6 — `AuthController`, cookie, contrato con `cookieAuth` y e2e
@@ -86,6 +86,19 @@ commit de unidad de trabajo por tarea, Conventional Commits (encabezado y línea
   SHA-256 del correo).
 - Integración con Postgres y Redis reales (Testcontainers, base por worker).
 - Forecast: ~350 líneas.
+- **Cerrada (2026-10-04).** RED observado con `npx vitest run --project integracion test/integracion/usuarios`:
+  `Error: Cannot find module '../../../src/modulos/usuarios/infraestructura/redis/almacen-sesiones-redis.js'`.
+  GREEN: 19 tests de `test/integracion/usuarios/adaptadores-usuarios.spec.ts` (incluye `USR3 — La sesión no guarda
+  datos personales` y `USR8 — El contador no guarda el correo en claro`); `typecheck`, `lint` y `fronteras` verdes.
+- Desviaciones: (1) `LimiteIntentos` pasa a `consumirIntento` + `reiniciar` (atómico, «Desviación en T3» de D5 en
+  `design.md`). (2) Renovar una sesión reescribe la última actividad con `SET … EX … XX` en vez de solo `EXPIRE`,
+  para que USR3 guarde de verdad la última actividad y una sesión borrada a la vez no resucite. (3) Un id de sesión
+  que no tiene la forma de 43 caracteres base64url no se consulta en Redis. (4) `@node-rs/argon2` agregado con
+  npm 11 (`npx npm@11`): npm 10 reescribía el lockfile. Commit: ver historial (`feat(usuarios): adaptadores`).
+- **`size:exception` (escrita al cerrar, no anticipada):** ~570 líneas de autoría sin contar el lockfile (268 de
+  ellas el test de integración de los cuatro adaptadores, ~250 de producción) frente al forecast de ~350. Los
+  cuatro adaptadores son independientes, pero partirlos rompería «un commit por tarea»; se deja como un PR (p2)
+  con esta excepción en vez de recortar tests.
 
 ### T4 — Casos de uso
 
