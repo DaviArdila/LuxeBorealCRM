@@ -23,7 +23,7 @@ cita su commit al cerrarse.
 - [x] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
 - [x] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
 - [x] T7 — Pantalla «Estilo del bot» (área `bot`)
-- [ ] T8 — Pantalla «Mensajes fijos» (área `bot`)
+- [x] T8 — Pantalla «Mensajes fijos» (área `bot`)
 - [ ] T9 — `npm run ci` con el cliente
 - [ ] T10 — Guía de operación, cierre documental y recorrido real `[manual]`
 
@@ -406,6 +406,18 @@ cita su commit al cerrarse.
 - En `areas/bot/mensajes-fijos/`: tabla con descripción, texto y origen; editor con contador (de `compartido/`);
   guardar; motivo del `422`; advertencia en `aviso_datos`.
 - Tests de componentes. Forecast: ~300 líneas.
+
+- **Hecho (T8).** `areas/bot/mensajes-fijos/`: `MensajesFijosServicio` (lista del servidor; `guardar` reemplaza la fila con lo que
+  devolvió) y `MensajesFijosComponent` (los diez mensajes con clave, descripción, texto, origen «Editado» o «Texto de respaldo»
+  y fecha; «Editar» abre el editor con contador sobre 1.000 de `compartido/`; «Guardar» y «Cancelar»; el motivo del `422`
+  se muestra sin perder lo escrito). La advertencia de `aviso_datos` sale de su descripción, que ya viene del servidor (R14).
+- Pruebas (6 nuevas, 65 en el cliente): lista de diez con origen, advertencia de `aviso_datos`, editor con contador,
+  guardar actualiza la fila (texto, origen `base`, fecha), `422` con motivo y texto conservado, cancelar. RED observado:
+  6/6 fallaban contra la pantalla provisional.
+- **Desviaciones:** (1) Es una lista de filas y no un `p-table` de PrimeNG: son diez filas de texto largo y la lista se lee
+  mejor en pantallas angostas; se puede cambiar sin tocar el servicio. (2) La advertencia de `aviso_datos` no se escribe en
+  el cliente: se muestra la descripción del servidor, que ya la trae (`TEXTOS_FIJOS_AGENTE`), para no duplicar la regla.
+  (3) Con este PR el bundle inicial queda en 615 kB (136 kB transferidos), sin aviso con el presupuesto de T7.
 
 ### T9 — CI con el cliente
 
