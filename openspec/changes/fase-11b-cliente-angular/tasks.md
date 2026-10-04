@@ -17,7 +17,7 @@ cita su commit al cerrarse.
 ## Checklist
 
 - [x] T1 — Verificación de compatibilidad (Angular, PrimeNG, runner, `ng-openapi-gen` con OpenAPI 3.1, fronteras por lint), sin código de producción
-- [ ] T2 — Endpoints de admin del estilo en `agente` y contrato
+- [x] T2 — Endpoints de admin del estilo en `agente` y contrato
 - [ ] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
 - [ ] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
 - [ ] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
@@ -82,8 +82,88 @@ cita su commit al cerrarse.
 - E2E con sesión real: admin, asesor (`403`), publicar y ver el estilo en el prompt del siguiente turno (LLM guionado),
   logs sin el texto.
 - Forecast: ~400 líneas.
+- **Cerrada (2026-10-04).** RED observado por capas. (1) Errores: 4 fallos por aserción en `src/plataforma/errores`
+  (`expected undefined to be 422`, `... to be 404`, `Cannot destructure property 'status' ...`, `expected undefined to be
+  'la versión 9 no está en el historial'`). (2) `razon`: `AssertionError: expected { publicado: false, …(1) } to match
+  object { publicado: false, razon: 'invalido' }`. (3) Controlador y contrato, antes de implementar:
 
-### T3 — Catálogos y módulo `mensajes-fijos`
+  ```
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+  Error: connect ECONNREFUSED 127.0.0.1:6379
+       × las cuatro operaciones existen con su operationId y exigen la cookie 277ms
+       × las mutaciones piden X-Luxe-Csrf y documentan su 400 y los errores de negocio en problem+json 123ms
+       × el cuerpo de publicarEstilo limita el texto a 4000 caracteres y el de restaurarEstilo pide una versión entera 49ms
+   FAIL  |unit| src/modulos/agente/interfaz/estilo.controller.spec.ts [ src/modulos/agente/interfaz/estilo.controller.spec.ts ]
+  Error: Cannot find module './estilo.controller.js' imported from /home/user/LuxeBorealCRM/src/modulos/agente/interfaz/estilo.controller.spec.ts
+  ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+   FAIL  |unit| test/contrato/estilo.spec.ts > AGT23 — el estilo del bot en el contrato público > las cuatro operaciones existen con su operationId y exigen la cookie
+  AssertionError: obtenerEstilo: expected undefined to be 'obtenerEstilo' // Object.is equality
+   FAIL  |unit| test/contrato/estilo.spec.ts > AGT23 — el estilo del bot en el contrato público > las mutaciones piden X-Luxe-Csrf y documentan su 400 y los errores de negocio en problem+json
+  AssertionError: publicarEstilo: expected undefined to be true // Object.is equality
+   FAIL  |unit| test/contrato/estilo.spec.ts > AGT23 — el estilo del bot en el contrato público > el cuerpo de publicarEstilo limita el texto a 4000 caracteres y el de restaurarEstilo pide una versión entera
+  TypeError: Cannot read properties of undefined (reading 'properties')
+   Test Files  2 failed (2)
+        Tests  3 failed | 1 passed (4)
+  ```
+
+  (4) E2E HTTP con la app completa, antes de que existieran las rutas (`npx vitest run --project e2e
+  test/e2e/estilo-admin.e2e-spec.ts`):
+
+  ```
+       × AGT23 — Sin estilo publicado la API muestra el del archivo 2614ms
+       × AGT23 — Un admin publica y consulta el estilo vigente 306ms
+       × AGT23 — Un estilo inválido se rechaza con su motivo y la versión vigente no cambia 144ms
+       × un cuerpo con la forma equivocada responde 400 validacion-fallida 141ms
+       × AGT23 — Restaurar por la API publica una versión nueva con el texto de la versión elegida 132ms
+       × AGT23 — Restaurar una versión que no existe se rechaza con 404 138ms
+       × el historial lista las versiones retiradas, la más reciente primero, con versión, fecha y texto 183ms
+       × AGT23 — Un asesor no administra el estilo: las cuatro operaciones responden 403 y nada cambia 161ms
+       × sin sesión la API responde 401, y una mutación sin el encabezado anti-CSRF responde 403 132ms
+       × AGT23 — Publicar por la API no escribe el texto en los logs: solo la versión y el id del usuario 122ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 404 to be 422 // Object.is equality
+  AssertionError: expected 404 to be 400 // Object.is equality
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 'application/json; charset=utf-8' to contain 'application/problem+json'
+  AssertionError: expected 404 to be 200 // Object.is equality
+  AssertionError: expected 404 to be 403 // Object.is equality
+  AssertionError: expected 404 to be 401 // Object.is equality
+  AssertionError: expected undefined to match object { version: 1, …(1) }
+   Test Files  1 failed (1)
+        Tests  10 failed (10)
+  ```
+
+  GREEN: errores 19/19, agente 227/227, controlador 8/8, `test/contrato` 24/24 (incluye el nuevo `estilo.spec.ts`), e2e
+  del estilo 10/10 y AGT23/AGT19/AGT21 en `agente-llm.e2e-spec.ts`; `typecheck`, `lint`, `fronteras`, `contrato:deriva`,
+  `contrato:lint` (0 errores) y `contrato:diff` (sin incompatibles) verdes.
+- Detalles: `EstiloController` en `agente/interfaz/` (registrado en `EstiloModule`, inerte en el contexto del comando),
+  `@Roles('admin')` en la clase, esquemas zod en `esquemas-estilo.ts`; `GET /agente/estilo` devuelve `version: null`
+  cuando rige el archivo; los logs llevan `evento`, `version` y `usuarioId` (el e2e comprueba que no aparecen el texto
+  ni el correo). `usuarios` exporta por su barril `UsuarioActual` (decorador de parámetro) y `DocumentarRutaDeAdmin`
+  (cookie + 401 + 403 en problem+json + `X-Luxe-Csrf` en mutaciones): una sola respuesta por estado cabe en el
+  contrato, así que el `403` de una mutación de admin cubre rol y CSRF. Nuevo helper `test/soporte/sesion-e2e.ts`
+  (`iniciarSesionComo`: crea el usuario y abre sesión por la API real) que reutilizan T4 y los e2e de áreas.
+- **Desviaciones:** (1) **`detail` de RFC 9457**: AGT23 pide el motivo «en el detalle» y el cuerpo de error no tenía
+  dónde llevarlo; `ErrorDeAplicacion` gana `detalle` y `Problema` el miembro estándar `detail` (aditivo, opcional;
+  quien lo usa es responsable de que no copie valores recibidos, R14; el contrato lo documenta en `respuestaProblema`).
+  (2) El esquema de `publicarEstilo` limita el texto a 4.000 caracteres con `400`, el mismo tope de AGT20, para que el
+  `422` sea solo de reglas de negocio. (3) El escenario `documento-interno.spec.ts` dejó de fijar la lista exacta de
+  rutas públicas (se rompería en cada fase) y verifica que el público lleva las de sesión y deja fuera lo interno.
+  (4) Los dos dobles de `scripts/prompt-estilo.spec.ts` ganaron `razon` (el comando no cambia de comportamiento).
+  Commit: ver historial (`feat(agente): endpoints del estilo`).
+- **`size:exception` (escrita al cerrar):** ~760 líneas de autoría sin contar los dos OpenAPI generados (~2.070) ni la
+  transcripción del RED en este archivo: ≈ 620 de tests (el e2e HTTP de 10 escenarios, el contrato, el controlador y el
+  helper de sesión) y ≈ 140 de producción, frente al forecast de ~400. Nada se recortó.
+ — Catálogos y módulo `mensajes-fijos`
 
 - `agente`, `conversaciones`, `catalogo` y `llm` mueven su texto de respaldo a `dominio/` con descripción y lo exportan
   por su barril; sus repositorios lo siguen usando (los tests existentes de AGT3 y similares deben seguir verdes).

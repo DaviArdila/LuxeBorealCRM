@@ -4,7 +4,8 @@
  * `scripts/usuario-crear.ts` usa `CrearUsuario` con su propio `LectorContrasena` de consola.
  */
 export { UsuariosModule } from './usuarios.module.js';
-export { Publico, Roles, SinCsrf } from './interfaz/decoradores.js';
+export { Publico, Roles, SinCsrf, UsuarioActual } from './interfaz/decoradores.js';
+export { DocumentarRutaDeAdmin } from './interfaz/documentacion.js';
 export { ObtenerSesionActual } from './aplicacion/obtener-sesion-actual.js';
 export {
   CrearUsuario,

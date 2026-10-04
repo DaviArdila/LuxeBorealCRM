@@ -1,5 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
-import type { Rol } from '../dominio/usuario.js';
+import { createParamDecorator, SetMetadata, type ExecutionContext } from '@nestjs/common';
+import type { PerfilUsuario, Rol } from '../dominio/usuario.js';
+import type { SolicitudHttp } from './solicitud.js';
 
 export const CLAVE_PUBLICO = 'usuarios:publico';
 export const CLAVE_SIN_CSRF = 'usuarios:sin-csrf';
@@ -16,3 +17,11 @@ export const SinCsrf = (): MethodDecorator & ClassDecorator => SetMetadata(CLAVE
 
 /** Exige uno de estos roles, leídos de la base en cada petición (USR6, API7, D2). */
 export const Roles = (...roles: readonly Rol[]): MethodDecorator & ClassDecorator => SetMetadata(CLAVE_ROLES, roles);
+
+/**
+ * El usuario de la sesión, leído de la base por `GuardiaSesion` en esta petición (USR6, D2). Solo existe en rutas
+ * protegidas; en una `@Publico()` es `undefined`, por eso el tipo de quien lo recibe debe ser el de una ruta protegida.
+ */
+export const UsuarioActual = createParamDecorator((_dato: unknown, contexto: ExecutionContext): PerfilUsuario | undefined =>
+  contexto.switchToHttp().getRequest<SolicitudHttp>().usuario,
+);

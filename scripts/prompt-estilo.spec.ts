@@ -74,7 +74,7 @@ describe('scripts/prompt-estilo — reporte (AGT22)', () => {
   it('AGT22 — Un estilo inválido no se publica: el comando falla con el motivo', async () => {
     const resultado = await ejecutarEstilo(
       ['publicar', '--archivo', 'x.md'],
-      dependencias({ publicar: { ejecutar: () => Promise.resolve({ publicado: false as const, motivo: 'el estilo contiene un valor en pesos (R1, R2)' }) } }),
+      dependencias({ publicar: { ejecutar: () => Promise.resolve({ publicado: false as const, motivo: 'el estilo contiene un valor en pesos (R1, R2)', razon: 'invalido' as const }) } }),
     );
 
     expect(resultado.limpio).toBe(false);
@@ -101,7 +101,7 @@ describe('scripts/prompt-estilo — reporte (AGT22)', () => {
     const bien = await ejecutarEstilo(['restaurar', '--version', '1'], dependencias());
     const mal = await ejecutarEstilo(
       ['restaurar', '--version', '9'],
-      dependencias({ restaurar: { ejecutar: () => Promise.resolve({ publicado: false as const, motivo: 'la versión 9 no está en el historial' }) } }),
+      dependencias({ restaurar: { ejecutar: () => Promise.resolve({ publicado: false as const, motivo: 'la versión 9 no está en el historial', razon: 'version-inexistente' as const }) } }),
     );
 
     expect(bien).toMatchObject({ limpio: true, mensaje: expect.stringContaining('versión 5') as unknown });
