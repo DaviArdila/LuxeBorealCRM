@@ -22,7 +22,7 @@ cita su commit al cerrarse.
 - [x] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
 - [x] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
 - [x] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
-- [ ] T7 — Pantalla «Estilo del bot» (área `bot`)
+- [x] T7 — Pantalla «Estilo del bot» (área `bot`)
 - [ ] T8 — Pantalla «Mensajes fijos» (área `bot`)
 - [ ] T9 — `npm run ci` con el cliente
 - [ ] T10 — Guía de operación, cierre documental y recorrido real `[manual]`
@@ -383,6 +383,23 @@ cita su commit al cerrarse.
   `422` sin perder el texto, historial con texto completo y restaurar, recordatorio de evals (EVL3). El editor con
   contador y la confirmación nacen en `compartido/` (los usa también T8).
 - Tests de componentes. Forecast: ~350 líneas.
+
+- **Hecho (T7).** `areas/bot/estilo/`: `EstiloServicio` (signals con el vigente y el historial, `cargar`, `publicar`, `restaurar`) y
+  `EstiloComponent` (versión y origen, editor con contador sobre 4.000, «Publicar» con confirmación, motivo del `422` sin
+  perder lo escrito, historial con fecha y extracto, «Ver texto» y «Restaurar» con confirmación, recordatorio de evals reales
+  tras publicar o restaurar). En `compartido/`: `EditorConContadorComponent` (el contador solo informa, no recorta) y
+  `ConfirmacionComponent`, que reutiliza T8. La pantalla no valida nada por su cuenta (la regla es del servidor).
+- Pruebas (13 nuevas, 59 en el cliente): editor (3), confirmación (3) y pantalla (7: vigente, origen `archivo` sin versión,
+  publicar con confirmación y versión nueva, cancelar, `422` con motivo, historial con texto completo, restaurar). RED
+  observado en la pantalla: 7/7 fallaban contra el componente provisional; un segundo fallo fue de inyección (el servicio se
+  proveía en la ruta y los tests crean el componente directo), así que lo provee el propio componente. Los componentes
+  compartidos se escribieron junto con sus pruebas, sin un RED separado.
+- **Desviaciones:** (1) La confirmación emite `confirmar` antes de cerrarse para que quien la usa conserve la acción pendiente.
+  (2) **Presupuesto de bundle:** al sumar PrimeNG de `compartido/` el esbuild sube a un chunk común de ≈168 kB que entra en el
+  arranque (inicial 614 kB, 138 kB transferidos); el aviso pasa de 600 a **700 kB** y el error sigue en 1 MB.
+  (3) Los textos del servidor van tal cual (`detail`); la fecha del historial se muestra como `dd/MM/yyyy HH:mm`.
+- **`size:exception` (escrita al cerrar):** ~500 líneas con notas (≈ 270 de pruebas), frente al forecast de ~350; los tests de la
+  pantalla recorren cuatro flujos con confirmación y respuestas del servidor. Nada se recortó.
 
 ### T8 — Pantalla «Mensajes fijos»
 
