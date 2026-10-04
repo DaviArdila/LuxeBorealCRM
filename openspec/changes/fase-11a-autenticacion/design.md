@@ -100,6 +100,12 @@ cuando haya proxy inverso (09b) se configura `trust proxy`, anotado como pendien
 **Alternatives**: `@nestjs/throttler` con almacenamiento en Redis (limita por ruta e IP, no por correo e IP, y suma
 una dependencia).
 **Rationale**: la regla es de negocio (por cuenta y origen) y cabe en unas líneas probadas contra Redis real.
+**Desviación en T3 (2026-10-04, resuelve el hallazgo RDD «carrera en el límite de intentos»)**: con `estaBloqueado`
+y luego `registrarFallo`, varias peticiones simultáneas pasaban todas la consulta antes de que alguna contara, y se
+podían probar más de `AUTH_INTENTOS_MAX` contraseñas. El puerto queda en `consumirIntento` + `reiniciar`:
+`consumirIntento` hace `INCR` + `EXPIRE NX` + `TTL` en un solo `MULTI` **antes** de verificar la contraseña y
+responde si el intento entra o cuántos segundos faltan; un éxito hace `DEL`. Como un éxito reinicia, el contador
+sigue midiendo fallos y los escenarios de USR8 no cambian. Probado con 12 intentos simultáneos: entran 5.
 
 ### D6: hash ficticio para no revelar correos
 
@@ -139,7 +145,7 @@ existente.
 | `RepositorioUsuario` (`REPOSITORIO_USUARIO`) | `buscarPorEmail`, `buscarPorId`, `registrarAcceso(id, instante)`, `crear` | `RepositorioUsuarioPrisma` |
 | `AlmacenSesiones` (`ALMACEN_SESIONES`) | `crear`, `leerYRenovar`, `borrar` | `AlmacenSesionesRedis` |
 | `HasheadorContrasena` (`HASHEADOR_CONTRASENA`) | `hashear`, `verificar`, `verificarFicticio` | `HasheadorArgon2` |
-| `LimiteIntentos` (`LIMITE_INTENTOS`) | `estaBloqueado`, `registrarFallo`, `reiniciar` | `LimiteIntentosRedis` |
+| `LimiteIntentos` (`LIMITE_INTENTOS`) | `consumirIntento`, `reiniciar` (ver «Desviación en T3» de D5) | `LimiteIntentosRedis` |
 | `LectorContrasena` (`LECTOR_CONTRASENA`) | pide la contraseña en consola | `LectorContrasenaConsola` (solo en `scripts/`) |
 
 Dominio puro: `normalizarEmail`, `validarContrasenaNueva` (≥ 12 caracteres), `sesionVencida(creada, ahora, maxH)`,
