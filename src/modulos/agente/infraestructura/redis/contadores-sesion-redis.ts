@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import type { ClaveSesion, ContadoresSesion } from '../../puertos/contadores-sesion.js';
 
 function claveContador(sesion: ClaveSesion, contador: 'turnos' | 'audios' | 'fotos'): string {
@@ -21,7 +21,7 @@ export class ContadoresSesionRedis implements ContadoresSesion {
   ) {}
 
   async turnos(sesion: ClaveSesion): Promise<number> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     return Number((await this.redis.get(claveContador(sesion, 'turnos'))) ?? 0);
   }
 
@@ -34,12 +34,12 @@ export class ContadoresSesionRedis implements ContadoresSesion {
   }
 
   async reiniciarAudios(sesion: ClaveSesion): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.del(claveContador(sesion, 'audios'));
   }
 
   async fotosIndividuales(sesion: ClaveSesion): Promise<number> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     return Number((await this.redis.get(claveContador(sesion, 'fotos'))) ?? 0);
   }
 
@@ -48,7 +48,7 @@ export class ContadoresSesionRedis implements ContadoresSesion {
   }
 
   private async incrementar(clave: string, por = 1): Promise<number> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const resultados = await this.redis
       .multi()
       .incrby(clave, por)
@@ -59,11 +59,5 @@ export class ContadoresSesionRedis implements ContadoresSesion {
       throw new Error('Redis no devolvió la cuenta de la sesión del agente');
     }
     return cuenta;
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

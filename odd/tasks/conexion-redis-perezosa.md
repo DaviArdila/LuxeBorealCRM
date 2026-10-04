@@ -1,8 +1,8 @@
 # Conexión perezosa a Redis y bloqueos del push
 
 Trabajo fuera de fase (ODD). Diagnóstico del 2026-10-03, hecho al publicar el PR #63
-(`docs/fase-11-spec`). **Estado: diagnosticado, sin implementar** (el dueño pidió dejar el contexto
-antes de ejecutar).
+(`docs/fase-11-spec`). **Estado: implementado** (T1–T3, 2026-10-03). T4 y T5 siguen pendientes y
+dependen del dueño.
 
 ## Objetivo
 
@@ -114,15 +114,26 @@ usan a la vez. Ese mensaje fallaría y el inbox lo reintentaría.
 
 ## Tareas
 
-- [ ] T1 — Test RED.
+- [x] T1 — Test RED.
   - Unitario de `asegurarConexion` con un cliente falso en estado `connecting` que pasa a `ready`. Hoy
     el comando sale antes del `ready`.
   - Caso de integración que reproduce la carrera: dos adaptadores sobre un cliente recién creado, en
     paralelo.
-  - Ruta: inline.
-- [ ] T2 — `asegurarConexion` en `src/plataforma/redis/` (GREEN), con su TSDoc. Ruta: inline.
-- [ ] T3 — Reemplazar `conectarSiHaceFalta` en los 11 adaptadores (REFACTOR). Se corren los proyectos
+  - Ruta: delegada (un writer junto con T2 y T3).
+  - Evidencia: `src/plataforma/redis/asegurar-conexion.spec.ts` contra un stub con la lógica vieja dio
+    8 de 14 tests en rojo (los estados `connecting`/`connect`/`reconnecting`, error, `end` y plazo).
+    `test/integracion/redis/conexion-perezosa.spec.ts` dio 2 de 2 en rojo con el mismo error de CI:
+    «Stream isn't writeable and enableOfflineQueue options is false». La carrera es determinista: el
+    primer `connect()` deja el estado en `connecting` de forma síncrona.
+- [x] T2 — `asegurarConexion` en `src/plataforma/redis/` (GREEN), con su TSDoc. Ruta: delegada.
+  - Plazo `PLAZO_CONEXION_MS` = 10 s, el `connectTimeout` por defecto de ioredis.
+  - Si `connect()` rechaza con «already connecting/connected», espera el `ready` en vez de fallar.
+  - Evidencia: unitario 14/14 y regresión de integración 2/2 en verde.
+- [x] T3 — Reemplazar `conectarSiHaceFalta` en los 11 adaptadores (REFACTOR). Se corren los proyectos
   `unit`, `integracion`, `e2e` y `evals`. Ruta: delegada, un writer (11 archivos).
+  - `indicador-redis.ts` tenía el mismo defecto (en `connecting` daba `down` con Redis sano) y
+    también usa la función. Sigue acotado por `HEALTH_TIMEOUT_MS` y sigue sin exponer el error.
+  - Evidencia: ver «Resultado de la verificación».
 - [ ] T4 — Opcional, decisión del dueño: el hook `pre-push` avisa en una línea si Docker no responde.
 - [ ] T5 — `[manual]` El dueño decide qué hacer con `allow-scripts` en `~/.npmrc`.
 
@@ -132,6 +143,23 @@ usan a la vez. Ese mensaje fallaría y el inbox lo reintentaría.
   abierto.
 - Tres corridas seguidas de `npm run test:integracion` en verde.
 - En GitHub, los dos runs (`push` y `pull_request`) en verde.
+
+## Resultado de la verificación (2026-10-03, local, Docker Desktop abierto)
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint`, `typecheck`, `fronteras` | Sin errores |
+| `npm test` | 1240/1240 |
+| `npm run test:integracion` (3 corridas) | 307/308 en cada una |
+| `npm run test:e2e` | 42/42 |
+| `npm run evals` | 36 pasan, 1 omitido |
+| `npm run contrato:deriva` | Sin deriva |
+
+La única falla de integración es `test/integracion/agente/prompts-build.spec.ts`:
+`spawnSync npx ENOENT` en Windows (`execFileSync('npx')` sin shell). Falla igual en el commit base
+`c6e74c4` y no tiene relación con Redis.
+
+Commit: ver la línea «Commit» de abajo.
 
 ## Mientras tanto
 

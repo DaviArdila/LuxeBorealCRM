@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import type { EsperaCliente, MarcaEsperaCliente } from '../../puertos/marca-espera-cliente.js';
 
 /** Las claves de una conversación abandonada no deben vivir para siempre: un barrido no las limpiaría si nadie escribe. */
@@ -41,7 +41,7 @@ export class MarcaEsperaClienteRedis implements MarcaEsperaCliente {
   }
 
   async registrar(conversacionId: string, ahora: Date): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.eval(
       SCRIPT_REGISTRAR,
       2,
@@ -54,12 +54,12 @@ export class MarcaEsperaClienteRedis implements MarcaEsperaCliente {
   }
 
   async cerrar(conversacionId: string): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.multi().zrem(this.clavePendiente, conversacionId).srem(this.claveAvisada, conversacionId).exec();
   }
 
   async vencidas(limite: Date, maximo: number): Promise<readonly EsperaCliente[]> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const plano = await this.redis.zrangebyscore(
       this.clavePendiente,
       '-inf',
@@ -77,7 +77,7 @@ export class MarcaEsperaClienteRedis implements MarcaEsperaCliente {
   }
 
   async reclamarAviso(conversacionId: string): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const resultado = await this.redis.eval(
       SCRIPT_RECLAMAR,
       2,
@@ -90,17 +90,11 @@ export class MarcaEsperaClienteRedis implements MarcaEsperaCliente {
   }
 
   async devolverAviso(espera: EsperaCliente): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis
       .multi()
       .srem(this.claveAvisada, espera.conversacionId)
       .zadd(this.clavePendiente, 'NX', espera.desde.getTime(), espera.conversacionId)
       .exec();
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

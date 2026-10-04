@@ -3,3 +3,4 @@
  * internas (`./redis.module.js`, etc.) — regla de fronteras `sin-rutas-internas-de-plataforma`.
  */
 export { REDIS_CLIENTE, RedisModule, type ClienteRedis } from './redis.module.js';
+export { asegurarConexion, PLAZO_CONEXION_MS, type ClienteConectable } from './asegurar-conexion.js';

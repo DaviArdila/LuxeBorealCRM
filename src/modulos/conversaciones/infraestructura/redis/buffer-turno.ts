@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 
 function claveBuffer(idConversacion: string): string {
   return `turno:${idConversacion}:buffer`;
@@ -15,32 +15,25 @@ export class BufferTurno {
   constructor(@Inject(REDIS_CLIENTE) private readonly redis: ClienteRedis) {}
 
   async push(idConversacion: string, valor: string): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.rpush(claveBuffer(idConversacion), valor);
   }
 
   /** Atómico (`MULTI`): lee todo el contenido acumulado y vacía la lista en la misma operación. */
   async leerYVaciar(idConversacion: string): Promise<readonly string[]> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const clave = claveBuffer(idConversacion);
     const resultados = await this.redis.multi().lrange(clave, 0, -1).del(clave).exec();
     return (resultados?.[0]?.[1] as readonly string[] | undefined) ?? [];
   }
 
   async tamano(idConversacion: string): Promise<number> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     return this.redis.llen(claveBuffer(idConversacion));
   }
 
   async vaciar(idConversacion: string): Promise<void> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     await this.redis.del(claveBuffer(idConversacion));
-  }
-
-  /** Mismo protocolo que `CacheCatalogoRedis.conectarSiHaceFalta` (skill `luxeboreal-arquitectura`). */
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }

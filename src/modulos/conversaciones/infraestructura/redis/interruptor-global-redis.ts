@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
-import { REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
+import { asegurarConexion, REDIS_CLIENTE, type ClienteRedis } from '../../../../plataforma/redis/index.js';
 import type { InterruptorGlobal } from '../../puertos/interruptor-global.js';
 
 /** Misma clave que el prototipo (`estadoGlobal.ts`). */
@@ -28,14 +28,8 @@ export class InterruptorGlobalRedis implements InterruptorGlobal {
   ) {}
 
   async estaActivo(): Promise<boolean> {
-    await this.conectarSiHaceFalta();
+    await asegurarConexion(this.redis);
     const valor = await this.redis.get(this.clave);
     return valor !== 'false';
-  }
-
-  private async conectarSiHaceFalta(): Promise<void> {
-    if (this.redis.status === 'wait' || this.redis.status === 'close' || this.redis.status === 'end') {
-      await this.redis.connect();
-    }
   }
 }
