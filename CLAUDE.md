@@ -194,7 +194,7 @@ raíz. La raíz nunca declara dependencias. El `.env` local es `servicio/.env`.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run instalar` | Instala las dependencias de `servicio/` y de `cliente/`, cada una con su lockfile |
+| `npm run instalar` | Instala las dependencias de `servicio/` y de `cliente/` con `npm ci`, cada una desde su lockfile y sin modificarlo (para agregar un paquete: `npm --prefix <app> install <paquete>`) |
 | `npm run ci` | Secuencia completa, la que invoca `.github/workflows/ci.yml`: `ci` del servicio, `ci` del cliente y `auditoria:cliente` |
 | `npm run auditoria:cliente` | Auditoría de dependencias del cliente con la herramienta del servicio y las excepciones de `cliente/auditoria-excepciones.json` |
 

@@ -52,9 +52,10 @@ encadena las dos aplicaciones. El código del servidor no cambia: solo cambian r
    operan sobre la raíz del repositorio. `commitlint.config.js` vive junto a su paquete porque commitlint resuelve
    `@commitlint/config-conventional` desde la carpeta de la configuración. Los scripts distinguen
    `resolverRaizRepositorio()` (lo del repo) de `resolverRaizServicio()` (lo del servicio).
-4. **La raíz encadena, no instala nada.** `package.json` de la raíz, sin dependencias: `instalar`, `instalar:ci` y `ci`
-   (servicio, luego cliente, luego la auditoría del cliente con la herramienta del repo). El workflow de GitHub Actions
-   sigue siendo un solo job que llama a `npm run ci`, ahora el de la raíz.
+4. **La raíz encadena, no instala nada.** `package.json` de la raíz, sin dependencias: `instalar` (`npm ci` de cada
+   aplicación, sin tocar los lockfiles), `auditoria:cliente` y `ci` (servicio, luego cliente, luego la auditoría del
+   cliente con la herramienta del repo). El workflow de GitHub Actions sigue siendo un solo job que llama a
+   `npm run instalar` y `npm run ci` de la raíz.
 5. **El servicio no conoce al cliente.** Sus scripts no tienen `cliente:*` y sus tests no leen `cliente/`. Las pruebas
    de las fronteras y del proxy del cliente viven en `cliente/herramientas/` y corren con el `ci` del cliente.
 6. **Hooks de Git:** siguen en `.githooks/` (raíz) y entran a `servicio/` para correr `ci:hook` y commitlint.

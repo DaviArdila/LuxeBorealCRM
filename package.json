@@ -8,8 +8,7 @@
     "node": ">=24.15.0"
   },
   "scripts": {
-    "instalar": "npm --prefix servicio install && npm --prefix cliente install",
-    "instalar:ci": "npm --prefix servicio ci && npm --prefix cliente ci",
+    "instalar": "npm --prefix servicio ci && npm --prefix cliente ci",
     "auditoria:cliente": "npm --prefix servicio run auditoria -- --directorio cliente",
     "ci": "npm --prefix servicio run ci && npm --prefix cliente run ci && npm run auditoria:cliente"
   }

@@ -229,7 +229,7 @@ CI5), el `ci` del cliente (lint, tests, pruebas de sus herramientas, build de pr
 cliente HTTP generado, CLT2) y la auditoría de dependencias del cliente con el mismo umbral `high` de CI4 y sus propias
 excepciones (`cliente/auditoria-excepciones.json`). El `package.json` de la raíz MUST NOT declarar dependencias. El
 workflow de GitHub Actions MUST seguir invocando solo `npm run ci` de la raíz, después de instalar cada aplicación con
-su lockfile (`npm run instalar:ci`), sin redefinir los pasos. Los scripts del servicio MUST NOT mencionar al cliente.
+su lockfile (`npm run instalar`, que usa `npm ci`), sin redefinir los pasos. Los scripts del servicio MUST NOT mencionar al cliente.
 `npm run fronteras` (`dependency-cruiser`) MUST seguir cruzando solo `src/` y `scripts/` del servicio. El hook
 `pre-push` (`ci:hook` del servicio) MUST NOT incluir pasos del cliente, para seguir siendo rápido.
 

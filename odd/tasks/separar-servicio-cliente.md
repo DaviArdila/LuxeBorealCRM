@@ -43,7 +43,7 @@ Limitación del entorno de la sesión: no hay Docker, así que integración, e2e
   - Resultado: 1399 tests (1397 + 2 nuevos), los mismos 7 fallos por Docker, contrato idéntico y misma lista de `dist/`.
   - Commit `e2dc0ef`; CI de GitHub (run 291) en verde, con integración, e2e, evals, secretos y `contrato:diff`.
 - [x] T2 + T3 — Raíz que encadena y cliente que se verifica solo (juntas: el `ci` de la raíz encadena el del cliente)
-  - `package.json` de la raíz sin dependencias: `instalar`, `instalar:ci`, `auditoria:cliente` y `ci`.
+  - `package.json` de la raíz sin dependencias: `instalar`, `auditoria:cliente` y `ci`.
   - El cliente genera y verifica su API con `herramientas/api.mjs` (`api:generar`, `api:deriva`) y corre sus pruebas
     de fronteras, proxy y API con `npm run test:herramientas` (Vitest en Node, aparte de `ng test`).
   - La auditoría usa las excepciones del directorio auditado: `cliente/auditoria-excepciones.json` (braces,

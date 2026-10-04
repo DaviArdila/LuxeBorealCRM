@@ -42,18 +42,19 @@ describe('CI10 — La raíz encadena las dos aplicaciones sin dependencias propi
     expect(scripts['auditoria:cliente']).toBe('npm --prefix servicio run auditoria -- --directorio cliente');
   });
 
-  it('CI10 — instalar e instalar:ci instalan cada aplicación con su propio lockfile', async () => {
+  it('CI10 — instalar instala cada aplicación desde su propio lockfile, sin modificarlo', async () => {
     const { scripts } = await paquete();
 
-    expect(pasos(scripts['instalar'])).toEqual(['npm --prefix servicio install', 'npm --prefix cliente install']);
-    expect(pasos(scripts['instalar:ci'])).toEqual(['npm --prefix servicio ci', 'npm --prefix cliente ci']);
+    // `npm ci` y no `npm install`: instalar nunca debe dejar cambios en archivos versionados.
+    expect(pasos(scripts['instalar'])).toEqual(['npm --prefix servicio ci', 'npm --prefix cliente ci']);
+    expect(scripts['instalar:ci']).toBeUndefined();
   });
 
   it('CI10 — El workflow instala y corre la secuencia de la raíz, y cachea los dos lockfiles', async () => {
     const flujo = await readFile(path.join(raiz, '.github', 'workflows', 'ci.yml'), 'utf8');
 
     const comandos = [...flujo.matchAll(/^\s+run:\s*(.+)$/gm)].map((coincidencia) => coincidencia[1]);
-    expect(comandos).toEqual(['npm run instalar:ci', 'npm run ci']);
+    expect(comandos).toEqual(['npm run instalar', 'npm run ci']);
     expect(flujo).not.toContain('working-directory');
     expect(flujo).toContain('servicio/package-lock.json');
     expect(flujo).toContain('cliente/package-lock.json');
