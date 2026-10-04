@@ -5,10 +5,16 @@ import { validarEstilo } from '../dominio/validar-estilo.js';
 import { REPOSITORIO_ESTILO, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
 import { VERSION_ESTILO, type VersionEstilo } from '../puertos/version-estilo.js';
 
+/**
+ * Por qué no se publicó (AGT23): `invalido` si el texto incumple AGT20; `version-inexistente` si se pidió restaurar
+ * una versión que no está en el historial. Permite a la API responder `422` o `404` sin comparar textos.
+ */
+export type RazonNoPublicado = 'invalido' | 'version-inexistente';
+
 /** Resultado de publicar o restaurar: la versión nueva, o el motivo (sin copiar el texto, R14). */
 export type ResultadoPublicacion =
   | { readonly publicado: true; readonly version: number }
-  | { readonly publicado: false; readonly motivo: string };
+  | { readonly publicado: false; readonly motivo: string; readonly razon: RazonNoPublicado };
 
 /**
  * Publica un estilo nuevo (AGT20, AGT21, D2 de la Fase 08c): valida, guarda de forma atómica (texto, historial y
@@ -29,7 +35,7 @@ export class PublicarEstilo {
   async ejecutar(texto: string): Promise<ResultadoPublicacion> {
     const validacion = validarEstilo(texto);
     if (!validacion.valido) {
-      return { publicado: false, motivo: validacion.motivo };
+      return { publicado: false, motivo: validacion.motivo, razon: 'invalido' };
     }
     const version = await this.repositorio.publicar(texto, this.clock.ahora());
     try {

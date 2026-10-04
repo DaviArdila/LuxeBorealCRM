@@ -109,6 +109,15 @@ describe('agente/aplicacion — publicar, restaurar y listar el estilo', () => {
     expect(version.incrementos).toBe(0);
   });
 
+  it('AGT23 — la razón distingue una versión inexistente (404) de un estilo inválido (422) sin comparar textos', async () => {
+    const { publicar, restaurar, repositorio } = crear();
+    repositorio.historial = [{ version: 1, texto: 'Recomienda el SKU-GL001', fecha: '2026-09-29T10:00:00.000Z' }];
+
+    await expect(publicar.ejecutar('Cuesta $ 50')).resolves.toMatchObject({ publicado: false, razon: 'invalido' });
+    await expect(restaurar.ejecutar(9)).resolves.toMatchObject({ publicado: false, razon: 'version-inexistente' });
+    await expect(restaurar.ejecutar(1)).resolves.toMatchObject({ publicado: false, razon: 'invalido' });
+  });
+
   it('restaurar valida el texto como cualquier estilo (un estilo viejo que hoy sería inválido se rechaza)', async () => {
     const { restaurar, repositorio } = crear();
     repositorio.historial = [{ version: 1, texto: 'Recomienda el SKU-GL001', fecha: '2026-09-29T10:00:00.000Z' }];

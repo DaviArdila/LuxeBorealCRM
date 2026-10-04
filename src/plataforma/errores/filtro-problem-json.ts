@@ -42,7 +42,7 @@ export class FiltroProblemJson implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     if (exception instanceof ErrorDeAplicacion) {
-      this.responderProblema(exception.codigo, host, exception.errores);
+      this.responderProblema(exception.codigo, host, exception.errores, exception.detalle);
       return;
     }
 
@@ -71,11 +71,12 @@ export class FiltroProblemJson implements ExceptionFilter {
     codigo: CodigoError,
     host: ArgumentsHost,
     errores?: readonly DetalleCampo[],
+    detalle?: string,
   ): void {
     const http = host.switchToHttp();
     const solicitud = http.getRequest<SolicitudHttp>();
     const respuesta = http.getResponse<RespuestaHttp>();
-    const problema = construirProblema(codigo, { instance: solicitud.url, errores });
+    const problema = construirProblema(codigo, { instance: solicitud.url, errores, detalle });
 
     respuesta.status(problema.status).type('application/problem+json').json(problema);
   }

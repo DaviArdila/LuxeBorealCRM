@@ -17,7 +17,11 @@ export class RestaurarEstilo {
     const historial = await this.repositorio.leerHistorial();
     const encontrada = historial.find((candidata) => candidata.version === version);
     if (encontrada === undefined) {
-      return { publicado: false, motivo: `la versión ${String(version)} no está en el historial` };
+      return {
+        publicado: false,
+        motivo: `la versión ${String(version)} no está en el historial`,
+        razon: 'version-inexistente',
+      };
     }
     return this.publicar.ejecutar(encontrada.texto);
   }

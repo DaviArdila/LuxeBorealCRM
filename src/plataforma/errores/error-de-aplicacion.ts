@@ -9,11 +9,20 @@ import type { DetalleCampo } from './construir-problema.js';
 export class ErrorDeAplicacion extends Error {
   readonly codigo: CodigoError;
   readonly errores?: readonly DetalleCampo[];
+  /**
+   * Motivo en texto para el cliente (`detail` de RFC 9457). Quien lo pone es responsable de que nombre la regla rota y
+   * nunca copie un valor recibido ni un dato personal (R14).
+   */
+  readonly detalle?: string;
 
-  constructor(codigo: CodigoError, opciones?: { readonly errores?: readonly DetalleCampo[] }) {
+  constructor(
+    codigo: CodigoError,
+    opciones?: { readonly errores?: readonly DetalleCampo[]; readonly detalle?: string },
+  ) {
     super(`Error de aplicación: ${codigo}`);
     this.name = 'ErrorDeAplicacion';
     this.codigo = codigo;
     this.errores = opciones?.errores;
+    this.detalle = opciones?.detalle;
   }
 }

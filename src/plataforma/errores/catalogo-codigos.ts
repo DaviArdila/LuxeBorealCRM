@@ -3,7 +3,7 @@
  * deriva de las claves de este objeto: un código fuera del catálogo no compila (skill
  * `luxeboreal-arquitectura` §8, kebab-case en español). Cada fase que agregue un error nuevo
  * agrega su propia entrada aquí, con el id del requisito en el comentario — la Fase 11a agrega
- * los cinco de autenticación y las Fases 12-13 `clave-idempotencia-*` (design.md D5);
+ * los cinco de autenticación, la 11b los del estilo y de los mensajes fijos y las Fases 12-13 `clave-idempotencia-*` (design.md D5);
  * la Fase 04 (T3, D2/D3 de `design.md`) agrega `firma-invalida` y `carga-demasiado-grande` para el
  * webhook de Chatwoot.
  */
@@ -52,6 +52,16 @@ export const CATALOGO_CODIGOS = Object.freeze({
   'demasiados-intentos': {
     status: 429,
     title: 'Demasiados intentos de inicio de sesión; intenta más tarde',
+  },
+  /** AGT23: el estilo que se intentó publicar o restaurar no cumple AGT20; el motivo va en `detail`. */
+  'estilo-invalido': {
+    status: 422,
+    title: 'El estilo no cumple las reglas para publicarse',
+  },
+  /** AGT23: la versión que se pidió restaurar no está en el historial del estilo. */
+  'version-estilo-inexistente': {
+    status: 404,
+    title: 'La versión del estilo no existe en el historial',
   },
 } as const);
 

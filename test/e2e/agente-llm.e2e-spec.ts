@@ -29,6 +29,7 @@ import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-
 import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { iniciarSesionComo } from '../soporte/sesion-e2e.js';
 
 const SECRETO = 'secreto-e2e-agente-llm';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -421,6 +422,31 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       expect(antes).not.toContain('ESTILO-E2E-PUBLICADO');
       expect(despues).toContain('ESTILO-E2E-PUBLICADO');
       expect(despues).not.toContain('Cómo escribes');
+      // AGT18: las reglas no negociables siguen intactas (R1, R2) con cualquier estilo.
+      expect(despues).toContain('Nunca calcules dinero');
+    } finally {
+      await limpiarEstilo(aplicacion);
+    }
+  }, 60_000);
+
+  it('AGT23 — Publicar por la API cambia el prompt del siguiente turno, sin reiniciar', async () => {
+    const aplicacion = await arrancar();
+    try {
+      const servidor = aplicacion.getHttpServer() as Server;
+      const admin = await iniciarSesionComo(servidor, aplicacion.get(PrismaService), 'admin');
+      const antes = await promptDeUnTurno(aplicacion, 'Hola, buenas');
+
+      const publicado = await request(servidor)
+        .put('/api/v1/agente/estilo')
+        .set('x-luxe-csrf', '1')
+        .set('cookie', admin.cookie)
+        .send({ texto: 'ESTILO-API-E2E: habla muy formal y sin emojis.' });
+      const despues = await promptDeUnTurno(aplicacion, 'Hola otra vez');
+
+      expect(publicado.status).toBe(200);
+      expect(publicado.body).toEqual({ version: 1 });
+      expect(antes).not.toContain('ESTILO-API-E2E');
+      expect(despues).toContain('ESTILO-API-E2E');
       // AGT18: las reglas no negociables siguen intactas (R1, R2) con cualquier estilo.
       expect(despues).toContain('Nunca calcules dinero');
     } finally {

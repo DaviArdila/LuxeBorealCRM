@@ -19,6 +19,8 @@ export interface Problema {
   readonly status: number;
   readonly codigo: CodigoError;
   readonly instance?: string;
+  /** Motivo legible por una persona (RFC 9457); solo en los errores que lo traen, sin valores recibidos (R14). */
+  readonly detail?: string;
   readonly errores?: readonly DetalleCampo[];
 }
 
@@ -30,7 +32,7 @@ export interface Problema {
  */
 export function construirProblema(
   codigo: CodigoError,
-  contexto: { readonly instance?: string; readonly errores?: readonly DetalleCampo[] } = {},
+  contexto: { readonly instance?: string; readonly errores?: readonly DetalleCampo[]; readonly detalle?: string } = {},
 ): Problema {
   const { status, title } = CATALOGO_CODIGOS[codigo];
   return {
@@ -39,6 +41,7 @@ export function construirProblema(
     status,
     codigo,
     ...(contexto.instance === undefined ? {} : { instance: contexto.instance }),
+    ...(contexto.detalle === undefined ? {} : { detail: contexto.detalle }),
     ...(contexto.errores === undefined ? {} : { errores: contexto.errores }),
   };
 }

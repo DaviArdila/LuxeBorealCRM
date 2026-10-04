@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { construirProblema } from './construir-problema.js';
+import { ErrorDeAplicacion } from './error-de-aplicacion.js';
 
 describe('construirProblema (D5, RFC 9457)', () => {
   it('construye type/title/status/codigo desde el catálogo, sin instance ni errores por defecto', () => {
@@ -39,5 +40,22 @@ describe('construirProblema (D5, RFC 9457)', () => {
     expect(segundo.codigo).toBe(primero.codigo);
     expect(segundo.type).toBe(primero.type);
     expect(segundo.status).toBe(primero.status);
+  });
+});
+
+describe('construirProblema — detail de RFC 9457 (Fase 11b, AGT23)', () => {
+  it('incluye detail solo cuando el contexto lo trae', () => {
+    const con = construirProblema('estilo-invalido', { detalle: 'el estilo está vacío' });
+    const sin = construirProblema('estilo-invalido');
+
+    expect(con.detail).toBe('el estilo está vacío');
+    expect(sin).not.toHaveProperty('detail');
+  });
+
+  it('un ErrorDeAplicacion con detalle lo conserva para que el filtro lo responda', () => {
+    const error = new ErrorDeAplicacion('version-estilo-inexistente', { detalle: 'la versión 9 no está en el historial' });
+
+    expect(error.detalle).toBe('la versión 9 no está en el historial');
+    expect(new ErrorDeAplicacion('estilo-invalido').detalle).toBeUndefined();
   });
 });
