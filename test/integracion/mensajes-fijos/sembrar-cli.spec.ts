@@ -47,7 +47,7 @@ describe('mensajes:sembrar contra Postgres real (T4, CFN3)', () => {
     expect(filas).toHaveLength(10);
     for (const fila of filas) {
       expect(fila.valor, fila.clave).toBe(CATALOGO_REAL.find((m) => m.clave === fila.clave)?.textoRespaldo);
-      expect(resultado.mensaje).not.toContain(String(fila.valor));
+      expect(resultado.mensaje).not.toContain(JSON.stringify(fila.valor));
     }
   });
 
