@@ -18,6 +18,552 @@
     }
   ],
   "paths": {
+    "/api/v1/auth/sesion": {
+      "delete": {
+        "operationId": "cerrarSesion",
+        "parameters": [
+          {
+            "description": "Anti-CSRF: siempre `1`.",
+            "in": "header",
+            "name": "X-Luxe-Csrf",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "email": {
+                      "format": "email",
+                      "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "rol": {
+                      "enum": [
+                        "admin",
+                        "asesor"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "rol"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sesión cerrada; la cookie queda vencida."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Falta el encabezado anti-CSRF (encabezado-csrf-ausente)."
+          }
+        },
+        "security": [],
+        "summary": "Cierra la sesión de quien llama",
+        "tags": [
+          "Auth"
+        ]
+      },
+      "post": {
+        "operationId": "iniciarSesion",
+        "parameters": [
+          {
+            "description": "Anti-CSRF: siempre `1`.",
+            "in": "header",
+            "name": "X-Luxe-Csrf",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "contrasena": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "email": {
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email",
+                  "contrasena"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "email": {
+                      "format": "email",
+                      "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "rol": {
+                      "enum": [
+                        "admin",
+                        "asesor"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "rol"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sesión abierta; la cookie luxe_sesion viene en Set-Cookie."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "El cuerpo no cumple el esquema (validacion-fallida)."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Correo o contraseña no válidos, o usuario inactivo (credenciales-invalidas)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Falta el encabezado anti-CSRF (encabezado-csrf-ausente)."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Demasiados intentos para este correo e IP (demasiados-intentos); ver Retry-After."
+          }
+        },
+        "security": [],
+        "summary": "Inicia sesión con correo y contraseña",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/yo": {
+      "get": {
+        "operationId": "obtenerSesionActual",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "email": {
+                      "format": "email",
+                      "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                      "type": "string"
+                    },
+                    "id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "rol": {
+                      "enum": [
+                        "admin",
+                        "asesor"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "nombre",
+                    "email",
+                    "rol"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Usuario de la sesión, leído de la base."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "codigo": {
+                      "type": "string"
+                    },
+                    "errores": {
+                      "items": {
+                        "properties": {
+                          "campo": {
+                            "type": "string"
+                          },
+                          "problema": {
+                            "enum": [
+                              "falta",
+                              "formato",
+                              "valor"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "campo",
+                          "problema"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "codigo"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sin sesión válida (peticion-no-autenticada)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Devuelve el usuario de la sesión actual",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/v1/webhooks/chatwoot": {
       "post": {
         "operationId": "recibirWebhookChatwoot",
@@ -67,6 +613,7 @@
             "description": "Estado del evento recibido: registrado, duplicado o ignorado."
           }
         },
+        "security": [],
         "summary": "",
         "tags": [
           "WebhookChatwoot",
@@ -297,6 +844,13 @@
     }
   },
   "components": {
-    "schemas": {}
+    "schemas": {},
+    "securitySchemes": {
+      "cookieAuth": {
+        "in": "cookie",
+        "name": "luxe_sesion",
+        "type": "apiKey"
+      }
+    }
   }
 }

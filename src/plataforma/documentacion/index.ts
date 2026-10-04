@@ -7,4 +7,5 @@ export {
 export { montarDocumentacion } from './montar-documentacion.js';
 export { ordenarDocumento } from './ordenar-documento.js';
 export { respuestaDesdeZod, type OpcionesRespuestaDesdeZod } from './respuesta-desde-zod.js';
+export { respuestaProblema } from './respuesta-problema.js';
 export { serializarDocumento } from './serializar-documento.js';

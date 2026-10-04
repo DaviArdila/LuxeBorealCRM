@@ -9,6 +9,7 @@ import { HasheadorArgon2 } from './infraestructura/hasheador-argon2.js';
 import { RepositorioUsuarioPrisma } from './infraestructura/prisma/repositorio-usuario-prisma.js';
 import { AlmacenSesionesRedis } from './infraestructura/redis/almacen-sesiones-redis.js';
 import { LimiteIntentosRedis } from './infraestructura/redis/limite-intentos-redis.js';
+import { AuthController } from './interfaz/auth.controller.js';
 import { GuardiaCsrf } from './interfaz/guardia-csrf.js';
 import { GuardiaRoles } from './interfaz/guardia-roles.js';
 import { GuardiaSesion } from './interfaz/guardia-sesion.js';
@@ -24,6 +25,7 @@ import { REPOSITORIO_USUARIO } from './puertos/repositorio-usuario.js';
  */
 @Module({
   imports: [PrismaModule, RedisModule],
+  controllers: [AuthController],
   providers: [
     { provide: REPOSITORIO_USUARIO, useClass: RepositorioUsuarioPrisma },
     { provide: ALMACEN_SESIONES, useClass: AlmacenSesionesRedis },
