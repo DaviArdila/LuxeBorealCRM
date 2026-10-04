@@ -11,7 +11,7 @@ traspaso a humano en Chatwoot, leads, catálogo), más el CRM de inventario y ve
 
 ## Estado
 
-Hay código en `src/` y las fases avanzan de una en una. El estado de cada fase vive **solo** en
+Hay código en `servicio/` (servidor NestJS) y `cliente/` (back office Angular), y las fases avanzan de una en una. El estado de cada fase vive **solo** en
 `docs/fases/README.md` — no se copia en este archivo ni en el README.
 
 ## Orden de lectura
@@ -95,10 +95,11 @@ secretos o configuración del repo).
   anterior; el PR de cada rama apunta a la anterior y se reapunta a `main` cuando la anterior se fusiona
   (`stacked-to-main`, merge commit). Un PR no pasa de ~400 líneas de autoría salvo excepción escrita en el
   `tasks.md` de la fase.
-- **Antes de cada push**, la batería completa en local: `npm run lint`, `typecheck`, `fronteras`,
-  `contrato:deriva`, `commits`, y los proyectos `unit`, `integracion`, `e2e` y `evals` de Vitest, no solo
-  `unit`: un colaborador nuevo en una clase rompe los tests de integración que la construyen a mano. Sin
-  Docker, las fallas de Testcontainers/MinIO se distinguen contra `main` y se dejan dichas en el PR.
+- **Antes de cada push**, la batería completa en local, dentro de `servicio/`: `npm run lint`, `typecheck`,
+  `fronteras`, `contrato:deriva`, `commits`, y los proyectos `unit`, `integracion`, `e2e` y `evals` de Vitest, no
+  solo `unit`: un colaborador nuevo en una clase rompe los tests de integración que la construyen a mano. Si el
+  cambio toca `cliente/`, también `npm --prefix cliente run ci`. Sin Docker, las fallas de Testcontainers/MinIO
+  se distinguen contra `main` y se dejan dichas en el PR.
 - **`npm run commits`** antes de empujar: encabezado y cuerpo de cada commit en ≤100 caracteres por línea
   (el hook `commit-msg` no siempre se ejecuta).
 - **Después del push, verificar de verdad**: el PR abierto contra la base correcta, los checks de la cabeza
@@ -162,8 +163,9 @@ secretos o configuración del repo).
 - `zod` para validar configuración y payloads; `sharp` para imágenes; `nestjs-pino` para logs.
 - **Vitest** (ESM, decisión 2026-09-23) + Supertest para e2e; Postgres y Redis reales en integración.
 - Observabilidad inicial: logs JSON a stdout, Sentry (plan gratis), Uptime Kuma, tabla `uso_llm`.
-- Docker Compose para desarrollo; Dokploy en el VPS para producción. **Chatwoot** como plataforma de
-  canales, historial y bandeja humana (ADR-0005): lo que ya hace no se construye.
+- Docker Compose para desarrollo (`servicio/docker-compose.yml`); Dokploy en el VPS para producción.
+  **Chatwoot** como plataforma de canales, historial y bandeja humana (ADR-0005): lo que ya hace no se
+  construye.
 
 ## Repositorio
 
@@ -171,9 +173,33 @@ Repo git **propio** (`git init` el 2026-09-22), publicado en GitHub (`DaviArdila
 vive dentro del repo del home del usuario (`C:\Users\ASUS`): usar siempre `git -C` o la raíz de este
 repo, nunca comandos que afecten al repo padre. `.kilo/` es de otra herramienta y está ignorado.
 
+## Estructura (ADR-0023)
+
+Dos aplicaciones hermanas, cada una con su `package.json`, su lockfile, sus dependencias y su propio `ci`:
+
+| Carpeta | Qué es |
+|---|---|
+| `servicio/` | El servidor NestJS: `src/`, `test/`, `prisma/`, `scripts/`, su configuración, `.env.example`, `docker-compose.yml` (Postgres, Redis y MinIO para `start:dev`) y las herramientas del repositorio (commitlint, secretos, changelog, lint y diff del contrato) |
+| `cliente/` | El back office Angular, con la generación y deriva de su cliente HTTP y sus pruebas de herramientas |
+| `openapi/` | El contrato entre los dos: lo genera el servicio y lo consume el cliente |
+| `infra/chatwoot/` | Chatwoot local y sus scripts; ahí irá la composición de producción (09b) |
+| Raíz | Documentación y specs del producto, configuración de Git y GitHub, y un `package.json` **sin dependencias** que encadena las dos aplicaciones |
+
+Regla: lo que solo una aplicación usa vive dentro de ella; lo que abarca las dos o el repositorio entero vive en la
+raíz. La raíz nunca declara dependencias. El `.env` local es `servicio/.env`.
+
 ## Comandos
 
-Confirmados en las Fases 00a, 00b y 01 (`package.json`):
+**Raíz** (desde la raíz del repositorio):
+
+| Comando | Qué hace |
+|---|---|
+| `npm run instalar` | Instala las dependencias de `servicio/` y de `cliente/`, cada una con su lockfile |
+| `npm run ci` | Secuencia completa, la que invoca `.github/workflows/ci.yml`: `ci` del servicio, `ci` del cliente y `auditoria:cliente` |
+| `npm run auditoria:cliente` | Auditoría de dependencias del cliente con la herramienta del servicio y las excepciones de `cliente/auditoria-excepciones.json` |
+
+**Servicio** (dentro de `servicio/`, o desde la raíz con `npm --prefix servicio run <comando>`), confirmados en las
+Fases 00a, 00b y 01:
 
 | Comando | Qué hace |
 |---|---|
@@ -183,7 +209,7 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run prisma:migrar` | `prisma migrate dev`: crea y aplica una migración nueva a partir de `prisma/schema.prisma` (desarrollo) |
 | `npm run prisma:aplicar` | `prisma migrate deploy`: aplica las migraciones pendientes sin generar una nueva (CI, producción) |
 | `npm run semilla:geografia` | Siembra `departamento`/`ciudad` desde `prisma/datos/divipola.json` (catálogo DANE); idempotente |
-| `npm run lint` | ESLint (flat config) sobre todo el repo |
+| `npm run lint` | ESLint (flat config) sobre todo el servicio |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run fronteras` | `dependency-cruiser` sobre `src/` y `scripts/` con las reglas de fronteras |
 | `npm test` | Vitest, proyecto `unit` (sin infraestructura) |
@@ -198,7 +224,7 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run secretos` | `gitleaks` sobre el árbol de trabajo (rápido; parte del hook `pre-push`) |
 | `npm run secretos:historial` | `gitleaks` sobre el historial completo de commits (lento; solo en `ci`) |
 | `npm run commits` | `commitlint` sobre el rango `merge-base(main, HEAD)..HEAD` (u override con `LUXE_COMMITS_DESDE`) |
-| `npm run auditoria` | `npm audit` filtrado por el umbral `high` y las excepciones versionadas de `auditoria-excepciones.json` |
+| `npm run auditoria` | `npm audit` filtrado por el umbral `high` y las excepciones versionadas de `auditoria-excepciones.json`; `-- --directorio <carpeta>` audita otra aplicación con sus propias excepciones |
 | `npm run flujos` | Valida estáticamente `.github/workflows/` con `actionlint` |
 | `npm run changelog` | Regenera `CHANGELOG.md` con `git-cliff` desde los commits de Conventional Commits (`cliff.toml`); nunca se edita a mano |
 | `npm run evals` | Vitest, proyecto `evals`: casos JSON contra el agente completo (Postgres + Redis reales) con un LLM guionado, sin red ni costo; umbral 100 % (Fase 07c). `EVALS_MODO=real` (con `OPENROUTER_API_KEY`, nunca en CI) lo corre contra el LLM real, 3 repeticiones, e imprime el costo; `EVALS_ESTILO=<ruta>` publica ese estilo candidato en la base de la corrida para medirlo antes de publicarlo con `prompt:estilo` |
@@ -206,12 +232,20 @@ Confirmados en las Fases 00a, 00b y 01 (`package.json`):
 | `npm run prompt:estilo` | Edita el estilo del bot sin desplegar (Fase 08c): `-- ver`, `-- historial`, `-- publicar --archivo <ruta>` y `-- restaurar --version <n>`; valida el texto, guarda las últimas 10 versiones y no escribe el texto en logs. Tras publicar, correr los evals reales (EVL3) |
 | `npm run usuario:crear` | Crea un usuario del back office (Fase 11a): `-- --email <correo> --nombre <nombre> --rol admin\|asesor`; pide la contraseña dos veces sin mostrarla (mínimo 12 caracteres), exige una terminal interactiva, guarda solo el hash argon2id y no pisa un correo existente |
 | `npm run mensajes:sembrar` | Inserta en `parametro` los diez mensajes fijos del bot que no tienen fila, con su texto de respaldo (Fase 11b); idempotente, nunca pisa un texto editado e informa solo cuántas insertó y cuántas ya existían |
-| `npm run cliente:generar` | Regenera `cliente/src/app/api/` (cliente HTTP de Angular) desde `openapi/openapi.json` con `ng-openapi-gen`; lo generado no se edita a mano (Fase 11b) |
-| `npm run cliente:deriva` | Genera en una carpeta temporal y compara byte a byte con `cliente/src/app/api/`; falla si difiere y nombra los archivos (Fase 11b) |
-| `npm run auditoria:cliente` | Lo mismo que `auditoria` pero sobre las dependencias de `cliente/`, con las mismas excepciones versionadas de la raíz (Fase 11b) |
-| `npm run cliente:ci` | Pasos del cliente: `npm ci`, lint, tests y build dentro de `cliente/`, `auditoria:cliente`, `cliente:deriva` y las pruebas de la raíz que necesitan sus dependencias; es el último paso de `npm run ci` y no está en `ci:hook` (Fase 11b) |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
-| `npm run ci` | Secuencia completa de integración continua (la misma que invoca `.github/workflows/ci.yml`, sin redefinirla): `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows + `cliente:ci` |
+| `npm run ci` | Secuencia completa del servicio: `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |
+
+**Cliente** (dentro de `cliente/`, o desde la raíz con `npm --prefix cliente run <comando>`; detalle en
+`docs/operacion/cliente-back-office.md`):
+
+| Comando | Qué hace |
+|---|---|
+| `npm start` | Servidor de desarrollo con el proxy de `/api` a la API local |
+| `npm test` | Tests de componentes (Vitest con jsdom) |
+| `npm run test:herramientas` | Pruebas de las fronteras del lint, el proxy y la generación del cliente HTTP (Vitest en Node) |
+| `npm run api:generar` | Regenera `src/app/api/` desde `openapi/openapi.json` con `ng-openapi-gen`; lo generado no se edita a mano (Fase 11b) |
+| `npm run api:deriva` | Genera en una carpeta temporal y compara byte a byte con `src/app/api/`; falla si difiere y nombra los archivos |
+| `npm run ci` | lint, tests, pruebas de herramientas, build y `api:deriva` |
 
 
 ## Reglas críticas

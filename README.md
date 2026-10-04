@@ -6,6 +6,19 @@ del prototipo funcional `../ChatLuxeCRM`.
 
 **Estado:** planeación. Ver `docs/fases/README.md`.
 
+## Estructura
+
+| Carpeta | Qué es |
+|---|---|
+| `servicio/` | El servidor NestJS (API, bot, workers), con su `package.json` y sus dependencias |
+| `cliente/` | El back office en Angular, con su `package.json` y sus dependencias |
+| `openapi/` | El contrato de la API que une a los dos |
+| `infra/` | Sistemas externos (Chatwoot local) y, más adelante, el despliegue |
+| `docs/`, `openspec/` | Documentación, decisiones y specs del producto |
+
+Para instalar todo: `npm run instalar`. Para la verificación completa: `npm run ci`. Por qué está así:
+[ADR-0023](docs/adr/0023-estructura-servicio-y-cliente.md).
+
 ## Por dónde empezar
 
 | Si quieres… | Lee |

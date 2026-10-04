@@ -3,6 +3,8 @@
 - Estado: propuesta
 - Fecha: 2026-10-03
 - Enmienda: `docs/analisis/06-cliente-back-office.md` (reemplaza su recomendación de React + Vite en un repo aparte)
+- Enmendado por: ADR-0023 (el servidor pasa a `servicio/`; `npm run cliente:generar` y `cliente:deriva` pasan a ser
+  `npm --prefix cliente run api:generar` y `api:deriva`, del propio cliente)
 
 ## Resumen
 

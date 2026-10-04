@@ -41,10 +41,24 @@ Limitación del entorno de la sesión: no hay Docker, así que integración, e2e
   - `.gitignore`: el cliente Prisma generado pasa a `servicio/src/plataforma/prisma/generado/`.
   - Workflow con `working-directory: servicio`.
   - Resultado: 1399 tests (1397 + 2 nuevos), los mismos 7 fallos por Docker, contrato idéntico y misma lista de `dist/`.
-- [ ] T2 — `package.json` de la raíz como orquestador sin dependencias
-- [ ] T3 — El cliente se verifica solo: generación y deriva de su API, auditoría con sus excepciones, pruebas de
-  fronteras y proxy en `cliente/herramientas/`; el servicio deja de conocer al cliente
-- [ ] T4 — Documentación vigente (`CLAUDE.md`, `README.md`, `docs/CONTEXTO_SESIONES.md`, skills, guías)
+  - Commit `e2dc0ef`; CI de GitHub (run 291) en verde, con integración, e2e, evals, secretos y `contrato:diff`.
+- [x] T2 + T3 — Raíz que encadena y cliente que se verifica solo (juntas: el `ci` de la raíz encadena el del cliente)
+  - `package.json` de la raíz sin dependencias: `instalar`, `instalar:ci`, `auditoria:cliente` y `ci`.
+  - El cliente genera y verifica su API con `herramientas/api.mjs` (`api:generar`, `api:deriva`) y corre sus pruebas
+    de fronteras, proxy y API con `npm run test:herramientas` (Vitest en Node, aparte de `ng test`).
+  - La auditoría usa las excepciones del directorio auditado: `cliente/auditoria-excepciones.json` (braces,
+    micromatch, @boundaries/elements, eslint-plugin-boundaries, según `npm audit` real) y las del servicio sin las dos
+    que eran solo del cliente.
+  - El servicio pierde `cliente:*`, `scripts/generar-cliente.ts` y los tests `cliente-*`; `ci-repositorio.spec.ts`
+    prueba que ningún script del servicio mencione al cliente.
+  - RED: 11 tests (ci-repositorio, auditoría por directorio, `Cannot find module './api.mjs'`); GREEN.
+  - Cuentas: servicio 1399 − 23 trasladados o reemplazados + 10 nuevos = 1386 (mismos 7 fallos por Docker); cliente
+    65 tests de componentes + 19 de herramientas (18 trasladados + 1 nuevo). Ningún test se perdió.
+  - Specs actualizadas: CI10 (`integracion-continua`), CLT1 y CLT2 (`cliente`).
+  - Commit `3ed8277`.
+- [x] T4 — Documentación vigente: `CLAUDE.md` (estructura y comandos por aplicación), `README.md`,
+  `docs/CONTEXTO_SESIONES.md`, guías de `docs/operacion/`, skill `luxeboreal-arquitectura`, nota en ADR-0022 y
+  comentarios de `.env.example`. Los `verify-report` archivados no se tocan.
 - [ ] T5 — Verificación final: clon limpio, hooks reales y CI completo en GitHub
 - [ ] T6 `[manual]` — Prueba del dueño en Windows (ver la lista al final)
 
