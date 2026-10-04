@@ -1,7 +1,7 @@
 # Design: Fase 11b — Cliente Angular: estilo del bot y mensajes fijos
 
 - Change: `fase-11b-cliente-angular` · Fecha: 2026-10-03 · Estado: **spec en revisión**
-- Proposal: `proposal.md` · Specs: `cliente` (CLT1-CLT8, dominio nuevo), `agente` (AGT23),
+- Proposal: `proposal.md` · Specs: `cliente` (CLT1-CLT9, dominio nuevo), `agente` (AGT23),
   `configuracion-negocio` (CFN1-CFN3), `integracion-continua` (CI10)
 - ADRs: [0022](../../../docs/adr/0022-cliente-angular-en-el-repo.md) nuevo (`propuesta`); se apoya en 0008, 0020 y 0021.
 
@@ -31,6 +31,7 @@ cliente no sabe cómo está hecho el servidor: solo usa el código generado desd
 | Runner de tests del cliente | el que trae por defecto esa versión del CLI (Vitest desde Angular 21, a confirmar) | corre sin navegador en CI | pendiente |
 | Generador del cliente HTTP | `ng-openapi-gen` | lee el `openapi.json` real (OpenAPI 3.1) y genera servicios por `operationId` | pendiente |
 | Lint | `angular-eslint` | regla de imports prohibidos hacia `../src`, `../scripts`, `../test` (CLT1) | pendiente |
+| Fronteras del cliente | `eslint-plugin-boundaries` (o `no-restricted-imports`) | las reglas de D10 con fixtures que las violan (CLT9) | pendiente |
 
 Si `ng-openapi-gen` no maneja OpenAPI 3.1, se evalúan `@hey-api/openapi-ts` y `openapi-generator` (generador
 `typescript-angular`) y se anota aquí; ADR-0022 se ajusta antes de seguir.
@@ -94,22 +95,40 @@ producción el cliente se servirá bajo el mismo dominio que la API; cómo (Nest
 decide en la 09b (Q1, P55). Ninguna de las dos opciones cambia el código del cliente.
 **Rationale**: la cookie `SameSite=Strict` y la ausencia de CORS (11a, D4) exigen un solo origen.
 
-### D7: estructura del cliente
+### D7: estructura del cliente por áreas (revisada el 2026-10-04)
+
+El cliente nace con tres pantallas, pero va a recibir el bot configurable (11c), inventario, ventas y envíos (12-14).
+La estructura se organiza para ese crecimiento desde el primer commit: la unidad de crecimiento es el **área**, una
+carpeta por funcionalidad de negocio con sus propias rutas, cargada en diferido y sin dependencias con otras áreas.
 
 ```
 cliente/
 ├── package.json · angular.json · proxy.conf.json · eslint.config.js · ng-openapi-gen.json
 └── src/app/
-    ├── api/            generado por `npm run cliente:generar`; nadie lo edita (CLT2)
-    ├── nucleo/         SesionServicio (signal con el usuario de /yo), guardias de ruta,
-    │                   interceptor CSRF y 401 (CLT5, CLT6)
-    ├── sesion/         pantalla de inicio de sesión (CLT4)
-    ├── estilo/         pantalla «Estilo del bot» (CLT7)
-    └── mensajes-fijos/ pantalla «Mensajes fijos» (CLT8)
+    ├── api/              generado por `npm run cliente:generar`; nadie lo edita (CLT2)
+    ├── nucleo/           transversal sin pantallas: SesionServicio (signal con el usuario de /yo), guardias de
+    │                     ruta, interceptores (CSRF, 401/403), lectura de problem+json, tipo `DefinicionArea`
+    ├── compartido/       piezas de interfaz sin dominio: editor con contador, confirmación, aviso de error del
+    │                     servidor, estado vacío o cargando; las usan todas las áreas
+    ├── shell/            marco de la app: barra superior, menú lateral armado con las áreas y el rol, inicio, 404
+    ├── sesion/           pantalla de inicio de sesión (pública, fuera del shell) (CLT4)
+    ├── areas/
+    │   ├── registro.ts   lista de áreas: lo único que el shell conoce de ellas
+    │   └── bot/          área «Bot» (11b)
+    │       ├── area.ts           definición: título, ícono, roles, entradas del menú, cargador diferido
+    │       ├── bot.routes.ts     rutas hijas del área
+    │       ├── estilo/           pantalla «Estilo del bot» (CLT7)
+    │       └── mensajes-fijos/   pantalla «Mensajes fijos» (CLT8)
+    ├── app.routes.ts     sesión + shell, con una ruta `loadChildren` por área del registro
+    └── app.config.ts     providers: router, HttpClient con interceptores, PrimeNG, zoneless
 ```
 
-Componentes standalone, signals para el estado, sin Zone.js. Nombres de dominio en español, sufijos de Angular en
-inglés (`*.component.ts`, `*.service.ts`), igual que en el servidor (skill `luxeboreal-arquitectura` §8).
+Lo que viene después cabe sin mover nada: la 11c agrega `areas/bot/perfil/` y `areas/bot/escenarios/`; la 12 agrega
+`areas/inventario/`; la 13, `areas/ventas/`. Cada una es una carpeta nueva y una línea en `areas/registro.ts`.
+
+Componentes standalone, signals para el estado, sin Zone.js, detección `OnPush`. Nombres de dominio en español,
+sufijos de Angular en inglés (`*.component.ts`, `*.service.ts`), igual que en el servidor (skill
+`luxeboreal-arquitectura` §8).
 
 ### D8: scripts de la raíz que orquestan el cliente
 
@@ -122,6 +141,57 @@ inglés (`*.component.ts`, `*.service.ts`), igual que en el servidor (skill `lux
 
 El `eslint.config` de la raíz agrega `cliente/**` a sus ignorados; `.dependency-cruiser.cjs` no cambia (cruza `src` y
 `scripts`).
+
+### D9: un área se define con datos y se carga en diferido
+
+**Choice**: cada área exporta en su `area.ts` una `DefinicionArea` (tipo de `nucleo/`):
+`{ id, titulo, icono, roles, menu: [{ titulo, ruta, roles }], rutas: () => import('./bot.routes') }`.
+`areas/registro.ts` las lista; `app.routes.ts` crea una ruta `loadChildren` por área dentro del shell, protegida por
+la guardia de rol con los `roles` del área, y el shell arma el menú con las entradas que el rol de `/yo` puede ver.
+**Alternatives**: (a) rutas y menú escritos a mano en el shell (cada área nueva toca el shell y el menú por separado y
+se olvidan); (b) módulos federados o micro-frontends (complejidad de equipos grandes, no de un dueño con un cliente).
+**Rationale**: agregar un área es una carpeta y una línea; el código de un área solo se descarga cuando alguien entra a
+ella, así el arranque no crece con cada fase. El menú y las rutas siguen solo reflejando al servidor (CLT5, API7).
+
+### D10: fronteras del cliente verificadas por lint
+
+**Choice**: `eslint-plugin-boundaries` (lo confirma T1; si no sirve, `no-restricted-imports` con patrones) con estos
+tipos de elemento y reglas, todas `error`:
+
+| Elemento | Puede importar |
+|---|---|
+| `api` (generado) | nada de la app |
+| `nucleo` | `api` |
+| `compartido` | nada de la app (solo Angular y PrimeNG) |
+| `sesion` | `nucleo`, `compartido`, `api` |
+| `shell` | `nucleo`, `compartido`, `areas/registro.ts` |
+| `area` (`areas/<x>/`) | `nucleo`, `compartido`, `api`, su propia carpeta; **nunca otra área** |
+| cualquier archivo | nunca `../src`, `../scripts` ni `../test` del servidor (CLT1) |
+
+Si dos áreas necesitan lo mismo, la pieza sube a `compartido/` (si es de interfaz) o a `nucleo/` (si es transversal).
+Si un área necesita datos de otro dominio, los pide a la API, como en el servidor: el contrato es la frontera.
+**Alternatives**: confiar en la convención (es lo que la estructura plana dejaba abierto); Nx con etiquetas por
+librería (exige reorganizar el repo, descartado en ADR-0022).
+**Rationale**: es el equivalente de `dependency-cruiser` en el servidor; sin una regla que falle, la estructura se
+erosiona con la primera prisa.
+
+### D11: estado con signals por área, sin store global
+
+**Choice**: cada pantalla o área tiene su servicio con signals (`signal`, `computed`, `resource`/`httpResource` si la
+versión de T1 los trae estables) que envuelve las funciones generadas. `nucleo/` solo guarda la sesión. Los errores
+problem+json se leen con una función de `nucleo/` que devuelve `{ codigo, titulo, motivo }` y la pantalla decide qué
+mostrar.
+**Alternatives**: NgRx o un store global (ceremonia para pantallas de formulario que no comparten estado).
+**Rationale**: el estado del back office es casi todo «lo que dijo el servidor»; un store global se reconsidera si una
+fase de inventario o ventas comparte estado vivo entre áreas, con su propio ADR.
+
+### D12: el cliente generado no pide el encabezado anti-CSRF
+
+**Choice**: `ng-openapi-gen.json` lleva `"excludeParameters": ["X-Luxe-Csrf"]`; el interceptor de `nucleo/` lo agrega a
+toda mutación (CLT6). **Hallazgo previo a T1 (2026-10-04)**: `ng-openapi-gen` 1.1.0 lee el `openapi/openapi.json` real
+(OpenAPI 3.1) y genera `iniciarSesion`, `cerrarSesion` y `obtenerSesionActual`; sin esa opción, cada función exigía
+`'X-Luxe-Csrf': '1'` como parámetro. T1 lo confirma con la versión de Angular elegida.
+**Rationale**: el encabezado es una regla transversal, no un dato de cada pantalla.
 
 ## Módulos tocados
 
@@ -183,7 +253,8 @@ Sin cambios: `parametro` (clave/valor) ya existe; la semilla solo inserta filas.
 | Integración (servidor) | repositorio de mensajes fijos contra Postgres real; semilla idempotente | CFN2, CFN3 |
 | E2E (servidor) | endpoints con sesión real de la 11a: admin, asesor, logs; publicar estilo y ver el prompt del siguiente turno con el LLM guionado | AGT23, CFN1, CFN2 |
 | Tests del cliente | componentes y servicios con `HttpTestingController` (sin servidor real) | CLT4-CLT8 |
-| Lint / build del cliente | imports prohibidos; build de producción | CLT1 |
+| Tests del cliente (estructura) | registro de áreas, menú por rol, rutas diferidas | CLT9 |
+| Lint / build del cliente | imports prohibidos (servidor y entre áreas); build de producción con un chunk por área | CLT1, CLT9 |
 | Scripts | `cliente:deriva` con un contrato alterado | CLT2 |
 | `[manual]` | recorrido real en el navegador contra la API local | CLT3 y el criterio de éxito |
 

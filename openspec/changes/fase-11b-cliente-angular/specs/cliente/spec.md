@@ -208,3 +208,40 @@ Fase que lo implementa: 11b
 - Dado un texto que el servidor rechaza con `422` y el código `mensaje-fijo-invalido`,
 - Cuando el admin pulsa «Guardar»,
 - Entonces la pantalla muestra el motivo y el editor conserva el texto escrito.
+
+### Requirement: CLT9 — El cliente crece por áreas con fronteras verificadas
+
+El cliente MUST organizarse en **áreas** de negocio bajo `src/app/areas/<area>/` (en esta fase solo `bot`, con «Estilo
+del bot» y «Mensajes fijos»), más `nucleo/` (transversal sin pantallas), `compartido/` (interfaz sin dominio), `shell/`
+(marco y menú) y el cliente generado. Cada área MUST declarar su título, roles, entradas del menú y un cargador de sus
+rutas en un único archivo de definición, y MUST registrarse con una sola línea en `areas/registro.ts`; el shell MUST
+armar las rutas y el menú desde ese registro, filtrado por el rol de `obtenerSesionActual`. Las rutas de cada área MUST
+cargarse en diferido. El lint del cliente MUST rechazar que un área importe de otra área, que `nucleo/` o
+`compartido/` importen de un área y que el shell importe de un área algo distinto del registro.
+
+Fase que lo implementa: 11b
+
+#### Scenario: Un área registrada aparece en el menú de su rol
+
+- Dado un área de prueba registrada en `areas/registro.ts` con rol `admin` y una entrada de menú,
+- Cuando un admin abre el cliente,
+- Entonces el menú muestra esa entrada y su ruta abre la pantalla del área, sin cambios en el shell.
+
+#### Scenario: El menú no muestra las áreas que el rol no puede usar
+
+- Dado el área «Bot» con rol `admin` y un usuario `asesor`,
+- Cuando el shell arma el menú,
+- Entonces no aparece ninguna entrada del área «Bot».
+
+#### Scenario: Un import entre áreas se rechaza
+
+- Dado un archivo de `areas/bot/` que importa algo de otra área,
+- Cuando corre el lint del cliente,
+- Entonces falla y nombra el import prohibido.
+
+#### Scenario: El código de un área no viaja en el arranque
+
+- Dado el build de producción del cliente,
+- Cuando se revisan sus archivos,
+- Entonces las pantallas del área «Bot» quedan en un archivo aparte del bundle inicial, que solo se descarga al entrar
+  al área.

@@ -35,7 +35,9 @@ mensaje del bot usa los dos sin reiniciar nada; un asesor no ve esas pantallas y
 ### In Scope
 
 1. `cliente/`: Angular estable (standalone, signals, zoneless; la versión exacta la fija T1), PrimeNG, lint, tests y
-   build propios.
+   build propios, **organizado por áreas** para recibir el bot configurable, inventario y ventas sin reorganizarse:
+   shell con menú armado desde un registro de áreas, rutas diferidas por área y fronteras entre áreas verificadas por
+   lint (D7, D9, D10; CLT9).
 2. Cliente HTTP generado con `ng-openapi-gen` desde `openapi/openapi.json` (`npm run cliente:generar`) y verificación
    de deriva en CI.
 3. `proxy.conf.json` de desarrollo hacia la API local: mismo origen, la cookie funciona sin CORS.
@@ -88,6 +90,7 @@ recomendación aplicada como defecto.
 | Un mensaje fijo mal escrito (p. ej. `aviso_datos` vacío o sin el aviso) | Se rompe R14 o el tono | Validación (Q2), descripción con advertencia (Q3) y semilla que nunca pisa un texto editado |
 | Dos `package.json` y dos `node_modules` | CI más lenta, auditoría doble | El cliente corre en el mismo `npm run ci`, con caché de npm en el workflow |
 | El lint de la raíz recorre `cliente/` | Falsos errores | `eslint.config` de la raíz ignora `cliente/`; el cliente tiene su propio lint |
+| El cliente crece sin orden con 11c, 12 y 13 (pantallas que se importan entre sí, un bundle que crece con cada fase) | Reorganizar el cliente con inventario y ventas ya construidos | Estructura por áreas desde T5: una carpeta y una línea de registro por área, rutas diferidas y fronteras por lint con fixtures (D7, D9, D10) |
 | T5 (andamio de Angular) supera ~400 líneas | PR grande | Excepción anticipada aquí: el andamio generado por el CLI y el cliente HTTP generado no son autoría; la autoría se mide sin ellos (`size:exception` automática en `tasks.md`) |
 
 ## Rollback

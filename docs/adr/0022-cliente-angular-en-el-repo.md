@@ -55,6 +55,19 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
    (la forma concreta se decide en la 09b).
 6. **CI**: `npm run ci` agrega lint, tests, build, auditoría y deriva del cliente; `dependency-cruiser` sigue limitado a
    `src/` y `scripts/`.
+7. **Organizado por áreas** (agregado el 2026-10-04): el cliente crece por áreas de negocio en `src/app/areas/<area>/`
+   (bot, luego inventario, ventas…), cada una con rutas cargadas en diferido y registrada en `areas/registro.ts`; el
+   shell arma rutas y menú desde ese registro. `nucleo/` y `compartido/` son las únicas piezas comunes, y el lint del
+   cliente prohíbe los imports entre áreas (detalle en el `design.md` de la Fase 11b, D7, D9 y D10).
+
+## Cómo se agrega un área
+
+1. Carpeta `cliente/src/app/areas/<area>/` con su `area.ts` (título, ícono, roles, entradas del menú y cargador
+   diferido de sus rutas) y su `<area>.routes.ts`.
+2. Una línea en `areas/registro.ts`. El shell, el menú y `app.routes.ts` no se tocan.
+3. Lo que el área necesite de otra área se pide a la API; lo que se repita entre áreas sube a `compartido/` (interfaz)
+   o a `nucleo/` (transversal).
+4. Sus endpoints llegan por `npm run cliente:generar`, en el mismo commit que cambia el contrato.
 
 ## Consecuencias
 
@@ -64,6 +77,7 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 - **Queda prohibido**: importar código entre `cliente/` y el servidor; editar a mano el cliente generado; guardar
   secretos o tokens en el cliente; decidir permisos solo en el cliente.
 - **Queda obligatorio**: regenerar el cliente en el mismo commit que cambia el contrato público; que toda llamada a la
-  API pase por el código generado.
+  API pase por el código generado; que cada funcionalidad nueva sea un área con rutas diferidas y sin imports de otra
+  área.
 - **Dashboard App de Chatwoot (P14)**: el mismo cliente se podrá embeber más adelante. Si Chatwoot y el cliente quedan
   en dominios distintos, la cookie `SameSite=Strict` no viaja dentro del iframe y hará falta revisar ADR-0021.
