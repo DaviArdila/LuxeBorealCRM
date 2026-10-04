@@ -25,3 +25,20 @@ export function palabrasClave(texto: string, minimo = 3): string[] {
     .split(' ')
     .filter((palabra) => palabra.length >= minimo);
 }
+
+const PATRON_PESOS = /\$\s?\d/;
+const PATRON_PLANTILLA = /\{\{|\}\}/;
+
+/**
+ * `true` si el texto trae un valor en pesos (`$389.000`, `$ 120.000`). El dinero sale solo del backend (R1, R2): un
+ * texto fijo o un estilo editable no puede llevarlo. Lo comparten la validación del estilo (AGT20) y la de los
+ * mensajes fijos (CFN2).
+ */
+export function contieneValorEnPesos(texto: string): boolean {
+  return PATRON_PESOS.test(texto);
+}
+
+/** `true` si el texto trae un marcador de plantilla `{{...}}`, que no se reemplazaría y llegaría tal cual al cliente. */
+export function contieneMarcadorDePlantilla(texto: string): boolean {
+  return PATRON_PLANTILLA.test(texto);
+}

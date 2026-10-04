@@ -18,7 +18,7 @@ cita su commit al cerrarse.
 
 - [x] T1 — Verificación de compatibilidad (Angular, PrimeNG, runner, `ng-openapi-gen` con OpenAPI 3.1, fronteras por lint), sin código de producción
 - [x] T2 — Endpoints de admin del estilo en `agente` y contrato
-- [ ] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
+- [x] T3 — Catálogos de mensajes fijos por módulo dueño y módulo `mensajes-fijos` (dominio y casos de uso)
 - [ ] T4 — Endpoints de mensajes fijos, contrato y semilla `npm run mensajes:sembrar`
 - [ ] T5 — Andamio de `cliente/` por áreas: shell, registro de áreas, fronteras por lint, proxy, `cliente:generar` y `cliente:deriva`
 - [ ] T6 — Sesión en el cliente: inicio de sesión, `SesionServicio`, guardias e interceptor
@@ -171,8 +171,58 @@ cita su commit al cerrarse.
   puerto `RepositorioMensajesFijos` y su adaptador Prisma.
 - Unitarias con fakes; integración del repositorio y de la semilla contra Postgres real.
 - Forecast: ~400 líneas.
+- **Cerrada (2026-10-04).** RED en tres pasos. (1) Detectores compartidos: `contieneValorEnPesos` y
+  `contieneMarcadorDePlantilla` no existían (`npx vitest run --project unit src/compartido/texto`). (2) Sin módulo:
+  `Error: Cannot find module './catalogo-real.js'`, `'./guardar-mensaje-fijo.js'` y `'./validar-mensaje-fijo.js'`.
+  (3) Con esqueletos que compilan y no implementan, transcripción de
+  `npx vitest run --project unit src/modulos/mensajes-fijos/dominio src/modulos/mensajes-fijos/aplicacion` (dinero y R2:
+  ceremonia completa):
 
-### T4 — Endpoints de mensajes fijos y semilla
+  ```
+       × el tope es de 1.000 caracteres 8ms
+       × CFN2 — rechaza un texto vacío o en blanco 3ms
+       × CFN2 — rechaza un texto de 1.001 caracteres 1ms
+       × CFN2 — rechaza un valor en pesos (R2) 1ms
+       × CFN2 — rechaza un marcador de plantilla 1ms
+       × CFN1 — La lista trae todos los mensajes con su origen 10ms
+       × CFN1 — Una clave fuera de la lista no aparece 3ms
+       × un valor que no es texto o está en blanco cuenta como respaldo, igual que lo lee el bot 1ms
+       × CFN2 — guarda el texto, actualiza la fecha con el reloj y devuelve el mensaje con origen base 1ms
+       × quita los espacios y saltos de línea de los bordes antes de validar y guardar 1ms
+       × CFN2 — Un texto en blanco se rechaza con su motivo y no cambia lo vigente 2ms
+       × CFN2 — Un texto de 1.001 caracteres se rechaza con su motivo y no cambia lo vigente 1ms
+       × CFN2 — Un texto con un valor en pesos se rechaza con su motivo y no cambia lo vigente 1ms
+       × CFN2 — Un texto con un marcador de plantilla se rechaza con su motivo y no cambia lo vigente 3ms
+       × CFN2 — Una clave desconocida no se escribe 1ms
+       × CFN3 — La semilla llena una base vacía con los textos de respaldo 1ms
+       × CFN3 — La semilla no pisa un texto editado 1ms
+       × CFN3 — Correr la semilla dos veces no cambia nada 1ms
+  ⎯⎯⎯⎯⎯⎯ Failed Tests 18 ⎯⎯⎯⎯⎯⎯⎯
+   Test Files  2 failed (2)
+        Tests  18 failed | 2 passed (20)
+  ```
+
+  GREEN: 47 unitarias en `mensajes-fijos` y `compartido`, 10 de integración contra Postgres real
+  (`test/integracion/mensajes-fijos/mensajes-fijos.spec.ts`), y las pruebas de AGT3 y similares de los cuatro módulos
+  dueños siguen verdes (644 en agente, conversaciones, catalogo, llm y compartido); `typecheck`, `lint`, `fronteras`
+  y `contrato:deriva` verdes.
+- Detalles: `compartido/mensajes-fijos` solo trae la interfaz `DefinicionMensajeFijo`; cada dueño tiene su
+  `dominio/textos-fijos.ts` (catálogo con descripción en lenguaje del negocio, y los textos de respaldo que antes vivían
+  en sus repositorios) exportado por su barril; `mensajes-fijos/catalogo-real.ts` los compone en el orden de CFN1.
+  La prueba de integración más importante es la última: lo que siembra y guarda `mensajes-fijos` es exactamente lo que
+  lee cada repositorio dueño, de modo que «rige desde el siguiente mensaje» queda probado sin caché ni reinicio. La
+  descripción de `aviso_datos` advierte que es el aviso de asistente automatizado que exige R14 (Q3).
+- **Desviaciones:** (1) D4: los patrones de pesos y de plantilla solo existían dentro de `validar-estilo.ts`, así que
+  se movieron a `compartido/texto` y el estilo y los mensajes fijos los comparten (los tests del estilo no cambiaron).
+  (2) `GuardarMensajeFijo` guarda el texto sin los espacios y saltos de línea de los bordes y valida ya recortado; CFN2
+  no lo decía y un salto final se vería como una línea en blanco en WhatsApp. (3) El test `index.spec.ts` de `llm`
+  fijaba las exportaciones exactas del barril y ganó `TEXTOS_FIJOS_LLM`. (4) `AppModule` y el controlador llegan en T4,
+  como estaba previsto: este módulo todavía no se registra. Commit: ver historial (`feat(mensajes-fijos): …`).
+- **`size:exception` (escrita al cerrar):** ~920 líneas de autoría (sin este archivo): ≈ 540 de tests (unitarios, la
+  integración de 10 escenarios y los dobles) y ≈ 380 de producción, de las que ≈ 120 son el catálogo de cuatro módulos
+  que se **movió** (los textos de respaldo ya existían en sus repositorios) frente al forecast de ~400. El presupuesto
+  nunca se cumple recortando tests ni comentarios.
+ — Endpoints de mensajes fijos y semilla
 
 - `MensajesFijosController` con los dos endpoints, `@Roles('admin')`, códigos `mensaje-fijo-invalido` y
   `mensaje-fijo-desconocido`; `MensajesFijosModule` en `AppModule`; contrato regenerado en el mismo commit.

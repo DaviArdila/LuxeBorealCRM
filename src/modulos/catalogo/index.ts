@@ -42,3 +42,5 @@ export { ANGULOS_FOTO, esAnguloFoto, type AnguloFoto } from './dominio/angulo-fo
 export { FUENTE_CATALOGO, PestanaNoDisponible, type FuenteCatalogo } from './puertos/fuente-catalogo.js';
 export { FuenteCatalogoDirectorio } from './infraestructura/fuente-catalogo-directorio.js';
 export { FuenteCatalogoSheets } from './infraestructura/fuente-catalogo-sheets.js';
+// Fase 11b (CFN1): el catálogo de textos fijos que el admin edita desde `mensajes-fijos`.
+export { TEXTOS_FIJOS_CATALOGO } from './dominio/textos-fijos.js';

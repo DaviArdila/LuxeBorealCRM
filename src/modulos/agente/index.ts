@@ -9,3 +9,5 @@ export { ProveedorEstilo, type EstiloVigente } from './aplicacion/proveedor-esti
 export { PublicarEstilo, type ResultadoPublicacion } from './aplicacion/publicar-estilo.js';
 export { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
 export { ListarHistorialEstilo, type EstiloConHistorial } from './aplicacion/listar-historial-estilo.js';
+// Fase 11b (CFN1): el catálogo de textos fijos que el admin edita desde `mensajes-fijos`.
+export { TEXTOS_FIJOS_AGENTE } from './dominio/textos-fijos.js';
