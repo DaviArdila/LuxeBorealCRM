@@ -22,11 +22,14 @@ dejó la verificación de la migración a Angular Material (`odd/tasks/cliente-a
 
 ## Tareas
 
-- [ ] T1 — `prisma.config.ts` carga `.env` con `cargarArchivoEntorno()` (mismo mecanismo que `main.ts`). Ruta: inline
-      (un archivo, mecanismo ya existente).
-- [ ] T2 — `ci` del servicio corre `secretos:historial`. Ruta: inline (una línea).
-- [ ] T3 — Notas de Angular Material en `docs/PREGUNTAS_ABIERTAS.md` (P14), `docs/fases/README.md` (fila 11b) y
+- [x] T1 — `prisma.config.ts` carga `.env` con `cargarArchivoEntorno()` (mismo mecanismo que `main.ts`). Ruta: inline
+      (un archivo, mecanismo ya existente). Commit `8871bf2`. RED: `prisma:aplicar` con `P1000`. GREEN: «4 migrations
+      found», «No pending migrations to apply». `prisma:generar`, `typecheck`, `lint` y `fronteras` en verde.
+- [x] T2 — `ci` del servicio corre `secretos:historial`. Ruta: inline (una línea). Commit `40126ae`. Antes de
+      encadenarlo, `secretos:historial` en verde: «gitleaks: sin secretos detectados».
+- [x] T3 — Notas de Angular Material en `docs/PREGUNTAS_ABIERTAS.md` (P14), `docs/fases/README.md` (fila 11b) y
       `docs/analisis/06-cliente-back-office.md`; decisión de íconos en ADR-0022. Ruta: inline (notas mecánicas).
+      Lectura estructural.
 
 ## Checks
 
@@ -37,4 +40,4 @@ dejó la verificación de la migración a Angular Material (`odd/tasks/cliente-a
 
 ## Progreso
 
-Pendiente.
+Tareas completas. Falta la batería completa (`npm run ci`) antes del push y el PR contra `main`.

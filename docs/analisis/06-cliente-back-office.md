@@ -4,6 +4,9 @@
 > **Angular + PrimeNG en `cliente/`, dentro de este repo**, en lugar de React + Vite en un repo aparte. Siguen
 > vigentes de este documento las garantías de la API, la regla de seguridad y los requisitos de importación y
 > exportación; la recomendación de tecnología y la sección «Repo separado» quedan reemplazadas.
+>
+> **Enmendado otra vez (2026-10-05)**: PrimeNG dejó la licencia MIT desde su versión 22 y el cliente pasó a
+> **Angular Material** sobre Angular 22 (enmienda «Angular Material» de ADR-0022).
 
 - Fecha: 2026-09-23 · Estado: **recomendación, no se construye**; decisión final al inicio de la
   Fase 11, junto con P14 (`docs/PREGUNTAS_ABIERTAS.md`)
