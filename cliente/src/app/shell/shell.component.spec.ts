@@ -13,7 +13,7 @@ import { ShellComponent } from './shell.component';
 const BOT: DefinicionArea = {
   id: 'bot',
   titulo: 'Bot',
-  icono: 'pi pi-comments',
+  icono: 'forum',
   roles: ['admin'],
   menu: [
     { titulo: 'Estilo del bot', ruta: '/bot/estilo', roles: ['admin'] },
@@ -24,7 +24,7 @@ const BOT: DefinicionArea = {
 const PRUEBA: DefinicionArea = {
   id: 'prueba',
   titulo: 'Prueba',
-  icono: 'pi pi-star',
+  icono: 'star',
   roles: ['admin', 'asesor'],
   menu: [{ titulo: 'Pantalla de prueba', ruta: '/prueba/uno', roles: ['admin', 'asesor'] }],
   rutas: () => Promise.resolve([]),
@@ -77,7 +77,7 @@ describe('CLT5 — Cerrar sesión y aviso de permiso', () => {
   it('CLT5 — Cerrar sesión llama a cerrarSesion y vuelve al inicio de sesión', async () => {
     const { el, control } = await preparar(ADMIN, [BOT]);
 
-    el.querySelector<HTMLButtonElement>('[data-accion="cerrar-sesion"] button')!.click();
+    el.querySelector<HTMLButtonElement>('button[data-accion="cerrar-sesion"]')!.click();
     const peticion = control.expectOne('/api/v1/auth/sesion');
     expect(peticion.request.method).toBe('DELETE');
     peticion.flush(null, { status: 204, statusText: 'x' });

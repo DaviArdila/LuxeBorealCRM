@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { PasswordModule } from 'primeng/password';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
+import { MatFormField, MatLabel, MatSuffix } from '@angular/material/form-field';
+import { MatIcon } from '@angular/material/icon';
+import { MatInput } from '@angular/material/input';
+import { AvisoComponent } from '../compartido/aviso.component';
 import { leerProblema } from '../nucleo/problema';
 import { SesionServicio } from '../nucleo/sesion.servicio';
 
@@ -13,32 +13,55 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
 @Component({
   selector: 'app-entrar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, CardModule, FormsModule, InputTextModule, MessageModule, PasswordModule],
+  imports: [
+    AvisoComponent,
+    MatButton,
+    MatCard,
+    MatCardContent,
+    MatCardHeader,
+    MatCardTitle,
+    MatFormField,
+    MatIcon,
+    MatIconButton,
+    MatInput,
+    MatLabel,
+    MatSuffix,
+  ],
   template: `
     <main class="entrar">
-      <p-card class="tarjeta">
-        <ng-template #title>
-          <h1 class="titulo"><i class="pi pi-sparkles" aria-hidden="true"></i> LuxeBoreal</h1>
-        </ng-template>
-        <form class="formulario" (submit)="enviar($event)" novalidate>
-          <div class="campo">
-            <label for="email">Correo</label>
-            <input pInputText id="email" name="email" type="email" autocomplete="username" [fluid]="true"
-                   [value]="email()" (input)="email.set($any($event.target).value)" />
-          </div>
-          <div class="campo">
-            <label for="contrasena">Contraseña</label>
-            <p-password inputId="contrasena" [name]="'contrasena'" autocomplete="current-password"
-                        [feedback]="false" [toggleMask]="true" [fluid]="true"
-                        [ngModel]="contrasena()" (ngModelChange)="contrasena.set($event ?? '')"
-                        [ngModelOptions]="{ standalone: true }" />
-          </div>
-          @if (mensaje(); as texto) {
-            <p-message severity="error" role="alert">{{ texto }}</p-message>
-          }
-          <p-button type="submit" label="Entrar" icon="pi pi-sign-in" [fluid]="true" [disabled]="!puedeEnviar()" />
-        </form>
-      </p-card>
+      <mat-card class="tarjeta" appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
+            <h1 class="titulo"><mat-icon fontIcon="auto_awesome" aria-hidden="true" /> LuxeBoreal</h1>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form class="formulario" (submit)="enviar($event)" novalidate>
+            <mat-form-field appearance="outline">
+              <mat-label>Correo</mat-label>
+              <input matInput id="email" name="email" type="email" autocomplete="username"
+                     [value]="email()" (input)="email.set($any($event.target).value)" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Contraseña</mat-label>
+              <input matInput id="contrasena" name="contrasena" autocomplete="current-password"
+                     [type]="contrasenaVisible() ? 'text' : 'password'"
+                     [value]="contrasena()" (input)="contrasena.set($any($event.target).value)" />
+              <button mat-icon-button matSuffix type="button"
+                      [attr.aria-label]="contrasenaVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      [attr.aria-pressed]="contrasenaVisible()" (click)="contrasenaVisible.set(!contrasenaVisible())">
+                <mat-icon [fontIcon]="contrasenaVisible() ? 'visibility_off' : 'visibility'" aria-hidden="true" />
+              </button>
+            </mat-form-field>
+            @if (mensaje(); as texto) {
+              <app-aviso tipo="error">{{ texto }}</app-aviso>
+            }
+            <button mat-flat-button type="submit" [disabled]="!puedeEnviar()">
+              <mat-icon fontIcon="login" aria-hidden="true" />Entrar
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
     </main>
   `,
   styles: `
@@ -54,15 +77,13 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
       max-width: 24rem;
     }
     .titulo {
-      margin: 0;
-      font-size: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 1rem;
+      font: var(--mat-sys-headline-small);
     }
     .formulario {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .campo {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -77,6 +98,7 @@ export class EntrarComponent implements OnDestroy {
   protected readonly contrasena = signal('');
   protected readonly mensaje = signal<string | null>(null);
   protected readonly enviando = signal(false);
+  protected readonly contrasenaVisible = signal(false);
   private readonly segundosDeEspera = signal(0);
   private temporizador: ReturnType<typeof setInterval> | undefined;
 

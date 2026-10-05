@@ -24,7 +24,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["node_modules/primeicons/primeicons.css", "src/styles.css"]
+            "styles": ["node_modules/material-symbols/outlined.css", "src/styles.scss"]
           },
           "configurations": {
             "production": {

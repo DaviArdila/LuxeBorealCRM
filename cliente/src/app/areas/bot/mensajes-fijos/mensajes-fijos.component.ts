@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { MessageModule } from 'primeng/message';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
+import { MatButton } from '@angular/material/button';
+import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
+import { MatChip, MatChipSet } from '@angular/material/chips';
+import { MatIcon } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { AvisoComponent } from '../../../compartido/aviso.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { MensajesFijosServicio } from './mensajes-fijos.servicio';
@@ -17,57 +18,82 @@ const MAXIMO_CARACTERES = 1000;
   selector: 'app-mensajes-fijos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MensajesFijosServicio],
-  imports: [ButtonModule, CardModule, DatePipe, EditorConContadorComponent, MessageModule, TableModule, TagModule],
+  imports: [
+    AvisoComponent,
+    DatePipe,
+    EditorConContadorComponent,
+    MatButton,
+    MatCard,
+    MatCardContent,
+    MatCardHeader,
+    MatCardTitle,
+    MatChip,
+    MatChipSet,
+    MatIcon,
+    MatTableModule,
+  ],
   template: `
     <h1>Mensajes fijos</h1>
     @if (error(); as texto) {
-      <p-message severity="error" role="alert">{{ texto }}</p-message>
+      <app-aviso tipo="error">{{ texto }}</app-aviso>
     }
     @if (editando(); as clave) {
-      <p-card class="editor">
-        <ng-template #title><h2 class="titulo-tarjeta">Editando {{ clave }}</h2></ng-template>
-        <div class="formulario">
+      <mat-card appearance="outlined" class="editor">
+        <mat-card-header>
+          <mat-card-title><h2 class="titulo-tarjeta">Editando {{ clave }}</h2></mat-card-title>
+        </mat-card-header>
+        <mat-card-content class="formulario">
           <app-editor-con-contador etiqueta="Texto del mensaje" [maximo]="maximo" [(texto)]="borrador"
                                    [deshabilitado]="guardando()" />
           <div class="acciones">
-            <p-button label="Cancelar" severity="secondary" [text]="true" [disabled]="guardando()" (onClick)="cancelar()" />
-            <p-button label="Guardar" icon="pi pi-save" [disabled]="guardando()" (onClick)="guardar()" />
+            <button mat-button type="button" [disabled]="guardando()" (click)="cancelar()">Cancelar</button>
+            <button mat-flat-button type="button" [disabled]="guardando()" (click)="guardar()">
+              <mat-icon fontIcon="save" aria-hidden="true" />Guardar
+            </button>
           </div>
-        </div>
-      </p-card>
+        </mat-card-content>
+      </mat-card>
     }
-    <p-card>
-      <p-table [value]="servicio.mensajes()" dataKey="clave" [tableStyle]="{ 'min-width': '40rem' }">
-        <ng-template #header>
-          <tr>
-            <th>Mensaje</th>
-            <th>Texto</th>
-            <th>Estado</th>
-            <th><span class="oculto">Acciones</span></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-mensaje>
-          <tr [attr.data-clave]="mensaje.clave">
-            <td class="clave">
+    <mat-card appearance="outlined">
+      <mat-card-content class="desplazable">
+        <table mat-table [dataSource]="servicio.mensajes()" class="tabla">
+          <ng-container matColumnDef="mensaje">
+            <th mat-header-cell *matHeaderCellDef>Mensaje</th>
+            <td mat-cell *matCellDef="let mensaje" class="clave">
               <strong>{{ mensaje.clave }}</strong>
               <p class="descripcion">{{ mensaje.descripcion }}</p>
             </td>
-            <td><blockquote class="texto">{{ mensaje.texto }}</blockquote></td>
-            <td>
+          </ng-container>
+          <ng-container matColumnDef="texto">
+            <th mat-header-cell *matHeaderCellDef>Texto</th>
+            <td mat-cell *matCellDef="let mensaje"><blockquote class="texto">{{ mensaje.texto }}</blockquote></td>
+          </ng-container>
+          <ng-container matColumnDef="estado">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let mensaje">
               <div class="estado">
-                <p-tag [value]="mensaje.origen === 'base' ? 'Editado' : 'Texto de respaldo'"
-                       [severity]="mensaje.origen === 'base' ? 'success' : 'secondary'" />
+                <mat-chip-set>
+                  <mat-chip [highlighted]="mensaje.origen === 'base'">
+                    {{ mensaje.origen === 'base' ? 'Editado' : 'Texto de respaldo' }}
+                  </mat-chip>
+                </mat-chip-set>
                 @if (mensaje.actualizado) { <small class="fecha">{{ mensaje.actualizado | date: 'dd/MM/yyyy HH:mm' }}</small> }
               </div>
             </td>
-            <td>
-              <p-button label="Editar" icon="pi pi-pencil" severity="secondary" [outlined]="true" size="small"
-                        [disabled]="guardando()" (onClick)="editar(mensaje.clave, mensaje.texto)" />
+          </ng-container>
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef><span class="oculto">Acciones</span></th>
+            <td mat-cell *matCellDef="let mensaje">
+              <button mat-stroked-button type="button" [disabled]="guardando()" (click)="editar(mensaje.clave, mensaje.texto)">
+                <mat-icon fontIcon="edit" aria-hidden="true" />Editar
+              </button>
             </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </p-card>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+          <tr mat-row *matRowDef="let mensaje; columns: columnas" [attr.data-clave]="mensaje.clave"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
   `,
   styles: `
     :host {
@@ -92,15 +118,21 @@ const MAXIMO_CARACTERES = 1000;
       justify-content: flex-end;
       gap: 0.5rem;
     }
+    .desplazable {
+      overflow-x: auto;
+    }
+    .tabla {
+      min-width: 40rem;
+    }
     .descripcion {
       margin: 0.25rem 0 0;
-      color: var(--p-text-muted-color);
-      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
     }
     .texto {
       margin: 0;
       padding-left: 0.75rem;
-      border-left: 3px solid var(--p-content-border-color);
+      border-left: 3px solid var(--mat-sys-outline-variant);
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
@@ -111,7 +143,7 @@ const MAXIMO_CARACTERES = 1000;
       gap: 0.25rem;
     }
     .fecha {
-      color: var(--p-text-muted-color);
+      color: var(--mat-sys-on-surface-variant);
       white-space: nowrap;
     }
     .oculto {
@@ -126,6 +158,7 @@ const MAXIMO_CARACTERES = 1000;
 export class MensajesFijosComponent {
   protected readonly servicio = inject(MensajesFijosServicio);
   protected readonly maximo = MAXIMO_CARACTERES;
+  protected readonly columnas = ['mensaje', 'texto', 'estado', 'acciones'];
 
   protected readonly editando = signal<string | null>(null);
   protected readonly borrador = signal('');

@@ -20,7 +20,7 @@ export interface EntradaDeMenu {
 export interface DefinicionArea {
   readonly id: string;
   readonly titulo: string;
-  /** Clase de ícono de PrimeIcons, p. ej. `pi pi-comments`. */
+  /** Nombre del ícono de Material Symbols, p. ej. `forum`. */
   readonly icono: string;
   readonly roles: readonly Rol[];
   readonly menu: readonly EntradaDeMenu[];

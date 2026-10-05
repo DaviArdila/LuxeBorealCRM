@@ -7,6 +7,8 @@
   `npm --prefix cliente run api:generar` y `api:deriva`, del propio cliente)
 - Enmienda 2026-10-05: Angular 21 + PrimeNG 21.1.10 (MIT) en vez de Angular 22 + PrimeNG 22 (ver «Enmienda
   (2026-10-05)» abajo)
+- Enmienda 2026-10-05 (segunda): Angular Material + CDK reemplaza a PrimeNG (ver «Enmienda (2026-10-05, Angular
+  Material)» abajo)
 
 ## Resumen
 
@@ -51,8 +53,9 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
    bajado el 2026-10-05 (ver «Enmienda (2026-10-05)»): **Angular 21.2.x**, TypeScript 5.9, Vitest 4 + jsdom como runner
    de tests. El CLI 21 acepta Node ^20.19, ^22.12 o ≥ 24; `cliente/package.json` mantiene `engines.node >=24.15.0`,
    igual que la raíz del repositorio.
-2. **PrimeNG** (21.1.10, tema Aura con `@primeuix/themes` 2.0.3 y `primeicons` 7.0.0, todos MIT) como librería de
-   componentes.
+2. **Angular Material + CDK** (MIT, versionados junto con Angular) como librería de componentes, con tema Material 3
+   y los íconos de Material Symbols (`material-symbols`, Apache-2.0). Hasta el 2026-10-05 fue PrimeNG 21.1.10; ver
+   «Enmienda (2026-10-05, Angular Material)».
 3. **`cliente/`** en este repo, con su `package.json`, lockfile, lint y tests propios. El servidor no importa nada de
    `cliente/` ni el cliente nada de `src/`, `scripts/` o `test/`.
 4. **Cliente HTTP generado** con `ng-openapi-gen` desde `openapi/openapi.json` (`npm run cliente:generar`), commiteado y
@@ -81,7 +84,7 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 - **Gana**: un cambio de endpoint, su contrato y su cliente generado se revisan juntos; el dueño trabaja en un solo
   repo; las garantías de la API del doc 06 (permisos en el servidor, RFC 9457, `operationId` estables) siguen igual.
-- **Paga**: dos `node_modules`, una CI más larga y actualizaciones de Angular y PrimeNG que atender.
+- **Paga**: dos `node_modules`, una CI más larga y actualizaciones de Angular y de su librería de componentes que atender.
 - **Queda prohibido**: importar código entre `cliente/` y el servidor; editar a mano el cliente generado; guardar
   secretos o tokens en el cliente; decidir permisos solo en el cliente.
 - **Queda obligatorio**: regenerar el cliente en el mismo commit que cambia el contrato público; que toda llamada a la
@@ -108,3 +111,22 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
   generado pasan igual.
 - Decisión del dueño, 2026-10-05 (seguimiento en `odd/tasks/cliente-primeng-mit.md`). Esta sección se agrega sin
   borrar el razonamiento original de la Decisión.
+
+## Enmienda (2026-10-05, Angular Material)
+
+- **Cambio**: el cliente deja PrimeNG y usa **Angular Material + CDK** (alternativa C de la tabla), con tema
+  Material 3 que sigue el modo claro u oscuro del sistema y los íconos de Material Symbols (paquete
+  `material-symbols`, Apache-2.0). Se quitan `primeng`, `@primeuix/themes` y `primeicons`.
+- **Motivo**: la enmienda anterior dejó el cliente atado a Angular 21, porque PrimeNG 21 es la última versión MIT y
+  exige Angular 21. Angular 21 deja de recibir parches de seguridad alrededor de mayo de 2027. Angular Material es MIT,
+  lo mantiene el equipo de Angular y sale con cada versión del framework (`ng update` lo actualiza junto con Angular),
+  así que el cliente puede volver a la versión vigente. Migrar ahora cuesta cuatro vistas; más adelante costaría
+  mucho más.
+- **Lo que se paga**:
+  - Apariencia más genérica (Material Design) en vez del tema Aura.
+  - No hay tabla avanzada lista (filtros, columnas configurables, exportar): `mat-table` es una tabla de datos simple;
+    lo que falte se arma sobre el CDK o con otra pieza que pase por un ADR.
+  - Material no trae un mensaje en línea: el cliente tiene el suyo, `compartido/aviso.component.ts`.
+  - La fuente de íconos pesa unos 4 MB (se descarga una vez y queda en caché; no cuenta en el paquete inicial).
+- Decisión del dueño, 2026-10-05 (seguimiento en `odd/tasks/cliente-angular-material.md`). Esta sección se agrega sin
+  borrar la enmienda anterior ni el razonamiento original.
