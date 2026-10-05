@@ -5,6 +5,8 @@
 - Enmienda: `docs/analisis/06-cliente-back-office.md` (reemplaza su recomendación de React + Vite en un repo aparte)
 - Enmendado por: ADR-0023 (el servidor pasa a `servicio/`; `npm run cliente:generar` y `cliente:deriva` pasan a ser
   `npm --prefix cliente run api:generar` y `api:deriva`, del propio cliente)
+- Enmienda 2026-10-05: Angular 21 + PrimeNG 21.1.10 (MIT) en vez de Angular 22 + PrimeNG 22 (ver «Enmienda
+  (2026-10-05)» abajo)
 
 ## Resumen
 
@@ -45,10 +47,12 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 ## Decisión (A + 1)
 
-1. **Angular** estable más reciente, componentes standalone, signals, sin Zone.js. Fijado en la Fase 11b (T1,
-   2026-10-04): **Angular 22.2.1**, TypeScript 6, Vitest 5 + jsdom como runner de tests; el CLI exige Node ≥ 22.22.3 o
-   ≥ 24.15, así que `cliente/package.json` declara `engines.node >=24.15.0`.
-2. **PrimeNG** (22.1.2, tema Aura) como librería de componentes.
+1. **Angular**, componentes standalone, signals, sin Zone.js. Fijado en la Fase 11b (T1, 2026-10-04) en Angular 22 y
+   bajado el 2026-10-05 (ver «Enmienda (2026-10-05)»): **Angular 21.2.x**, TypeScript 5.9, Vitest 4 + jsdom como runner
+   de tests. El CLI 21 acepta Node ^20.19, ^22.12 o ≥ 24; `cliente/package.json` mantiene `engines.node >=24.15.0`,
+   igual que la raíz del repositorio.
+2. **PrimeNG** (21.1.10, tema Aura con `@primeuix/themes` 2.0.3 y `primeicons` 7.0.0, todos MIT) como librería de
+   componentes.
 3. **`cliente/`** en este repo, con su `package.json`, lockfile, lint y tests propios. El servidor no importa nada de
    `cliente/` ni el cliente nada de `src/`, `scripts/` o `test/`.
 4. **Cliente HTTP generado** con `ng-openapi-gen` desde `openapi/openapi.json` (`npm run cliente:generar`), commiteado y
@@ -85,3 +89,22 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
   área.
 - **Dashboard App de Chatwoot (P14)**: el mismo cliente se podrá embeber más adelante. Si Chatwoot y el cliente quedan
   en dominios distintos, la cookie `SameSite=Strict` no viaja dentro del iframe y hará falta revisar ADR-0021.
+
+## Enmienda (2026-10-05)
+
+- **Cambio**: el cliente baja de Angular 22 + PrimeNG 22.1.2 a **Angular 21.2.x + PrimeNG 21.1.10**, con
+  `@primeuix/themes` 2.0.3 y `primeicons` 7.0.0. TypeScript pasa a 5.9 y Vitest a 4, que son los que exige
+  `@angular/build` 21.
+- **Motivo**: `primeng` 22, `@primeuix/themes` 3 y `primeicons` 8 dejaron la licencia MIT y pasaron a la «PrimeUI
+  License», comercial. Su modalidad gratuita exige una clave, sin ella el cliente muestra el aviso «Invalid PrimeUI
+  License», y la licencia prohíbe quitar ese mecanismo. Hasta `primeng` 21.1.10, `@primeuix/themes` 2.0.3 y
+  `primeicons` 7.0.0 la licencia es MIT (la de `primeng` 21 cubre con MIT las versiones de la comunidad; las `-lts`
+  tienen licencia aparte y no se usan).
+- **Lo que se paga**: no hay versiones nuevas de PrimeNG con licencia MIT. El cliente queda en la línea 21 de Angular y
+  PrimeNG; cuando Angular 21 deje de recibir parches de seguridad, hay que revisar este ADR (pagar la licencia, cambiar
+  de librería de componentes o seguir sin parches).
+- **Sin cambios de código**: la API usada por el cliente (`providePrimeNG({ theme: { preset: Aura } })`, componentes
+  standalone, el builder `@angular/build`) es la misma en 21; el lint, los tests, el build y la deriva del cliente
+  generado pasan igual.
+- Decisión del dueño, 2026-10-05 (seguimiento en `odd/tasks/cliente-primeng-mit.md`). Esta sección se agrega sin
+  borrar el razonamiento original de la Decisión.
