@@ -128,6 +128,8 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
   - No hay tabla avanzada lista (filtros, columnas configurables, exportar): `mat-table` es una tabla de datos simple;
     lo que falte se arma sobre el CDK o con otra pieza que pase por un ADR.
   - Material no trae un mensaje en línea: el cliente tiene el suyo, `compartido/aviso.component.ts`.
-  - La fuente de íconos pesa unos 4 MB (se descarga una vez y queda en caché; no cuenta en el paquete inicial).
+  - La fuente de íconos pesa unos 4 MB (se descarga una vez y queda en caché; no cuenta en el paquete inicial). Se
+    mantiene la fuente en vez de registrar íconos SVG propios, que quitarían ese peso a cambio de mantener su código
+    (decisión del dueño, 2026-10-05).
 - Decisión del dueño, 2026-10-05 (seguimiento en `odd/tasks/cliente-angular-material.md`). Esta sección se agrega sin
   borrar la enmienda anterior ni el razonamiento original.

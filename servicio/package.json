@@ -44,7 +44,7 @@
     "catalogo:importar": "npm run herramienta -- scripts/cli.ts catalogo:importar",
     "changelog": "git-cliff --config ../cliff.toml --repository .. --output ../CHANGELOG.md",
     "ci:hook": "npm run lint && npm run typecheck && npm test && npm run contrato:deriva && npm run secretos && npm run commits",
-    "ci": "npm run prisma:generar && npm run ci:hook && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run evals && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
+    "ci": "npm run prisma:generar && npm run ci:hook && npm run secretos:historial && npm run fronteras && npm run test:cobertura && npm run test:e2e && npm run evals && npm run contrato:lint && npm run contrato:diff && npm run auditoria && npm run flujos"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.81",
