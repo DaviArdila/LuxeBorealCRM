@@ -69,7 +69,9 @@ export class ConfirmacionComponent {
     const referencia = this.dialogos.open(this.plantilla(), { width: '28rem', maxWidth: '92vw', autoFocus: 'dialog' });
     this.referencia = referencia;
     referencia.afterClosed().subscribe(() => {
-      if (this.referencia === referencia) this.referencia = null;
+      // Un diálogo ya reemplazado (cerrado y reabierto antes de terminar su animación) no cierra el nuevo.
+      if (this.referencia !== referencia) return;
+      this.referencia = null;
       this.abierta.set(false);
     });
   }

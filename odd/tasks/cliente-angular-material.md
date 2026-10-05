@@ -53,6 +53,15 @@ Se enmienda ADR-0022 otra vez.
       registro histórico de la decisión de entonces y fuera del alcance de esta tarea:
       `docs/PREGUNTAS_ABIERTAS.md` (P14), `docs/fases/README.md` (fila 11b) y la nota de
       `docs/analisis/06-cliente-back-office.md`.
+- [x] T4 — Hallazgos de la revisión: un cierre tardío del diálogo de confirmación cerraba el que se había
+      reabierto, y faltaba probar el botón que muestra la contraseña. Ruta: delegada (un escritor; código + specs +
+      este documento).
+      Evidencia: la spec de la confirmación ya existía; gana un `MatDialog` falso cuyo `afterClosed` decide el test,
+      con dos casos: Escape o el fondo equivalen a «Cancelar», y cerrar y reabrir antes de que termine el primer
+      cierre. RED observado solo en este último («expected false to be true» en `abierta()`); el arreglo hace que
+      `afterClosed` ignore una referencia ya reemplazada y queda GREEN. `entrar.component.spec.ts` gana el test del
+      botón mostrar/ocultar (`type` y `aria-pressed`). `npm --prefix cliente run ci` en verde (71 tests de componentes,
+      20 de herramientas, build y deriva).
 
 ## Test-first
 
@@ -72,13 +81,18 @@ Estrategia `auto-chain` con cadena `stacked-to-main` (CLAUDE.md). Previsión: ~5
 
 ## Progreso
 
-Completa. Ruta de las tres tareas: delegada (un escritor). Commits en `fix/cliente-angular-material`:
+Completa. Ruta de las cuatro tareas: delegada (un escritor para T1-T3 y otro para T4). Commits en
+`fix/cliente-angular-material`:
 
 | Tarea | Commit | Líneas de autoría (sin lockfile) |
 |---|---|---|
 | T1 | `e043c7e` fix(cliente): reemplazar PrimeNG por Angular Material | 590 + / 254 − |
 | T2 | `7bceec3` build(cliente): subir a Angular 22 con Angular Material 22 | 29 + / 20 − |
-| T3 | docs(cliente): documentar Angular Material (este commit) | ~45 |
+| T3 | `da24cf8` docs(cliente): documentar Angular Material | 37 + / 5 − |
+| T4 | fix(cliente): no cerrar un diálogo reabierto con el cierre del anterior (este commit) | ~100 |
+
+Revisión nativa de T1-T3 (`review-81a146ee3afe60c2`): aprobada con tres avisos informativos de fiabilidad, que T4
+resuelve.
 
 T1 pasa de ~400 líneas porque reescribe las cuatro vistas a la vez; partirla dejaría una mezcla de PrimeNG y Material
 que no compila sin las dos librerías. Siguiente paso: push y PR apilado sobre `fix/cliente-primeng-mit` (#84).
