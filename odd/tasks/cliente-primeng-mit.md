@@ -36,7 +36,14 @@ ADR-0022. Lo que se paga: no hay versiones nuevas de PrimeNG con licencia MIT.
       `angular-eslint` 21.4.0; el código no necesitó cambios. `cliente ci` en verde (65 tests,
       20 de herramientas, build y deriva), `auditoria:cliente` en verde y ningún paquete instalado
       con la «PrimeUI License».
-- [ ] T2 — Maquetar las pantallas con componentes de PrimeNG y una base de CSS global (delegada).
+- [x] T2 — Maquetar las pantallas con componentes de PrimeNG y una base de CSS global (delegada).
+      Inicio de sesión en `p-card` con `p-password`; shell con `p-toolbar` y `p-menu`; Estilo y
+      Mensajes fijos con `p-card`, `p-table`, `p-tag` y `p-dialog`; `styles.css` con fuente del
+      sistema, márgenes y colores de los tokens de Aura (sigue el modo oscuro del sistema). Sin
+      cambios de comportamiento ni de specs. Sin RED aplicable (solo presentación): `cliente ci` en
+      verde (65 tests, 20 de herramientas, build 658.93 kB contra el aviso de 700 kB, deriva) y
+      capturas de escritorio y móvil del inicio de sesión sin el aviso de licencia. Las pantallas
+      detrás del inicio de sesión no se capturaron porque la base no tiene usuarios.
 
 ## Checks
 

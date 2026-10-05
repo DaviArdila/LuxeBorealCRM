@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
 import { leerProblema } from '../../../nucleo/problema';
@@ -18,17 +21,20 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
   selector: 'app-estilo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [EstiloServicio],
-  imports: [ButtonModule, ConfirmacionComponent, DatePipe, EditorConContadorComponent, MessageModule],
+  imports: [
+    ButtonModule,
+    CardModule,
+    ConfirmacionComponent,
+    DatePipe,
+    EditorConContadorComponent,
+    MessageModule,
+    TableModule,
+    TagModule,
+  ],
   template: `
     <h1>Estilo del bot</h1>
-    @if (servicio.vigente(); as vigente) {
-      <p>
-        @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
-        · origen: {{ vigente.origen }}
-      </p>
-    }
     @if (recordatorioEvals()) {
-      <p-message severity="info">
+      <p-message severity="info" icon="pi pi-info-circle">
         Un estilo nuevo exige correr las evals reales antes de llegar a clientes
         (<code>EVALS_MODO=real npm run evals</code>).
       </p-message>
@@ -36,26 +42,98 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
     @if (motivo(); as texto) {
       <p-message severity="error" role="alert">{{ texto }}</p-message>
     }
-    <app-editor-con-contador etiqueta="Texto del estilo" [maximo]="maximo" [(texto)]="borrador" [deshabilitado]="ocupado()" />
-    <p-button label="Publicar" [disabled]="ocupado()" (onClick)="accion.set({ tipo: 'publicar' })" />
+    <p-card>
+      <ng-template #title>
+        @if (servicio.vigente(); as vigente) {
+          <span class="vigente">
+            @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
+            · origen: {{ vigente.origen }}
+          </span>
+        }
+      </ng-template>
+      <div class="formulario">
+        <app-editor-con-contador etiqueta="Texto del estilo" [maximo]="maximo" [(texto)]="borrador" [deshabilitado]="ocupado()" />
+        <div class="acciones">
+          <p-button label="Publicar" icon="pi pi-upload" [disabled]="ocupado()" (onClick)="accion.set({ tipo: 'publicar' })" />
+        </div>
+      </div>
+    </p-card>
 
-    <h2>Historial</h2>
-    <ul class="historial">
-      @for (version of servicio.historial(); track version.version) {
-        <li>
-          <strong>Versión {{ version.version }}</strong> · {{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}
-          <p>{{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}</p>
-          <p-button [label]="versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto'" severity="secondary"
-                    (onClick)="alternarTexto(version.version)" />
-          <p-button label="Restaurar" severity="secondary" [disabled]="ocupado()"
-                    (onClick)="accion.set({ tipo: 'restaurar', version: version.version })" />
-        </li>
-      }
-    </ul>
+    <p-card>
+      <ng-template #title><h2 class="titulo-tarjeta">Historial</h2></ng-template>
+      <p-table [value]="servicio.historial()" dataKey="version" [tableStyle]="{ 'min-width': '36rem' }">
+        <ng-template #header>
+          <tr>
+            <th>Versión</th>
+            <th>Fecha</th>
+            <th>Texto</th>
+            <th><span class="oculto">Acciones</span></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-version>
+          <tr>
+            <td><p-tag [value]="'Versión ' + version.version" severity="secondary" /></td>
+            <td class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td class="texto">{{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}</td>
+            <td>
+              <div class="acciones-fila">
+                <p-button [label]="versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto'" severity="secondary"
+                          [text]="true" size="small" (onClick)="alternarTexto(version.version)" />
+                <p-button label="Restaurar" icon="pi pi-history" severity="secondary" [outlined]="true" size="small"
+                          [disabled]="ocupado()" (onClick)="accion.set({ tipo: 'restaurar', version: version.version })" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
 
     <app-confirmacion [titulo]="tituloConfirmacion()" [mensaje]="mensajeConfirmacion()"
                       [abierta]="accion() !== null" (abiertaChange)="cerrarConfirmacion($event)"
                       (confirmar)="ejecutar()" />
+  `,
+  styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    h1,
+    .titulo-tarjeta {
+      margin: 0;
+    }
+    .titulo-tarjeta {
+      font-size: inherit;
+    }
+    .formulario {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .acciones {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .acciones-fila {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .fecha {
+      white-space: nowrap;
+    }
+    .texto {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .oculto {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
   `,
 })
 export class EstiloComponent {
