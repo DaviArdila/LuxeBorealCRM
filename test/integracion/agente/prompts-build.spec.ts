@@ -10,7 +10,10 @@ const RAIZ = path.resolve(import.meta.dirname, '..', '..', '..');
 
 describe('Prompts versionados en el build (T8, D8)', () => {
   it('npm run build deja los .md en dist/ y el cargador compilado los lee', async () => {
-    execFileSync('npx', ['nest', 'build'], { cwd: RAIZ, stdio: 'pipe' });
+    // El CLI de Nest con `node` directamente: `npx` en Windows es `npx.cmd` y `execFileSync` sin shell
+    // no lo encuentra (ENOENT).
+    const cliNest = path.join(RAIZ, 'node_modules', '@nestjs', 'cli', 'bin', 'nest.js');
+    execFileSync(process.execPath, [cliNest, 'build'], { cwd: RAIZ, stdio: 'pipe' });
 
     const carpeta = path.join(RAIZ, 'dist', 'modulos', 'agente', 'prompts');
     expect(existsSync(path.join(carpeta, 'reglas.v3.md'))).toBe(true);

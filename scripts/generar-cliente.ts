@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -38,6 +38,20 @@ async function correrGenerador(raiz: string, contrato: string | undefined, salid
   const args = [rutas.bin, '-c', rutas.config, '--output', salida];
   args.push('--input', contrato ?? rutas.contratoPorDefecto);
   await ejecutar(process.execPath, args, { cwd: rutas.cliente, maxBuffer: 16 * 1024 * 1024 });
+  await normalizarFinDeLinea(salida);
+}
+
+/**
+ * `ng-openapi-gen` escribe con el fin de línea del sistema (CRLF en Windows) y git guarda lo generado
+ * en LF (`.gitattributes`); sin normalizar, la deriva byte a byte falla en Windows y `cliente:generar`
+ * deja el árbol de trabajo modificado.
+ */
+async function normalizarFinDeLinea(directorio: string): Promise<void> {
+  for (const archivo of await listarArchivos(directorio)) {
+    const ruta = path.join(directorio, archivo);
+    const contenido = await readFile(ruta, 'utf8');
+    if (contenido.includes('\r\n')) await writeFile(ruta, contenido.replaceAll('\r\n', '\n'), 'utf8');
+  }
 }
 
 /** Lista las rutas relativas de todos los archivos bajo `directorio`, ordenadas. */

@@ -73,5 +73,8 @@ describe('Aislamiento de bases de prueba por worker (T1, integración)', () => {
       await clienteAdmin.query(`DROP DATABASE IF EXISTS "${nombreBaseOtroWorker}" WITH (FORCE)`);
       await clienteAdmin.end();
     }
-  });
+    // Clona la plantilla dentro del test: es la misma operación del `beforeAll` de
+    // `base-por-worker.setup.ts` y lleva su mismo presupuesto (`hookTimeout`, 60 s), no el de un test
+    // individual; bajo la contención de cuatro workers en Docker Desktop superaba los 20 s.
+  }, 60_000);
 });
