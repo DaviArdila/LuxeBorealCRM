@@ -46,8 +46,13 @@ Se enmienda ADR-0022 otra vez.
       descartó el `strictTemplates: false` y la supresión de diagnósticos que agrega la migración de core, porque el
       build pasa con los valores por defecto de la 22. `npm ci` reproduce el lockfile; `npm --prefix cliente run ci`
       en verde; `npm ls @angular/core @angular/material` muestra 22.2.1.
-- [ ] T3 — Actualizar la documentación que nombra PrimeNG (`docs/operacion/cliente-back-office.md` y
+- [x] T3 — Actualizar la documentación que nombra PrimeNG (`docs/operacion/cliente-back-office.md` y
       otras referencias vigentes). Ruta: delegada junto con T1-T2 (mismo escritor).
+      Evidencia: `docs/operacion/cliente-back-office.md` gana «Componentes, tema e íconos» y nombra Angular 22 con
+      Material; `README.md` nombra Angular Material. `cliente/README.md` no existe. Quedan con «PrimeNG», como
+      registro histórico de la decisión de entonces y fuera del alcance de esta tarea:
+      `docs/PREGUNTAS_ABIERTAS.md` (P14), `docs/fases/README.md` (fila 11b) y la nota de
+      `docs/analisis/06-cliente-back-office.md`.
 
 ## Test-first
 
@@ -67,5 +72,13 @@ Estrategia `auto-chain` con cadena `stacked-to-main` (CLAUDE.md). Previsión: ~5
 
 ## Progreso
 
-- T1 hecha (commit de unidad de trabajo `fix(cliente): reemplazar PrimeNG por Angular Material`).
-- T2 hecha (commit `build(cliente): subir a Angular 22 con Angular Material 22`).
+Completa. Ruta de las tres tareas: delegada (un escritor). Commits en `fix/cliente-angular-material`:
+
+| Tarea | Commit | Líneas de autoría (sin lockfile) |
+|---|---|---|
+| T1 | `e043c7e` fix(cliente): reemplazar PrimeNG por Angular Material | 590 + / 254 − |
+| T2 | `7bceec3` build(cliente): subir a Angular 22 con Angular Material 22 | 29 + / 20 − |
+| T3 | docs(cliente): documentar Angular Material (este commit) | ~45 |
+
+T1 pasa de ~400 líneas porque reescribe las cuatro vistas a la vez; partirla dejaría una mezcla de PrimeNG y Material
+que no compila sin las dos librerías. Siguiente paso: push y PR apilado sobre `fix/cliente-primeng-mit` (#84).
