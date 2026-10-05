@@ -1,8 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { PasswordModule } from 'primeng/password';
 import { leerProblema } from '../nucleo/problema';
 import { SesionServicio } from '../nucleo/sesion.servicio';
 
@@ -10,23 +13,60 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
 @Component({
   selector: 'app-entrar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, InputTextModule, MessageModule],
+  imports: [ButtonModule, CardModule, FormsModule, InputTextModule, MessageModule, PasswordModule],
   template: `
     <main class="entrar">
-      <h1>LuxeBoreal</h1>
-      <form (submit)="enviar($event)" novalidate>
-        <label for="email">Correo</label>
-        <input pInputText id="email" name="email" type="email" autocomplete="username"
-               [value]="email()" (input)="email.set($any($event.target).value)" />
-        <label for="contrasena">Contraseña</label>
-        <input pInputText id="contrasena" name="contrasena" type="password" autocomplete="current-password"
-               [value]="contrasena()" (input)="contrasena.set($any($event.target).value)" />
-        @if (mensaje(); as texto) {
-          <p-message severity="error" role="alert">{{ texto }}</p-message>
-        }
-        <p-button type="submit" label="Entrar" [disabled]="!puedeEnviar()" />
-      </form>
+      <p-card class="tarjeta">
+        <ng-template #title>
+          <h1 class="titulo"><i class="pi pi-sparkles" aria-hidden="true"></i> LuxeBoreal</h1>
+        </ng-template>
+        <form class="formulario" (submit)="enviar($event)" novalidate>
+          <div class="campo">
+            <label for="email">Correo</label>
+            <input pInputText id="email" name="email" type="email" autocomplete="username" [fluid]="true"
+                   [value]="email()" (input)="email.set($any($event.target).value)" />
+          </div>
+          <div class="campo">
+            <label for="contrasena">Contraseña</label>
+            <p-password inputId="contrasena" [name]="'contrasena'" autocomplete="current-password"
+                        [feedback]="false" [toggleMask]="true" [fluid]="true"
+                        [ngModel]="contrasena()" (ngModelChange)="contrasena.set($event ?? '')"
+                        [ngModelOptions]="{ standalone: true }" />
+          </div>
+          @if (mensaje(); as texto) {
+            <p-message severity="error" role="alert">{{ texto }}</p-message>
+          }
+          <p-button type="submit" label="Entrar" icon="pi pi-sign-in" [fluid]="true" [disabled]="!puedeEnviar()" />
+        </form>
+      </p-card>
     </main>
+  `,
+  styles: `
+    .entrar {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .tarjeta {
+      width: 100%;
+      max-width: 24rem;
+    }
+    .titulo {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .formulario {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
   `,
 })
 export class EntrarComponent implements OnDestroy {

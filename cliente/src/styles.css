@@ -1,1 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * Base global mínima: la apariencia de los componentes la pone el tema Aura de PrimeNG
+ * (`providePrimeNG` en app.config.ts). Aquí solo van tipografía, márgenes y los colores de página,
+ * tomados de los tokens del tema.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  background: var(--p-surface-50);
+  color: var(--p-text-color);
+}
+
+/* Aura sigue el modo oscuro del sistema (`darkModeSelector: 'system'`); el fondo de página lo acompaña. */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: var(--p-surface-950);
+  }
+}

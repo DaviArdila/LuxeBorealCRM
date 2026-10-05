@@ -8,13 +8,22 @@ import { DialogModule } from 'primeng/dialog';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ButtonModule, DialogModule],
   template: `
-    <p-dialog [header]="titulo()" [modal]="true" [visible]="abierta()" (visibleChange)="abierta.set($event)">
-      <p>{{ mensaje() }}</p>
+    <p-dialog [header]="titulo()" [modal]="true" [draggable]="false" [style]="{ width: '28rem' }"
+              [breakpoints]="{ '640px': '92vw' }" [visible]="abierta()" (visibleChange)="abierta.set($event)">
+      <p class="mensaje"><i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ mensaje() }}</p>
       <ng-template #footer>
-        <p-button label="Cancelar" severity="secondary" (onClick)="abierta.set(false)" />
-        <p-button label="Confirmar" (onClick)="aceptar()" />
+        <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="abierta.set(false)" />
+        <p-button label="Confirmar" icon="pi pi-check" (onClick)="aceptar()" />
       </ng-template>
     </p-dialog>
+  `,
+  styles: `
+    .mensaje {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin: 0;
+    }
   `,
 })
 export class ConfirmacionComponent {
