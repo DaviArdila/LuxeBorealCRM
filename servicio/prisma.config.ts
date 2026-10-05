@@ -1,5 +1,11 @@
 import path from 'node:path';
 import { defineConfig } from 'prisma/config';
+import { cargarArchivoEntorno } from './src/plataforma/config/cargar-archivo-entorno.js';
+
+// Prisma 7 con `prisma.config.ts` ya no carga `.env` por su cuenta: sin esta llamada,
+// `prisma migrate` cae en la URL de relleno de abajo y falla con P1000. Mismo cargador que
+// `main.ts`: no pisa variables ya definidas (CI, Testcontainers) y no hace nada en producción.
+cargarArchivoEntorno();
 
 // Prisma 7 (D6 de openspec/changes/fase-00a-esqueleto/design.md): la URL de conexión ya no va en
 // `prisma/schema.prisma`, sino en `datasource.url` de este archivo — es lo único que expone
