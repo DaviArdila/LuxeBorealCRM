@@ -11,7 +11,7 @@ del prototipo funcional `../ChatLuxeCRM`.
 | Carpeta | Qué es |
 |---|---|
 | `servicio/` | El servidor NestJS (API, bot, workers), con su `package.json` y sus dependencias |
-| `cliente/` | El back office en Angular, con su `package.json` y sus dependencias |
+| `cliente/` | El back office en Angular con Angular Material, con su `package.json` y sus dependencias |
 | `openapi/` | El contrato de la API que une a los dos |
 | `infra/` | Sistemas externos (Chatwoot local) y, más adelante, el despliegue |
 | `docs/`, `openspec/` | Documentación, decisiones y specs del producto |

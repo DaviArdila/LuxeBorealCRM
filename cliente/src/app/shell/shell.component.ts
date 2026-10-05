@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
-import type { MenuItem } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { MenuModule } from 'primeng/menu';
-import { MessageModule } from 'primeng/message';
-import { ToolbarModule } from 'primeng/toolbar';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { MatListItem, MatListItemTitle, MatListSubheaderCssMatStyler, MatNavList } from '@angular/material/list';
+import { MatToolbar } from '@angular/material/toolbar';
+import { AvisoComponent } from '../compartido/aviso.component';
 import { AREAS_REGISTRADAS } from '../nucleo/areas.token';
 import { AvisosServicio } from '../nucleo/avisos.servicio';
 import { SesionServicio } from '../nucleo/sesion.servicio';
@@ -16,33 +16,49 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
 @Component({
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonModule, MenuModule, MessageModule, RouterLink, RouterOutlet, ToolbarModule],
+  imports: [
+    AvisoComponent,
+    MatButton,
+    MatIcon,
+    MatListItem,
+    MatListItemTitle,
+    MatListSubheaderCssMatStyler,
+    MatNavList,
+    MatToolbar,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+  ],
   template: `
-    <p-toolbar class="barra">
-      <ng-template #start>
-        <a routerLink="/" class="marca"><i class="pi pi-sparkles" aria-hidden="true"></i> LuxeBoreal</a>
-      </ng-template>
-      <ng-template #end>
-        <div class="sesion">
-          <span class="usuario"><i class="pi pi-user" aria-hidden="true"></i> {{ sesion.usuario()?.nombre }}</span>
-          <p-button label="Cerrar sesión" icon="pi pi-sign-out" severity="secondary" [text]="true"
-                    data-accion="cerrar-sesion" (onClick)="cerrarSesion()" />
-        </div>
-      </ng-template>
-    </p-toolbar>
+    <mat-toolbar class="barra">
+      <a routerLink="/" class="marca"><mat-icon fontIcon="auto_awesome" aria-hidden="true" /> LuxeBoreal</a>
+      <span class="espacio"></span>
+      <span class="usuario"><mat-icon fontIcon="person" aria-hidden="true" /> {{ sesion.usuario()?.nombre }}</span>
+      <button mat-button type="button" data-accion="cerrar-sesion" (click)="cerrarSesion()">
+        <mat-icon fontIcon="logout" aria-hidden="true" />Cerrar sesión
+      </button>
+    </mat-toolbar>
     <div class="marco">
       <nav class="menu" aria-label="Menú principal">
-        <p-menu [model]="menu()">
-          <ng-template #submenuheader let-grupo>
-            <span class="grupo"><i [class]="grupo.icon" aria-hidden="true"></i> {{ grupo.label }}</span>
-          </ng-template>
-        </p-menu>
+        @for (area of areasVisibles(); track area.id) {
+          <mat-nav-list [attr.aria-labelledby]="'menu-' + area.id">
+            <h2 matSubheader class="grupo" [id]="'menu-' + area.id">
+              <mat-icon [fontIcon]="area.icono" aria-hidden="true" /> {{ area.titulo }}
+            </h2>
+            @for (entrada of area.menu; track entrada.ruta) {
+              <a mat-list-item [routerLink]="entrada.ruta" routerLinkActive #activa="routerLinkActive"
+                 [activated]="activa.isActive" [attr.aria-current]="activa.isActive ? 'page' : null">
+                <span matListItemTitle>{{ entrada.titulo }}</span>
+              </a>
+            }
+          </mat-nav-list>
+        }
       </nav>
       <main class="contenido">
         @if (avisos.permisoInsuficiente()) {
-          <p-message severity="warn" closable (onClose)="avisos.descartarPermisoInsuficiente()">
+          <app-aviso tipo="advertencia" [descartable]="true" (descartar)="avisos.descartarPermisoInsuficiente()">
             No tienes permiso para hacer eso. Si lo necesitas, pídeselo a un administrador.
-          </p-message>
+          </app-aviso>
         }
         <router-outlet />
       </main>
@@ -50,10 +66,11 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
   `,
   styles: `
     .barra {
-      display: block;
       position: sticky;
       top: 0;
       z-index: 1;
+      gap: 0.75rem;
+      background: var(--mat-sys-surface-container);
     }
     .marca {
       display: inline-flex;
@@ -61,16 +78,18 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
       gap: 0.5rem;
       font-size: 1.25rem;
       font-weight: 600;
-      color: var(--p-primary-color);
+      color: var(--mat-sys-primary);
       text-decoration: none;
     }
-    .sesion {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    .espacio {
+      flex: 1;
     }
     .usuario {
-      color: var(--p-text-muted-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface-variant);
     }
     .marco {
       display: flex;
@@ -83,11 +102,14 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
     }
     .menu {
       flex: 0 0 15rem;
+      border-radius: var(--mat-sys-corner-large);
+      background: var(--mat-sys-surface);
     }
     .grupo {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 0.5rem;
+      margin: 0;
     }
     .contenido {
       flex: 1 1 32rem;
@@ -121,15 +143,6 @@ export class ShellComponent {
       .map((area) => ({ ...area, menu: area.menu.filter((entrada) => entrada.roles.includes(rol)) }))
       .filter((area) => area.menu.length > 0);
   });
-
-  /** El menú de PrimeNG: un grupo por área visible y una entrada por pantalla, enlazadas con el router. */
-  protected readonly menu = computed<MenuItem[]>(() =>
-    this.areasVisibles().map((area) => ({
-      label: area.titulo,
-      icon: area.icono,
-      items: area.menu.map((entrada) => ({ label: entrada.titulo, routerLink: entrada.ruta })),
-    })),
-  );
 
   async cerrarSesion(): Promise<void> {
     try {

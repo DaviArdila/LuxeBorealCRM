@@ -1,0 +1,39 @@
+/*
+ * Tema global de Angular Material 3 (ADR-0022, enmienda 2026-10-05). `color-scheme: light dark` hace que
+ * los tokens `--mat-sys-*` sigan el modo claro u oscuro del sistema; los componentes y las pantallas leen
+ * sus colores de esos tokens, nunca de valores fijos.
+ */
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light dark;
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+      typography: (
+        plain-family: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
+        brand-family: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
+      ),
+      density: 0,
+    )
+  );
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font: var(--mat-sys-body-large);
+  line-height: 1.5;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+}

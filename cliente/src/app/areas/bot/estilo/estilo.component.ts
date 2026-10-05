@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { MessageModule } from 'primeng/message';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
+import { MatButton } from '@angular/material/button';
+import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
+import { MatChip, MatChipSet } from '@angular/material/chips';
+import { MatIcon } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { AvisoComponent } from '../../../compartido/aviso.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
 import { leerProblema } from '../../../nucleo/problema';
@@ -22,71 +23,93 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [EstiloServicio],
   imports: [
-    ButtonModule,
-    CardModule,
+    AvisoComponent,
     ConfirmacionComponent,
     DatePipe,
     EditorConContadorComponent,
-    MessageModule,
-    TableModule,
-    TagModule,
+    MatButton,
+    MatCard,
+    MatCardContent,
+    MatCardHeader,
+    MatCardTitle,
+    MatChip,
+    MatChipSet,
+    MatIcon,
+    MatTableModule,
   ],
   template: `
     <h1>Estilo del bot</h1>
     @if (recordatorioEvals()) {
-      <p-message severity="info" icon="pi pi-info-circle">
+      <app-aviso tipo="info">
         Un estilo nuevo exige correr las evals reales antes de llegar a clientes
         (<code>EVALS_MODO=real npm run evals</code>).
-      </p-message>
+      </app-aviso>
     }
     @if (motivo(); as texto) {
-      <p-message severity="error" role="alert">{{ texto }}</p-message>
+      <app-aviso tipo="error">{{ texto }}</app-aviso>
     }
-    <p-card>
-      <ng-template #title>
-        @if (servicio.vigente(); as vigente) {
-          <span class="vigente">
-            @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
-            · origen: {{ vigente.origen }}
-          </span>
-        }
-      </ng-template>
-      <div class="formulario">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>
+          @if (servicio.vigente(); as vigente) {
+            <span class="vigente">
+              @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
+              · origen: {{ vigente.origen }}
+            </span>
+          }
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="formulario">
         <app-editor-con-contador etiqueta="Texto del estilo" [maximo]="maximo" [(texto)]="borrador" [deshabilitado]="ocupado()" />
         <div class="acciones">
-          <p-button label="Publicar" icon="pi pi-upload" [disabled]="ocupado()" (onClick)="accion.set({ tipo: 'publicar' })" />
+          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="accion.set({ tipo: 'publicar' })">
+            <mat-icon fontIcon="upload" aria-hidden="true" />Publicar
+          </button>
         </div>
-      </div>
-    </p-card>
+      </mat-card-content>
+    </mat-card>
 
-    <p-card>
-      <ng-template #title><h2 class="titulo-tarjeta">Historial</h2></ng-template>
-      <p-table [value]="servicio.historial()" dataKey="version" [tableStyle]="{ 'min-width': '36rem' }">
-        <ng-template #header>
-          <tr>
-            <th>Versión</th>
-            <th>Fecha</th>
-            <th>Texto</th>
-            <th><span class="oculto">Acciones</span></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-version>
-          <tr>
-            <td><p-tag [value]="'Versión ' + version.version" severity="secondary" /></td>
-            <td class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
-            <td class="texto">{{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}</td>
-            <td>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title><h2 class="titulo-tarjeta">Historial</h2></mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="desplazable">
+        <table mat-table [dataSource]="servicio.historial()" class="tabla">
+          <ng-container matColumnDef="version">
+            <th mat-header-cell *matHeaderCellDef>Versión</th>
+            <td mat-cell *matCellDef="let version">
+              <mat-chip-set><mat-chip>Versión {{ version.version }}</mat-chip></mat-chip-set>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="fecha">
+            <th mat-header-cell *matHeaderCellDef>Fecha</th>
+            <td mat-cell *matCellDef="let version" class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="texto">
+            <th mat-header-cell *matHeaderCellDef>Texto</th>
+            <td mat-cell *matCellDef="let version" class="texto">
+              {{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef><span class="oculto">Acciones</span></th>
+            <td mat-cell *matCellDef="let version">
               <div class="acciones-fila">
-                <p-button [label]="versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto'" severity="secondary"
-                          [text]="true" size="small" (onClick)="alternarTexto(version.version)" />
-                <p-button label="Restaurar" icon="pi pi-history" severity="secondary" [outlined]="true" size="small"
-                          [disabled]="ocupado()" (onClick)="accion.set({ tipo: 'restaurar', version: version.version })" />
+                <button mat-button type="button" (click)="alternarTexto(version.version)">
+                  {{ versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto' }}
+                </button>
+                <button mat-stroked-button type="button" [disabled]="ocupado()"
+                        (click)="accion.set({ tipo: 'restaurar', version: version.version })">
+                  <mat-icon fontIcon="history" aria-hidden="true" />Restaurar
+                </button>
               </div>
             </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </p-card>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+          <tr mat-row *matRowDef="let version; columns: columnas"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
 
     <app-confirmacion [titulo]="tituloConfirmacion()" [mensaje]="mensajeConfirmacion()"
                       [abierta]="accion() !== null" (abiertaChange)="cerrarConfirmacion($event)"
@@ -114,6 +137,12 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
       display: flex;
       justify-content: flex-end;
     }
+    .desplazable {
+      overflow-x: auto;
+    }
+    .tabla {
+      min-width: 36rem;
+    }
     .acciones-fila {
       display: flex;
       gap: 0.5rem;
@@ -139,6 +168,7 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
 export class EstiloComponent {
   protected readonly servicio = inject(EstiloServicio);
   protected readonly maximo = MAXIMO_CARACTERES;
+  protected readonly columnas = ['version', 'fecha', 'texto', 'acciones'];
 
   protected readonly borrador = signal('');
   protected readonly motivo = signal<string | null>(null);

@@ -1,6 +1,6 @@
 # El cliente del back office
 
-**Resumen.** El cliente es una app web (Angular) que vive en `cliente/` y habla con la API por el contrato. Hoy tiene
+**Resumen.** El cliente es una app web (Angular 22 con Angular Material) que vive en `cliente/` y habla con la API por el contrato. Hoy tiene
 tres pantallas: iniciar sesión, **Estilo del bot** y **Mensajes fijos**, solo para el rol `admin`. En desarrollo se
 levantan la API (`servicio/`) y el cliente, y el navegador ve un solo origen. Qué se decidió y por qué:
 [ADR-0022](../adr/0022-cliente-angular-en-el-repo.md) y [ADR-0023](../adr/0023-estructura-servicio-y-cliente.md).
@@ -76,6 +76,25 @@ definición (`area.ts`), sus rutas y sus pantallas. Agregar un área es una carp
 `areas/registro/registro.ts`; el menú y las rutas salen del registro y del rol. Un área no importa de otra: si dos
 necesitan lo mismo, la pieza sube a `compartido/` (interfaz) o a `nucleo/` (transversal) y el lint lo hace cumplir. La
 guía para quien escribe código está en la skill `luxeboreal-arquitectura`, sección «Cliente».
+
+## Componentes, tema e íconos
+
+Las pantallas se arman con **Angular Material** (MIT, sale con cada versión de Angular; `ng update` lo actualiza junto
+con el framework).
+
+| Necesitas | Usa |
+|---|---|
+| Botón, tarjeta, campo de texto, tabla, diálogo, chip | El componente de Material (`mat-flat-button`, `mat-card`, `mat-form-field` + `matInput`, `mat-table`…) |
+| Un mensaje en línea (error, advertencia, información) | `<app-aviso tipo="error">` de `compartido/`; Material no trae uno |
+| Pedir confirmación antes de actuar | `<app-confirmacion>` de `compartido/` (abre un diálogo de Material) |
+| Un ícono | `<mat-icon fontIcon="nombre" aria-hidden="true" />`, con el nombre de [Material Symbols](https://fonts.google.com/icons) |
+| Un color | Un token del tema, p. ej. `var(--mat-sys-primary)` o `var(--mat-sys-on-surface-variant)`; nunca un valor fijo |
+
+- **Tema**: Material 3 en `cliente/src/styles.scss`; sigue el modo claro u oscuro del sistema.
+- **Íconos con `fontIcon`**, no como texto dentro de la etiqueta: así el nombre del ícono no aparece en el texto del
+  botón ni lo lee un lector de pantalla.
+- **Tablas**: `mat-table` es una tabla de datos simple. Filtros, columnas configurables o exportar no vienen listos; si
+  una pantalla los necesita, se decide en un ADR.
 
 ## Qué falta
 

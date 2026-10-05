@@ -123,6 +123,24 @@ describe('CLT4 — Pantalla de inicio de sesión', () => {
     expect(guardado).not.toContain('una-contrasena-larga');
   });
 
+  it('el botón del ojo muestra y oculta la contraseña', async () => {
+    const { fixture } = await preparar();
+    const el = fixture.nativeElement as HTMLElement;
+    const entrada = el.querySelector<HTMLInputElement>('[name="contrasena"]')!;
+
+    expect(entrada.type).toBe('password');
+    el.querySelector<HTMLButtonElement>('button[aria-label="Mostrar contraseña"]')!.click();
+    await fixture.whenStable();
+
+    expect(entrada.type).toBe('text');
+    const ocultar = el.querySelector<HTMLButtonElement>('button[aria-label="Ocultar contraseña"]')!;
+    expect(ocultar.getAttribute('aria-pressed')).toBe('true');
+    ocultar.click();
+    await fixture.whenStable();
+
+    expect(entrada.type).toBe('password');
+  });
+
   it('no envía nada si falta el correo o la contraseña', async () => {
     const { fixture, control } = await preparar();
 

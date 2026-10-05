@@ -1,8 +1,7 @@
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { MatIconRegistry } from '@angular/material/icon';
 import { provideRouter } from '@angular/router';
-import { providePrimeNG } from 'primeng/config';
-import Aura from '@primeuix/themes/aura';
 import { REGISTRO_DE_AREAS } from './areas/registro/registro';
 import { routes } from './app.routes';
 import { AREAS_REGISTRADAS } from './nucleo/areas.token';
@@ -16,7 +15,11 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([csrfInterceptor, erroresHttpInterceptor])),
     provideApiMismoOrigen(),
     provideRouter(routes),
-    providePrimeNG({ theme: { preset: Aura } }),
+    // Íconos: ligaduras de Material Symbols (paquete `material-symbols`, en angular.json) con `fontIcon`,
+    // para que el nombre del ícono no quede en el texto de los botones ni lo lea un lector de pantalla.
+    provideAppInitializer(() => {
+      inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined', 'mat-ligature-font');
+    }),
     { provide: AREAS_REGISTRADAS, useValue: REGISTRO_DE_AREAS },
   ],
 };
