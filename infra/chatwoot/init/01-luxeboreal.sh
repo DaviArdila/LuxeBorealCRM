@@ -2,7 +2,7 @@
 # Crea el rol y las bases de LuxeBorealCRM en el MISMO servidor Postgres de Chatwoot (ver comentario
 # en ../docker-compose.yml sobre la topología de producción de CLAUDE.md §Stack).
 # Corre solo al inicializar el volumen por primera vez (docker-entrypoint-initdb.d). Para un
-# volumen que ya existe: bash scripts/postgres-crear-bases.sh (misma lógica, idempotente).
+# volumen que ya existe: bash infra/chatwoot/postgres-crear-bases.sh (misma lógica, idempotente).
 set -euo pipefail
 : "${LUXEBOREAL_DB_PASSWORD:?LUXEBOREAL_DB_PASSWORD no está definido}"
 

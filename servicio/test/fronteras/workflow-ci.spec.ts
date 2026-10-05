@@ -17,7 +17,7 @@ const packageJson = JSON.parse(
 ) as { readonly scripts: Readonly<Record<string, string>> };
 
 const workflow = readFileSync(
-  new URL('../../.github/workflows/ci.yml', import.meta.url),
+  new URL('../../../.github/workflows/ci.yml', import.meta.url),
   'utf8',
 );
 

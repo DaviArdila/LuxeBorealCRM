@@ -5,6 +5,9 @@ vuelta atrás. Solo el estilo es editable: las reglas de dinero, datos y herrami
 exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de fondo:
 [ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md).
 
+> Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
+> `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
+
 ## Qué se puede y qué no
 
 | Se puede editar | No se puede editar |
@@ -13,7 +16,7 @@ exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de f
 | Viñetas, saltos de línea, uso de emojis | Cuándo usar cada herramienta, envíos, pagos, ubicación |
 | Cómo ofrece fotos y cómo saluda | La plantilla del turno (horario, instrucciones) |
 
-Si no hay estilo publicado, el bot usa el archivo del repositorio (`src/modulos/agente/prompts/estilo.v3.md`): nunca se
+Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
 queda sin estilo.
 
 ## El flujo recomendado

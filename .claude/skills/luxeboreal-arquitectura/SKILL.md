@@ -17,6 +17,11 @@ una regla de aquí choca con un ADR aceptado, gana el ADR y se corrige esta skil
 
 ## 1. Estructura
 
+El repositorio tiene dos aplicaciones hermanas (ADR-0023): el servidor en `servicio/` y el back office en `cliente/`
+(§13). Las rutas de las secciones 1 a 12 (`src/`, `test/`, `prisma/`, `scripts/`) son relativas a `servicio/`, y sus
+comandos se corren ahí. Lo que solo usa una aplicación vive dentro de ella; la raíz guarda documentación, el contrato
+(`openapi/`), la configuración de Git y GitHub, `infra/` y un `package.json` sin dependencias que encadena las dos.
+
 ```
 src/
 ├── main.ts                     bootstrap: pino, shutdown hooks, validación global
@@ -299,8 +304,8 @@ Convenciones y decisión completas en `docs/adr/0008-contrato-api-openapi.md` y
 9. Si cambió un endpoint: `openapi/openapi.json` y `openapi/openapi.interno.json` regenerados y
    commiteados en el mismo commit (`npm run contrato:generar`), `contrato:lint` (Spectral) y
    `contrato:diff` (oasdiff contra `main`) en verde (§10).
-10. Si cambió algo de `cliente/` o del contrato que consume: `npm run cliente:generar` y `npm run cliente:ci` en
-    verde (§13).
+10. Si cambió algo de `cliente/` o del contrato que consume: `npm --prefix cliente run api:generar` y
+    `npm --prefix cliente run ci` en verde (§13).
 
 ## 13. Cliente (`cliente/`, desde la Fase 11b)
 
@@ -311,7 +316,7 @@ relación con el servidor es el contrato (`openapi/openapi.json`). Guía para qu
   sesión, guardias, interceptores, `leerProblema`, `DefinicionArea`), `compartido/` (interfaz sin dominio),
   `shell/` (marco y menú), `sesion/` (inicio de sesión) y `areas/<area>/` (una funcionalidad de negocio). Componentes
   standalone, signals, sin Zone.js, `OnPush`; sufijos de Angular en inglés para componentes (`*.component.ts`) y en español para lo propio (`*.servicio.ts`, `*.interceptor.ts`).
-- **Fronteras** (`cliente/eslint.config.js`, probadas en `test/fronteras/cliente-fronteras.spec.ts`):
+- **Fronteras** (`cliente/eslint.config.js`, probadas en `cliente/herramientas/fronteras.spec.ts`):
 
   | Carpeta | Puede importar |
   |---|---|
@@ -323,18 +328,20 @@ relación con el servidor es el contrato (`openapi/openapi.json`). Guía para qu
   | `areas/registro` | `nucleo`, las definiciones de las áreas |
   | `areas/<x>` | `nucleo`, `compartido`, `api` y su propia carpeta; **nunca otra área** |
 
-  Nada importa de `src/`, `scripts/` ni `test/` del servidor (CLT1). Si dos áreas necesitan lo mismo, la pieza sube a
+  Nada importa de `servicio/` ni de `src/`, `scripts/` o `test/` del servidor (CLT1). Si dos áreas necesitan lo mismo, la pieza sube a
   `compartido/` o a `nucleo/`; si un área necesita datos de otro dominio, los pide a la API.
 - **Agregar un área**: carpeta `areas/<area>/` con `area.ts` (`DefinicionArea`: id, título, ícono, roles, menú y
   `rutas: () => import('./<area>.routes')`), sus rutas y sus pantallas, más **una línea** en `areas/registro/registro.ts`.
   No se toca el shell. Las rutas del área se cargan en diferido y la guardia de rol sale de `area.roles`.
-- **Contrato**: tras cambiar un endpoint, `npm run contrato:generar` y `npm run cliente:generar`, y se commitean los dos
-  (`cliente:deriva` falla si no). Los tipos de respuesta salen de `RespuestaDe<typeof funcionGenerada>`
+- **Contrato**: tras cambiar un endpoint, `npm --prefix servicio run contrato:generar` y
+  `npm --prefix cliente run api:generar`, y se commitean los dos (`api:deriva` falla si no). Los tipos de respuesta salen de `RespuestaDe<typeof funcionGenerada>`
   (`nucleo/tipos.ts`); no se escriben a mano. El encabezado `X-Luxe-Csrf` lo pone el interceptor, no cada pantalla.
 - **Permisos**: el cliente solo refleja lo que dice el servidor (`GET /api/v1/auth/yo`); ocultar una ruta no la protege.
   Nada de contraseñas, correos ni tokens en `localStorage`, `sessionStorage` ni en la URL.
 - **Estado**: un servicio con signals por pantalla que envuelve las funciones generadas; sin store global hasta que dos
   áreas compartan estado vivo (con su propio ADR). Los errores problem+json se leen con `leerProblema`, y el motivo del
   servidor se muestra tal cual, sin validar de nuevo en el cliente.
-- **Tests**: Vitest + `HttpTestingController` (sin navegador), con el nombre `<R#> — <escenario>`. `npm run cliente:ci` es
-  el último paso de `npm run ci`; `ci:hook` no lo incluye.
+- **Tests**: Vitest + `HttpTestingController` (sin navegador), con el nombre `<R#> — <escenario>`. Las pruebas de las
+  herramientas del cliente (fronteras, proxy, generación) viven en `cliente/herramientas/` y corren con
+  `npm run test:herramientas`. `npm run ci` del cliente (lint, tests, herramientas, build y `api:deriva`) corre en el
+  `npm run ci` de la raíz, después del servicio; el `ci:hook` del servicio no lo incluye.

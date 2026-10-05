@@ -1,4 +1,9 @@
-import { auditarDependencias, type ResultadoAuditoria } from './auditar-dependencias.js';
+import {
+  auditarDependencias,
+  leerDirectorioDeArgumentos,
+  type ResultadoAuditoria,
+} from './auditar-dependencias.js';
+import { resolverRaizRepositorio } from './herramientas.js';
 import { buscarSecretosEnArbol, buscarSecretosEnHistorial } from './buscar-secretos.js';
 import type { ResultadoBusquedaSecretos } from './buscar-secretos.js';
 import { verificarCommits, type ResultadoVerificacionCommits } from './verificar-commits.js';
@@ -11,7 +16,6 @@ import { importarCatalogo, type ResultadoImportarCatalogoCli } from './importar-
 import { anonimizarConversacion, type ResultadoAnonimizar } from './evals/anonimizar.js';
 import { promptEstilo, type ResultadoPromptEstiloCli } from './prompt-estilo.js';
 import { usuarioCrear, type ResultadoUsuarioCrearCli } from './usuario-crear.js';
-import { generarCliente, verificarDerivaCliente, type ResultadoCliente } from './generar-cliente.js';
 import { sembrarMensajesFijos, type ResultadoSembrarMensajesFijosCli } from './sembrar-mensajes-fijos.js';
 
 /**
@@ -41,8 +45,7 @@ type Resultado =
   | ResultadoAnonimizar
   | ResultadoPromptEstiloCli
   | ResultadoUsuarioCrearCli
-  | ResultadoSembrarMensajesFijosCli
-  | ResultadoCliente;
+  | ResultadoSembrarMensajesFijosCli;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -65,23 +68,21 @@ async function main(): Promise<void> {
     case 'commits':
       imprimirResultado(await verificarCommits());
       return;
-    case 'auditoria':
-      imprimirResultado(await auditarDependencias());
+    case 'auditoria': {
+      // `--directorio cliente` audita otra aplicación del repositorio con sus propias excepciones.
+      const directorio = leerDirectorioDeArgumentos(resto);
+      imprimirResultado(
+        directorio === undefined
+          ? await auditarDependencias()
+          : await auditarDependencias(resolverRaizRepositorio(), { directorio }),
+      );
       return;
-    case 'auditoria:cliente':
-      imprimirResultado(await auditarDependencias(undefined, { directorio: 'cliente' }));
-      return;
+    }
     case 'contrato:generar':
       imprimirResultado(await generarContrato());
       return;
     case 'contrato:deriva':
       imprimirResultado(await verificarDerivaContrato());
-      return;
-    case 'cliente:generar':
-      imprimirResultado(await generarCliente());
-      return;
-    case 'cliente:deriva':
-      imprimirResultado(await verificarDerivaCliente());
       return;
     case 'contrato:diff':
       imprimirResultado(await compararContrato());
@@ -110,7 +111,7 @@ async function main(): Promise<void> {
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
-          'auditoria, auditoria:cliente, cliente:generar, cliente:deriva, contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
+          'auditoria [--directorio <carpeta>], contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
           'semilla:geografia, catalogo:importar, evals:anonimizar, prompt:estilo, usuario:crear, mensajes:sembrar.\n',
       );
       process.exitCode = 1;

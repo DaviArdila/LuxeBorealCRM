@@ -5,7 +5,7 @@ coverage/
 .env.*
 !.env.example
 *.log
-src/plataforma/prisma/generado/
+servicio/src/plataforma/prisma/generado/
 *.tsbuildinfo
 
 # Overrides locales de Claude Code (no compartidos con el equipo)

@@ -5,6 +5,9 @@ inventa, el sistema **no la envía**: pide al modelo que responda de nuevo una v
 un asesor**. El asesor ve el aviso de fallo del bot. Esta guía explica qué verás, cómo investigarlo y cómo correr las
 evals reales que miden todo esto. Los requisitos están en [`AGT23` a `AGT26`](../../openspec/changes/fix-fallas-criticas-evals-agente/specs/agente/spec.md).
 
+> Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
+> `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
+
 ## Qué pasa cuando el bot dice un monto sin rastro
 
 | Paso | Qué hace el sistema | Qué ve el cliente |

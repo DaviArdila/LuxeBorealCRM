@@ -20,6 +20,10 @@ estado real, tarea en curso, reglas de trabajo y límites del entorno. Para el q
   dentro de `npm run ci`. Queda su prueba `[manual]` (el dueño recorre las pantallas), la aceptación de ADR-0022 y de dos
   excepciones de auditoría nuevas. Cierre en `openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/verify-report.md`;
   guía en `docs/operacion/cliente-back-office.md`.
+- **Estructura (ADR-0023, `propuesta`, 2026-10-04):** el servidor vive en `servicio/` y el back office en `cliente/`,
+  cada uno con su `package.json` y su `ci`; la raíz solo encadena (`npm run instalar`, `npm run ci`). Los comandos del
+  servidor se corren dentro de `servicio/` (o `npm --prefix servicio run …`). Seguimiento en
+  `odd/tasks/separar-servicio-cliente.md`.
 - Orden siguiente: 11c (solo `idea`, necesita su spec y un ADR de esquema) → 09a → 09b → 10 → 12-14. La Fase 11 se adelantó antes de la 09 y la 10 por
   decisión del dueño (P8 enmendada).
 
@@ -35,7 +39,7 @@ a `en curso`.
 La 11b está cerrada. La **11c** (bot configurable) es solo una idea: necesita su spec, un ADR de esquema y la aprobación del
 dueño. La **09a** (operación sin VPS) sigue en su orden de `docs/fases/README.md`. Lo aprendido en la 11b que las afecta
 está al final de su `verify-report.md`: un área nueva del cliente es una carpeta y una línea, y cada cambio de endpoint pide
-`npm run contrato:generar` y `npm run cliente:generar`.
+`npm --prefix servicio run contrato:generar` y `npm --prefix cliente run api:generar`.
 
 ## Cómo se trabaja cada tarea
 
@@ -58,11 +62,13 @@ está al final de su `verify-report.md`: un área nueva del cliente es una carpe
 
 ## Antes de cada push
 
-Corre la batería completa:
+Corre la batería completa dentro de `servicio/`, y la del cliente si lo tocaste:
 
 ```
+cd servicio
 npm run lint && npm run typecheck && npm run fronteras && npm run contrato:deriva && npm run commits
 npm test && npm run test:integracion && npm run test:e2e && npm run evals
+npm --prefix ../cliente run ci
 ```
 
 ## Límites del entorno en la nube
@@ -72,14 +78,14 @@ npm test && npm run test:integracion && npm run test:e2e && npm run evals
 | Docker no arranca solo | `dockerd` sí está instalado: levántalo en segundo plano (`dockerd > /tmp/dockerd.log 2>&1 &`) y la batería completa, con Testcontainers, `gitleaks` y `actionlint`, corre en la sesión (así se cerró la 11a). Si aun así no hay Docker, compara las fallas contra `main` y déjalo escrito en el PR. |
 | Node 22 en vez de 24 | La batería pasa con Node 22. `npm install` con el npm 10 que trae reescribe el lockfile (quita los campos `libc`): para agregar una dependencia usa `npx -y npm@11 install <paquete>`. |
 | El hook `pre-push` falla sin Docker | `git push --no-verify` solo con la justificación escrita en el PR y después de confirmar que esas fallas existen igual en `main`. |
-| No hay `.env` ni secretos | Usa `.env.example`. Nunca crees, commitees ni imprimas tokens o claves. |
+| No hay `.env` ni secretos | Usa `servicio/.env.example`. Nunca crees, commitees ni imprimas tokens o claves. |
 | No hay `gentle-ai`, Engram ni CodeGraph | Sin revisión RDD nativa. `tasks.md` es la memoria. Explora con búsqueda normal. |
 | No existe `../ChatLuxeCRM` | El prototipo no está disponible. Usa `docs/analisis/` y `docs/migracion/inventario.md`. |
 | Las skills globales del dueño no están | Solo existen las de `.claude/skills/`. Lo esencial de las globales está en este documento. |
 
 **Fallas conocidas que no son tuyas:**
 
-- `test/integracion/agente/prompts-build.spec.ts` falla solo en Windows (`spawnSync npx ENOENT`).
+- `servicio/test/integracion/agente/prompts-build.spec.ts` falla solo en Windows (`spawnSync npx ENOENT`).
 - `npm error code EALLOWSCRIPTS` es ruido de la configuración local del dueño.
 
 ## Publicar
@@ -95,7 +101,7 @@ Autorización durable del dueño (`CLAUDE.md`, «Publicar y encadenar fases»):
 ## Cuándo detenerte y preguntar
 
 - La puerta de aprobación no se cumple.
-- Una tarea exige cambiar el esquema de datos (`prisma/schema.prisma`) o una regla de negocio.
+- Una tarea exige cambiar el esquema de datos (`servicio/prisma/schema.prisma`) o una regla de negocio.
 - Aparece una decisión que no está en la spec. Anótala en `docs/PREGUNTAS_ABIERTAS.md` con número
   y pregunta.
 - Una tarea está marcada `[manual]`. Déjala listada al cerrar; no bloquea lo demás.

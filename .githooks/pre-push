@@ -4,7 +4,9 @@
 # prefijo literal de ci") — lint, typecheck, tests unitarios, secretos y commitlint. Nunca corre
 # tests de integración ni e2e (se quedan en CI). Se salta explícitamente con
 # `git push --no-verify`, y ese salto queda visible en la terminal porque este hook nunca corre.
+# `ci:hook` es del servicio (ADR-0023): el hook entra a `servicio/` desde la raíz del repositorio.
 echo "pre-push: corriendo lint, typecheck, tests unitarios, secretos y commitlint (npm run ci:hook)..."
+cd "$(git rev-parse --show-toplevel)/servicio" || exit 1
 npm run ci:hook
 codigo=$?
 if [ "$codigo" -ne 0 ]; then

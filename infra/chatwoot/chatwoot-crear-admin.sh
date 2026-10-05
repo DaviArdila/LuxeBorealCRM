@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Crea (idempotente) la cuenta "LuxeBorealCRM" y un usuario administrador en el Chatwoot local, y
 # devuelve su token de acceso (el que pide chatwoot-bootstrap.sh). Evita el registro manual en la UI.
-# Uso: bash scripts/chatwoot-crear-admin.sh <email> <password>
+# Uso: bash infra/chatwoot/chatwoot-crear-admin.sh <email> <password>
 set -euo pipefail
-EMAIL="${1:?Uso: bash scripts/chatwoot-crear-admin.sh <email> <password>}"
+EMAIL="${1:?Uso: bash infra/chatwoot/chatwoot-crear-admin.sh <email> <password>}"
 PASS="${2:?falta password}"
-RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 docker compose -f "$RAIZ/infra/chatwoot/docker-compose.yml" --project-name chatwoot-local exec -T rails \
   bundle exec rails runner "
     account = Account.find_or_create_by!(name: 'LuxeBorealCRM')

@@ -34,8 +34,11 @@ por el entorno, los fallos reales quedan escondidos entre los falsos.
 
 - [x] T1 — `main`: LF en el generador del cliente, `nest build` sin `npx` y presupuesto de PER10
       (inline; cambios pequeños y ya entendidos, sin investigación pendiente).
-- [ ] T2 — `ccr-51a2b6d0-2fsxtk`: el mismo arreglo en `cliente/herramientas/api.mjs` y en
-      `servicio/test/integracion/agente/prompts-build.spec.ts`.
+- [x] T1 cerrada con `d800bea`, fusionada en `main` por el PR #83 (`75216dd`).
+- [x] T2 — `ccr-51a2b6d0-2fsxtk`: merge de `main` (inline). Las dos pruebas movidas a
+      `servicio/test/` llegan solas; `scripts/generar-cliente.ts` y `test/fronteras/cliente-deriva.spec.ts`
+      ya no existen en la rama (los reemplaza `cliente/herramientas/`), así que el arreglo de LF y su
+      prueba se aplican en `cliente/herramientas/api.mjs` y `api.spec.ts`.
 
 ## Checks
 
@@ -55,4 +58,9 @@ por el entorno, los fallos reales quedan escondidos entre los falsos.
 - Nota de entorno, no del repo: `~/.npmrc` con `allow-scripts` hace fallar `npm ci` con npm 11.17
   (ver `conexion-redis-perezosa.md`, T5); se corrió con un `.npmrc` vacío vía `NPM_CONFIG_USERCONFIG`.
 
-Siguiente: T2.
+- T2 (mismo entorno): RED observado en `api.spec.ts` (deriva y LF) antes de tocar `api.mjs`; después,
+  en `servicio/`: `prisma:generar`, `ci:hook`, `fronteras`, `test:cobertura` (246 archivos, 1742
+  tests), `test:e2e`, `evals`, `contrato:lint`, `contrato:diff`, `auditoria`, `flujos`; en `cliente/`:
+  `ci` y `auditoria:cliente`. Todo en verde y `git status` limpio tras regenerar el cliente.
+
+Siguiente: el PR #82 sigue su revisión normal.

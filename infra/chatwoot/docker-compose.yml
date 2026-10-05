@@ -1,7 +1,7 @@
 # Chatwoot local (bandeja humana, ADR-0005, SPEC.md R6). Adaptado del docker-compose.production.yaml
 # oficial: imagen pineada (los webhooks del Agent Bot van firmados desde v4.13), puerto 3001 en el
 # host para no chocar con `npm run start:dev` (3000), healthchecks para poder esperar desde scripts.
-# Uso: bash scripts/chatwoot-up.sh   (o docker compose -f infra/chatwoot/docker-compose.yml ...)
+# Uso: bash infra/chatwoot/chatwoot-up.sh   (o docker compose -f infra/chatwoot/docker-compose.yml ...)
 #
 # Portado de ../ChatLuxeCRM/infra/chatwoot/docker-compose.yml (docs/migracion/inventario.md línea 56):
 # mismo mecanismo, renombrado `chatluxecrm` → `luxeboreal` en el rol/bases del bot (ver init/).

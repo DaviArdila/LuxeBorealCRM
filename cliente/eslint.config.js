@@ -4,7 +4,7 @@ import boundaries from 'eslint-plugin-boundaries';
 import tseslint from 'typescript-eslint';
 
 // Fronteras de D10 (openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/design.md), probadas con código que
-// las viola en test/fronteras/cliente-fronteras.spec.ts de la raíz. Sin el resolvedor de TypeScript
+// las viola en herramientas/fronteras.spec.ts (npm run test:herramientas). Sin el resolvedor de TypeScript
 // los imports sin extensión quedan sin resolver y ninguna regla de fronteras actúa, sin avisar.
 const ELEMENTOS = [
   { type: 'registro', pattern: 'src/app/areas/registro', partialMatch: false }, // antes que `area`
@@ -31,13 +31,14 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
-      // CLT1: el cliente jamás importa código del servidor; su única relación es el contrato.
+      // CLT1: el cliente jamás importa código del servidor; su única relación es el contrato. El
+      // servidor vive en `servicio/` (ADR-0023); `src|scripts|test` cubren las rutas de antes.
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              regex: '(^|/)\\.\\./(\\.\\./)*(src|scripts|test)(/|$)',
+              regex: '(^|/)\\.\\./(\\.\\./)*(servicio|src|scripts|test)(/|$)',
               message: 'CLT1: el cliente no importa código del servidor; usa el cliente generado desde el contrato.',
             },
           ],

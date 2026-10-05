@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { GeografiaModule, SembrarGeografia } from '../src/modulos/geografia/index.js';
 import { ConfiguracionModule } from '../src/plataforma/config/index.js';
-import { resolverRaizRepositorio } from './herramientas.js';
+import { resolverRaizServicio } from './herramientas.js';
 
 /**
  * Módulo raíz mínimo del contexto de la semilla (design.md D8): compone la configuración global
@@ -26,7 +26,7 @@ export interface ResultadoSemillaGeografia {
  */
 export async function sembrarGeografia(): Promise<ResultadoSemillaGeografia> {
   try {
-    const raiz = resolverRaizRepositorio();
+    const raiz = resolverRaizServicio();
     const textoFuente = await readFile(path.join(raiz, 'prisma/datos/divipola.json'), 'utf8');
 
     const contexto = await NestFactory.createApplicationContext(ContextoSemillaGeografia, {

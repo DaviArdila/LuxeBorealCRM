@@ -4,13 +4,13 @@
 # En el VPS (Dokploy) se corre el mismo SQL contra el servicio Postgres del template de Chatwoot,
 # si se adopta esa topología (ver comentario en infra/chatwoot/docker-compose.yml).
 set -euo pipefail
-RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIR="$RAIZ/infra/chatwoot"
 COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name luxeborealcrm-chatwoot)
 
 PASS="$(grep -E '^LUXEBOREAL_DB_PASSWORD=' "$DIR/.env" | cut -d= -f2-)"
 if [ -z "$PASS" ]; then
-  echo "LUXEBOREAL_DB_PASSWORD no está en $DIR/.env (agrégalo o vuelve a correr scripts/chatwoot-up.sh)" >&2
+  echo "LUXEBOREAL_DB_PASSWORD no está en $DIR/.env (agrégalo o vuelve a correr infra/chatwoot/chatwoot-up.sh)" >&2
   exit 1
 fi
 

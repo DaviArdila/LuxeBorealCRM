@@ -1,6 +1,9 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   auditarDependencias,
+  leerDirectorioDeArgumentos,
   evaluarHallazgos,
   parsearHallazgosNpmAudit,
   type ExcepcionAuditoria,
@@ -106,35 +109,59 @@ describe('scripts/auditar-dependencias — auditarDependencias (integración rea
   );
 });
 
-describe('CI10 — auditarDependencias sobre el cliente', () => {
+describe('CI10 — auditarDependencias sobre otra aplicación del repositorio (ADR-0023)', () => {
   const hallazgoDeCliente = {
     vulnerabilities: { 'eslint-plugin-boundaries': { severity: 'high' }, braces: { severity: 'high' } },
   };
 
-  it('CI10 — Audita el directorio pedido y aplica las excepciones versionadas de la raíz', async () => {
+  /** Una aplicación de prueba con su propio `auditoria-excepciones.json`. */
+  async function aplicacionConExcepciones(paquetes: string[]): Promise<string> {
+    const raiz = await mkdtemp(path.join(tmpdir(), 'luxe-auditoria-'));
+    await mkdir(path.join(raiz, 'cliente'));
+    const excepciones = paquetes.map((paquete) => ({ ...excepcionVigente, id: paquete, paquete }));
+    await writeFile(path.join(raiz, 'cliente', 'auditoria-excepciones.json'), JSON.stringify(excepciones), 'utf8');
+    return raiz;
+  }
+
+  it('CI10 — Audita el directorio pedido y aplica las excepciones de ese directorio', async () => {
+    const raiz = await aplicacionConExcepciones(['eslint-plugin-boundaries', 'braces']);
     const directoriosAuditados: string[] = [];
+    try {
+      const resultado = await auditarDependencias(raiz, {
+        fechaActual: HOY,
+        directorio: 'cliente',
+        ejecutarAuditoria: (cwd) => {
+          directoriosAuditados.push(cwd);
+          return hallazgoDeCliente;
+        },
+      });
 
-    const resultado = await auditarDependencias(raizDelProyecto, {
-      fechaActual: HOY,
-      directorio: 'cliente',
-      ejecutarAuditoria: (cwd) => {
-        directoriosAuditados.push(cwd);
-        return hallazgoDeCliente;
-      },
-    });
-
-    expect(directoriosAuditados).toEqual([path.join(raizDelProyecto, 'cliente')]);
-    expect(resultado.limpio).toBe(true);
+      expect(directoriosAuditados).toEqual([path.join(raiz, 'cliente')]);
+      expect(resultado.limpio).toBe(true);
+    } finally {
+      await rm(raiz, { recursive: true, force: true });
+    }
   });
 
-  it('CI10 — Una vulnerabilidad alta del cliente sin excepción hace fallar y nombra el paquete', async () => {
-    const resultado = await auditarDependencias(raizDelProyecto, {
-      fechaActual: HOY,
-      directorio: 'cliente',
-      ejecutarAuditoria: () => ({ vulnerabilities: { 'paquete-nuevo-del-cliente': { severity: 'high' } } }),
-    });
+  it('CI10 — Las excepciones de otra aplicación no cubren un hallazgo: falla y nombra el paquete', async () => {
+    // braces tiene excepción en servicio/auditoria-excepciones.json, pero aquí no cuenta.
+    const raiz = await aplicacionConExcepciones(['eslint-plugin-boundaries']);
+    try {
+      const resultado = await auditarDependencias(raiz, {
+        fechaActual: HOY,
+        directorio: 'cliente',
+        ejecutarAuditoria: () => hallazgoDeCliente,
+      });
 
-    expect(resultado.limpio).toBe(false);
-    expect(resultado.mensaje).toContain('paquete-nuevo-del-cliente');
+      expect(resultado.limpio).toBe(false);
+      expect(resultado.mensaje).toContain('braces');
+    } finally {
+      await rm(raiz, { recursive: true, force: true });
+    }
+  });
+
+  it('CI10 — leerDirectorioDeArgumentos toma --directorio y, sin él, audita el servicio', () => {
+    expect(leerDirectorioDeArgumentos(['--directorio', 'cliente'])).toBe('cliente');
+    expect(leerDirectorioDeArgumentos([])).toBeUndefined();
   });
 });

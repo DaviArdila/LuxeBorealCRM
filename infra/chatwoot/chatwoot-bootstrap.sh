@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Crea (idempotente) en Chatwoot local: inbox tipo API "WhatsApp (pruebas)" y el Agent Bot apuntando a
 # este servicio, y lo asigna al inbox. Imprime las variables para .env.
-# Uso: bash scripts/chatwoot-bootstrap.sh <token de acceso de un administrador> [url chatwoot] [url bot]
+# Uso: bash infra/chatwoot/chatwoot-bootstrap.sh <token de acceso de un administrador> [url chatwoot] [url bot]
 set -euo pipefail
-TOKEN="${1:?Uso: bash scripts/chatwoot-bootstrap.sh <admin_token> [http://localhost:3001] [http://host.docker.internal:3000/api/v1/webhooks/chatwoot]}"
+TOKEN="${1:?Uso: bash infra/chatwoot/chatwoot-bootstrap.sh <admin_token> [http://localhost:3001] [http://host.docker.internal:3000/api/v1/webhooks/chatwoot]}"
 CW="${2:-http://localhost:3001}"
 BOT_URL="${3:-http://host.docker.internal:3000/api/v1/webhooks/chatwoot}"
 NOMBRE_INBOX="WhatsApp (pruebas)"
@@ -50,7 +50,7 @@ echo "→ Bot $BOT_ID asignado al inbox $INBOX_ID"
 
 cat <<MSG
 
-Copia esto en tu .env (raíz del proyecto):
+Copia esto en servicio/.env:
 
 CHATWOOT_URL=$CW
 CHATWOOT_ACCOUNT_ID=$ACC

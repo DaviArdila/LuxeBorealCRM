@@ -5,6 +5,9 @@ iniciar sesión, la API deja una cookie `httpOnly` que el navegador manda sola; 
 inactividad o por duración máxima. Cerrar sesión o desactivar a alguien corta el acceso en la siguiente petición.
 Decisión de fondo: [ADR-0021](../adr/0021-sesion-cookie-redis.md).
 
+> Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
+> `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
+
 ## Crear el primer administrador
 
 ```bash

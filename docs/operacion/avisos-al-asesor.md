@@ -5,6 +5,9 @@ manda un aviso al grupo de Telegram con el motivo y **un enlace que abre esa con
 se abre Chatwoot en el navegador del celular y escribes al cliente. El aviso nunca lleva teléfono, cédula, correo,
 dirección ni el nombre del cliente. Decisión de fondo: [`fase-08d`](../../openspec/changes/archive/2026-10-01-fase-08d-avisos-con-enlace/proposal.md).
 
+> Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
+> `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
+
 ## Ruta rápida para que el enlace abra en el celular
 
 1. Pon en tu `.env` la dirección por la que **tu celular** llega a Chatwoot:

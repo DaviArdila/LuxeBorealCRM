@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 const rutaCliRepo = fileURLToPath(
   new URL('../../node_modules/git-cliff/lib/cli/cli.js', import.meta.url),
 );
-const rutaConfigReal = fileURLToPath(new URL('../../cliff.toml', import.meta.url));
+const rutaConfigReal = fileURLToPath(new URL('../../../cliff.toml', import.meta.url));
 
 function ejecutarGitCliff(repositorio: string, salida: string): void {
   execFileSync(
