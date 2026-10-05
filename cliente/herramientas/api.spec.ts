@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { generarApi, verificarDerivaApi } from './api.mjs';
@@ -46,6 +46,20 @@ describe.skipIf(!hayGenerador)('CLT2 — api:deriva compara el cliente generado 
 
     expect(resultado.limpio).toBe(true);
     expect((await verificarDerivaApi()).limpio).toBe(true);
+  });
+
+  it('CLT2 — generarApi escribe con LF aunque el sistema use CRLF (portable a Windows)', async () => {
+    await generarApi();
+
+    const carpeta = path.join(cliente, 'src', 'app', 'api');
+    const archivos = await readdir(carpeta, { recursive: true, withFileTypes: true });
+    const conCrlf: string[] = [];
+    for (const archivo of archivos.filter((entrada) => entrada.isFile())) {
+      const contenido = await readFile(path.join(archivo.parentPath, archivo.name), 'utf8');
+      if (contenido.includes('\r')) conCrlf.push(archivo.name);
+    }
+
+    expect(conCrlf).toEqual([]);
   });
 });
 
