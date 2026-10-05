@@ -37,8 +37,15 @@ Se enmienda ADR-0022 otra vez.
       `npm --prefix cliente run ci` en verde (16 archivos de tests de componentes, 20 de herramientas, build y
       deriva); `npm run auditoria:cliente` sin hallazgos; `rg -i "primeng|primeicons|primeuix" cliente/src
       cliente/package.json` sin resultados.
-- [ ] T2 — Subir el cliente a Angular 22 + Material/CDK 22 con `ng update`. Ruta: delegada (lockfile y
+- [x] T2 — Subir el cliente a Angular 22 + Material/CDK 22 con `ng update`. Ruta: delegada (lockfile y
       herramientas).
+      Evidencia: `ng update` no pudo instalar su CLI temporal (el npm local bloquea scripts de instalación en
+      instalaciones de proyecto), así que las versiones se fijaron a mano —`@angular/*` 22.2.1, Material/CDK 22.2.1,
+      `angular-eslint` 22.5.0, TypeScript 6.0, Vitest 5, las mismas que usaba el cliente antes de la enmienda de
+      PrimeNG— y las migraciones se corrieron con `ng update <paquete> --migrate-only`. Sin cambios de código; se
+      descartó el `strictTemplates: false` y la supresión de diagnósticos que agrega la migración de core, porque el
+      build pasa con los valores por defecto de la 22. `npm ci` reproduce el lockfile; `npm --prefix cliente run ci`
+      en verde; `npm ls @angular/core @angular/material` muestra 22.2.1.
 - [ ] T3 — Actualizar la documentación que nombra PrimeNG (`docs/operacion/cliente-back-office.md` y
       otras referencias vigentes). Ruta: delegada junto con T1-T2 (mismo escritor).
 
@@ -61,3 +68,4 @@ Estrategia `auto-chain` con cadena `stacked-to-main` (CLAUDE.md). Previsión: ~5
 ## Progreso
 
 - T1 hecha (commit de unidad de trabajo `fix(cliente): reemplazar PrimeNG por Angular Material`).
+- T2 hecha (commit `build(cliente): subir a Angular 22 con Angular Material 22`).

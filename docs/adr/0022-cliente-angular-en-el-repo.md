@@ -49,10 +49,10 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 ## Decisión (A + 1)
 
-1. **Angular**, componentes standalone, signals, sin Zone.js. Fijado en la Fase 11b (T1, 2026-10-04) en Angular 22 y
-   bajado el 2026-10-05 (ver «Enmienda (2026-10-05)»): **Angular 21.2.x**, TypeScript 5.9, Vitest 4 + jsdom como runner
-   de tests. El CLI 21 acepta Node ^20.19, ^22.12 o ≥ 24; `cliente/package.json` mantiene `engines.node >=24.15.0`,
-   igual que la raíz del repositorio.
+1. **Angular**, componentes standalone, signals, sin Zone.js. Fijado en la Fase 11b (T1, 2026-10-04) en Angular 22,
+   bajado a 21.2 el 2026-10-05 por PrimeNG (ver «Enmienda (2026-10-05)») y devuelto ese mismo día a **Angular 22.2.x**
+   con Angular Material 22 (ver «Enmienda (2026-10-05, Angular Material)»): TypeScript 6.0, Vitest 5 + jsdom como
+   runner de tests. `cliente/package.json` mantiene `engines.node >=24.15.0`, igual que la raíz del repositorio.
 2. **Angular Material + CDK** (MIT, versionados junto con Angular) como librería de componentes, con tema Material 3
    y los íconos de Material Symbols (`material-symbols`, Apache-2.0). Hasta el 2026-10-05 fue PrimeNG 21.1.10; ver
    «Enmienda (2026-10-05, Angular Material)».
@@ -116,7 +116,8 @@ dependencia del servidor sigue siendo el contrato `openapi/openapi.json`, del qu
 
 - **Cambio**: el cliente deja PrimeNG y usa **Angular Material + CDK** (alternativa C de la tabla), con tema
   Material 3 que sigue el modo claro u oscuro del sistema y los íconos de Material Symbols (paquete
-  `material-symbols`, Apache-2.0). Se quitan `primeng`, `@primeuix/themes` y `primeicons`.
+  `material-symbols`, Apache-2.0). Se quitan `primeng`, `@primeuix/themes` y `primeicons`. Después, el cliente
+  sube a Angular 22.2 con Material y CDK 22.2, TypeScript 6.0 y Vitest 5.
 - **Motivo**: la enmienda anterior dejó el cliente atado a Angular 21, porque PrimeNG 21 es la última versión MIT y
   exige Angular 21. Angular 21 deja de recibir parches de seguridad alrededor de mayo de 2027. Angular Material es MIT,
   lo mantiene el equipo de Angular y sale con cada versión del framework (`ng update` lo actualiza junto con Angular),
