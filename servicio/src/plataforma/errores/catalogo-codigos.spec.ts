@@ -41,6 +41,17 @@ describe('plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2)
   it.each([
     ['mensaje-fijo-invalido', 422],
     ['mensaje-fijo-desconocido', 404],
+    ['categoria-duplicada', 409],
+    ['categoria-con-casos', 409],
+    ['categoria-inexistente', 404],
+    ['categoria-invalida', 422],
+    ['orden-categorias-invalido', 422],
+    ['caso-duplicado', 409],
+    ['caso-inexistente', 404],
+    ['caso-del-sistema', 409],
+    ['caso-modificado', 409],
+    ['caso-invalido', 422],
+    ['cursor-invalido', 400],
   ] as const)('%s responde %i', (codigo, status) => {
     const entrada = (CATALOGO_CODIGOS as Readonly<Record<string, { status: number; title: string }>>)[codigo];
 

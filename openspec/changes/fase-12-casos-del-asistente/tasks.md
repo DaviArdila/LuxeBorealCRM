@@ -65,7 +65,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó» — rama `fase-12-p3-estilo-desacoplado`, commit `6ad0d53` (PR 94; `size:exception` anotada en la tarea)
 - [x] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento) — rama `fase-12-p4-base-asistente`, commit `4c76947` (PR 95; `size:exception` anotada en la tarea)
 - [x] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento) — rama `fase-12-p5-corte-textos-sistema`, commit `da19b9b` (PR 96)
-- [ ] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo`
+- [x] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo` — rama `fase-12-p6-consultar-caso`, commit `86d4d50` (PR 97; `size:exception` anotada en la tarea)
 - [ ] T7 — API de categorías y casos con buscador y contrato
 - [ ] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos»
 - [ ] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés
@@ -216,6 +216,15 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
   y cliente generados, ~60 % tests).
 - **Docs**: `docs/operacion/` (rutas), contrato.
 - **Evals**: sin cambios.
+- `size:exception` (T7, real): ~2.630 líneas añadidas sin contar el contrato ni el cliente generados; ~1.520 son pruebas (casos de
+  uso, controlador, integración contra Postgres, e2e de las diez rutas y el doble en memoria) y ~130 la guía de operación. Pasó de
+  las ~600 anticipadas porque cada una de las diez operaciones tiene su prueba en tres niveles; no se parte porque la API sin
+  su repositorio, su contrato y su cliente generado no se puede verificar.
+- Desviaciones anotadas (T7): `docs/operacion/casos-del-asistente.md` nace aquí con la API y T8 le agrega la pantalla; el
+  repositorio de administración usa un bloqueo optimista por `actualizado` y escapa los comodines del `LIKE` de la búsqueda
+  (`contains` de Prisma no los escapa; lo comprobó la prueba de integración); `validarCaso` admite una descripción de hasta
+  1.000 caracteres en un caso por evento (las del sistema pasan de 200); códigos nuevos en el catálogo: `categoria-invalida`,
+  `orden-categorias-invalido` y `cursor-invalido`.
 
 ### T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos»
 

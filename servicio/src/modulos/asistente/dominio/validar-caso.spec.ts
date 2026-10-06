@@ -48,6 +48,16 @@ describe('validarCaso (CAS5)', () => {
     expect(validarCaso({ ...BASE, cuandoAplica: 'a'.repeat(200) })).toEqual({ valido: true });
   });
 
+  it('CAS5 — Un caso del sistema por evento admite una descripción más larga de cuándo se envía', () => {
+    const evento = { ...BASE, disparador: 'evento' as const, claveSistema: 'aviso_datos', cuandoAplica: 'a'.repeat(300) };
+
+    expect(validarCaso(evento)).toEqual({ valido: true });
+    expect(validarCaso({ ...evento, cuandoAplica: 'a'.repeat(1001) })).toEqual({
+      valido: false,
+      motivo: 'el «cuándo aplica» supera 1000 caracteres',
+    });
+  });
+
   it('CAS5 — El título tiene entre 1 y 80 caracteres', () => {
     expect(motivoDe({ titulo: ' ' })).toBe('el título está vacío');
     expect(motivoDe({ titulo: 'a'.repeat(81) })).toBe('el título supera 80 caracteres');
