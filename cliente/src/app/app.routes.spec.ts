@@ -50,36 +50,36 @@ describe('D9 — app.routes crea una ruta diferida por área del registro dentro
     expect(areas.every((ruta) => ruta.canActivate?.length === 1)).toBe(true);
   });
 
-  it('CLT5 — Sin sesión, abrir /bot/estilo lleva a /entrar', async () => {
+  it('CLT5 — Sin sesión, abrir /asistente/estilo lleva a /entrar', async () => {
     preparar();
 
-    await navegar('/bot/estilo', { body: { codigo: 'peticion-no-autenticada' }, status: 401 });
+    await navegar('/asistente/estilo', { body: { codigo: 'peticion-no-autenticada' }, status: 401 });
 
     expect(TestBed.inject(Router).url).toBe('/entrar');
   });
 
-  it('un admin con sesión abre /bot/estilo dentro del shell', async () => {
+  it('un admin con sesión abre /asistente/estilo dentro del shell', async () => {
     preparar();
 
-    const arnes = await navegar('/bot/estilo', { body: ADMIN });
+    const arnes = await navegar('/asistente/estilo', { body: ADMIN });
 
-    expect(TestBed.inject(Router).url).toBe('/bot/estilo');
+    expect(TestBed.inject(Router).url).toBe('/asistente/estilo');
     expect((arnes.routeNativeElement as HTMLElement).textContent).toContain('Estilo del bot');
   });
 
-  it('CLT5 — Un asesor que abre /bot/estilo a mano va al inicio', async () => {
+  it('CLT5 — Un asesor que abre /asistente/estilo a mano va al inicio', async () => {
     preparar();
 
-    await navegar('/bot/estilo', { body: ASESOR });
+    await navegar('/asistente/estilo', { body: ASESOR });
 
     expect(TestBed.inject(Router).url).toBe('/');
   });
 
-  it('/bot redirige a la primera pantalla del área', async () => {
+  it('/asistente redirige a la primera pantalla del área', async () => {
     preparar();
 
-    await navegar('/bot', { body: ADMIN });
+    await navegar('/asistente', { body: ADMIN });
 
-    expect(TestBed.inject(Router).url).toBe('/bot/estilo');
+    expect(TestBed.inject(Router).url).toBe('/asistente/casos');
   });
 });

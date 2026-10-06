@@ -10,14 +10,14 @@ import { provideApiMismoOrigen } from '../nucleo/configuracion-api';
 import { SesionServicio, type Usuario } from '../nucleo/sesion.servicio';
 import { ShellComponent } from './shell.component';
 
-const BOT: DefinicionArea = {
-  id: 'bot',
-  titulo: 'Bot',
+const ASISTENTE: DefinicionArea = {
+  id: 'asistente',
+  titulo: 'Asistente',
   icono: 'forum',
   roles: ['admin'],
   menu: [
-    { titulo: 'Estilo del bot', ruta: '/bot/estilo', roles: ['admin'] },
-    { titulo: 'Mensajes fijos', ruta: '/bot/mensajes-fijos', roles: ['admin'] },
+    { titulo: 'Estilo del bot', ruta: '/asistente/estilo', roles: ['admin'] },
+    { titulo: 'Casos de uso', ruta: '/asistente/casos', roles: ['admin'] },
   ],
   rutas: () => Promise.resolve([]),
 };
@@ -51,23 +51,23 @@ async function preparar(usuario: Usuario, areas: readonly DefinicionArea[]) {
 
 describe('CLT9 — El shell arma el menú desde el registro y el rol', () => {
   it('CLT9 — Un área registrada aparece en el menú de su rol, sin tocar el shell', async () => {
-    const { el } = await preparar(ADMIN, [BOT, PRUEBA]);
+    const { el } = await preparar(ADMIN, [ASISTENTE, PRUEBA]);
 
     expect(el.textContent).toContain('Estilo del bot');
-    expect(el.textContent).toContain('Mensajes fijos');
+    expect(el.textContent).toContain('Casos de uso');
     expect(el.textContent).toContain('Pantalla de prueba');
   });
 
   it('CLT9 — El menú no muestra las áreas que el rol no puede usar', async () => {
-    const { el } = await preparar(ASESOR, [BOT, PRUEBA]);
+    const { el } = await preparar(ASESOR, [ASISTENTE, PRUEBA]);
 
     expect(el.textContent).not.toContain('Estilo del bot');
-    expect(el.textContent).not.toContain('Mensajes fijos');
+    expect(el.textContent).not.toContain('Casos de uso');
     expect(el.textContent).toContain('Pantalla de prueba');
   });
 
   it('muestra el nombre del usuario', async () => {
-    const { el } = await preparar(ADMIN, [BOT]);
+    const { el } = await preparar(ADMIN, [ASISTENTE]);
 
     expect(el.textContent).toContain('Ana');
   });
@@ -75,7 +75,7 @@ describe('CLT9 — El shell arma el menú desde el registro y el rol', () => {
 
 describe('CLT5 — Cerrar sesión y aviso de permiso', () => {
   it('CLT5 — Cerrar sesión llama a cerrarSesion y vuelve al inicio de sesión', async () => {
-    const { el, control } = await preparar(ADMIN, [BOT]);
+    const { el, control } = await preparar(ADMIN, [ASISTENTE]);
 
     el.querySelector<HTMLButtonElement>('button[data-accion="cerrar-sesion"]')!.click();
     const peticion = control.expectOne('/api/v1/auth/sesion');
@@ -88,7 +88,7 @@ describe('CLT5 — Cerrar sesión y aviso de permiso', () => {
   });
 
   it('CLT5 — Un 403 muestra el aviso de permiso insuficiente y la sesión sigue', async () => {
-    const { fixture, el } = await preparar(ADMIN, [BOT]);
+    const { fixture, el } = await preparar(ADMIN, [ASISTENTE]);
 
     TestBed.inject(AvisosServicio).permisoInsuficiente.set(true);
     await fixture.whenStable();

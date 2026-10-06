@@ -8,9 +8,6 @@ import path from 'node:path';
  */
 const areas = path.resolve(import.meta.dirname, '..', 'src', 'app', 'areas');
 
-/** Pantallas que todavía editan en la página y se retiran en T8 (la pantalla «Mensajes fijos»). */
-const EXCEPCIONES_HASTA_T8 = ['bot/mensajes-fijos/mensajes-fijos.component.ts'];
-
 const CONTROLES = /<form[\s>]|<textarea[\s>]|<input[\s>]|<select[\s>]|<mat-select[\s>]|<app-editor-con-contador[\s>]/;
 
 /** Si el código declara un control de formulario sin ventana de edición, devuelve true. */
@@ -39,7 +36,6 @@ describe('SHL8 — Ninguna pantalla edita en la página', () => {
   it('SHL8 — ninguna pantalla de las áreas declara un formulario de edición fuera de la ventana', () => {
     const infractoras = componentes(areas)
       .map((ruta) => path.relative(areas, ruta).split(path.sep).join('/'))
-      .filter((relativa) => !EXCEPCIONES_HASTA_T8.includes(relativa))
       .filter((relativa) => editaFueraDeLaVentana(readFileSync(path.join(areas, relativa), 'utf8')));
 
     expect(infractoras).toEqual([]);

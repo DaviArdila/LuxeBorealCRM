@@ -1,7 +1,7 @@
 # El cliente del back office
 
 **Resumen.** El cliente es una app web (Angular 22 con Angular Material) que vive en `cliente/` y habla con la API por el contrato. Hoy tiene
-tres pantallas: iniciar sesión, **Estilo del bot** y **Mensajes fijos**, solo para el rol `admin`. En desarrollo se
+tres pantallas: iniciar sesión, **Casos de uso** y **Estilo del bot**, solo para el rol `admin`. En desarrollo se
 levantan la API (`servicio/`) y el cliente, y el navegador ve un solo origen. Qué se decidió y por qué:
 [ADR-0022](../adr/0022-cliente-angular-en-el-repo.md) y [ADR-0023](../adr/0023-estructura-servicio-y-cliente.md).
 
@@ -30,13 +30,13 @@ funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 |---|---|---|
 | **Entrar** | Correo y contraseña. Tras varios fallos seguidos pide esperar y deshabilita el botón | No guarda el correo ni la contraseña en el navegador |
 | **Estilo del bot** | Muestra la versión vigente y su origen en modo lectura; «Editar» abre una ventana para cambiar el texto y publicarlo (con confirmación); el historial permite restaurar una versión anterior | No valida el texto: lo rechaza el servidor y te dice el motivo dentro de la ventana, sin borrar lo que escribiste |
-| **Mensajes fijos** | Lista los diez textos que el bot envía sin pasar por el LLM, con su descripción y si vienen de tu edición o del texto de respaldo; editas uno y lo guardas | No crea mensajes nuevos: la lista es cerrada |
+| **Casos de uso** | Lista los casos del asistente por categoría con su contador; busca (tras 300 ms sin teclear) y filtra por categoría y tipo; «Nuevo caso» y «Editar» abren la ventana del caso; crea, renombra, reordena y borra categorías | No borra ni desactiva un caso del sistema (lleva la etiqueta «Sistema»; solo se edita su texto) ni borra una categoría con casos: te dice el motivo |
 
 Después de publicar o restaurar un estilo, la pantalla te recuerda correr las evals reales antes de que llegue a
-clientes: [cómo se hace](estilo-del-bot.md). Un mensaje fijo editado rige en el siguiente mensaje del bot, sin reiniciar.
+clientes: [cómo se hace](estilo-del-bot.md). Un caso editado rige en el siguiente mensaje del bot, sin reiniciar; cómo se escribe uno bueno está en [casos del asistente](casos-del-asistente.md).
 
-`aviso_datos` es el aviso de asistente automatizado que exige la política de privacidad (R14): se puede editar, pero no
-lo dejes vacío ni le quites que habla con un asistente automatizado.
+`aviso_datos` es el aviso de asistente automatizado que exige la política de privacidad (R14): es un caso del sistema, se
+puede editar, pero no lo dejes vacío ni le quites que habla con un asistente automatizado.
 
 ## Si algo no sale como esperabas
 
@@ -46,7 +46,7 @@ lo dejes vacío ni le quites que habla con un asistente automatizado.
 | «No tienes permiso para hacer eso» | Tu usuario es `asesor` o cambió de rol | Pídele a un admin. La sesión sigue abierta |
 | «Correo o contraseña incorrectos» | No distingue entre un correo que no existe y una contraseña errada, a propósito | Revisa los dos; tras 5 fallos esperas 15 minutos |
 | Un motivo en rojo al publicar o guardar | El servidor rechazó el texto (por ejemplo, un valor en pesos) | Corrige el texto; lo escrito sigue ahí |
-| Los diez mensajes dicen «Texto de respaldo» | Todavía no editaste ninguno, o no corriste la semilla | Es normal: el bot usa el respaldo. `npm --prefix servicio run casos:sembrar` los deja listos para editar (cada mensaje es el caso del sistema con esa clave, y lo que guardas rige desde el siguiente mensaje del bot) |
+| «Casos de uso» sale vacía | Todavía no corriste la semilla | `npm --prefix servicio run casos:sembrar` crea los casos del sistema con su texto de respaldo y las categorías iniciales; es idempotente |
 | El cliente no llega a la API | La API no está arriba o el puerto del proxy no coincide | Revisa el paso 6 y `cliente/proxy.conf.json` |
 
 Un usuario `asesor` entra, pero no ve ninguna pantalla de administración y, si abre la dirección a mano, vuelve al

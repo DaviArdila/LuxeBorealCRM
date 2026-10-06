@@ -63,16 +63,6 @@ export const CATALOGO_CODIGOS = Object.freeze({
     status: 404,
     title: 'La versión del estilo no existe en el historial',
   },
-  /** CFN2: el texto de un mensaje fijo incumple las reglas para guardarse; el motivo va en `detail`. */
-  'mensaje-fijo-invalido': {
-    status: 422,
-    title: 'El mensaje no cumple las reglas para guardarse',
-  },
-  /** CFN2: la clave no está en la lista cerrada de mensajes fijos editables. */
-  'mensaje-fijo-desconocido': {
-    status: 404,
-    title: 'El mensaje fijo no existe en la lista de mensajes editables',
-  },
   /** CAS1, CAS9: ya existe una categoría con ese nombre (sin distinguir mayúsculas ni acentos). */
   'categoria-duplicada': {
     status: 409,

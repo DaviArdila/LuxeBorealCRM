@@ -145,8 +145,3 @@ export function definicionDe(clave: ClaveSistema): DefinicionCasoSistema {
   if (definicion === undefined) throw new Error(`clave del sistema desconocida: ${clave}`);
   return definicion;
 }
-
-/** `true` si `clave` pertenece a la lista cerrada (la API no deja crear ni cambiar claves del sistema, CAS4). */
-export function esClaveDelSistema(clave: string): clave is ClaveSistema {
-  return CASOS_DEL_SISTEMA.some((caso) => caso.clave === clave);
-}

@@ -243,32 +243,6 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     expect(await estadoDe(idConversacion)).toBe('handoff_pendiente');
   }, 40_000);
 
-  it('CFN2 — Un texto editado por la API rige en el siguiente mensaje del bot, sin reiniciar', async () => {
-    const aplicacion = await arrancar();
-    const servidor = aplicacion.getHttpServer() as Server;
-    const admin = await iniciarSesionComo(servidor, aplicacion.get(PrismaService), 'admin');
-    // El texto de traspaso depende del horario de atención; se editan los dos para que el escenario no dependa de la hora.
-    for (const [clave, texto] of [
-      ['mensaje_handoff', 'EDITADO-POR-API-DENTRO'],
-      ['mensaje_handoff_fuera_horario', 'EDITADO-POR-API-FUERA'],
-    ] as const) {
-      const guardado = await request(servidor)
-        .put(`/api/v1/mensajes-fijos/${clave}`)
-        .set('x-luxe-csrf', '1')
-        .set('cookie', admin.cookie)
-        .send({ texto });
-      expect(guardado.status).toBe(200);
-    }
-    const { idConversacion, idContacto } = nuevaConversacion();
-    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-
-    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
-
-    const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
-    expect(mensajes[1]).toMatch(/^EDITADO-POR-API-(DENTRO|FUERA)$/);
-  }, 40_000);
-
   it('CAS7 — Editar el caso de un evento cambia la respuesta del siguiente evento', async () => {
     const aplicacion = await arrancar();
     const servidor = aplicacion.getHttpServer() as Server;
@@ -279,11 +253,12 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     expect(antes).toContain(TEXTOS.mensaje_pedir_texto_audio);
 
     // El primer audio ya dejó el texto en la copia en memoria: editar el caso debe subir la versión compartida.
+    const caso = await aplicacion.get(PrismaService).casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_pedir_texto_audio' } });
     const guardado = await request(servidor)
-      .put('/api/v1/mensajes-fijos/mensaje_pedir_texto_audio')
+      .patch(`/api/v1/asistente/casos/${caso.id}`)
       .set('x-luxe-csrf', '1')
       .set('cookie', admin.cookie)
-      .send({ texto: 'AUDIO-EDITADO-EN-EL-CASO' });
+      .send({ actualizado: caso.actualizado.toISOString(), texto: 'AUDIO-EDITADO-EN-EL-CASO' });
     expect(guardado.status).toBe(200);
     const segunda = nuevaConversacion();
     await enviarWebhook(aplicacion, { ...segunda, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });

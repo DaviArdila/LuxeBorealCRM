@@ -13,7 +13,7 @@ import { MatInput } from '@angular/material/input';
   template: `
     <mat-form-field appearance="outline" class="editor">
       <mat-label>{{ etiqueta() }}</mat-label>
-      <textarea matInput rows="12" [value]="texto()" [disabled]="deshabilitado()"
+      <textarea matInput [rows]="filas()" [value]="texto()" [disabled]="deshabilitado()" [attr.data-campo]="campo()"
                 (input)="texto.set($any($event.target).value)"></textarea>
       <mat-hint align="end" data-contador class="contador" [class.excedido]="excedido()">
         {{ texto().length }} / {{ maximo() }}
@@ -34,6 +34,9 @@ export class EditorConContadorComponent {
   readonly etiqueta = input.required<string>();
   readonly maximo = input.required<number>();
   readonly deshabilitado = input(false);
+  readonly filas = input(12);
+  /** Marca estable del control (`data-campo`) para las pruebas de la pantalla que lo usa. */
+  readonly campo = input<string | null>(null);
   readonly texto = model.required<string>();
 
   protected readonly excedido = computed(() => this.texto().length > this.maximo());

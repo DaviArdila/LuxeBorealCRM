@@ -66,7 +66,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento) — rama `fase-12-p4-base-asistente`, commit `4c76947` (PR 95; `size:exception` anotada en la tarea)
 - [x] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento) — rama `fase-12-p5-corte-textos-sistema`, commit `da19b9b` (PR 96)
 - [x] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo` — rama `fase-12-p6-consultar-caso`, commit `86d4d50` (PR 97; `size:exception` anotada en la tarea)
-- [ ] T7 — API de categorías y casos con buscador y contrato
+- [x] T7 — API de categorías y casos con buscador y contrato — rama `fase-12-p7-api-casos`, commit `61a989f` (PR 98; `size:exception` anotada en la tarea)
 - [ ] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos»
 - [ ] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés
 - [ ] T10 — Pantallas de Configuración
@@ -237,6 +237,13 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - **Ruta**: delegada. **Slice**: `fase-12-p8-pantalla-casos`. **Forecast**: ~550 líneas (`size:exception` anticipada).
 - **Docs**: `docs/operacion/cliente-back-office.md`, `docs/operacion/casos-del-asistente.md` (nueva).
 - **Evals**: `evals` en verde.
+- **`size:exception` (T8)**: ~1.500 líneas tocadas, de ellas ~1.100 son borrados del módulo `mensajes-fijos` y de la pantalla
+  «Mensajes fijos» con sus pruebas; lo escrito son la pantalla «Casos de uso» (~430 líneas, ~190 de pruebas), la reescritura
+  del e2e CAS7 y la corrección de `leerProblema` para respuestas pedidas como texto (DELETE). Borrar y reemplazar no se parte:
+  el contrato y el cliente generado dejarían de coincidir.
+- **Desvíos**: (1) `leerProblema` no leía el problema de una respuesta `text` (las rutas sin cuerpo, como `borrarCategoriaCaso`):
+  se corrigió con prueba. (2) El e2e CFN2 se eliminó con su endpoint; CAS7 edita ahora por `PATCH /asistente/casos/:id`.
+  (3) `EditorConContador` gana `filas` y `campo` (`data-campo`) para la ventana del caso.
 
 ### T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés
 

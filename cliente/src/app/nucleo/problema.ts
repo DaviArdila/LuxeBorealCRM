@@ -23,12 +23,25 @@ function comoTexto(valor: unknown): string | undefined {
   return typeof valor === 'string' && valor.length > 0 ? valor : undefined;
 }
 
+/** Las rutas sin cuerpo se piden como texto: el problema llega como un JSON en una cadena. */
+function cuerpoDe(error: HttpErrorResponse): CuerpoProblema {
+  let contenido: unknown = error.error;
+  if (typeof contenido === 'string') {
+    try {
+      contenido = JSON.parse(contenido);
+    } catch {
+      return {};
+    }
+  }
+  return typeof contenido === 'object' && contenido !== null ? (contenido as CuerpoProblema) : {};
+}
+
 /** Lee un error de `HttpClient` (problem+json de la API) sin suponer que lo sea. */
 export function leerProblema(error: unknown): Problema {
   if (!(error instanceof HttpErrorResponse)) {
     return { estado: 0, codigo: 'desconocido', titulo: 'Error inesperado', motivo: undefined, esperarSegundos: undefined };
   }
-  const cuerpo = (typeof error.error === 'object' && error.error !== null ? error.error : {}) as CuerpoProblema;
+  const cuerpo = cuerpoDe(error);
   const espera = Number(error.headers?.get('Retry-After'));
   return {
     estado: error.status,
