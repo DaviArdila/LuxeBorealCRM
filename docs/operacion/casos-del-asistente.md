@@ -25,6 +25,13 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 hubiera en `parametro` o, si no, el de respaldo) y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
 
+Para una base de desarrollo, `npm run casos:sembrar -- --archivo datos-desarrollo/asistente/casos.json` suma además los casos
+de ese archivo (`{ "casos": [{ "categoria", "titulo", "cuandoAplica", "texto", "modo" }] }`). Se valida entero con las reglas
+de un caso: si uno falla no se siembra nada y el mensaje dice cuál (por posición, sin copiar su texto).
+
+`parametros.csv` del importador del catálogo ya no acepta filas de texto (`mensaje_*`, `aviso_*`, `politica_*`,
+`prompt_estilo*`): el importador termina con error nombrando la fila y no escribe nada.
+
 ## Reglas de un caso
 
 | Regla | Detalle |

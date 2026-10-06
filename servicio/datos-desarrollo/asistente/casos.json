@@ -1,0 +1,22 @@
+{
+  "casos": [
+    {
+      "categoria": "Políticas",
+      "titulo": "Devoluciones",
+      "cuandoAplica": "Cuando el cliente pregunta por devoluciones o cambios.",
+      "texto": "Aceptamos devoluciones dentro de los 8 días siguientes a la entrega, con el producto sin instalar, en su empaque original y con todos sus accesorios. Si el producto llegó con un defecto o no es lo que pediste, el cambio o la devolución no tiene costo para ti."
+    },
+    {
+      "categoria": "Políticas",
+      "titulo": "Garantía",
+      "cuandoAplica": "Cuando el cliente pregunta por la garantía.",
+      "texto": "Los productos de grifería y sanitarios tienen 1 año de garantía contra defectos de fabricación. La garantía no cubre daños por mala instalación, golpes ni uso de químicos abrasivos."
+    },
+    {
+      "categoria": "Políticas",
+      "titulo": "Instalación",
+      "cuandoAplica": "Cuando el cliente pregunta si hacen la instalación.",
+      "texto": "No ofrecemos instalación, pero cada producto incluye las indicaciones de montaje y puedes consultarnos cualquier duda. Recomendamos que lo instale un plomero."
+    }
+  ]
+}

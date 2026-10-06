@@ -7,9 +7,11 @@ import { ClaveFueraDelRegistro } from '../../../src/modulos/configuracion/puerto
 import { HorarioAtencion } from '../../../src/modulos/horario/aplicacion/horario-atencion.js';
 import { RepositorioHorarioPrisma } from '../../../src/modulos/horario/infraestructura/repositorio-horario-prisma.js';
 import { RepositorioParametroCatalogoPrisma } from '../../../src/modulos/catalogo/infraestructura/repositorio-parametro-prisma.js';
+import { textoDeRespaldo } from '../../../src/modulos/asistente/index.js';
 import { CONFIGURACION, ConfiguracionModule, cargarConfiguracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { ClockSistema, type Clock } from '../../../src/plataforma/reloj/index.js';
+import { fijarTextosDelSistema, limpiarCasos, textosSinCopia } from '../../soporte/textos-asistente.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
 // Fase 12, T9: configuración del negocio contra Postgres real (CFG2, CFG3, CFG4, CFG6).
@@ -158,5 +160,38 @@ describe('Registro tipado de parametro contra Postgres (CFG6)', () => {
     const { repositorio } = await contexto();
 
     await expect(repositorio.guardarParametros([{ clave: 'recargo_contraentrega_pct', valor: '5' }], new ClockSistema().ahora())).rejects.toBeInstanceOf(ClaveFueraDelRegistro);
+  });
+});
+
+describe('R15 — Horario, textos y parámetros son datos (Fase 12, T11, integración)', () => {
+  it('R15 — El horario de atención se lee como dato: cambiar el día en la base cambia la respuesta', async () => {
+    const { casos, horarioEn } = await contexto();
+    await casos.guardarHorario(SEMANA);
+    expect(await horarioEn(LUNES_10_BOGOTA).estaDentroDeHorario()).toBe(true);
+
+    await casos.guardarHorario({ ...SEMANA, lun: null });
+
+    expect(await horarioEn(LUNES_10_BOGOTA).estaDentroDeHorario()).toBe(false);
+  });
+
+  it('R15 — Los textos al cliente vienen de un caso del asistente, con su respaldo solo si el caso falta', async () => {
+    const { prisma } = await contexto();
+    await limpiarCasos(prisma);
+    const textos = textosSinCopia(prisma);
+    expect(await textos.textoDelSistema('mensaje_handoff')).toBe(textoDeRespaldo('mensaje_handoff'));
+
+    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'Un asesor te escribe en unos minutos.' });
+
+    expect(await textos.textoDelSistema('mensaje_handoff')).toBe('Un asesor te escribe en unos minutos.');
+    await limpiarCasos(prisma);
+  });
+
+  it('R15 — Un parámetro del negocio se ajusta sin desplegar código', async () => {
+    const { casos, prisma } = await contexto();
+    const catalogo = new RepositorioParametroCatalogoPrisma(prisma);
+
+    await casos.guardarEnvios({ recargoContraentregaPct: 5, factorVolumetrico: 6000 });
+
+    expect(await catalogo.obtenerFactorVolumetrico()).toBe(6000);
   });
 });

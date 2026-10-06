@@ -121,34 +121,22 @@ tarifas estimadas), **atención** (contacto, conversación, lead, horario), **op
 | `valor` | jsonb | no | validado en código por un registro tipado por clave |
 | `actualizado` | timestamptz | no | |
 
-Claves conocidas: `horario_atencion`, `recargo_contraentrega_pct` (5), `factor_volumetrico` (4000),
-`transportadoras`, `aviso_datos`, `nombre_asesor`, `mensaje_handoff`,
-`mensaje_handoff_fuera_horario`, `mensaje_cierre_captura_datos`, `mensaje_fuera_cobertura`,
-`mensaje_error_llm`, `mensaje_espera_handoff` (Fase 05), `mensaje_techo_gasto`,
-`mensaje_pedir_texto_audio` y `mensaje_imagen_no_procesada` (Fase 07a, R12),
-`llm_techo_mensual_usd` y `llm_estado_techo` (Fase 06; esta última la escribe el gateway, no el
-negocio).
-
-**Textos fijos del agente (Fase 07a, AGT3, R15).** `mensaje_pedir_texto_audio`,
-`mensaje_imagen_no_procesada`, `aviso_datos`, `mensaje_handoff` (dentro del horario de atención) y
-`mensaje_handoff_fuera_horario` (fuera de él) son texto plano que el agente envía sin pasar por el LLM.
-Si la fila no existe o está en blanco se usa un texto de respaldo (los del prototipo, P31) definido en
-un solo lugar, `agente/infraestructura/prisma/repositorio-parametro-agente-prisma.ts`; el negocio los
-reemplaza sin desplegar.
-
-**Políticas del negocio (`politica_<tema>`).** Cada fila `politica_<tema>` es una política editable
-(contra entrega, devoluciones, garantía…): el tema son minúsculas sin acentos, dígitos y guion bajo, y el
-valor es un texto de hasta 1.200 caracteres. Agregar un tema es agregar una fila, sin tocar el código.
-`politica_contra_entrega` tiene un texto de respaldo aprobado si no está configurada. Las consulta
-`ConsultarPolitica` (CAT12); la Fase 07 la expone como la herramienta `consultar_politica`.
+**Claves de `parametro` (Fase 12, CFG6).** Solo configuración del negocio que el código usa para calcular o decidir, con un
+registro tipado por clave: `horario_atencion` (siete claves `lun`…`dom`, cada una `"HH:MM-HH:MM"` o `null`),
+`recargo_contraentrega_pct` (5), `factor_volumetrico` (4000), `llm_techo_mensual_usd` y `llm_estado_techo` (esta última la
+escribe el gateway del LLM, no el negocio). Se editan por los grupos de Configuración de la API. Ningún texto que lea el
+cliente (aviso de datos, mensajes de traspaso, cierre, error, espera, techo, audio, imagen, fuera de cobertura, políticas)
+ni el estilo del bot vive aquí: los primeros son casos de `caso_asistente` y el segundo está en `version_estilo`. Las claves
+`mensaje_*`, `aviso_*`, `politica_*` y `prompt_estilo*` de una base anterior las retira la migración del estilo y
+`npm run casos:sembrar`.
 
 **`recargo_contraentrega_pct` es un dato interno** (Fase 13, total de la venta): el bot nunca dice el
-porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (política de contra entrega).
+porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (caso `contra_entrega`).
 
 ### `version_estilo` — NUEVA (Fase 12, T3; ADR-0024)
 Una fila por versión del estilo del bot (cómo habla: tono, forma, formato). Reemplaza a las claves `prompt_estilo`,
-`prompt_estilo_version` y `prompt_estilo_historial` de `parametro` (ADR-0020), que se conservan hasta la limpieza de la
-Fase 12 (T11) como respaldo.
+`prompt_estilo_version` y `prompt_estilo_historial` de `parametro` (ADR-0020), que borró la migración de limpieza de la
+Fase 12 (T11).
 
 | Columna | Tipo | Nulo | Nota |
 |---|---|---|---|

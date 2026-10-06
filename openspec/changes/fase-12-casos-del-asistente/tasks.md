@@ -69,7 +69,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T7 — API de categorías y casos con buscador y contrato — rama `fase-12-p7-api-casos`, commit `61a989f` (PR 98; `size:exception` anotada en la tarea)
 - [x] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos» — rama `fase-12-p8-pantalla-casos`, commits `7edcb43` y `698986b` (PR 99; `size:exception` anotada en la tarea; se añadió `openapi/oasdiff-ignorar.txt` para los retiros decididos)
 - [x] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés — rama `fase-12-p9-configuracion-api`, commit `3d4fb1d` (PR 100; `size:exception` y desvíos anotados en la tarea)
-- [ ] T10 — Pantallas de Configuración
+- [x] T10 — Pantallas de Configuración — rama `fase-12-p10-configuracion-pantallas`, commit `1ccdcf3` (PR 101; `size:exception` y desvíos anotados en la tarea)
 - [ ] T11 — Limpieza final: cero referencias al sistema viejo
 - [ ] T12 — Guía de operación, cierre documental y tareas `[manual]` del dueño
 
@@ -297,6 +297,13 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
   `fase-12-p11-limpieza`. **Forecast**: ~300 líneas (en su mayoría borrados).
 - **Docs**: `MODELO_DATOS.md`, `CLAUDE.md` (comandos: se quita `mensajes:sembrar`, se agrega `casos:sembrar`).
 - **Evals**: `evals` en verde.
+- **Hecho / desvíos (T11)**: (1) La migración `20261006140000_limpiar_estilo_de_parametro` borra solo `prompt_estilo*`; los
+  `mensaje_*`/`politica_*` los sigue retirando `casos:sembrar` al copiarlos (borrarlos en una migración perdería los textos de
+  una base que aún no sembró). Por eso `rg politica_` aún encuentra la semilla y la migración del estilo: son la vía de
+  migración, no un lector. (2) Los textos de desarrollo pasan a `datos-desarrollo/asistente/casos.json`; para cargarlos
+  `casos:sembrar` gana `--archivo`. (3) El test de fronteras cubre `src` y `scripts` contra `mensajes-fijos`,
+  `consultar_politica`, `TEXTOS_FIJOS` y `mensajes:sembrar`; la regla 16 de dependency-cruiser nombra `configuracion` en vez de
+  `mensajes-fijos`.
 
 ### T12 — Guía de operación, cierre documental y tareas `[manual]` del dueño
 

@@ -12,7 +12,8 @@
 | `productos.csv` | 17 productos en 5 categorías (16 activos con 1-2 fotos, 1 inactivo sin fotos) |
 | `tarifas.csv` | Bogotá, Medellín, Cali, Atlántico, Santander, Cartagena (sin contra entrega) y tarifa nacional |
 | `cobertura.csv` | Sin cobertura: Amazonas, San Andrés, Vaupés, Guainía, Vichada, Chocó y Turbo (Antioquia) |
-| `parametros.csv` | Horario, recargo, factor volumétrico, mensaje fuera de cobertura y 3 políticas |
+| `parametros.csv` | Horario, recargo y factor volumétrico (los textos ya no van aquí: el importador los rechaza) |
+| `../asistente/casos.json` | 3 casos de intención de ejemplo (devoluciones, garantía, instalación) para `npm run casos:sembrar -- --archivo datos-desarrollo/asistente/casos.json` |
 | `excepciones_horario.csv` | Festivos de oct-dic 2026 |
 | `complemento.sql` | Categorías y stock (el importador no los carga; ver abajo) |
 | `ATRIBUCIONES.md` | Autor y licencia de cada foto |

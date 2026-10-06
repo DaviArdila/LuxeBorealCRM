@@ -44,3 +44,24 @@ describe('CAS7 — Ningún otro módulo lee un texto desde parametro', () => {
     expect(infractores).toEqual([]);
   });
 });
+
+/** Nombres del sistema retirado en la Fase 12: ninguno debe sobrevivir en el código de producción (CFG6). */
+const SISTEMA_VIEJO = /mensajes-fijos|consultar_politica|TEXTOS_FIJOS|mensajes:sembrar|MensajesFijos/;
+const RAIZ = path.resolve(import.meta.dirname, '..', '..');
+
+describe('CFG6 — El código de producción no conserva restos del sistema viejo', () => {
+  it('CFG6 — el detector marca los nombres retirados', () => {
+    expect(SISTEMA_VIEJO.test("import x from '../mensajes-fijos/index.js'")).toBe(true);
+    expect(SISTEMA_VIEJO.test('consultar_politica')).toBe(true);
+    expect(SISTEMA_VIEJO.test('consultar_caso')).toBe(false);
+  });
+
+  it('CFG6 — src y scripts no mencionan mensajes-fijos, consultar_politica, TEXTOS_FIJOS ni mensajes:sembrar', () => {
+    const infractores = [path.join(RAIZ, 'src'), path.join(RAIZ, 'scripts')]
+      .flatMap((carpeta) => fuentes(carpeta))
+      .filter((archivo) => SISTEMA_VIEJO.test(readFileSync(archivo, 'utf8')))
+      .map((archivo) => path.relative(RAIZ, archivo).split(path.sep).join('/'));
+
+    expect(infractores).toEqual([]);
+  });
+});

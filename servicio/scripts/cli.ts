@@ -106,7 +106,7 @@ async function main(): Promise<void> {
       imprimirResultado(await usuarioCrear(resto));
       return;
     case 'casos:sembrar':
-      imprimirResultado(await sembrarCasos());
+      imprimirResultado(await sembrarCasos(resto));
       return;
     default:
       process.stderr.write(
