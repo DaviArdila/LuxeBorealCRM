@@ -17,7 +17,7 @@ describe('Prompts versionados en el build (T8, D8)', () => {
 
     const carpeta = path.join(RAIZ, 'dist', 'modulos', 'agente', 'prompts');
     expect(existsSync(path.join(carpeta, 'reglas.v4.md'))).toBe(true);
-    expect(existsSync(path.join(carpeta, 'estilo.v4.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'estilo.v3.md'))).toBe(true);
     expect(existsSync(path.join(carpeta, 'turno.v3.md'))).toBe(true);
 
     const modulo = (await import(

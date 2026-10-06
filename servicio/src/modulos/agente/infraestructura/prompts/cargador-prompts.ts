@@ -4,11 +4,11 @@ import { Injectable, type OnModuleInit } from '@nestjs/common';
 
 /**
  * Versión del prompt que se registra en cada turno. Un cambio de prompt sube la versión. Cada archivo lleva el sufijo de la
- * última versión en que cambió: `reglas.v4.md` (Fase 12: `consultar_caso` y el índice de casos), `estilo.v4.md` (segmento de grifería, accesorios de baño y lavaplatos) y `turno.v3.md`.
+ * última versión en que cambió: `reglas.v4.md` (Fase 12: `consultar_caso` y el índice de casos), `estilo.v3.md` y `turno.v3.md`.
  */
 const VERSION_PROMPT = 'v4';
 const VERSION_REGLAS = 'v4';
-const VERSION_ESTILO = 'v4';
+const VERSION_ESTILO = 'v3';
 const VERSION_TURNO = 'v3';
 
 /**
