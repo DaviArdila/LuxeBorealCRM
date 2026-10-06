@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -8,12 +9,10 @@ import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/inde
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
-// Fase 08c, T2: lectura del estilo desde `parametro` (AGT18) y versión compartida en Redis (AGT19) contra
-// Postgres y Redis reales.
+// Fase 08c, T2 / Fase 12, T3: lectura del estilo desde `version_estilo` (AGT18, EST-D1) y versión compartida en Redis
+// (AGT19) contra Postgres y Redis reales.
 
 let modulo: TestingModule | undefined;
-
-const CLAVES = ['prompt_estilo', 'prompt_estilo_version', 'prompt_estilo_historial'];
 
 afterEach(async () => {
   await modulo?.close();
@@ -32,7 +31,7 @@ async function crearContexto() {
     .useValue(configuracion)
     .compile();
   const prisma = modulo.get(PrismaService);
-  await prisma.parametro.deleteMany({ where: { clave: { in: CLAVES } } });
+  await prisma.versionEstilo.deleteMany();
   const redis = modulo.get<ClienteRedis>(REDIS_CLIENTE);
   if (redis.status === 'wait') await redis.connect();
   await redis.del('agente:prompt:version');
@@ -42,11 +41,8 @@ async function crearContexto() {
 describe('RepositorioEstiloPrisma (Fase 08c, T2, integración)', () => {
   it('AGT18 — Un estilo publicado reemplaza al del archivo: lee el texto y su versión', async () => {
     const { repositorio, prisma } = await crearContexto();
-    await prisma.parametro.createMany({
-      data: [
-        { clave: 'prompt_estilo', valor: 'Habla con mucha calidez.' },
-        { clave: 'prompt_estilo_version', valor: 4 },
-      ],
+    await prisma.versionEstilo.create({
+      data: { version: 4, texto: 'Habla con mucha calidez.', vigente: true, publicadoEn: new Date('2026-10-01T10:00:00Z') },
     });
 
     await expect(repositorio.leerVigente()).resolves.toEqual({ texto: 'Habla con mucha calidez.', version: 4 });
@@ -56,22 +52,41 @@ describe('RepositorioEstiloPrisma (Fase 08c, T2, integración)', () => {
     const { repositorio } = await crearContexto();
 
     await expect(repositorio.leerVigente()).resolves.toBeNull();
+    await expect(repositorio.leerHistorial()).resolves.toEqual([]);
   });
 
-  it('AGT18 — Un valor en blanco o que no es texto cae al respaldo', async () => {
+  it('AGT18 — Un texto en blanco cae al respaldo', async () => {
     const { repositorio, prisma } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'prompt_estilo', valor: '   ' } });
-    await expect(repositorio.leerVigente()).resolves.toBeNull();
+    await prisma.versionEstilo.create({
+      data: { version: 1, texto: '   ', vigente: true, publicadoEn: new Date('2026-10-01T10:00:00Z') },
+    });
 
-    await prisma.parametro.update({ where: { clave: 'prompt_estilo' }, data: { valor: 42 } });
     await expect(repositorio.leerVigente()).resolves.toBeNull();
   });
 
-  it('un estilo sin versión registrada se lee como versión 1', async () => {
+  it('EST-D3 — La versión vigente trae a quien la publicó', async () => {
     const { repositorio, prisma } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'prompt_estilo', valor: 'Editado a mano' } });
+    const usuario = await prisma.usuario.create({
+      data: { email: `estilo-${randomUUID()}@example.test`, nombre: 'Ana', passwordHash: 'hash-de-prueba', rol: 'admin' },
+    });
+    await prisma.versionEstilo.create({
+      data: {
+        version: 3,
+        texto: 'Estilo de Ana.',
+        vigente: true,
+        publicadoEn: new Date('2026-10-01T10:00:00Z'),
+        publicadoPorId: usuario.id,
+        publicadoPorNombre: 'Ana',
+      },
+    });
 
-    await expect(repositorio.leerVigente()).resolves.toEqual({ texto: 'Editado a mano', version: 1 });
+    await expect(repositorio.leerVigente()).resolves.toEqual({
+      texto: 'Estilo de Ana.',
+      version: 3,
+      publicadoPor: { id: usuario.id, nombre: 'Ana' },
+    });
+    await prisma.versionEstilo.deleteMany();
+    await prisma.usuario.delete({ where: { id: usuario.id } });
   });
 });
 

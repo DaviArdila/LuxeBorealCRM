@@ -62,6 +62,7 @@ interface Restauracion {
             <span class="vigente">
               @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
               · origen: {{ vigente.origen }}
+              @if (vigente.origen === 'base') { · publicado por {{ vigente.publicadoPor?.nombre ?? 'Comando' }} }
             </span>
           }
         </mat-card-title>
@@ -91,6 +92,10 @@ interface Restauracion {
           <ng-container matColumnDef="fecha">
             <th mat-header-cell *matHeaderCellDef>Fecha</th>
             <td mat-cell *matCellDef="let version" class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="autor">
+            <th mat-header-cell *matHeaderCellDef>Publicó</th>
+            <td mat-cell *matCellDef="let version">{{ version.publicadoPor?.nombre ?? 'Comando' }}</td>
           </ng-container>
           <ng-container matColumnDef="texto">
             <th mat-header-cell *matHeaderCellDef>Texto</th>
@@ -185,7 +190,7 @@ interface Restauracion {
 export class EstiloComponent {
   protected readonly servicio = inject(EstiloServicio);
   protected readonly maximo = MAXIMO_CARACTERES;
-  protected readonly columnas = ['version', 'fecha', 'texto', 'acciones'];
+  protected readonly columnas = ['version', 'fecha', 'autor', 'texto', 'acciones'];
 
   protected readonly borrador = signal('');
   protected readonly motivo = signal<string | null>(null);

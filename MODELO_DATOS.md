@@ -58,6 +58,7 @@ erDiagram
     VENTA ||--o{ MOVIMIENTO_INVENTARIO : origina
     USUARIO ||--o{ VENTA : registra
     USUARIO ||--o{ MOVIMIENTO_INVENTARIO : ejecuta
+    USUARIO ||--o{ VERSION_ESTILO : publica
 
     DEPARTAMENTO ||--o{ CIUDAD : contiene
     CIUDAD ||--o{ ENVIO : "destino de"
@@ -142,6 +143,28 @@ valor es un texto de hasta 1.200 caracteres. Agregar un tema es agregar una fila
 
 **`recargo_contraentrega_pct` es un dato interno** (Fase 13, total de la venta): el bot nunca dice el
 porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (política de contra entrega).
+
+### `version_estilo` — NUEVA (Fase 12, T3; ADR-0024)
+Una fila por versión del estilo del bot (cómo habla: tono, forma, formato). Reemplaza a las claves `prompt_estilo`,
+`prompt_estilo_version` y `prompt_estilo_historial` de `parametro` (ADR-0020), que se conservan hasta la limpieza de la
+Fase 12 (T11) como respaldo.
+
+| Columna | Tipo | Nulo | Nota |
+|---|---|---|---|
+| `id` | uuid | no | PK, UUID v7 |
+| `version` | int | no | único; la numera el servidor (la mayor + 1) |
+| `texto` | text | no | validado en código (AGT20), nunca se escribe en logs (R14) |
+| `vigente` | boolean | no | exactamente una fila `true`: índice único parcial `[manual]` |
+| `publicado_en` | timestamptz | no | cuándo se publicó; la fecha en que una versión **dejó de regir** es la `publicado_en` de la siguiente |
+| `publicado_por_id` | uuid | sí | FK a `usuario` (`ON DELETE SET NULL`); nulo si la publicó el comando `npm run prompt:estilo` |
+| `publicado_por_nombre` | text | sí | instantánea del nombre al publicar: auditoría que no cambia si el usuario se renombra |
+
+- Índice único parcial `[manual]` `version_estilo_vigente_key` sobre `(vigente) WHERE vigente`: la base rechaza una
+  segunda versión vigente. Prisma no lo expresa, se escribe a mano en la migración y lo guarda la comprobación de marcas
+  `[manual]` (PER9).
+- El historial conserva la vigente y como máximo diez anteriores (AGT21); publicar poda las más antiguas.
+- La migración copia el estilo vigente y su historial desde `parametro` conservando los números de versión; la fecha
+  de publicación de cada versión es la de retiro de la anterior (la de la más antigua del historial, la suya propia).
 
 ## 4. Envíos (rediseñado con el usuario, P4)
 

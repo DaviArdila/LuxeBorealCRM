@@ -13,6 +13,10 @@ export interface ObtenerEstilo$Params {
 
 export function obtenerEstilo(http: HttpClient, rootUrl: string, params?: ObtenerEstilo$Params, context?: HttpContext): Observable<StrictHttpResponse<{
 'origen': 'base' | 'archivo';
+'publicadoPor': ({
+'id': string;
+'nombre': string;
+} | null);
 'texto': string;
 'version': (number | null);
 }>> {
@@ -27,6 +31,10 @@ export function obtenerEstilo(http: HttpClient, rootUrl: string, params?: Obtene
     map((r: HttpResponse<any>) => {
       return r as StrictHttpResponse<{
       'origen': 'base' | 'archivo';
+      'publicadoPor': ({
+      'id': string;
+      'nombre': string;
+      } | null);
       'texto': string;
       'version': (number | null);
       }>;

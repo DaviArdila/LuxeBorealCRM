@@ -61,7 +61,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 ## Checklist
 
 - [x] T1 — Menú lateral con submódulos (cliente) — rama `fase-12-p1-menu-lateral`, commit de unidad de trabajo único
-- [ ] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente)
+- [x] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente) — rama `fase-12-p2-ventana-edicion`, commit `0a6bc17` (PR 93; `size:exception`: 513 líneas, ~285 de pruebas)
 - [ ] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó»
 - [ ] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento)
 - [ ] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento)
@@ -132,6 +132,9 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
   cliente `api:deriva`. RED: la tabla y el campo no existen.
 - **Ruta**: delegada. **Slice**: `fase-12-p3-estilo-desacoplado`. **Forecast**: ~400 líneas (migración y cliente
   generado no cuentan como autoría).
+  `size:exception` (T3): ~850 líneas añadidas y ~160 borradas sin contar contrato ni cliente generados; ~570 son pruebas
+  (migración con datos reales, repositorio, autor, API, comando, e2e y guardia `[manual]` del índice parcial) y ~110
+  la migración SQL. El esquema, el repositorio, el autor y la pantalla no funcionan por separado.
 - **Docs**: `MODELO_DATOS.md`, `docs/operacion/estilo-del-bot.md`, ADR-0024 (estado).
 - **Evals**: `npm --prefix servicio run evals` en verde sin cambios (el estilo se aplica igual).
 - Las claves `prompt_estilo*` de `parametro` **se conservan** hasta T11 (rollback).

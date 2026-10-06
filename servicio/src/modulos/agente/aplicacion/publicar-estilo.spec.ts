@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
-import type { EstiloGuardado, RepositorioEstilo, VersionHistorial } from '../puertos/repositorio-estilo.js';
+import type { AutorEstilo, EstiloGuardado, RepositorioEstilo, VersionHistorial } from '../puertos/repositorio-estilo.js';
 import type { VersionEstilo } from '../puertos/version-estilo.js';
 import { ListarHistorialEstilo } from './listar-historial-estilo.js';
 import { PublicarEstilo } from './publicar-estilo.js';
@@ -10,7 +10,7 @@ import { RestaurarEstilo } from './restaurar-estilo.js';
 // Casos de uso de AGT20, AGT21 y AGT22 con dobles: el guardado transaccional real se prueba contra Postgres.
 
 class RepositorioEstiloFalso implements RepositorioEstilo {
-  publicaciones: { texto: string; fecha: Date }[] = [];
+  publicaciones: { texto: string; fecha: Date; autor: AutorEstilo | null | undefined }[] = [];
   vigente: EstiloGuardado | null = null;
   historial: VersionHistorial[] = [];
   leerVigente(): Promise<EstiloGuardado | null> {
@@ -19,8 +19,8 @@ class RepositorioEstiloFalso implements RepositorioEstilo {
   leerHistorial(): Promise<readonly VersionHistorial[]> {
     return Promise.resolve(this.historial);
   }
-  publicar(texto: string, fecha: Date): Promise<number> {
-    this.publicaciones.push({ texto, fecha });
+  publicar(texto: string, fecha: Date, autor?: AutorEstilo | null): Promise<number> {
+    this.publicaciones.push({ texto, fecha, autor });
     const version = (this.vigente?.version ?? 0) + 1;
     this.vigente = { texto, version };
     return Promise.resolve(version);
@@ -135,5 +135,31 @@ describe('agente/aplicacion — publicar, restaurar y listar el estilo', () => {
       vigente: { texto: 'Actual', version: 3 },
       historial: [{ version: 2, texto: 'Dos', fecha: '2026-09-30T10:00:00.000Z' }],
     });
+  });
+  it('EST-D3 — Publicar pasa al repositorio al usuario que publica', async () => {
+    const { publicar, repositorio } = crear();
+    const ana = { id: '0199a000-0000-7000-8000-00000000000a', nombre: 'Ana' };
+
+    await publicar.ejecutar('Estilo cálido y claro.', ana);
+
+    expect(repositorio.publicaciones[0]?.autor).toEqual(ana);
+  });
+
+  it('EST-D3 — Publicar sin usuario (el comando) no guarda autor', async () => {
+    const { publicar, repositorio } = crear();
+
+    await publicar.ejecutar('Estilo cálido y claro.');
+
+    expect(repositorio.publicaciones[0]?.autor).toBeUndefined();
+  });
+
+  it('EST-D3 — Restaurar registra a quien restauró como autor de la versión nueva', async () => {
+    const { restaurar, repositorio } = crear();
+    repositorio.historial = [{ version: 1, texto: 'Estilo viejo y claro.', fecha: '2026-10-01T10:00:00.000Z' }];
+    const luis = { id: '0199a000-0000-7000-8000-00000000000b', nombre: 'Luis' };
+
+    await restaurar.ejecutar(1, luis);
+
+    expect(repositorio.publicaciones[0]).toMatchObject({ texto: 'Estilo viejo y claro.', autor: luis });
   });
 });

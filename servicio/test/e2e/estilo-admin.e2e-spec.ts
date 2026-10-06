@@ -39,7 +39,7 @@ interface Contexto {
 let contexto: Contexto | undefined;
 
 async function limpiarEstilo(ctx: Contexto): Promise<void> {
-  await ctx.prisma.parametro.deleteMany({ where: { clave: { startsWith: 'prompt_estilo' } } });
+  await ctx.prisma.versionEstilo.deleteMany();
   await ctx.redis.incr('agente:prompt:version');
 }
 
@@ -100,7 +100,7 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
     const respuesta = await request(ctx.servidor).get(RUTA).set('cookie', admin.cookie);
 
     expect(respuesta.status).toBe(200);
-    expect(respuesta.body).toMatchObject({ version: null, origen: 'archivo' });
+    expect(respuesta.body).toMatchObject({ version: null, origen: 'archivo', publicadoPor: null });
     expect((respuesta.body as { texto: string }).texto.length).toBeGreaterThan(50);
   });
 
@@ -113,7 +113,12 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
 
     expect(publicado.status).toBe(200);
     expect(publicado.body).toEqual({ version: 1 });
-    expect(vigente.body).toEqual({ version: 1, origen: 'base', texto: 'ESTILO-API-UNO: tono cercano y claro.' });
+    expect(vigente.body).toEqual({
+      version: 1,
+      origen: 'base',
+      texto: 'ESTILO-API-UNO: tono cercano y claro.',
+      publicadoPor: { id: admin.usuarioId, nombre: 'Persona del e2e' },
+    });
   });
 
   it('AGT23 — Un estilo inválido se rechaza con su motivo y la versión vigente no cambia', async () => {
@@ -167,7 +172,12 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
 
     expect(restaurado.status).toBe(200);
     expect(restaurado.body).toEqual({ version: 4 });
-    expect(vigente.body).toEqual({ version: 4, origen: 'base', texto: 'ESTILO-A: tono cercano.' });
+    expect(vigente.body).toEqual({
+      version: 4,
+      origen: 'base',
+      texto: 'ESTILO-A: tono cercano.',
+      publicadoPor: { id: admin.usuarioId, nombre: 'Persona del e2e' },
+    });
   });
 
   it('AGT23 — Restaurar una versión que no existe se rechaza con 404', async () => {
@@ -207,6 +217,25 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
     }
   });
 
+  it('EST-D3 — El historial muestra el autor de cada versión y el vigente trae a quien restauró', async () => {
+    const ctx = await arrancar();
+    const ana = await iniciarSesionComo(ctx.servidor, ctx.prisma, 'admin');
+    const luis = await iniciarSesionComo(ctx.servidor, ctx.prisma, 'admin');
+    await publicar(ctx, ana, 'ESTILO-A: tono cercano.');
+    await publicar(ctx, luis, 'ESTILO-B: tono serio.');
+    await request(ctx.servidor).post(`${RUTA}/restauraciones`).set(CSRF).set('cookie', ana.cookie).send({ version: 1 });
+
+    const historial = await request(ctx.servidor).get(`${RUTA}/historial`).set('cookie', luis.cookie);
+    const vigente = await request(ctx.servidor).get(RUTA).set('cookie', luis.cookie);
+
+    const { versiones } = historial.body as { versiones: { version: number; publicadoPor: { id: string } | null }[] };
+    expect(versiones.map((v) => [v.version, v.publicadoPor?.id])).toEqual([
+      [2, luis.usuarioId],
+      [1, ana.usuarioId],
+    ]);
+    expect(vigente.body).toMatchObject({ version: 3, publicadoPor: { id: ana.usuarioId } });
+  });
+
   it('AGT23 — Un asesor no administra el estilo: las cuatro operaciones responden 403 y nada cambia', async () => {
     const ctx = await arrancar();
     const admin = await iniciarSesionComo(ctx.servidor, ctx.prisma, 'admin');
@@ -225,7 +254,12 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
       expect(respuesta.status).toBe(403);
       expect(codigoDe(respuesta)).toBe('rol-insuficiente');
     }
-    expect(vigente.body).toEqual({ version: 1, origen: 'base', texto: 'ESTILO-A: tono cercano.' });
+    expect(vigente.body).toEqual({
+      version: 1,
+      origen: 'base',
+      texto: 'ESTILO-A: tono cercano.',
+      publicadoPor: { id: admin.usuarioId, nombre: 'Persona del e2e' },
+    });
   });
 
   it('sin sesión la API responde 401, y una mutación sin el encabezado anti-CSRF responde 403', async () => {

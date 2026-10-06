@@ -9,8 +9,8 @@ const URL_ESTILO = '/api/v1/agente/estilo';
 const URL_HISTORIAL = '/api/v1/agente/estilo/historial';
 const HISTORIAL = {
   versiones: [
-    { version: 2, fecha: '2026-10-03T15:00:00.000Z', texto: 'Estilo dos. '.repeat(30) },
-    { version: 1, fecha: '2026-10-01T15:00:00.000Z', texto: 'Estilo uno completo.' },
+    { version: 2, fecha: '2026-10-03T15:00:00.000Z', texto: 'Estilo dos. '.repeat(30), publicadoPor: { id: 'u-1', nombre: 'Luis' } },
+    { version: 1, fecha: '2026-10-01T15:00:00.000Z', texto: 'Estilo uno completo.', publicadoPor: null },
   ],
 };
 
@@ -39,7 +39,7 @@ async function cerrada(fixture: ComponentFixture<EstiloComponent>): Promise<void
 }
 
 /** Atiende las dos lecturas con las que la pantalla se abre. */
-async function abrir(vigente = { version: 3, origen: 'base', texto: 'Estilo vigente.' }) {
+async function abrir(vigente: Record<string, unknown> = { version: 3, origen: 'base', texto: 'Estilo vigente.', publicadoPor: { id: 'u-2', nombre: 'Ana' } }) {
   const montada = await montar();
   montada.control.expectOne(URL_ESTILO).flush(vigente);
   montada.control.expectOne(URL_HISTORIAL).flush(HISTORIAL);
@@ -77,8 +77,23 @@ describe('SHL9 — Pantalla «Estilo del bot»', () => {
     expect(el.querySelector('textarea')).toBeNull();
   });
 
+  it('SHL9 — La pantalla muestra el vigente con su autor', async () => {
+    const { el } = await abrir();
+
+    expect(el.querySelector('.vigente')!.textContent).toContain('Versión 3');
+    expect(el.querySelector('.vigente')!.textContent).toContain('Ana');
+  });
+
+  it('SHL9 — El historial muestra quién publicó cada versión, o «Comando» si no tiene usuario', async () => {
+    const { el } = await abrir();
+
+    const filas = [...el.querySelectorAll('tr.mat-mdc-row')].map((fila) => fila.textContent ?? '');
+    expect(filas[0]).toContain('Luis');
+    expect(filas[1]).toContain('Comando');
+  });
+
   it('con origen archivo (sin versión) lo dice en vez de inventar una versión', async () => {
-    const { el } = await abrir({ version: null as unknown as number, origen: 'archivo', texto: 'Del archivo.' });
+    const { el } = await abrir({ version: null, origen: 'archivo', texto: 'Del archivo.', publicadoPor: null });
 
     expect(el.textContent).toContain('archivo');
     expect(el.textContent).not.toContain('Versión null');
@@ -109,7 +124,7 @@ describe('SHL9 — Pantalla «Estilo del bot»', () => {
     expect(publicacion.request.body).toEqual({ texto: 'Estilo nuevo.' });
     publicacion.flush({ version: 4 });
     await asentar(fixture);
-    control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 4, origen: 'base', texto: 'Estilo nuevo.' });
+    control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 4, origen: 'base', texto: 'Estilo nuevo.', publicadoPor: { id: 'u-2', nombre: 'Ana' } });
     control.expectOne(URL_HISTORIAL).flush(HISTORIAL);
     await asentar(fixture);
     await cerrada(fixture);
@@ -182,7 +197,7 @@ describe('SHL9 — Pantalla «Estilo del bot»', () => {
     expect(peticion.request.body).toEqual({ version: 1 });
     peticion.flush({ version: 5 });
     await asentar(fixture);
-    control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 5, origen: 'base', texto: 'Estilo uno completo.' });
+    control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 5, origen: 'base', texto: 'Estilo uno completo.', publicadoPor: { id: 'u-2', nombre: 'Ana' } });
     control.expectOne(URL_HISTORIAL).flush(HISTORIAL);
     await asentar(fixture);
 

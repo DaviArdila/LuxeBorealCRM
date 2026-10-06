@@ -289,6 +289,7 @@ model Usuario {
   actualizado           DateTime               @default(now()) @db.Timestamptz(3)
   movimientosInventario MovimientoInventario[]
   ventas                Venta[]
+  versionesEstilo       VersionEstilo[]
 
   @@map("usuario")
 }
@@ -545,4 +546,20 @@ enum RolUsuario {
   asesor
 
   @@map("rol_usuario")
+}
+
+/// Una fila por versión del estilo del bot (Fase 12, EST-D1; MODELO_DATOS.md §3). Exactamente una fila es la
+/// vigente: el índice único parcial `version_estilo_vigente_key` se escribe a mano en la migración y se marca
+/// `[manual]` (Prisma no expresa índices parciales). `publicado_por_nombre` es una instantánea del autor.
+model VersionEstilo {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  version            Int      @unique
+  texto              String
+  vigente            Boolean  @default(false)
+  publicadoEn        DateTime @map("publicado_en") @db.Timestamptz(3)
+  publicadoPorId     String?  @map("publicado_por_id") @db.Uuid
+  publicadoPorNombre String?  @map("publicado_por_nombre")
+  publicadoPor       Usuario? @relation(fields: [publicadoPorId], references: [id], onDelete: SetNull)
+
+  @@map("version_estilo")
 }

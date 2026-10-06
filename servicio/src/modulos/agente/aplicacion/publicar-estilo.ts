@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK } from '../../../plataforma/reloj/index.js';
 import type { Clock } from '../../../plataforma/reloj/index.js';
 import { validarEstilo } from '../dominio/validar-estilo.js';
-import { REPOSITORIO_ESTILO, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
+import { REPOSITORIO_ESTILO, type AutorEstilo, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
 import { VERSION_ESTILO, type VersionEstilo } from '../puertos/version-estilo.js';
 
 /**
@@ -20,7 +20,7 @@ export type ResultadoPublicacion =
  * Publica un estilo nuevo (AGT20, AGT21, D2 de la Fase 08c): valida, guarda de forma atómica (texto, historial y
  * versión) y después sube la versión compartida para que todos los procesos lean el nuevo. Si Redis falla tras
  * confirmar la base, el estilo ya está publicado: el TTL de respaldo de la copia en memoria alcanza a los demás
- * procesos y el resultado es éxito. Nunca escribe el texto en logs (R14).
+ * procesos y el resultado es éxito. `autor` es quien publica (EST-D3); sin él (el comando) la versión queda sin autor. Nunca escribe el texto en logs (R14).
  */
 @Injectable()
 export class PublicarEstilo {
@@ -32,12 +32,12 @@ export class PublicarEstilo {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async ejecutar(texto: string): Promise<ResultadoPublicacion> {
+  async ejecutar(texto: string, autor?: AutorEstilo): Promise<ResultadoPublicacion> {
     const validacion = validarEstilo(texto);
     if (!validacion.valido) {
       return { publicado: false, motivo: validacion.motivo, razon: 'invalido' };
     }
-    const version = await this.repositorio.publicar(texto, this.clock.ahora());
+    const version = await this.repositorio.publicar(texto, this.clock.ahora(), autor);
     try {
       await this.version.incrementar();
     } catch {

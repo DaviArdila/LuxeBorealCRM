@@ -1,7 +1,7 @@
 # Cómo cambiar el estilo del bot
 
-**Resumen.** El estilo del bot (tono, longitud, formato, emojis) se cambia con un comando, sin desplegar y con
-vuelta atrás. Solo el estilo es editable: las reglas de dinero, datos y herramientas no se pueden tocar. Antes de
+**Resumen.** El estilo del bot (tono, longitud, formato, emojis) se cambia desde la pantalla «Estilo del bot» del
+back office o con un comando, sin desplegar y con vuelta atrás. Cada versión guarda **quién la publicó**. Solo el estilo es editable: las reglas de dinero, datos y herramientas no se pueden tocar. Antes de
 exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de fondo:
 [ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md).
 
@@ -18,6 +18,19 @@ exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de f
 
 Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
 queda sin estilo.
+
+## Dónde vive y quién publicó
+
+Desde la Fase 12 el estilo vive en su propia tabla, `version_estilo` ([MODELO_DATOS.md](../../MODELO_DATOS.md)): una fila
+por versión, con el texto, la fecha de publicación y el autor. La pantalla muestra la versión vigente con su autor y el
+historial con el autor de cada versión. Lo publicado por la pantalla lleva el nombre del usuario; lo publicado con
+`npm run prompt:estilo` no tiene usuario y se muestra como «Comando». Restaurar una versión deja como autor de la
+versión nueva a quien restauró. El nombre se guarda tal como estaba al publicar: si el usuario cambia de nombre, el
+historial no cambia.
+
+La migración copió el estilo y su historial desde `parametro` conservando los números de versión. Las claves viejas
+(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) **siguen ahí como respaldo** y ya nadie las lee; se
+borran en la limpieza final de la fase.
 
 ## El flujo recomendado
 
@@ -56,8 +69,8 @@ Un estilo rechazado no cambia nada: el vigente sigue igual y el comando termina 
 - **A una versión estable:** `npm run prompt:estilo -- historial` para ver las versiones y
   `npm run prompt:estilo -- restaurar --version <n>`. No borra nada: la restaurada pasa a ser una versión nueva y el
   historial conserva las anteriores (últimas 10).
-- **Al archivo del repositorio:** borra las filas `prompt_estilo`, `prompt_estilo_version` y `prompt_estilo_historial` de la
-  tabla `parametro`. El bot vuelve al archivo en cuanto expira su copia (máximo 5 minutos) o alguien publica de nuevo.
+- **Al archivo del repositorio:** vacía la tabla `version_estilo` (`DELETE FROM version_estilo;`). El bot vuelve al archivo
+  en cuanto expira su copia (máximo 5 minutos) o alguien publica de nuevo.
 
 ## Cosas que conviene saber
 
@@ -66,8 +79,8 @@ Un estilo rechazado no cambia nada: el vigente sigue igual y el comando termina 
 - **Costo.** El proveedor del LLM guarda en caché el inicio del prompt para abaratar. Cada cambio de estilo la rompe una
   vez; después vuelve a funcionar.
 - **Privacidad.** El comando nunca escribe el texto del estilo en los logs (R14). Solo `ver` lo muestra, en tu terminal.
-- **Editar a mano en la base.** No lo hagas: se salta la validación y el historial. Si ocurre, el bot lo usa igual (versión 1 si
-  no hay versión) pero esa versión no queda en el historial.
+- **Editar a mano en la base.** No lo hagas: se salta la validación y el historial. La base garantiza una sola versión
+  vigente (índice único parcial), pero no revisa el contenido.
 - **El archivo de respaldo** también cambia con un commit (versión `v3` del prompt si hace falta); eso sí exige desplegar.
 
 ## Si algo no funciona

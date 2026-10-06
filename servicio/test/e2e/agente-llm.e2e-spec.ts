@@ -406,7 +406,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
 
   /** Deja la base y la versión compartida como estaban: el estilo editado no debe filtrarse a otros tests. */
   async function limpiarEstilo(aplicacion: INestApplication): Promise<void> {
-    await aplicacion.get(PrismaService).parametro.deleteMany({ where: { clave: { startsWith: 'prompt_estilo' } } });
+    await aplicacion.get(PrismaService).versionEstilo.deleteMany();
     await aplicacion.get<ClienteRedis>(REDIS_CLIENTE).incr('agente:prompt:version');
   }
 

@@ -11,17 +11,23 @@ export type PublicarEstiloCuerpo = z.infer<typeof esquemaPublicarEstilo>;
 export const esquemaRestaurarEstilo = z.object({ version: z.int().min(1) });
 export type RestaurarEstiloCuerpo = z.infer<typeof esquemaRestaurarEstilo>;
 
+/** Quien publicó una versión (EST-D3); la respuesta lleva `null` si fue el comando `prompt:estilo` o rige el archivo. */
+export const esquemaAutorEstilo = z.object({ id: z.uuid(), nombre: z.string() });
+
 /** `version` es `null` cuando rige el archivo de respaldo (AGT18). */
 export const esquemaEstiloVigente = z.object({
   version: z.int().nullable(),
   origen: z.enum(['base', 'archivo']),
   texto: z.string(),
+  publicadoPor: esquemaAutorEstilo.nullable(),
 });
 export type EstiloVigenteRespuesta = z.infer<typeof esquemaEstiloVigente>;
 
 /** Las versiones retiradas, la más reciente primero; `fecha` es cuándo dejó de estar vigente (AGT21). */
 export const esquemaHistorialEstilo = z.object({
-  versiones: z.array(z.object({ version: z.int(), fecha: z.string(), texto: z.string() })),
+  versiones: z.array(
+    z.object({ version: z.int(), fecha: z.string(), texto: z.string(), publicadoPor: esquemaAutorEstilo.nullable() }),
+  ),
 });
 export type HistorialEstiloRespuesta = z.infer<typeof esquemaHistorialEstilo>;
 

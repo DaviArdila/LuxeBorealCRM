@@ -14,14 +14,22 @@ const PATRON_MARCADOR = /^--\s*\[manual\]\s*(\S+)\s*—/u;
 const NOMBRE_INDICE_ZONA = 'zona_sin_cobertura_departamento_id_ciudad_id_key';
 const NOMBRE_CHECK_CANTIDAD = 'movimiento_inventario_cantidad_positiva_check';
 const NOMBRE_CHECK_USUARIO = 'movimiento_inventario_usuario_si_origen_usuario_check';
+const NOMBRE_INDICE_ESTILO_VIGENTE = 'version_estilo_vigente_key';
 
-export type TipoObjetoManual = 'indice_nulls_not_distinct' | 'check' | 'desconocido';
+export type TipoObjetoManual = 'indice_nulls_not_distinct' | 'indice_unico_parcial' | 'check' | 'desconocido';
 
 type FormaEsperada =
   | {
       readonly tipo: 'indice_nulls_not_distinct';
       readonly tabla: string;
       readonly columnas: readonly string[];
+    }
+  | {
+      readonly tipo: 'indice_unico_parcial';
+      readonly tabla: string;
+      readonly columnas: readonly string[];
+      /** El predicado `WHERE` tal como lo imprime Postgres, sin espacios ni paréntesis. */
+      readonly predicado: string;
     }
   | {
       readonly tipo: 'check';
@@ -36,6 +44,15 @@ const FORMAS_ESPERADAS = new Map<string, FormaEsperada>([
       tipo: 'indice_nulls_not_distinct',
       tabla: 'zona_sin_cobertura',
       columnas: ['departamento_id', 'ciudad_id'],
+    },
+  ],
+  [
+    NOMBRE_INDICE_ESTILO_VIGENTE,
+    {
+      tipo: 'indice_unico_parcial',
+      tabla: 'version_estilo',
+      columnas: ['vigente'],
+      predicado: 'vigente',
     },
   ],
   [
@@ -94,7 +111,7 @@ export interface ResultadoVerificacionManual {
 
 /**
  * Confirma, contra el catálogo real de Postgres (`pg_constraint` para `CHECK`, `pg_index` para el
- * índice único con `NULLS NOT DISTINCT`), que cada objeto marcado sigue existiendo con su forma
+ * índice único con `NULLS NOT DISTINCT` y para el índice único parcial), que cada objeto marcado sigue existiendo con su forma
  * esperada. Si una migración futura lo borra o lo recrea sin la cláusula/condición correcta, el
  * objeto no aparece con la forma esperada y queda en `faltantes`.
  */
@@ -110,15 +127,14 @@ export async function verificarMarcasManuales(
       continue;
     }
 
-    const existe =
-      forma.tipo === 'check'
-        ? await existeCheck(cliente, objeto.nombre, forma.tabla, forma.expresion)
-        : await existeIndiceNullsNotDistinct(
-            cliente,
-            objeto.nombre,
-            forma.tabla,
-            forma.columnas,
-          );
+    let existe: boolean;
+    if (forma.tipo === 'check') {
+      existe = await existeCheck(cliente, objeto.nombre, forma.tabla, forma.expresion);
+    } else if (forma.tipo === 'indice_unico_parcial') {
+      existe = await existeIndiceUnicoParcial(cliente, objeto.nombre, forma.tabla, forma.columnas, forma.predicado);
+    } else {
+      existe = await existeIndiceNullsNotDistinct(cliente, objeto.nombre, forma.tabla, forma.columnas);
+    }
     if (!existe) {
       faltantes.push(objeto.nombre);
     }
@@ -179,4 +195,36 @@ async function existeIndiceNullsNotDistinct(
     [nombre, tabla, columnasEsperadas, columnasEsperadas.length],
   );
   return resultado.rows[0]?.existe === true;
+}
+
+async function existeIndiceUnicoParcial(
+  cliente: Client,
+  nombre: string,
+  tabla: string,
+  columnasEsperadas: readonly string[],
+  predicadoEsperado: string,
+): Promise<boolean> {
+  const resultado = await cliente.query<{ predicado: string }>(
+    `SELECT regexp_replace(lower(pg_get_expr(i.indpred, i.indrelid)), '[[:space:]()"]', '', 'g') AS predicado
+     FROM pg_index i
+     JOIN pg_class AS indice ON indice.oid = i.indexrelid
+     JOIN pg_class AS tabla ON tabla.oid = i.indrelid
+     JOIN pg_namespace AS esquema ON esquema.oid = tabla.relnamespace
+     WHERE indice.relname = $1
+       AND tabla.relname = $2
+       AND esquema.nspname = 'public'
+       AND i.indisunique
+       AND i.indisvalid
+       AND i.indpred IS NOT NULL
+       AND i.indnkeyatts = $4
+       AND (
+         SELECT array_agg(columna.attname::text ORDER BY clave.ordinalidad)
+         FROM unnest(i.indkey) WITH ORDINALITY AS clave(attnum, ordinalidad)
+         JOIN pg_attribute AS columna
+           ON columna.attrelid = i.indrelid
+           AND columna.attnum = clave.attnum
+       ) = $3::text[]`,
+    [nombre, tabla, columnasEsperadas, columnasEsperadas.length],
+  );
+  return resultado.rows.some((fila) => fila.predicado === predicadoEsperado);
 }
