@@ -246,7 +246,7 @@ Fase que lo implementa: 06
 
 Cuando el gasto mensual alcanza el 100 % del techo, el gateway MUST NOT llamar al LLM y MUST
 devolver el error tipado `techo-alcanzado` para que las Fases 07/08 deriven a humano. El texto de
-cortesía que acompaña esa derivación MUST leerse del parámetro **`mensaje_techo_gasto`** (**R15**;
+cortesía que acompaña esa derivación MUST leerse del caso del sistema **`mensaje_techo_gasto`** del asistente (**R15**;
 texto a definir por el negocio, default provisional en la proposal — el gateway no elige textos).
 
 Fase que lo implementa: 06 (error + parámetro); 07/08 (handoff + texto)
@@ -258,9 +258,9 @@ Fase que lo implementa: 06 (error + parámetro); 07/08 (handoff + texto)
 - Entonces el gateway no hace ninguna llamada al proveedor y devuelve el error tipado
   `techo-alcanzado`; el bloqueo queda visible en la fila observable del gasto.
 
-#### Scenario: LLM9 — Texto de derivación vive en el parámetro mensaje_techo_gasto
+#### Scenario: LLM9 — Texto de derivación vive en el caso del sistema mensaje_techo_gasto
 
-- Dado que el negocio actualiza el parámetro `mensaje_techo_gasto`,
+- Dado que el negocio actualiza el caso `mensaje_techo_gasto`,
 - Cuando se lee ese texto (p. ej. al derivar a humano por techo),
 - Entonces se usa el valor actualizado sin desplegar código nuevo, y el gateway nunca trae un texto
   fijo propio para este caso.
