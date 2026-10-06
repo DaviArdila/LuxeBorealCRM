@@ -68,7 +68,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo` — rama `fase-12-p6-consultar-caso`, commit `86d4d50` (PR 97; `size:exception` anotada en la tarea)
 - [x] T7 — API de categorías y casos con buscador y contrato — rama `fase-12-p7-api-casos`, commit `61a989f` (PR 98; `size:exception` anotada en la tarea)
 - [x] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos» — rama `fase-12-p8-pantalla-casos`, commits `7edcb43` y `698986b` (PR 99; `size:exception` anotada en la tarea; se añadió `openapi/oasdiff-ignorar.txt` para los retiros decididos)
-- [ ] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés
+- [x] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés — rama `fase-12-p9-configuracion-api`, commit `3d4fb1d` (PR 100; `size:exception` y desvíos anotados en la tarea)
 - [ ] T10 — Pantallas de Configuración
 - [ ] T11 — Limpieza final: cero referencias al sistema viejo
 - [ ] T12 — Guía de operación, cierre documental y tareas `[manual]` del dueño
@@ -278,6 +278,11 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
   anticipada).
 - **Docs**: `cliente-back-office.md`.
 - **Evals**: no aplican.
+- **`size:exception` (T10)**: ~1.050 líneas de autoría (~330 de pruebas): tres pantallas con su servicio, rutas y área, más 31
+  archivos generados del cliente ya contados en T9. No se parte: las tres comparten área, menú y ventana de edición.
+- **Desvíos**: (1) El `422` trae un solo `detail` con «campo: regla» por campo; la ventana lo muestra completo, no junto a cada
+  control. (2) Las pruebas y los componentes se escribieron en la misma pasada; en la primera corrida fallaron 2 pruebas por
+  jsdom (el interruptor es un botón y `type="time"` descarta «25:00»), se ajustaron las pruebas, no el comportamiento.
 
 ### T11 — Limpieza final: cero referencias al sistema viejo
 

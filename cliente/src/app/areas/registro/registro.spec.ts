@@ -30,4 +30,13 @@ describe('D9 — El registro de áreas describe cada área con datos coherentes'
     const rutas = await asistente!.rutas();
     expect(rutas.map((ruta) => ruta.path)).toEqual(['', 'casos', 'estilo']);
   });
+
+  it('SHL11 — El área Configuración es solo de admin y carga Horario, Envíos y Gasto del LLM en diferido', async () => {
+    const configuracion = REGISTRO_DE_AREAS.find((area) => area.id === 'configuracion');
+
+    expect(configuracion?.roles).toEqual(['admin']);
+    const rutas = await configuracion!.rutas();
+    expect(rutas.map((ruta) => ruta.path)).toEqual(['', 'horario', 'envios', 'gasto-llm']);
+    expect(configuracion!.menu[0]?.hijos?.map((hijo) => hijo.titulo)).toEqual(['Horario', 'Envíos', 'Gasto del LLM']);
+  });
 });
