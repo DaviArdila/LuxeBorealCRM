@@ -25,6 +25,7 @@ reflejada.
 | P61 | Fase 12 (Q3): ¿los casos de uso guardan un historial de versiones como el estilo? | **Resuelta (2026-10-05, el dueño: «procede con todo»).** No (default aplicado) | **No en la 12**: se protege la edición simultánea con la fecha de actualización (`409 caso-modificado`, CAS3). Se revisa si el dueño lo extraña |
 | P62 | Fase 12 (Q4): ¿se aprueban las tres tablas nuevas (`categoria_caso`, `caso_asistente`, `version_estilo`) y retirar de `parametro` los textos y el estilo? Es esquema: decisión del dueño | **T3** (primer cambio de esquema de la fase) | Sí, con el diseño de ADR-0024 (`propuesta`). **Resuelta (2026-10-05, el dueño: «procede con todo»):** las tres tablas quedan aprobadas y la fase 12 está `aprobada` |
 | P63 | Fase 12 (Q5): ¿el importador `catalogo:importar` deja de aceptar filas de texto (`mensaje_*`, `politica_*`) en `parametros.csv`? | **Resuelta (2026-10-05, el dueño: «procede con todo»).** No (default aplicado) | **Sí**: las rechaza con un mensaje claro y los textos de desarrollo pasan a `npm run casos:sembrar` (CFG6, D9) |
+| P64 | ¿Cuándo se activa la multiempresa (ADR-0025)? | No: queda para el final, a decisión del dueño (2026-10-06) | Cuando la lógica del negocio esté pulida o aparezca un segundo negocio concreto con fecha. Mientras tanto rige ADR-0006 y se siguen las recomendaciones de `luxeboreal-arquitectura` §5. Plan: `odd/tasks/multiempresa.md` |
 
 ## Resueltas
 

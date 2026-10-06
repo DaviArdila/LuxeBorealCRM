@@ -30,6 +30,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0022](0022-cliente-angular-en-el-repo.md) | Cliente de back office en Angular, dentro de este repo (`cliente/`) (enmienda el doc 06) | propuesta | 2026-10-03 |
 | [0023](0023-estructura-servicio-y-cliente.md) | Estructura del repositorio: `servicio/` y `cliente/` como aplicaciones hermanas (enmienda 0022) | propuesta | 2026-10-04 |
 | [0024](0024-casos-del-asistente.md) | Casos de uso del asistente, estilo en su propia tabla y configuración tipada (matiza 0020) | propuesta | 2026-10-05 |
+| [0025](0025-multiempresa-negocio-id-y-rls.md) | Multiempresa con `negocio_id` y seguridad por fila (reemplazaría a 0006; no iniciada) | propuesta | 2026-10-06 |
 
 ## Plantilla
 
