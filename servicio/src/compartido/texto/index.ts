@@ -4,6 +4,7 @@
  */
 export {
   contieneMarcadorDePlantilla,
+  contieneSku,
   contieneValorEnPesos,
   normalizarLugar,
   normalizarTexto,

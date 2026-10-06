@@ -142,7 +142,7 @@ describe('Migración inicial (T2, integración)', () => {
               AND data_type = 'uuid'
               AND column_name = 'id'
           `);
-          expect(columnasId.rows[0]).toEqual({ total: 18, conDefault: 0 });
+          expect(columnasId.rows[0]).toEqual({ total: 20, conDefault: 0 });
 
           const migraciones = await clienteBaseVacia.query<{ total: number }>(
             'SELECT COUNT(*)::int AS total FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL',

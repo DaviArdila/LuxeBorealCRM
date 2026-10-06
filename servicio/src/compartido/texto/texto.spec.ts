@@ -1,4 +1,11 @@
-import { contieneMarcadorDePlantilla, contieneValorEnPesos, normalizarLugar, normalizarTexto, palabrasClave } from './texto.js';
+import {
+  contieneMarcadorDePlantilla,
+  contieneSku,
+  contieneValorEnPesos,
+  normalizarLugar,
+  normalizarTexto,
+  palabrasClave,
+} from './texto.js';
 
 // CMP3 — Normalización de texto y de nombres de lugar. Nombres de escenario tomados literalmente
 // de `openspec/changes/fase-00a-esqueleto/specs/compartido/spec.md`.
@@ -36,5 +43,15 @@ describe('contieneMarcadorDePlantilla', () => {
 
   it.each(['Hola {nombre}', 'Llaves { sueltas } separadas', 'Sin marcadores'])('no marca «%s»', (texto) => {
     expect(contieneMarcadorDePlantilla(texto)).toBe(false);
+  });
+});
+
+describe('contieneSku (AGT16)', () => {
+  it.each(['Pregunta por SKU-GL001', 'el sku-abc123 está agotado', 'códigos SKU-9'])('detecta «%s»', (texto) => {
+    expect(contieneSku(texto)).toBe(true);
+  });
+
+  it.each(['Hola, ¿en qué te ayudo?', 'Sin código', 'SKU sin guion', 'SKU- vacío'])('no marca «%s»', (texto) => {
+    expect(contieneSku(texto)).toBe(false);
   });
 });

@@ -563,3 +563,53 @@ model VersionEstilo {
 
   @@map("version_estilo")
 }
+
+enum DisparadorCaso {
+  evento
+  intencion
+
+  @@map("disparador_caso")
+}
+
+enum ModoCaso {
+  literal
+  guia
+
+  @@map("modo_caso")
+}
+
+/// Categoría de casos de uso del asistente (Fase 12, CAS1; MODELO_DATOS.md §3). `nombre_normalizado` (minúsculas, sin
+/// acentos) se calcula en código y es único: dos categorías no pueden llamarse igual.
+model CategoriaCaso {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  nombre            String
+  nombreNormalizado String          @unique @map("nombre_normalizado")
+  orden             Int
+  creado            DateTime        @default(now()) @db.Timestamptz(3)
+  actualizado       DateTime        @default(now()) @db.Timestamptz(3)
+  casos             CasoAsistente[]
+
+  @@map("categoria_caso")
+}
+
+/// Un caso de uso: todo lo que el bot le dice al cliente (Fase 12, CAS1, CAS4). Los dos `CHECK` de disparador y de
+/// clave del sistema se escriben a mano en la migración y se marcan `[manual]` (Prisma no los expresa).
+model CasoAsistente {
+  id                  String         @id @default(uuid(7)) @db.Uuid
+  categoriaId         String         @map("categoria_id") @db.Uuid
+  titulo              String
+  tituloNormalizado   String         @unique @map("titulo_normalizado")
+  cuandoAplica        String         @map("cuando_aplica")
+  disparador          DisparadorCaso
+  claveSistema        String?        @unique @map("clave_sistema")
+  modo                ModoCaso       @default(literal)
+  texto               String
+  activo              Boolean        @default(true)
+  busquedaNormalizada String         @map("busqueda_normalizada")
+  creado              DateTime       @default(now()) @db.Timestamptz(3)
+  actualizado         DateTime       @default(now()) @db.Timestamptz(3)
+  categoria           CategoriaCaso  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+
+  @@index([categoriaId])
+  @@map("caso_asistente")
+}

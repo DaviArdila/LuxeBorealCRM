@@ -1,4 +1,4 @@
-import { contieneMarcadorDePlantilla, contieneValorEnPesos } from '../../../compartido/texto/index.js';
+import { contieneMarcadorDePlantilla, contieneSku, contieneValorEnPesos } from '../../../compartido/texto/index.js';
 
 /**
  * Validación pura del estilo del agente antes de publicarlo (AGT20, D4 de la Fase 08c). El estilo viaja en
@@ -7,8 +7,6 @@ import { contieneMarcadorDePlantilla, contieneValorEnPesos } from '../../../comp
  * compita con las reglas; subirlo después no invalida nada.
  */
 export const MAX_CARACTERES_ESTILO = 4000;
-
-const PATRON_SKU = /\bSKU-[A-Z0-9]+\b/i;
 
 export type ResultadoValidacionEstilo = { readonly valido: true } | { readonly valido: false; readonly motivo: string };
 
@@ -23,7 +21,7 @@ export function validarEstilo(texto: string): ResultadoValidacionEstilo {
   if (contieneValorEnPesos(texto)) {
     return { valido: false, motivo: 'el estilo contiene un valor en pesos (R1, R2)' };
   }
-  if (PATRON_SKU.test(texto)) {
+  if (contieneSku(texto)) {
     return { valido: false, motivo: 'el estilo contiene un SKU (AGT16)' };
   }
   if (contieneMarcadorDePlantilla(texto)) {
