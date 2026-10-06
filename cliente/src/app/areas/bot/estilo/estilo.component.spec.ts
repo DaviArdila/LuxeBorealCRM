@@ -38,27 +38,34 @@ async function abrir(vigente = { version: 3, origen: 'base', texto: 'Estilo vige
   return montada;
 }
 
-function boton(el: HTMLElement, texto: string): HTMLButtonElement {
-  const todos = [...el.querySelectorAll<HTMLButtonElement>('button'), ...document.querySelectorAll<HTMLButtonElement>('button')];
-  return todos.find((b) => b.textContent?.trim() === texto)!;
+function boton(texto: string): HTMLButtonElement {
+  return [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === texto)!;
 }
 
-function escribir(el: HTMLElement, texto: string): void {
-  const area = el.querySelector('textarea')!;
+function escribir(texto: string): void {
+  const area = document.querySelector('textarea')!;
   area.value = texto;
   area.dispatchEvent(new Event('input'));
 }
 
-describe('CLT7 — Pantalla «Estilo del bot»', () => {
+/** Abre «Editar» y deja la ventana con el texto escrito. */
+async function editar(montada: Awaited<ReturnType<typeof abrir>>, texto: string): Promise<void> {
+  boton('Editar').click();
+  await asentar(montada.fixture);
+  escribir(texto);
+  await asentar(montada.fixture);
+}
+
+describe('SHL9 — Pantalla «Estilo del bot»', () => {
   afterEach(() => (document.body.innerHTML = ''));
 
-  it('CLT7 — Muestra el estilo vigente: versión, origen y texto en el editor', async () => {
+  it('SHL9 — La pantalla muestra el vigente con su origen en modo lectura', async () => {
     const { el } = await abrir();
 
     expect(el.textContent).toContain('Versión 3');
     expect(el.textContent).toContain('base');
-    expect(el.querySelector('textarea')!.value).toBe('Estilo vigente.');
-    expect(el.textContent).toContain('15 / 4000');
+    expect(el.querySelector('[data-estilo-vigente]')!.textContent).toContain('Estilo vigente.');
+    expect(el.querySelector('textarea')).toBeNull();
   });
 
   it('con origen archivo (sin versión) lo dice en vez de inventar una versión', async () => {
@@ -68,15 +75,25 @@ describe('CLT7 — Pantalla «Estilo del bot»', () => {
     expect(el.textContent).not.toContain('Versión null');
   });
 
-  it('CLT7 — Publicar pide confirmación, llama a publicarEstilo y muestra la versión nueva con el recordatorio de evals', async () => {
-    const { fixture, control, el } = await abrir();
-    escribir(el, 'Estilo nuevo.');
-    await asentar(fixture);
+  it('SHL9 — «Editar» abre la ventana con el texto vigente y el contador', async () => {
+    const montada = await abrir();
 
-    boton(el, 'Publicar').click();
+    boton('Editar').click();
+    await asentar(montada.fixture);
+
+    expect(document.querySelector('textarea')!.value).toBe('Estilo vigente.');
+    expect(document.querySelector('mat-dialog-container')!.textContent).toContain('15 / 4000');
+  });
+
+  it('SHL9 — Publicar desde la ventana pide confirmación y muestra el recordatorio de evals', async () => {
+    const montada = await abrir();
+    const { fixture, control, el } = montada;
+    await editar(montada, 'Estilo nuevo.');
+
+    boton('Publicar').click();
     await asentar(fixture);
-    control.expectNone(URL_ESTILO);
-    boton(el, 'Confirmar').click();
+    control.expectNone((p) => p.method === 'PUT');
+    boton('Confirmar').click();
     await asentar(fixture);
 
     const publicacion = control.expectOne((p) => p.method === 'PUT' && p.url === URL_ESTILO);
@@ -86,41 +103,48 @@ describe('CLT7 — Pantalla «Estilo del bot»', () => {
     control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 4, origen: 'base', texto: 'Estilo nuevo.' });
     control.expectOne(URL_HISTORIAL).flush(HISTORIAL);
     await asentar(fixture);
+    for (let i = 0; i < 50 && document.querySelector('mat-dialog-container'); i++) await asentar(fixture);
 
+    expect(document.querySelector('mat-dialog-container')).toBeNull();
     expect(el.textContent).toContain('Versión 4');
     expect(el.textContent).toContain('evals reales');
   });
 
-  it('CLT7 — Cancelar la confirmación no publica nada', async () => {
-    const { fixture, control, el } = await abrir();
-    escribir(el, 'Otro estilo.');
-    await asentar(fixture);
+  it('SHL9 — Cancelar la confirmación no publica nada', async () => {
+    const montada = await abrir();
+    await editar(montada, 'Otro estilo.');
 
-    boton(el, 'Publicar').click();
-    await asentar(fixture);
-    boton(el, 'Cancelar').click();
-    await asentar(fixture);
+    boton('Publicar').click();
+    await asentar(montada.fixture);
+    boton('Cancelar').click();
+    await asentar(montada.fixture);
 
-    control.expectNone((p) => p.method === 'PUT');
+    montada.control.expectNone((p) => p.method === 'PUT');
   });
 
-  it('CLT7 — Un 422 muestra el motivo del servidor y el editor conserva lo escrito', async () => {
-    const { fixture, control, el } = await abrir();
-    escribir(el, 'Cuesta $50.000 pesos.');
-    await asentar(fixture);
+  it('SHL9 — Un rechazo del servidor queda dentro de la ventana y conserva el texto', async () => {
+    const montada = await abrir();
+    const { fixture, control, el } = montada;
+    await editar(montada, 'Cuesta $50.000 pesos.');
 
-    boton(el, 'Publicar').click();
+    boton('Publicar').click();
     await asentar(fixture);
-    boton(el, 'Confirmar').click();
+    boton('Confirmar').click();
     await asentar(fixture);
     control
       .expectOne((p) => p.method === 'PUT')
       .flush({ codigo: 'estilo-invalido', title: 'Estilo inválido', detail: 'contiene un valor en pesos' }, { status: 422, statusText: 'x' });
     await asentar(fixture);
 
-    expect(el.textContent).toContain('contiene un valor en pesos');
-    expect(el.querySelector('textarea')!.value).toBe('Cuesta $50.000 pesos.');
+    expect(document.querySelector('mat-dialog-container')!.textContent).toContain('contiene un valor en pesos');
+    expect(document.querySelector('textarea')!.value).toBe('Cuesta $50.000 pesos.');
     expect(el.textContent).not.toContain('evals reales');
+  });
+
+  it('SHL9 — La pantalla remite a «Casos de uso»', async () => {
+    const { el } = await abrir();
+
+    expect(el.textContent).toContain('«Casos de uso»');
   });
 
   it('CLT7 — El historial lista versión, fecha y un extracto, y permite ver el texto completo', async () => {
@@ -130,19 +154,19 @@ describe('CLT7 — Pantalla «Estilo del bot»', () => {
     expect(el.textContent).toContain('03/10/2026');
     expect(el.textContent).not.toContain('Estilo dos. '.repeat(30));
 
-    boton(el, 'Ver texto').click();
+    boton('Ver texto').click();
     await asentar(fixture);
 
     expect(el.textContent).toContain('Estilo dos. '.repeat(30).trim());
   });
 
-  it('CLT7 — Restaurar una versión pide confirmación, llama a restaurarEstilo y muestra la versión nueva', async () => {
+  it('SHL9 — Restaurar una versión del historial pide confirmación y muestra la versión nueva', async () => {
     const { fixture, control, el } = await abrir();
 
     const restaurar = [...el.querySelectorAll<HTMLButtonElement>('button')].filter((b) => b.textContent?.trim() === 'Restaurar');
     restaurar[1]!.click(); // la versión 1
     await asentar(fixture);
-    boton(el, 'Confirmar').click();
+    boton('Confirmar').click();
     await asentar(fixture);
 
     const peticion = control.expectOne((p) => p.method === 'POST' && p.url === '/api/v1/agente/estilo/restauraciones');
@@ -155,6 +179,6 @@ describe('CLT7 — Pantalla «Estilo del bot»', () => {
 
     expect(el.textContent).toContain('Versión 5');
     expect(el.textContent).toContain('evals reales');
-    expect(el.querySelector('textarea')!.value).toBe('Estilo uno completo.');
+    expect(el.querySelector('[data-estilo-vigente]')!.textContent).toContain('Estilo uno completo.');
   });
 });

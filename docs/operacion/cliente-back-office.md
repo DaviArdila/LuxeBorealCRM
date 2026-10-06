@@ -29,7 +29,7 @@ funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 | Pantalla | Qué hace | Qué no hace |
 |---|---|---|
 | **Entrar** | Correo y contraseña. Tras varios fallos seguidos pide esperar y deshabilita el botón | No guarda el correo ni la contraseña en el navegador |
-| **Estilo del bot** | Muestra la versión vigente y su origen, te deja editar el texto, publicarlo (con confirmación) y restaurar una versión anterior | No valida el texto: lo rechaza el servidor y te dice el motivo sin borrar lo que escribiste |
+| **Estilo del bot** | Muestra la versión vigente y su origen en modo lectura; «Editar» abre una ventana para cambiar el texto y publicarlo (con confirmación); el historial permite restaurar una versión anterior | No valida el texto: lo rechaza el servidor y te dice el motivo dentro de la ventana, sin borrar lo que escribiste |
 | **Mensajes fijos** | Lista los diez textos que el bot envía sin pasar por el LLM, con su descripción y si vienen de tu edición o del texto de respaldo; editas uno y lo guardas | No crea mensajes nuevos: la lista es cerrada |
 
 Después de publicar o restaurar un estilo, la pantalla te recuerda correr las evals reales antes de que llegue a
@@ -107,6 +107,26 @@ menu: [
 Todo se maneja con teclado: cada grupo es un botón con `aria-expanded` y el foco se ve. Un ícono sin `icono` propio usa el
 del área (o el del grupo, en un hijo).
 
+## Edición en ventana emergente
+
+Las pantallas muestran la información en modo lectura; **«Editar» y «Nuevo» abren una ventana emergente** con el
+formulario (`<app-dialogo-edicion>`, en `compartido/`). Ninguna pantalla tiene un formulario de edición fijo en la
+página: un test de estructura (`cliente/herramientas/edicion-en-ventana.spec.ts`) lo hace cumplir.
+
+La pantalla pasa a la ventana:
+
+| Entrada | Para qué |
+|---|---|
+| `titulo`, `[(abierta)]` | Título y estado abierto/cerrado (la pantalla lo abre con su botón «Editar») |
+| `[alGuardar]` | Función `() => Promise<void>` con lo que ocurre al guardar; si rechaza, la ventana sigue abierta |
+| `[mensajeDeError]` | Convierte ese error en el motivo que se muestra dentro de la ventana (p. ej. el `detail` del `422`) |
+| `[hayCambios]` | Si es verdadero, cerrar (Cancelar, Escape o clic fuera) pide confirmar el descarte |
+| `etiquetaGuardar`, `mensajeConfirmacion` | Texto del botón principal y, si se da un mensaje, la confirmación previa («Publicar») |
+
+El formulario va como contenido de la ventana (`<app-editor-con-contador>` u otros campos). Lo escrito no se pierde
+cuando el servidor rechaza el guardado; al guardar con éxito la ventana se cierra y la pantalla recarga sus datos. El foco
+entra al formulario y vuelve al botón que abrió la ventana.
+
 ## Componentes, tema e íconos
 
 Las pantallas se arman con **Angular Material** (MIT, sale con cada versión de Angular; `ng update` lo actualiza junto
@@ -117,6 +137,7 @@ con el framework).
 | Botón, tarjeta, campo de texto, tabla, diálogo, chip | El componente de Material (`mat-flat-button`, `mat-card`, `mat-form-field` + `matInput`, `mat-table`…) |
 | Un mensaje en línea (error, advertencia, información) | `<app-aviso tipo="error">` de `compartido/`; Material no trae uno |
 | Pedir confirmación antes de actuar | `<app-confirmacion>` de `compartido/` (abre un diálogo de Material) |
+| Editar un valor o crear uno | `<app-dialogo-edicion>` de `compartido/` (ver «Edición en ventana emergente») |
 | Un ícono | `<mat-icon fontIcon="nombre" aria-hidden="true" />`, con el nombre de [Material Symbols](https://fonts.google.com/icons) |
 | Un color | Un token del tema, p. ej. `var(--mat-sys-primary)` o `var(--mat-sys-on-surface-variant)`; nunca un valor fijo |
 

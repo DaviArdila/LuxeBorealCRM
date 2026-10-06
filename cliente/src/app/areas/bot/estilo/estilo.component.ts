@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
 import { MatChip, MatChipSet } from '@angular/material/chips';
@@ -7,6 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { AvisoComponent } from '../../../compartido/aviso.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
+import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { EstiloServicio } from './estilo.servicio';
@@ -15,9 +16,11 @@ import { EstiloServicio } from './estilo.servicio';
 const MAXIMO_CARACTERES = 4000;
 const LARGO_EXTRACTO = 80;
 
-type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; readonly version: number };
+interface Restauracion {
+  readonly version: number;
+}
 
-/** CLT7: ver, editar, publicar y restaurar el estilo del bot sin desplegar. */
+/** SHL9: ver el estilo vigente, editarlo en una ventana, publicar y restaurar sin desplegar. */
 @Component({
   selector: 'app-estilo',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,6 +29,7 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
     AvisoComponent,
     ConfirmacionComponent,
     DatePipe,
+    DialogoEdicionComponent,
     EditorConContadorComponent,
     MatButton,
     MatCard,
@@ -39,6 +43,9 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
   ],
   template: `
     <h1>Estilo del bot</h1>
+    <app-aviso tipo="info">
+      Aquí se edita cómo habla el bot. Lo que responde en cada situación se edita en «Casos de uso».
+    </app-aviso>
     @if (recordatorioEvals()) {
       <app-aviso tipo="info">
         Un estilo nuevo exige correr las evals reales antes de llegar a clientes
@@ -60,10 +67,10 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
         </mat-card-title>
       </mat-card-header>
       <mat-card-content class="formulario">
-        <app-editor-con-contador etiqueta="Texto del estilo" [maximo]="maximo" [(texto)]="borrador" [deshabilitado]="ocupado()" />
+        <p class="estilo-texto" data-estilo-vigente>{{ servicio.vigente()?.texto }}</p>
         <div class="acciones">
-          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="accion.set({ tipo: 'publicar' })">
-            <mat-icon fontIcon="upload" aria-hidden="true" />Publicar
+          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="editar()">
+            <mat-icon fontIcon="edit" aria-hidden="true" />Editar
           </button>
         </div>
       </mat-card-content>
@@ -99,7 +106,7 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
                   {{ versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto' }}
                 </button>
                 <button mat-stroked-button type="button" [disabled]="ocupado()"
-                        (click)="accion.set({ tipo: 'restaurar', version: version.version })">
+                        (click)="restauracion.set({ version: version.version })">
                   <mat-icon fontIcon="history" aria-hidden="true" />Restaurar
                 </button>
               </div>
@@ -111,9 +118,14 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
       </mat-card-content>
     </mat-card>
 
-    <app-confirmacion [titulo]="tituloConfirmacion()" [mensaje]="mensajeConfirmacion()"
-                      [abierta]="accion() !== null" (abiertaChange)="cerrarConfirmacion($event)"
-                      (confirmar)="ejecutar()" />
+    <app-dialogo-edicion titulo="Editar estilo del bot" [(abierta)]="editando" [hayCambios]="hayCambios()"
+                         [alGuardar]="publicar" [mensajeDeError]="motivoDe" etiquetaGuardar="Publicar"
+                         mensajeConfirmacion="¿Publicar este texto como estilo vigente del bot?">
+      <app-editor-con-contador etiqueta="Texto del estilo" [maximo]="maximo" [(texto)]="borrador" />
+    </app-dialogo-edicion>
+    <app-confirmacion titulo="Restaurar estilo" [mensaje]="mensajeRestauracion()"
+                      [abierta]="restauracion() !== null" (abiertaChange)="cerrarConfirmacion($event)"
+                      (confirmar)="restaurar()" />
   `,
   styles: `
     :host {
@@ -132,6 +144,11 @@ type Accion = { readonly tipo: 'publicar' } | { readonly tipo: 'restaurar'; read
       display: flex;
       flex-direction: column;
       gap: 1rem;
+    }
+    .estilo-texto {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
     .acciones {
       display: flex;
@@ -174,8 +191,10 @@ export class EstiloComponent {
   protected readonly motivo = signal<string | null>(null);
   protected readonly recordatorioEvals = signal(false);
   protected readonly ocupado = signal(false);
-  protected readonly accion = signal<Accion | null>(null);
+  protected readonly editando = signal(false);
+  protected readonly restauracion = signal<Restauracion | null>(null);
   protected readonly versionAbierta = signal<number | null>(null);
+  protected readonly hayCambios = computed(() => this.borrador() !== (this.servicio.vigente()?.texto ?? ''));
 
   constructor() {
     void this.cargar();
@@ -189,35 +208,43 @@ export class EstiloComponent {
     this.versionAbierta.update((actual) => (actual === version ? null : version));
   }
 
-  protected tituloConfirmacion(): string {
-    return this.accion()?.tipo === 'restaurar' ? 'Restaurar estilo' : 'Publicar estilo';
+  protected editar(): void {
+    this.borrador.set(this.servicio.vigente()?.texto ?? '');
+    this.editando.set(true);
   }
 
-  protected mensajeConfirmacion(): string {
-    const accion = this.accion();
-    return accion?.tipo === 'restaurar'
-      ? `¿Restaurar la versión ${accion.version}? Pasará a ser el estilo vigente del bot.`
-      : '¿Publicar este texto como estilo vigente del bot?';
+  /** Lo que hace «Publicar» en la ventana (tras su confirmación); un rechazo deja la ventana abierta. */
+  protected readonly publicar = async (): Promise<void> => {
+    await this.servicio.publicar(this.borrador());
+    this.recordatorioEvals.set(true);
+    await this.cargar();
+  };
+
+  protected readonly motivoDe = (error: unknown): string => {
+    const problema = leerProblema(error);
+    return problema.motivo ?? problema.titulo;
+  };
+
+  protected mensajeRestauracion(): string {
+    return `¿Restaurar la versión ${this.restauracion()?.version}? Pasará a ser el estilo vigente del bot.`;
   }
 
   protected cerrarConfirmacion(abierta: boolean): void {
-    if (!abierta) this.accion.set(null);
+    if (!abierta) this.restauracion.set(null);
   }
 
-  /** Publica o restaura según lo confirmado; ante un rechazo deja lo escrito y muestra el motivo del servidor. */
-  protected async ejecutar(): Promise<void> {
-    const accion = this.accion();
-    if (accion === null) return;
+  /** Restaura la versión confirmada; ante un rechazo muestra el motivo del servidor. */
+  protected async restaurar(): Promise<void> {
+    const restauracion = this.restauracion();
+    if (restauracion === null) return;
     this.ocupado.set(true);
     this.motivo.set(null);
     try {
-      if (accion.tipo === 'publicar') await this.servicio.publicar(this.borrador());
-      else await this.servicio.restaurar(accion.version);
+      await this.servicio.restaurar(restauracion.version);
       this.recordatorioEvals.set(true);
       await this.cargar();
     } catch (error) {
-      const problema = leerProblema(error);
-      this.motivo.set(problema.motivo ?? problema.titulo);
+      this.motivo.set(this.motivoDe(error));
     } finally {
       this.ocupado.set(false);
     }
@@ -226,11 +253,8 @@ export class EstiloComponent {
   private async cargar(): Promise<void> {
     try {
       await this.servicio.cargar();
-      const vigente = this.servicio.vigente();
-      if (vigente) this.borrador.set(vigente.texto);
     } catch (error) {
-      const problema = leerProblema(error);
-      this.motivo.set(problema.motivo ?? problema.titulo);
+      this.motivo.set(this.motivoDe(error));
     }
   }
 }
