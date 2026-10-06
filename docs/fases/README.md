@@ -92,8 +92,9 @@ aceptable mientras el bot no atiende clientes reales.
 | 11 | Usuarios y autenticación (**partida en 11a, 11b y 11c** y adelantada antes de 09/10 por decisión del dueño, 2026-10-03) | Usuarios, roles (admin/asesor), login para el back office | Ver 11a, 11b y 11c | — |
 | 11a | Usuarios y autenticación (`openspec/changes/archive/2026-10-04-fase-11a-autenticacion/`; ADR-0021 `propuesta`) | Módulo `usuarios`: inicio y cierre de sesión con cookie httpOnly y sesión en Redis, guardia global, `@Roles('admin')`, CSRF por `SameSite=Strict` + encabezado propio, límite de intentos y `npm run usuario:crear`. Depende de 08d cerrada | Con un usuario creado por comando, `POST /api/v1/auth/sesion` deja la cookie, `GET /api/v1/auth/yo` responde, un asesor recibe `403` en una ruta de admin y cerrar sesión invalida la cookie al instante; contrato con `cookieAuth` y deriva en verde | cerrada (2026-10-04; PRs #65-#69 y el de p6; pendiente la prueba `[manual]` del dueño, ver `verify-report.md`) |
 | 11b | Cliente Angular (`openspec/changes/archive/2026-10-04-fase-11b-cliente-angular/`; ADR-0022 `propuesta`) | Cliente en `cliente/` (Angular + PrimeNG, cliente HTTP generado con `ng-openapi-gen`), pantallas de inicio de sesión, **Estilo del bot** y **Mensajes fijos** con sus endpoints de admin, semilla de mensajes fijos y `npm run ci` con el cliente. Depende de 11a cerrada | El dueño inicia sesión en local, publica un estilo y edita un mensaje fijo, y el siguiente mensaje del bot usa ambos sin reiniciar; un asesor no ve esas pantallas y el servidor lo rechaza | cerrada (2026-10-04; PRs #71-#80 y el de p10; pendiente la prueba `[manual]` del dueño, ver `verify-report.md`). Fuera de fase, el 2026-10-05 PrimeNG se reemplazó por Angular Material sobre Angular 22 (PR #85, enmienda de ADR-0022) |
-| 11c | Bot configurable | Perfil del bot, escenarios con pasos ordenados, ejemplos y categorías del menú, editables desde el cliente. Necesita su propio ADR de esquema. Depende de 11b cerrada | Por definir al escribir su spec | idea |
-| 12 | Inventario | Ledger de movimientos con `stock` como caché en la misma transacción | Conciliación ledger = stock en tests | idea |
+| 11c | Bot configurable | Perfil del bot, escenarios con pasos ordenados, ejemplos y categorías del menú, editables desde el cliente. Necesita su propio ADR de esquema. Depende de 11b cerrada | Por definir al escribir su spec | idea (su parte de estilo y casos la absorbe la 12 nueva; los escenarios con pasos ordenados quedan pospuestos) |
+| 12 | Casos de uso del asistente, estilo desacoplado y configuración del negocio (`openspec/changes/fase-12-casos-del-asistente/`; ADR-0024 `propuesta`) | Módulo `asistente`: categorías y casos de uso editables con buscador (reemplazan a los mensajes fijos y a las políticas), `consultar_caso` con índice, estilo en su propia tabla (`version_estilo`, con «quién publicó»), configuración del negocio tipada (horario, recargo, factor volumétrico, techo de gasto), menú lateral con submódulos y edición siempre en ventana emergente. Partida en 12a (T1-T3), 12b (T4-T8) y 12c (T9-T12). Depende de 11b cerrada | El dueño crea el caso «Medios de pago» y el bot lo usa por WhatsApp; edita el caso de audio y rige; cambia el recargo y la siguiente cotización lo refleja; publica un estilo desde la ventana emergente y ve quién lo publicó; no queda nada del sistema viejo | aprobada (2026-10-05); en curso con T1 (2026-10-05; 33 requisitos, 142 escenarios, 12 tareas; pendiente la aprobación del dueño) |
+| 12 (plan anterior) | Inventario | Ledger de movimientos con `stock` como caché en la misma transacción | Conciliación ledger = stock en tests | idea |
 | 13 | Ventas y envíos | Ciclos de estado de venta y envío con sus efectos sobre el inventario (MODELO_DATOS §6) | Cada transición genera los movimientos correctos | idea |
 | 14 | API del back office | Estabilizar la API v1 y probar un cliente generado | Un cliente generado desde `openapi.json` compila y consume la API; ningún cambio incompatible sale sin pasar a `/api/v2` | idea |
 | — | Posterior | Canales adicionales, RAG, analítica, campañas | Se priorizan después del corte | — |
@@ -105,6 +106,12 @@ aceptable mientras el bot no atiende clientes reales.
 > **Enmendado (P8 y P14, 2026-10-03):** la Fase 11 se adelanta **antes** de 09 y 10 (partida en 11a, 11b y 11c);
 > las 12-14 siguen después del corte. La primera pantalla es un cliente propio en Angular dentro de `cliente/`
 > (ADR-0022), que más adelante podría embeberse como Dashboard App de Chatwoot.
+>
+> **Reordenamiento propuesto (2026-10-05, sin aprobar):** como ninguno de los proyectos está en producción, el dueño
+> adelanta el producto (asistente, inventario, ventas) y deja el despliegue para el final. La **Fase 12** de arriba es la
+> primera pieza: casos de uso del asistente, estilo desacoplado y configuración del negocio. Los números 12-14 del plan
+> anterior (Inventario, Ventas, API) y las fases 09, 10 y 11c se renumeran y reordenan en el siguiente replanteo de esta
+> hoja de ruta; mientras tanto «Fase 12» en el repositorio es la nueva.
 
 > **Propuesta (2026-10-01, sin aprobar):** añadir la Fase 08b y partir la 09 en 09a (sin VPS) y 09b
 > (con VPS). Tras la 08 quedarían 08b, 09a, 09b, 10 (corte, exige `judgment-day`), 11, 12, 13 y 14 (las
@@ -113,7 +120,7 @@ aceptable mientras el bot no atiende clientes reales.
 > `aprobada`.
 >
 > **Trabajo fuera de fase en curso** (proveedores LLM configurables, semilla de catálogo, arreglo de lectura
-> de mensajes de Chatwoot, infra local de Chatwoot): ramas, PRs y estado en `docs/CONTEXTO_SESIONES.md`;
+> de mensajes de Chatwoot, infra local de Chatwoot): ramas y PRs en `git`/`gh`;
 > el comportamiento del bot, en `odd/tasks/comportamiento-del-bot.md`.
 
 > Las Fases 00a, 00b, 01, 02, 03 y 04 están cerradas y archivadas:

@@ -16,7 +16,8 @@ Hay código en `servicio/` (servidor NestJS) y `cliente/` (back office Angular),
 
 ## Orden de lectura
 
-0. Sesión nueva o en la nube: empieza por `docs/CONTEXTO_SESIONES.md` (estado real, ramas, límites).
+0. Sesión nueva o en la nube: el estado vive en `docs/fases/README.md`, `odd/tasks/` y `git`/`gh`; los límites de
+   la nube, en «Trabajo en la nube» más abajo.
 1. `SPEC.md` — qué es, principios, índice de reglas invariantes (R1-R16).
 2. `docs/fases/README.md` — hoja de ruta y fase actual.
 3. El change activo de la fase en curso, `openspec/changes/fase-NN-<nombre>/` (proposal, specs,
@@ -83,6 +84,20 @@ Toda documentación humana (no los encabezados estructurales de OpenSpec) sigue 
   fase (`fase-NN-<nombre>`) o, fuera de fase, en una rama con prefijo del tipo (`fix/`, `chore/`,
   `docs/`), nunca directo en `main`. Nunca `.env`, tokens ni secretos. Push, PR y merge
   siguen la sección «Publicar y encadenar fases», que recoge la autorización vigente del usuario.
+
+## Trabajo en la nube
+
+Límites de una sesión remota (no cambian entre PRs; el estado de ramas y fases se lee de `git` y de
+`docs/fases/README.md`, no se copia aquí):
+
+- **Docker no arranca solo**: `dockerd > /tmp/dockerd.log 2>&1 &` y la batería completa corre. Sin Docker, se comparan
+  las fallas contra `main` y se dejan dichas en el PR.
+- **Node 22**: para agregar una dependencia, `npx -y npm@11 install <paquete>` (el npm 10 reescribe el lockfile).
+- **`pre-push` sin Docker**: `git push --no-verify` solo con la justificación escrita en el PR.
+- **Sin `.env`, secretos, `gentle-ai`, Engram, CodeGraph ni `../ChatLuxeCRM`**: usar `servicio/.env.example`,
+  `docs/analisis/` y `docs/migracion/inventario.md`; `tasks.md` es la memoria.
+- **Fallas conocidas que no son del cambio**: `test/integracion/agente/prompts-build.spec.ts` falla solo en Windows
+  (`spawnSync npx ENOENT`); `EALLOWSCRIPTS` es ruido de la configuración local.
 
 ## Publicar y encadenar fases
 
