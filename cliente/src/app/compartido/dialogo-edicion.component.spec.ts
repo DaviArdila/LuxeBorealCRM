@@ -46,7 +46,8 @@ async function asentar(fixture: { whenStable(): Promise<unknown> }): Promise<voi
 
 /** La animación de cierre de Material tarda unos ms incluso en jsdom: se espera a la condición. */
 async function hasta(condicion: () => boolean, fixture: { whenStable(): Promise<unknown> }): Promise<void> {
-  for (let intento = 0; intento < 50 && !condicion(); intento++) await asentar(fixture);
+  const limite = Date.now() + 3000;
+  while (!condicion() && Date.now() < limite) await asentar(fixture);
 }
 
 function boton(texto: string): HTMLButtonElement {

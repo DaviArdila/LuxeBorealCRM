@@ -29,6 +29,15 @@ async function asentar(fixture: ComponentFixture<EstiloComponent>): Promise<void
   await fixture.whenStable();
 }
 
+/** La animación de cierre de Material no tiene duración fija en jsdom: se espera por tiempo, no por vueltas. */
+async function cerrada(fixture: ComponentFixture<EstiloComponent>): Promise<void> {
+  const limite = Date.now() + 3000;
+  while (document.querySelector('mat-dialog-container') && Date.now() < limite) {
+    await new Promise((resolver) => setTimeout(resolver, 20));
+    await fixture.whenStable();
+  }
+}
+
 /** Atiende las dos lecturas con las que la pantalla se abre. */
 async function abrir(vigente = { version: 3, origen: 'base', texto: 'Estilo vigente.' }) {
   const montada = await montar();
@@ -103,7 +112,7 @@ describe('SHL9 — Pantalla «Estilo del bot»', () => {
     control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush({ version: 4, origen: 'base', texto: 'Estilo nuevo.' });
     control.expectOne(URL_HISTORIAL).flush(HISTORIAL);
     await asentar(fixture);
-    for (let i = 0; i < 50 && document.querySelector('mat-dialog-container'); i++) await asentar(fixture);
+    await cerrada(fixture);
 
     expect(document.querySelector('mat-dialog-container')).toBeNull();
     expect(el.textContent).toContain('Versión 4');
