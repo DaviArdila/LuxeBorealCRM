@@ -77,6 +77,36 @@ definición (`area.ts`), sus rutas y sus pantallas. Agregar un área es una carp
 necesitan lo mismo, la pieza sube a `compartido/` (interfaz) o a `nucleo/` (transversal) y el lint lo hace cumplir. La
 guía para quien escribe código está en la skill `luxeboreal-arquitectura`, sección «Cliente».
 
+### El menú lateral y sus grupos
+
+El menú de la izquierda se arma solo desde `DefinicionArea.menu`. Cada entrada es una **pantalla directa** (lleva a su
+`ruta`) o un **grupo** (`hijos`, sin `ruta`) que se despliega y se pliega. Para que un área aparezca como grupo:
+
+```ts
+menu: [
+  {
+    titulo: 'Asistente',
+    icono: 'forum',
+    roles: ['admin'],
+    hijos: [
+      { titulo: 'Casos de uso', ruta: '/asistente/casos', roles: ['admin'], icono: 'list_alt' },
+      { titulo: 'Estilo del bot', ruta: '/asistente/estilo', roles: ['admin'], icono: 'edit_note' },
+    ],
+  },
+],
+```
+
+| Qué hace el menú | Detalle |
+|---|---|
+| Filtra por rol | Oculta las entradas y los hijos que el rol no puede usar; un grupo sin hijos visibles no aparece. El servidor sigue siendo quien decide |
+| Marca dónde estás | La pantalla activa se resalta y lleva `aria-current="page"`; el grupo que la contiene arranca desplegado |
+| Modo compacto | El botón del pie deja solo los íconos, con el título como ayuda emergente. Se recuerda en el navegador (`luxe.menu.compacto`); si el almacenamiento está bloqueado, funciona igual sin recordarlo |
+| En un teléfono | A 640 px o menos el menú es un cajón: arranca cerrado, se abre con el botón de la barra y se cierra al elegir una pantalla |
+| Pie | Muestra el nombre y el rol del usuario y el botón «Cerrar sesión» |
+
+Todo se maneja con teclado: cada grupo es un botón con `aria-expanded` y el foco se ve. Un ícono sin `icono` propio usa el
+del área (o el del grupo, en un hijo).
+
 ## Componentes, tema e íconos
 
 Las pantallas se arman con **Angular Material** (MIT, sale con cada versión de Angular; `ng update` lo actualiza junto

@@ -10,9 +10,14 @@ describe('D9 — El registro de áreas describe cada área con datos coherentes'
   it('las entradas del menú cuelgan de la ruta del área y no piden más roles que el área', () => {
     for (const area of REGISTRO_DE_AREAS) {
       for (const entrada of area.menu) {
-        expect(entrada.ruta.startsWith(`/${area.id}/`)).toBe(true);
-        for (const rol of entrada.roles) {
-          expect(area.roles).toContain(rol);
+        const pantallas = entrada.hijos ?? [entrada];
+        for (const pantalla of [entrada, ...pantallas]) {
+          for (const rol of pantalla.roles) {
+            expect(area.roles).toContain(rol);
+          }
+        }
+        for (const pantalla of pantallas) {
+          expect(pantalla.ruta?.startsWith(`/${area.id}/`)).toBe(true);
         }
       }
     }

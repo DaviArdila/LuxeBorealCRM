@@ -1,74 +1,92 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MatButton } from '@angular/material/button';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { ChangeDetectionStrategy, Component, inject, linkedSignal, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { MatListItem, MatListItemTitle, MatListSubheaderCssMatStyler, MatNavList } from '@angular/material/list';
+import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 import { MatToolbar } from '@angular/material/toolbar';
+import { RouterLink, RouterOutlet } from '@angular/router';
+import { map } from 'rxjs';
 import { AvisoComponent } from '../compartido/aviso.component';
-import { AREAS_REGISTRADAS } from '../nucleo/areas.token';
 import { AvisosServicio } from '../nucleo/avisos.servicio';
-import { SesionServicio } from '../nucleo/sesion.servicio';
+import { MenuLateralComponent } from './menu-lateral.component';
+
+/** Ancho a partir del cual el menú deja de ser un panel fijo y pasa a ser un cajón (SHL5). */
+const CONSULTA_TELEFONO = '(max-width: 640px)';
+/** Preferencia local del modo compacto (SHL4): una conveniencia, nunca un dato que deba persistir. */
+const CLAVE_COMPACTO = 'luxe.menu.compacto';
+
+function leerCompacto(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_COMPACTO) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function guardarCompacto(compacto: boolean): void {
+  try {
+    localStorage.setItem(CLAVE_COMPACTO, compacto ? '1' : '0');
+  } catch {
+    // Almacenamiento bloqueado: el menú cambia de modo igual, solo que no se recuerda.
+  }
+}
 
 /**
- * Marco de la app: barra con el usuario y «Cerrar sesión», menú armado con las áreas del registro
- * que el rol puede usar (CLT9) y el aviso de permiso insuficiente (CLT5). No conoce ninguna área.
+ * Marco de la app: barra superior, menú lateral armado desde el registro de áreas (CLT9, SHL1) y el aviso de
+ * permiso insuficiente (CLT5). En un teléfono el menú es un cajón. No conoce ninguna área.
  */
 @Component({
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AvisoComponent,
-    MatButton,
     MatIcon,
-    MatListItem,
-    MatListItemTitle,
-    MatListSubheaderCssMatStyler,
-    MatNavList,
+    MatIconButton,
+    MatSidenav,
+    MatSidenavContainer,
+    MatSidenavContent,
     MatToolbar,
+    MenuLateralComponent,
     RouterLink,
-    RouterLinkActive,
     RouterOutlet,
   ],
   template: `
     <mat-toolbar class="barra">
+      @if (telefono()) {
+        <button mat-icon-button type="button" data-accion="abrir-menu" aria-label="Abrir o cerrar el menú"
+          [attr.aria-expanded]="abierto()" (click)="abierto.set(!abierto())">
+          <mat-icon fontIcon="menu" aria-hidden="true" />
+        </button>
+      }
       <a routerLink="/" class="marca"><mat-icon fontIcon="auto_awesome" aria-hidden="true" /> LuxeBoreal</a>
-      <span class="espacio"></span>
-      <span class="usuario"><mat-icon fontIcon="person" aria-hidden="true" /> {{ sesion.usuario()?.nombre }}</span>
-      <button mat-button type="button" data-accion="cerrar-sesion" (click)="cerrarSesion()">
-        <mat-icon fontIcon="logout" aria-hidden="true" />Cerrar sesión
-      </button>
     </mat-toolbar>
-    <div class="marco">
-      <nav class="menu" aria-label="Menú principal">
-        @for (area of areasVisibles(); track area.id) {
-          <mat-nav-list [attr.aria-labelledby]="'menu-' + area.id">
-            <h2 matSubheader class="grupo" [id]="'menu-' + area.id">
-              <mat-icon [fontIcon]="area.icono" aria-hidden="true" /> {{ area.titulo }}
-            </h2>
-            @for (entrada of area.menu; track entrada.ruta) {
-              <a mat-list-item [routerLink]="entrada.ruta" routerLinkActive #activa="routerLinkActive"
-                 [activated]="activa.isActive" [attr.aria-current]="activa.isActive ? 'page' : null">
-                <span matListItemTitle>{{ entrada.titulo }}</span>
-              </a>
-            }
-          </mat-nav-list>
-        }
-      </nav>
-      <main class="contenido">
-        @if (avisos.permisoInsuficiente()) {
-          <app-aviso tipo="advertencia" [descartable]="true" (descartar)="avisos.descartarPermisoInsuficiente()">
-            No tienes permiso para hacer eso. Si lo necesitas, pídeselo a un administrador.
-          </app-aviso>
-        }
-        <router-outlet />
-      </main>
-    </div>
+    <mat-sidenav-container class="marco">
+      <mat-sidenav [mode]="telefono() ? 'over' : 'side'" [opened]="abierto()" (closedStart)="abierto.set(false)"
+        [class.compacta]="compacto() && !telefono()" class="lateral">
+        <app-menu-lateral [compacto]="compacto() && !telefono()" [telefono]="telefono()"
+          (alternarCompacto)="alternarCompacto()" (navegar)="alNavegar()" />
+      </mat-sidenav>
+      <mat-sidenav-content class="contenido">
+        <main class="pagina">
+          @if (avisos.permisoInsuficiente()) {
+            <app-aviso tipo="advertencia" [descartable]="true" (descartar)="avisos.descartarPermisoInsuficiente()">
+              No tienes permiso para hacer eso. Si lo necesitas, pídeselo a un administrador.
+            </app-aviso>
+          }
+          <router-outlet />
+        </main>
+      </mat-sidenav-content>
+    </mat-sidenav-container>
   `,
   styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
     .barra {
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      flex: none;
       gap: 0.75rem;
       background: var(--mat-sys-surface-container);
     }
@@ -81,74 +99,49 @@ import { SesionServicio } from '../nucleo/sesion.servicio';
       color: var(--mat-sys-primary);
       text-decoration: none;
     }
-    .espacio {
-      flex: 1;
-    }
-    .usuario {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      font: var(--mat-sys-body-medium);
-      color: var(--mat-sys-on-surface-variant);
-    }
     .marco {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      gap: 1.5rem;
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 1.5rem 1rem;
+      flex: 1;
+      min-height: 0;
+      background: transparent;
     }
-    .menu {
-      flex: 0 0 15rem;
-      border-radius: var(--mat-sys-corner-large);
+    .lateral {
+      width: 16rem;
+      border-right: 1px solid var(--mat-sys-outline-variant);
       background: var(--mat-sys-surface);
     }
-    .grupo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin: 0;
+    .lateral.compacta {
+      width: 4.5rem;
     }
-    .contenido {
-      flex: 1 1 32rem;
-      min-width: 0;
+    .pagina {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-    }
-    @media (max-width: 640px) {
-      .menu {
-        flex-basis: 100%;
-      }
-      .usuario {
-        display: none;
-      }
+      max-width: 64rem;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+      box-sizing: border-box;
     }
   `,
 })
 export class ShellComponent {
-  protected readonly sesion = inject(SesionServicio);
   protected readonly avisos = inject(AvisosServicio);
-  private readonly router = inject(Router);
-  private readonly areas = inject(AREAS_REGISTRADAS);
+  protected readonly compacto = signal(leerCompacto());
+  protected readonly telefono = toSignal(
+    inject(BreakpointObserver)
+      .observe(CONSULTA_TELEFONO)
+      .pipe(map((estado) => estado.matches)),
+    { initialValue: false },
+  );
+  /** Cajón abierto: en un escritorio el panel arranca abierto y en un teléfono, cerrado. */
+  protected readonly abierto = linkedSignal(() => !this.telefono());
 
-  /** Solo las áreas y entradas que el rol de `/yo` puede usar; el servidor protege cada llamada igual. */
-  protected readonly areasVisibles = computed(() => {
-    const rol = this.sesion.usuario()?.rol;
-    if (rol === undefined) return [];
-    return this.areas
-      .filter((area) => area.roles.includes(rol))
-      .map((area) => ({ ...area, menu: area.menu.filter((entrada) => entrada.roles.includes(rol)) }))
-      .filter((area) => area.menu.length > 0);
-  });
+  protected alternarCompacto(): void {
+    const siguiente = !this.compacto();
+    this.compacto.set(siguiente);
+    guardarCompacto(siguiente);
+  }
 
-  async cerrarSesion(): Promise<void> {
-    try {
-      await this.sesion.cerrar();
-    } finally {
-      await this.router.navigateByUrl('/entrar');
-    }
+  protected alNavegar(): void {
+    if (this.telefono()) this.abierto.set(false);
   }
 }

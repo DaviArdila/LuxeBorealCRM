@@ -5,12 +5,27 @@ import type { RespuestaDe } from './tipos';
 /** Rol del usuario, tal como lo documenta el contrato (`GET /api/v1/auth/yo`). */
 export type Rol = RespuestaDe<typeof obtenerSesionActual>['rol'];
 
-export interface EntradaDeMenu {
+/** Una pantalla del menú: lleva a una ruta. Sin `icono` usa el del área. */
+export interface EntradaDeRuta {
   readonly titulo: string;
-  /** Ruta absoluta de la pantalla, p. ej. `/bot/estilo`. */
+  /** Ruta absoluta de la pantalla, p. ej. `/asistente/estilo`. */
   readonly ruta: string;
   readonly roles: readonly Rol[];
+  /** Nombre del ícono de Material Symbols; el modo compacto lo muestra solo. */
+  readonly icono?: string;
+  readonly hijos?: undefined;
 }
+
+/** Un grupo desplegable de submódulos (SHL1): no navega, solo agrupa pantallas. */
+export interface GrupoDeMenu {
+  readonly titulo: string;
+  readonly icono: string;
+  readonly roles: readonly Rol[];
+  readonly hijos: readonly EntradaDeRuta[];
+  readonly ruta?: undefined;
+}
+
+export type EntradaDeMenu = EntradaDeRuta | GrupoDeMenu;
 
 /**
  * Qué es un área del back office (D9): una funcionalidad de negocio con sus rutas, cargada en
