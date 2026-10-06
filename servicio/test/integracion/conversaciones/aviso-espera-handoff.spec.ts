@@ -17,10 +17,10 @@ import { ContadorRateLimit } from '../../../src/modulos/conversaciones/infraestr
 import { InterruptorGlobalRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/redis/lock-turno.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
-import { RepositorioParametroConversacionesPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import { GENERADOR_RESPUESTA } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from '../../../src/modulos/conversaciones/puertos/interruptor-global.js';
-import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from '../../../src/modulos/conversaciones/puertos/repositorio-parametro-conversaciones.js';
+import { TEXTOS_ASISTENTE } from '../../../src/modulos/asistente/index.js';
+import { TextosAsistenteEnMemoria } from '../../fakes/textos-asistente-en-memoria.js';
 import { REPOSITORIO_CONVERSACION } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO, type EnviarRespuestaTurno } from '../../../src/modulos/conversaciones/puertos/salida-conversacion.js';
 import {
@@ -139,7 +139,7 @@ async function crearAplicacion(): Promise<{
     ],
     providers: [
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
-      { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
+      { provide: TEXTOS_ASISTENTE, useValue: new TextosAsistenteEnMemoria() },
       { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
       { provide: LECTOR_MENSAJE_CANAL, useClass: LectorMensajeCanalDoble },
       { provide: SALIDA_CANAL, useValue: salidaCanal },

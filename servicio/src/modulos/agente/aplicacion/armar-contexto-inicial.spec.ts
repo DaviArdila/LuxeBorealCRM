@@ -1,6 +1,6 @@
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { RepositorioContactoAgenteEnMemoria } from '../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
-import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { CapturaLead } from '../puertos/captura-lead.js';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
@@ -26,7 +26,7 @@ function crear() {
     pendiente: () => Promise.resolve(captura.pendiente),
     completar: () => Promise.resolve(),
   };
-  const parametros = new RepositorioParametroAgenteEnMemoria();
+  const parametros = new TextosAsistenteEnMemoria();
   parametros.textos.set('mensaje_captura_completa', 'TEXTO-CIERRE-CAPTURA');
   return {
     caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, parametros),
@@ -90,7 +90,7 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     const contactos = { leerNombre: () => Promise.reject(new Error('base caída')), guardarDatosCapturados: () => Promise.resolve() };
     const ficha = { ejecutar: () => Promise.reject(new Error('base caída')) } as unknown as ObtenerFichaProducto;
     const capturaCaida: CapturaLead = { pendiente: () => Promise.reject(new Error('base caída')), completar: () => Promise.resolve() };
-    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new RepositorioParametroAgenteEnMemoria());
+    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new TextosAsistenteEnMemoria());
 
     await expect(caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'SKU-123' })).resolves.toEqual([]);
   });

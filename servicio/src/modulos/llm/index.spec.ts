@@ -3,7 +3,7 @@ import * as barril from './index.js';
 describe('modulos/llm — barril público', () => {
   it('expone el módulo, el puerto, el error tipado, sus códigos y el catálogo de textos fijos (CFN1)', () => {
     expect(Object.keys(barril).sort()).toEqual(
-      ['CODIGOS_ERROR_PASARELA', 'ErrorPasarelaLlm', 'LLM_PORT', 'LlmModule', 'ObtenerMensajeTechoGasto', 'TEXTOS_FIJOS_LLM'].sort(),
+      ['CODIGOS_ERROR_PASARELA', 'ErrorPasarelaLlm', 'LLM_PORT', 'LlmModule', 'ObtenerMensajeTechoGasto'].sort(),
     );
     expect(barril.CODIGOS_ERROR_PASARELA).toContain('techo-alcanzado');
   });

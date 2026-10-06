@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 
+import { ObtenerMensajeTechoGasto } from '../../../src/modulos/llm/index.js';
 import { LlmGateway } from '../../../src/modulos/llm/aplicacion/llm-gateway.js';
 import { ErrorPasarelaLlm } from '../../../src/modulos/llm/dominio/error-pasarela-llm.js';
 import { RepositorioParametroLlmPrisma } from '../../../src/modulos/llm/infraestructura/prisma/repositorio-parametro-llm-prisma.js';
@@ -16,6 +17,7 @@ import { FakeAdaptadorLlm } from '../../fakes/adaptador-llm-falso.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { TemporizadorLlmFalso } from '../../fakes/temporizador-llm-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { fijarTextosDelSistema, limpiarCasos, textosSinCopia } from '../../soporte/textos-asistente.js';
 
 // T8 (fase-06-pasarela-llm): techo mensual y parámetros de `llm` contra Postgres real (D7, D9, R15).
 
@@ -73,21 +75,17 @@ async function gastar(prisma: PrismaService, costo: string, creado: string): Pro
 }
 
 describe('llm — techo de gasto y parámetros (T8, integración)', () => {
-  it('LLM9 — Texto de derivación vive en el parámetro mensaje_techo_gasto', async () => {
-    const { prisma, parametros } = await preparar();
+  it('LLM9 — Texto de derivación vive en el caso mensaje_techo_gasto del asistente', async () => {
+    const { prisma } = await preparar();
+    await limpiarCasos(prisma);
+    const mensaje = new ObtenerMensajeTechoGasto(textosSinCopia(prisma));
 
-    const porDefecto = await parametros.obtenerMensajeTechoGasto();
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_techo_gasto' },
-      create: { clave: 'mensaje_techo_gasto', valor: 'Texto nuevo del negocio.' },
-      update: { valor: 'Texto nuevo del negocio.' },
-    });
-    const actualizado = await parametros.obtenerMensajeTechoGasto();
-    await prisma.parametro.update({
-      where: { clave: 'mensaje_techo_gasto' },
-      data: { valor: '   ' },
-    });
-    const enBlanco = await parametros.obtenerMensajeTechoGasto();
+    const porDefecto = await mensaje.ejecutar();
+    await fijarTextosDelSistema(prisma, { mensaje_techo_gasto: 'Texto nuevo del negocio.' });
+    const actualizado = await mensaje.ejecutar();
+    await fijarTextosDelSistema(prisma, { mensaje_techo_gasto: '   ' });
+    const enBlanco = await mensaje.ejecutar();
+    await limpiarCasos(prisma);
 
     expect(porDefecto).toBe(
       'Gracias por escribirnos. En este momento te atiende directamente un asesor, que te responderá en breve.',

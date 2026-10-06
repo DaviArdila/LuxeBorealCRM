@@ -8,22 +8,15 @@ export class RepositorioParametroLlmEnMemoria implements RepositorioParametroLlm
   estado: EstadoTecho | null = null;
   readonly guardados: EstadoTecho[] = [];
   lecturasDeEstado = 0;
-  lecturasDeMensaje = 0;
   // Valor de `llm_techo_mensual_usd` en `parametro`; `null` = no configurado.
   techoMensualUsd: number | null = null;
   fallaElTecho = false;
-  mensajeTechoGasto = 'Estamos con alta demanda en este momento. Te derivo con un asesor.';
 
   obtenerTechoMensualUsd(): Promise<number | null> {
     if (this.fallaElTecho) {
       return Promise.reject(new Error('base no disponible'));
     }
     return Promise.resolve(this.techoMensualUsd);
-  }
-
-  obtenerMensajeTechoGasto(): Promise<string> {
-    this.lecturasDeMensaje += 1;
-    return Promise.resolve(this.mensajeTechoGasto);
   }
 
   leerEstadoTecho(): Promise<EstadoTecho | null> {

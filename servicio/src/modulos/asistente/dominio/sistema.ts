@@ -76,14 +76,6 @@ export const CASOS_DEL_SISTEMA = [
     textoRespaldo: 'Listo, ya tengo tus datos. Un asesor te contactará apenas abramos para cerrar los detalles.',
   },
   {
-    clave: 'mensaje_fuera_cobertura',
-    titulo: 'Sin cobertura de envío',
-    descripcion: 'Cuando el cliente pide envío a una ciudad sin cobertura: el bot cita este texto tal cual y le ofrece otra dirección.',
-    categoriaInicial: 'Sistema',
-    disparador: 'evento',
-    textoRespaldo: 'Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega.',
-  },
-  {
     clave: 'mensaje_espera_handoff',
     titulo: 'Espera del traspaso',
     descripcion:
@@ -91,6 +83,14 @@ export const CASOS_DEL_SISTEMA = [
     categoriaInicial: 'Sistema',
     disparador: 'evento',
     textoRespaldo: 'Seguimos aquí. Un asesor te va a atender en breve, gracias por tu paciencia.',
+  },
+  {
+    clave: 'mensaje_fuera_cobertura',
+    titulo: 'Sin cobertura de envío',
+    descripcion: 'Cuando el cliente pide envío a una ciudad sin cobertura: el bot cita este texto tal cual y le ofrece otra dirección.',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo: 'Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega.',
   },
   {
     // P22: neutro, no revela el límite de gasto ni promete una hora de respuesta.
@@ -116,6 +116,12 @@ export const CASOS_DEL_SISTEMA = [
   },
 ] as const satisfies readonly DefinicionCasoSistema[];
 
+/** Las categorías con las que nace el asistente y su orden (CAS6); también donde se crea un caso del sistema que falte. */
+export const CATEGORIAS_INICIALES = [
+  { nombre: 'Sistema', orden: 0 },
+  { nombre: 'Políticas', orden: 1 },
+] as const;
+
 /** Una clave de la lista cerrada: lo que los módulos piden por el puerto de textos. */
 export type ClaveSistema = (typeof CASOS_DEL_SISTEMA)[number]['clave'];
 
@@ -131,4 +137,16 @@ export function textoDeRespaldo(clave: ClaveSistema): string {
  */
 export function claveParametroLegada(clave: ClaveSistema): string {
   return clave === 'contra_entrega' ? 'politica_contra_entrega' : clave;
+}
+
+/** La definición de una clave de la lista cerrada (CAS4). */
+export function definicionDe(clave: ClaveSistema): DefinicionCasoSistema {
+  const definicion = CASOS_DEL_SISTEMA.find((caso) => caso.clave === clave);
+  if (definicion === undefined) throw new Error(`clave del sistema desconocida: ${clave}`);
+  return definicion;
+}
+
+/** `true` si `clave` pertenece a la lista cerrada (la API no deja crear ni cambiar claves del sistema, CAS4). */
+export function esClaveDelSistema(clave: string): clave is ClaveSistema {
+  return CASOS_DEL_SISTEMA.some((caso) => caso.clave === clave);
 }

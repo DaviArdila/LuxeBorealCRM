@@ -23,5 +23,3 @@ export type {
   SolicitudGeneracion,
   UsoReportado,
 } from './puertos/llm-port.js';
-// Fase 11b (CFN1): el catálogo de textos fijos que el admin edita desde `mensajes-fijos`.
-export { TEXTOS_FIJOS_LLM } from './dominio/textos-fijos.js';

@@ -3,10 +3,7 @@ import type { GeneradorRespuesta, RespuestaTurno, SolicitudTurno } from '../../c
 import { anteponerAviso } from '../dominio/aviso-datos.js';
 import { POLITICAS_TURNO, type PoliticaTurno } from '../dominio/politica-turno.js';
 import { CONTADORES_SESION, type ClaveSesion, type ContadoresSesion } from '../puertos/contadores-sesion.js';
-import {
-  REPOSITORIO_PARAMETRO_AGENTE,
-  type RepositorioParametroAgente,
-} from '../puertos/repositorio-parametro-agente.js';
+import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 
 /**
  * Implementación del puerto `GeneradorRespuesta` de `conversaciones` (ADR-0016, D6 de la Fase 07a,
@@ -23,7 +20,7 @@ export class MotorTurno implements GeneradorRespuesta {
   constructor(
     @Inject(POLITICAS_TURNO) private readonly politicas: readonly PoliticaTurno[],
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
-    @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
   async generar(solicitud: SolicitudTurno): Promise<RespuestaTurno> {
@@ -47,7 +44,7 @@ export class MotorTurno implements GeneradorRespuesta {
     if (respuesta.pasos.length === 0 || sesion.version !== 0 || (await this.contadores.turnos(sesion)) !== 0) {
       return respuesta;
     }
-    const aviso = await this.parametros.obtenerTexto('aviso_datos');
+    const aviso = await this.textos.textoDelSistema('aviso_datos');
     return { ...respuesta, pasos: anteponerAviso(respuesta.pasos, aviso) };
   }
 }

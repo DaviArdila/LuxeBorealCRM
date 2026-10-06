@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CATALOGO_REAL } from './catalogo-real.js';
 import { validarMensajeFijo } from './dominio/validar-mensaje-fijo.js';
 
-// CFN1: la lista cerrada de esta fase, compuesta desde el catálogo de cada módulo dueño (AGT3: un solo lugar por texto).
+// CFN1: la lista cerrada de esta fase, compuesta desde la lista de casos del sistema de `asistente` (AGT3: un solo lugar por texto).
 
 describe('catálogo real de mensajes fijos (CFN1)', () => {
   it('CFN1 — son diez mensajes, en el orden de la spec, sin claves repetidas', () => {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../plataforma/config/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
+import { AsistenteModule } from '../asistente/index.js';
 import { LlmGateway } from './aplicacion/llm-gateway.js';
 import { ObtenerMensajeTechoGasto } from './aplicacion/obtener-mensaje-techo-gasto.js';
 import { AdaptadorEnrutador } from './infraestructura/adaptador-enrutador.js';
@@ -21,7 +22,7 @@ import { TEMPORIZADOR_LLM } from './puertos/temporizador-llm.js';
  * el temporizador son internos. `AgenteModule` lo importa y compone el bucle de herramientas encima.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AsistenteModule],
   providers: [
     { provide: LLM_PORT, useClass: LlmGateway },
     ObtenerMensajeTechoGasto,

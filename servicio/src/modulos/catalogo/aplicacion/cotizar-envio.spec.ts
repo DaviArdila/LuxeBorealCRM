@@ -1,4 +1,5 @@
 import { formatearDias, formatearRangoCop } from '../../../compartido/dinero/index.js';
+import type { ClaveSistema, TextosAsistente } from '../../asistente/index.js';
 import type { CandidataExclusion, CandidataTarifa, DestinoEnvio } from '../dominio/envio.js';
 import type { Producto } from '../dominio/producto.js';
 import type { NuevoEventoFueraCobertura, RepositorioEnvio } from '../puertos/repositorio-envio.js';
@@ -40,17 +41,19 @@ class RepositorioProductoFalso implements RepositorioProducto {
 }
 
 class RepositorioParametroFalso implements RepositorioParametroCatalogo {
-  mensajeSolicitado = false;
-  constructor(
-    private readonly factorVolumetrico: number,
-    private readonly mensajeFueraCobertura: string,
-  ) {}
+  constructor(private readonly factorVolumetrico: number) {}
   obtenerFactorVolumetrico(): Promise<number> {
     return Promise.resolve(this.factorVolumetrico);
   }
-  obtenerMensajeFueraCobertura(): Promise<string> {
-    this.mensajeSolicitado = true;
-    return Promise.resolve(this.mensajeFueraCobertura);
+}
+
+/** El texto de `mensaje_fuera_cobertura` sale del puerto del asistente; `solicitado` deja ver si se pidió. */
+class TextosFalsos implements TextosAsistente {
+  solicitado = false;
+  constructor(private readonly mensajeFueraCobertura: string) {}
+  textoDelSistema(clave: ClaveSistema): Promise<string> {
+    this.solicitado = true;
+    return Promise.resolve(clave === 'mensaje_fuera_cobertura' ? this.mensajeFueraCobertura : `[${clave}]`);
   }
 }
 
@@ -90,9 +93,10 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
   it('CAT9 — Sin cobertura por ausencia de tarifa se registra el evento con el producto y el destino', async () => {
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
-      new RepositorioParametroFalso(4000, 'sin cobertura'),
+      new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []), // sin exclusiones, sin ninguna tarifa que aplique
       politicas(),
+      new TextosFalsos('sin cobertura'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -105,9 +109,10 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     const repositorioEnvio = new RepositorioEnvioFalso([], []);
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
-      new RepositorioParametroFalso(4000, 'sin cobertura'),
+      new RepositorioParametroFalso(4000),
       repositorioEnvio,
       politicas(),
+      new TextosFalsos('sin cobertura'),
     );
 
     await caso.ejecutar('SKU-1', DESTINO);
@@ -124,9 +129,10 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
   it('CAT11 — Sin cobertura se devuelve el mensaje del parámetro del negocio, sin ningún rango', async () => {
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
-      new RepositorioParametroFalso(4000, 'Mensaje configurado del negocio'),
+      new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []),
       politicas(),
+      new TextosFalsos('Mensaje configurado del negocio'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -142,9 +148,10 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     const repositorioEnvio = new RepositorioEnvioFalso([exclusionDeTodoElDepartamento], []);
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
-      new RepositorioParametroFalso(4000, 'sin cobertura por exclusión'),
+      new RepositorioParametroFalso(4000),
       repositorioEnvio,
       politicas(),
+      new TextosFalsos('sin cobertura por exclusión'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -174,14 +181,20 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       creado: new Date('2026-01-01'),
     };
     const repositorioEnvio = new RepositorioEnvioFalso([], [tarifaQueAplica]);
-    const repositorioParametro = new RepositorioParametroFalso(4000, 'no debería usarse');
-    const caso = new CotizarEnvio(new RepositorioProductoFalso(PRODUCTO), repositorioParametro, repositorioEnvio, politicas());
+    const textos = new TextosFalsos('no debería usarse');
+    const caso = new CotizarEnvio(
+      new RepositorioProductoFalso(PRODUCTO),
+      new RepositorioParametroFalso(4000),
+      repositorioEnvio,
+      politicas(),
+      textos,
+    );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
 
     expect(resultado.cobertura).toBe(true);
     expect(repositorioEnvio.eventoRegistrado).toBeUndefined();
-    expect(repositorioParametro.mensajeSolicitado).toBe(false);
+    expect(textos.solicitado).toBe(false);
   });
 
   const TARIFA_CON_CONTRAENTREGA: CandidataTarifa = {
@@ -201,9 +214,10 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
   function cotizador(tarifa: CandidataTarifa, configuradas: Readonly<Record<string, string>> = {}): CotizarEnvio {
     return new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
-      new RepositorioParametroFalso(4000, 'sin cobertura'),
+      new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], [tarifa]),
       politicas(configuradas),
+      new TextosFalsos('sin cobertura'),
     );
   }
 

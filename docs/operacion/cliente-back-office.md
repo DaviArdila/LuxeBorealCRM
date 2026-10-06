@@ -14,7 +14,7 @@ Hace falta Node 24.15 o más y Docker para la base y Redis. Los comandos se corr
 | 1. Dependencias de las dos aplicaciones (una vez) | `npm run instalar` |
 | 2. Base de datos y Redis | `docker compose -f servicio/docker-compose.yml up -d postgres redis` |
 | 3. Tablas | `npm --prefix servicio run prisma:aplicar` |
-| 4. Mensajes fijos del bot (una vez) | `npm --prefix servicio run mensajes:sembrar` |
+| 4. Casos del asistente: los textos del bot (una vez) | `npm --prefix servicio run casos:sembrar` |
 | 5. Tu usuario administrador (una vez) | `npm --prefix servicio run usuario:crear -- --email tu@correo.co --nombre "Tu nombre" --rol admin` |
 | 6. La API (puerto 3000) | `npm --prefix servicio run start:dev` |
 | 7. El cliente | `npm --prefix cliente start` y abre <http://localhost:4200> |
@@ -46,7 +46,7 @@ lo dejes vacío ni le quites que habla con un asistente automatizado.
 | «No tienes permiso para hacer eso» | Tu usuario es `asesor` o cambió de rol | Pídele a un admin. La sesión sigue abierta |
 | «Correo o contraseña incorrectos» | No distingue entre un correo que no existe y una contraseña errada, a propósito | Revisa los dos; tras 5 fallos esperas 15 minutos |
 | Un motivo en rojo al publicar o guardar | El servidor rechazó el texto (por ejemplo, un valor en pesos) | Corrige el texto; lo escrito sigue ahí |
-| Los diez mensajes dicen «Texto de respaldo» | Todavía no editaste ninguno, o no corriste la semilla | Es normal: el bot usa el respaldo. `npm --prefix servicio run mensajes:sembrar` los deja listos para editar |
+| Los diez mensajes dicen «Texto de respaldo» | Todavía no editaste ninguno, o no corriste la semilla | Es normal: el bot usa el respaldo. `npm --prefix servicio run casos:sembrar` los deja listos para editar (cada mensaje es el caso del sistema con esa clave, y lo que guardas rige desde el siguiente mensaje del bot) |
 | El cliente no llega a la API | La API no está arriba o el puerto del proxy no coincide | Revisa el paso 6 y `cliente/proxy.conf.json` |
 
 Un usuario `asesor` entra, pero no ve ninguna pantalla de administración y, si abre la dirección a mano, vuelve al

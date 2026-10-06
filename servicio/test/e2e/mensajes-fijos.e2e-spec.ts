@@ -12,6 +12,7 @@ import { crearOpcionesLogger } from '../../src/plataforma/observabilidad/index.j
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { iniciarSesionComo, type SesionDePrueba } from '../soporte/sesion-e2e.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { limpiarCasos } from '../soporte/textos-asistente.js';
 
 // T4 (fase-11b): los mensajes fijos por la API, con la app completa y las guardias reales de la 11a (CFN1, CFN2, API7).
 
@@ -40,7 +41,8 @@ interface Contexto {
 let contexto: Contexto | undefined;
 
 async function limpiar(ctx: Contexto): Promise<void> {
-  await ctx.prisma.parametro.deleteMany({ where: { clave: { in: [...CLAVES, AJENA] } } });
+  await limpiarCasos(ctx.prisma);
+  await ctx.prisma.parametro.deleteMany({ where: { clave: AJENA } });
 }
 
 afterEach(async () => {
@@ -138,7 +140,7 @@ describe('Mensajes fijos por la API (T4, e2e)', () => {
       expect(respuesta.headers['content-type']).toContain('application/problem+json');
       expect(codigoDe(respuesta)).toBe('rol-insuficiente');
     }
-    expect(await ctx.prisma.parametro.findUnique({ where: { clave: 'mensaje_handoff' } })).toBeNull();
+    expect(await ctx.prisma.casoAsistente.findUnique({ where: { claveSistema: 'mensaje_handoff' } })).toBeNull();
   });
 
   it('CFN2 — Guardar devuelve el mensaje con origen base y la fecha de la edición', async () => {
@@ -154,7 +156,7 @@ describe('Mensajes fijos por la API (T4, e2e)', () => {
       origen: 'base',
     });
     expect(Number.isNaN(Date.parse((respuesta.body as MensajeApi).actualizado ?? ''))).toBe(false);
-    expect((await ctx.prisma.parametro.findUniqueOrThrow({ where: { clave: 'mensaje_handoff' } })).valor).toBe('Ya te comunico con un asesor.');
+    expect((await ctx.prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_handoff' } })).texto).toBe('Ya te comunico con un asesor.');
   });
 
   it('CFN2 — Un texto inválido se rechaza con 422, su motivo, y el texto vigente no cambia', async () => {
@@ -177,7 +179,7 @@ describe('Mensajes fijos por la API (T4, e2e)', () => {
       expect(detalleDe(respuesta)).toMatch(motivo);
       expect(JSON.stringify(respuesta.body)).not.toContain('120.000');
     }
-    expect((await ctx.prisma.parametro.findUniqueOrThrow({ where: { clave: 'mensaje_handoff' } })).valor).toBe('Texto vigente.');
+    expect((await ctx.prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_handoff' } })).texto).toBe('Texto vigente.');
   });
 
   it('CFN2 — Una clave desconocida responde 404 y no escribe nada', async () => {

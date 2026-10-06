@@ -402,4 +402,27 @@ describe('fronteras — dependency-cruiser (D11)', () => {
       ),
     ).toBe(false);
   });
+  it('regla 16 — asistente-no-conoce-a-sus-consumidores: asistente importando el barril de agente viola la regla', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'asistente-no-conoce-a-sus-consumidores',
+        'src/modulos/asistente/importa-agente.ts',
+      ),
+    ).toBe(true);
+  });
+
+  it('regla 16 — asistente-no-conoce-a-sus-consumidores (permitido): agente importa el barril de asistente', async () => {
+    const violaciones = await violacionesDeFixtures();
+
+    expect(
+      tieneViolacion(
+        violaciones,
+        'asistente-no-conoce-a-sus-consumidores',
+        'src/modulos/agente/importa-asistente.ts',
+      ),
+    ).toBe(false);
+  });
 });

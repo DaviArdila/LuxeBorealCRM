@@ -1,7 +1,7 @@
 import type { SolicitudTurno } from '../../conversaciones/index.js';
 import type { DecisionPolitica, PoliticaTurno } from '../dominio/politica-turno.js';
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
-import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
 import { MotorTurno } from './motor-turno.js';
 import { PoliticaNoTextuales } from './politicas/politica-no-textuales.js';
 import { TextoHandoff } from './texto-handoff.js';
@@ -48,7 +48,7 @@ const RESPUESTA_PREVIA: DecisionPolitica = {
 
 function crearMotor(politicas: readonly PoliticaTurno[]) {
   const contadores = new ContadoresSesionEnMemoria();
-  const parametros = new RepositorioParametroAgenteEnMemoria();
+  const parametros = new TextosAsistenteEnMemoria();
   parametros.textos.set('aviso_datos', AVISO);
   return { motor: new MotorTurno(politicas, contadores, parametros), contadores, parametros };
 }
@@ -75,7 +75,7 @@ describe('MotorTurno', () => {
   });
 
   it('AGT1 — Una política que responde corta el resto del pipeline', async () => {
-    const parametros = new RepositorioParametroAgenteEnMemoria();
+    const parametros = new TextosAsistenteEnMemoria();
     const noTextuales = new PoliticaNoTextuales(
       new ContadoresSesionEnMemoria(),
       parametros,

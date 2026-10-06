@@ -34,5 +34,3 @@ export {
 } from './puertos/generador-respuesta.js';
 export type { CanalConversacion } from './puertos/repositorio-conversacion.js';
 export type { PasoImagen, PasoRespuesta, PasoTexto } from './puertos/salida-conversacion.js';
-// Fase 11b (CFN1): el catálogo de textos fijos que el admin edita desde `mensajes-fijos`.
-export { TEXTOS_FIJOS_CONVERSACIONES } from './dominio/textos-fijos.js';

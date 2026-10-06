@@ -4,8 +4,7 @@ import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-
 import { RepositorioContactoAgenteEnMemoria } from '../../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import { HistorialEnMemoria } from '../../../../../test/fakes/historial-en-memoria.js';
 import { FakePuertoLlm } from '../../../../../test/fakes/puerto-llm-falso.js';
-import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
-import { RepositorioParametroLlmEnMemoria } from '../../../../../test/fakes/repositorio-parametro-llm-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import { ProductoNoDisponible, type ObtenerCatalogoCompacto, type ObtenerFichaProducto } from '../../../catalogo/index.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import { ErrorPasarelaLlm, ObtenerMensajeTechoGasto } from '../../../llm/index.js';
@@ -52,10 +51,9 @@ function herramienta(nombre: string, paraElModelo: unknown, efectos: readonly Ef
 function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
   const llm = new FakePuertoLlm();
   const historial = new HistorialEnMemoria();
-  const parametros = new RepositorioParametroAgenteEnMemoria();
+  const parametros = new TextosAsistenteEnMemoria();
   parametros.textos.set('mensaje_error_llm', 'TEXTO-ERROR');
-  const parametrosLlm = new RepositorioParametroLlmEnMemoria();
-  parametrosLlm.mensajeTechoGasto = 'TEXTO-TECHO';
+  parametros.textos.set('mensaje_techo_gasto', 'TEXTO-TECHO');
   const bucle = new BucleHerramientas(
     llm,
     new RegistroHerramientas(herramientas),
@@ -83,7 +81,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
       parametros,
     ),
     parametros,
-    new ObtenerMensajeTechoGasto(parametrosLlm),
+    new ObtenerMensajeTechoGasto(parametros),
     historial,
     { AGENTE_HISTORIAL_TURNOS: historialTurnos },
     new TextoHandoff({ estaDentroDeHorario: () => Promise.resolve(true) }, parametros),

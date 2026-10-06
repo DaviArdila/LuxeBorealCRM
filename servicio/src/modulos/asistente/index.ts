@@ -5,5 +5,13 @@
  */
 export { AsistenteModule } from './asistente.module.js';
 export { SembrarCasos, type ResultadoSemilla } from './aplicacion/sembrar-casos.js';
+export { AdministrarTextosDelSistema } from './aplicacion/administrar-textos-del-sistema.js';
 export { TEXTOS_ASISTENTE, type TextosAsistente } from './puertos/textos-asistente.js';
-export { CASOS_DEL_SISTEMA, textoDeRespaldo, type ClaveSistema, type DefinicionCasoSistema } from './dominio/sistema.js';
+export type { CasoDelSistema } from './puertos/repositorio-casos.js';
+export {
+  CASOS_DEL_SISTEMA,
+  esClaveDelSistema,
+  textoDeRespaldo,
+  type ClaveSistema,
+  type DefinicionCasoSistema,
+} from './dominio/sistema.js';

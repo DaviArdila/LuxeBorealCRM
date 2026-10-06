@@ -95,27 +95,4 @@ describe('Repositorio de parámetro de catálogo (T5, integración)', () => {
 
     expect(await repositorio.obtenerFactorVolumetrico()).toBe(4000);
   });
-
-  it('obtenerMensajeFueraCobertura lee el texto guardado en parametro', async () => {
-    const { repositorio, prisma } = await crearRepositorio();
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_fuera_cobertura' },
-      create: { clave: 'mensaje_fuera_cobertura', valor: 'Mensaje de prueba de cobertura' },
-      update: { valor: 'Mensaje de prueba de cobertura' },
-    });
-
-    expect(await repositorio.obtenerMensajeFueraCobertura()).toBe('Mensaje de prueba de cobertura');
-  });
-
-  it('obtenerMensajeFueraCobertura sin el parámetro configurado asume un mensaje por defecto no vacío', async () => {
-    const { repositorio, prisma } = await crearRepositorio();
-    await prisma.parametro.deleteMany({ where: { clave: 'mensaje_fuera_cobertura' } });
-
-    const mensaje = await repositorio.obtenerMensajeFueraCobertura();
-
-    expect(typeof mensaje).toBe('string');
-    expect(mensaje.length).toBeGreaterThan(0);
-    // CAT11: el texto por defecto no promete ningún contacto (eso depende de la Fase 08).
-    expect(mensaje).not.toMatch(/asesor|contactar/i);
-  });
 });

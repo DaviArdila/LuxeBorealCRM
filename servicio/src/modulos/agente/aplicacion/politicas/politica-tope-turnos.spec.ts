@@ -1,5 +1,5 @@
 import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-sesion-en-memoria.js';
-import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import { TextoHandoff } from '../texto-handoff.js';
 import { PoliticaTopeTurnos } from './politica-tope-turnos.js';
@@ -21,7 +21,7 @@ function turnoDeTexto(version: number): SolicitudTurno {
 
 function crear(dentroDeHorario = true) {
   const contadores = new ContadoresSesionEnMemoria();
-  const parametros = new RepositorioParametroAgenteEnMemoria();
+  const parametros = new TextosAsistenteEnMemoria();
   const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
   const politica = new PoliticaTopeTurnos(
     contadores,
