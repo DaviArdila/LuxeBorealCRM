@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CASOS_DEL_SISTEMA, textoDeRespaldo } from './sistema.js';
-import { planificarSemilla } from './semilla.js';
+import { leerArchivoDeCasos, planificarSemilla } from './semilla.js';
 
 // CAS6 (Fase 12, T4): qué casos crea la semilla a partir de lo que ya hay en `parametro` y del código.
 
@@ -90,5 +92,56 @@ describe('planificarSemilla (CAS6)', () => {
     const plan = planificarSemilla(filas({ politica_vacia: ' ', politica_numero: 3 }));
 
     expect(plan.casos.filter((c) => c.claveSistema === null)).toEqual([]);
+  });
+});
+
+describe('leerArchivoDeCasos (CAS6, datos de desarrollo)', () => {
+  const VALIDO = {
+    casos: [
+      { categoria: 'Políticas', titulo: 'Devoluciones', cuandoAplica: 'Cuando preguntan por devoluciones.', texto: 'Aceptamos devoluciones en 8 días.' },
+      { categoria: 'Envíos', titulo: 'Tiempos de entrega', cuandoAplica: 'Cuando preguntan cuánto tarda.', texto: 'Entre 2 y 5 días hábiles.', modo: 'guia' },
+    ],
+  };
+
+  it('CAS6 — Un archivo válido se convierte en casos de intención sin clave de parámetro', () => {
+    const resultado = leerArchivoDeCasos(VALIDO);
+
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect(resultado.casos[0]).toMatchObject({ claveSistema: null, disparador: 'intencion', modo: 'literal', claveParametro: null, categoria: 'Políticas' });
+    expect(resultado.casos[1]).toMatchObject({ modo: 'guia', categoria: 'Envíos' });
+  });
+
+  it('CAS6 — Las categorías nuevas del archivo se agregan al final del orden', () => {
+    const resultado = leerArchivoDeCasos(VALIDO);
+
+    expect(resultado.ok && resultado.categorias.map((c) => c.nombre)).toEqual(['Envíos']);
+    expect(planificarSemilla(new Map(), resultado.ok ? resultado : undefined).categorias.map((c) => [c.nombre, c.orden])).toEqual([
+      ['Sistema', 0],
+      ['Políticas', 1],
+      ['Envíos', 2],
+    ]);
+  });
+
+  it('CAS5 — Un caso del archivo que incumple las reglas del caso invalida todo el archivo y nombra la posición', () => {
+    const resultado = leerArchivoDeCasos({ casos: [VALIDO.casos[0], { ...VALIDO.casos[1], texto: 'Cuesta $50.000.' }] });
+
+    expect(resultado).toMatchObject({ ok: false });
+    expect(resultado.ok ? '' : resultado.motivo).toContain('caso 2');
+    expect(resultado.ok ? '' : resultado.motivo).not.toContain('50.000');
+  });
+
+  it('un archivo con otra forma se rechaza con un motivo claro', () => {
+    expect(leerArchivoDeCasos({})).toMatchObject({ ok: false });
+    expect(leerArchivoDeCasos({ casos: 'x' })).toMatchObject({ ok: false });
+    expect(leerArchivoDeCasos({ casos: [{ titulo: 1 }] })).toMatchObject({ ok: false });
+  });
+
+  it('CAS6 — El archivo de casos de los datos de desarrollo es válido y trae las tres políticas', () => {
+    const ruta = path.resolve(import.meta.dirname, '..', '..', '..', '..', 'datos-desarrollo', 'asistente', 'casos.json');
+
+    const resultado = leerArchivoDeCasos(JSON.parse(readFileSync(ruta, 'utf8')));
+
+    expect(resultado.ok && resultado.casos.map((c) => c.titulo)).toEqual(['Devoluciones', 'Garantía', 'Instalación']);
   });
 });

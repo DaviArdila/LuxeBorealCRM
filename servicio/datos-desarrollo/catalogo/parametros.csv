@@ -2,7 +2,3 @@ clave,valor
 horario_atencion,"{""lun-vie"":""08:00-18:00"",""sab"":""09:00-13:00"",""dom"":null}"
 recargo_contraentrega_pct,5
 factor_volumetrico,4000
-mensaje_fuera_cobertura,Por ahora no tenemos cobertura de envío a esa zona. Puedes darnos otra dirección de entrega si tienes una.
-politica_devoluciones,"Aceptamos devoluciones dentro de los 8 días siguientes a la entrega, con el producto sin instalar, en su empaque original y con todos sus accesorios. Si el producto llegó con un defecto o no es lo que pediste, el cambio o la devolución no tiene costo para ti."
-politica_garantia,"Los productos de grifería y sanitarios tienen 1 año de garantía contra defectos de fabricación. La garantía no cubre daños por mala instalación, golpes ni uso de químicos abrasivos."
-politica_instalacion,"No ofrecemos instalación, pero cada producto incluye las indicaciones de montaje y puedes consultarnos cualquier duda. Recomendamos que lo instale un plomero."

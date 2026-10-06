@@ -78,4 +78,22 @@ describe('asistente/aplicacion — SembrarCasos (CAS6)', () => {
 
     await expect(sembrar.ejecutar()).resolves.toEqual({ insertados: 2, existentes: 9 });
   });
+
+  it('CAS6 — Con un archivo de casos los suma al plan y cuenta como existentes los que ya estaban', async () => {
+    const { sembrar, repositorio } = crear({}, 12);
+
+    const resultado = await sembrar.ejecutar({
+      casos: [{ categoria: 'Políticas', titulo: 'Devoluciones', cuandoAplica: 'Cuando preguntan por devoluciones.', texto: 'Aceptamos devoluciones en 8 días.' }],
+    });
+
+    expect(resultado).toEqual({ insertados: 12, existentes: 0 });
+    expect(repositorio.planes[0]?.casos.some((c) => c.titulo === 'Devoluciones')).toBe(true);
+  });
+
+  it('CAS6 — Un archivo inválido falla antes de tocar la base', async () => {
+    const { sembrar, repositorio } = crear({}, 0);
+
+    await expect(sembrar.ejecutar({ casos: [{ titulo: 'sin lo demás' }] })).rejects.toThrow(/caso 1/);
+    expect(repositorio.planes).toHaveLength(0);
+  });
 });

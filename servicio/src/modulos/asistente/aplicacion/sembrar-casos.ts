@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK } from '../../../plataforma/reloj/index.js';
 import type { Clock } from '../../../plataforma/reloj/index.js';
-import { planificarSemilla } from '../dominio/semilla.js';
+import { leerArchivoDeCasos, planificarSemilla } from '../dominio/semilla.js';
 import { REPOSITORIO_SEMILLA, type RepositorioSemilla } from '../puertos/repositorio-semilla.js';
 import { VERSION_ASISTENTE, type VersionAsistente } from '../puertos/version-asistente.js';
 
@@ -26,8 +26,14 @@ export class SembrarCasos {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async ejecutar(): Promise<ResultadoSemilla> {
-    const plan = planificarSemilla(await this.repositorio.leerParametrosDeTexto());
+  /**
+   * `contenidoArchivo` es el JSON ya leído de un archivo de casos de desarrollo (opcional): se valida entero antes de tocar la
+   * base y, si es inválido, lanza con el motivo.
+   */
+  async ejecutar(contenidoArchivo?: unknown): Promise<ResultadoSemilla> {
+    const archivo = contenidoArchivo === undefined ? undefined : leerArchivoDeCasos(contenidoArchivo);
+    if (archivo !== undefined && !archivo.ok) throw new Error(`el archivo de casos no es válido: ${archivo.motivo}`);
+    const plan = planificarSemilla(await this.repositorio.leerParametrosDeTexto(), archivo);
     const insertados = await this.repositorio.aplicar(plan, this.clock.ahora());
     if (insertados > 0) {
       try {

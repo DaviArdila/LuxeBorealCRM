@@ -203,7 +203,7 @@ module.exports = {
         'hay ciclos. Numerada 16.',
       severity: 'error',
       from: { path: '^src/modulos/asistente/' },
-      to: { path: '^src/modulos/(agente|conversaciones|catalogo|llm|mensajes-fijos)/' },
+      to: { path: '^src/modulos/(agente|conversaciones|catalogo|llm|configuracion)/' },
     },
   ],
   options: {

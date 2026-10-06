@@ -466,36 +466,14 @@ function validarCobertura(
   return zonas;
 }
 
-// --- Filas `politica_<tema>` de `parametros.csv` --------------------------------------------------------------------
-// Las políticas pasaron a ser casos de uso del asistente (Fase 12): `casos:sembrar` copia las filas que ya hay. Mientras T11
-// no haga que el importador las rechace (CFG6), siguen validándose y guardándose como hasta ahora.
+// --- Filas de texto de `parametros.csv` (CFG6) ---------------------------------------------------------------------
+// `parametro` guarda solo configuración del negocio. Los textos que lee el cliente son casos del asistente y el estilo del
+// bot vive en `version_estilo`: una fila de texto invalida el lote entero, sin importar nada (todo o nada).
 
-const PREFIJO_POLITICA = 'politica_';
-const LIMITE_CARACTERES_POLITICA = 1200;
+const PREFIJOS_DE_TEXTO = ['mensaje_', 'aviso_', 'politica_', 'prompt_estilo'] as const;
 
-function esClavePolitica(clave: string): boolean {
-  return clave.startsWith(PREFIJO_POLITICA);
-}
-
-function temaDeClave(clave: string): string {
-  return clave.slice(PREFIJO_POLITICA.length);
-}
-
-/** Devuelve el motivo del rechazo, o `null` si el tema es válido. */
-function validarTemaPolitica(tema: string): string | null {
-  if (!/^[a-z0-9_]+$/.test(tema)) {
-    return `el tema "${tema}" debe tener solo minúsculas sin acentos, dígitos y guion bajo`;
-  }
-  return null;
-}
-
-function validarTextoPolitica(textoCrudo: string): { readonly texto: string } | { readonly error: string } {
-  const texto = textoCrudo.trim();
-  if (texto === '') return { error: 'la política está vacía' };
-  if (texto.length > LIMITE_CARACTERES_POLITICA) {
-    return { error: `la política tiene ${texto.length} caracteres; el máximo es ${LIMITE_CARACTERES_POLITICA}` };
-  }
-  return { texto };
+function esClaveDeTexto(clave: string): boolean {
+  return PREFIJOS_DE_TEXTO.some((prefijo) => clave.startsWith(prefijo));
 }
 
 // --- IMP7: pestaña `parametros`, registro de parsers jsonb por clave conocida (Q3, R15) -----------
@@ -553,18 +531,14 @@ function validarParametros(
       return;
     }
 
-    if (esClavePolitica(clave)) {
-      const errorTema = validarTemaPolitica(temaDeClave(clave));
-      if (errorTema !== null) {
-        err(errores, 'parametros', numeroFila, 'clave', errorTema);
-        return;
-      }
-      const politica = validarTextoPolitica(valorCrudo);
-      if ('error' in politica) {
-        err(errores, 'parametros', numeroFila, 'valor', politica.error);
-        return;
-      }
-      parametros.push({ clave, valor: politica.texto });
+    if (esClaveDeTexto(clave)) {
+      err(
+        errores,
+        'parametros',
+        numeroFila,
+        'clave',
+        `"${clave}" es un texto del bot: los textos se editan en «Casos de uso» (o con npm run casos:sembrar), no en parametros.csv`,
+      );
       return;
     }
 

@@ -10,7 +10,7 @@ const esquema = z.object({
 
 /**
  * `consultar_caso` (AGT8, CAS8): envuelve `ConsultaCasos` y devuelve el texto y el modo del caso, sin interpretarlo (R1, R2).
- * Reemplaza a `consultar_politica`. Un título que no existe lista los disponibles: el modelo no debe inventar un caso que el
+ * Un título que no existe lista los disponibles: el modelo no debe inventar un caso que el
  * negocio no definió.
  */
 export function crearConsultarCaso(casos: ConsultaCasos): Herramienta {

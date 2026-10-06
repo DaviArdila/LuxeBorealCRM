@@ -29,8 +29,8 @@ versión nueva a quien restauró. El nombre se guarda tal como estaba al publica
 historial no cambia.
 
 La migración copió el estilo y su historial desde `parametro` conservando los números de versión. Las claves viejas
-(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) **siguen ahí como respaldo** y ya nadie las lee; se
-borran en la limpieza final de la fase.
+(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) las borró la migración de limpieza: el estilo vive solo en
+`version_estilo`.
 
 ## El flujo recomendado
 
