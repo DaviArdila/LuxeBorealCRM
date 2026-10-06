@@ -212,4 +212,30 @@ describe('scripts/comparar-contrato — política "sin base" (D11)', () => {
     },
     60_000,
   );
+
+  it(
+    'API10 — Un retiro de ruta anotado en openapi/oasdiff-ignorar.txt no bloquea; sin la anotación sí',
+    async () => {
+      const raiz = await crearRepositorioDePrueba();
+      try {
+        await escribirDocumentoPublico(raiz, DOCUMENTO_BASE);
+        commitearTodo(raiz, 'feat: contrato inicial');
+        const rutaActual = await escribirDocumentoPublico(raiz, { ...DOCUMENTO_BASE, paths: {} });
+
+        const sinAnotar = await compararContrato(raiz, rutaActual);
+        await writeFile(
+          path.join(raiz, 'openapi', 'oasdiff-ignorar.txt'),
+          'GET /api/v1/ejemplos api path removed without deprecation\n',
+          'utf8',
+        );
+        const anotado = await compararContrato(raiz, rutaActual);
+
+        expect(sinAnotar.limpio).toBe(false);
+        expect(anotado.limpio).toBe(true);
+      } finally {
+        await rm(raiz, { recursive: true, force: true });
+      }
+    },
+    60_000,
+  );
 });

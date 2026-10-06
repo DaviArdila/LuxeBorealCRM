@@ -236,7 +236,7 @@ Fases 00a, 00b y 01:
 | `npm run contrato:generar` | Genera `openapi/openapi.json` (público) y `openapi/openapi.interno.json` (completo) desde el código (D1/D2 de la Fase 00b) |
 | `npm run contrato:deriva` | Regenera el contrato en memoria y lo compara byte a byte con lo commiteado; falla si difiere |
 | `npm run contrato:lint` | Lint del contrato con Spectral (`.spectral.yaml`) sobre ambos documentos |
-| `npm run contrato:diff` | Compara el documento público contra `main` con oasdiff; sin base commiteada, deja constancia sin fallar (D11) |
+| `npm run contrato:diff` | Compara el documento público contra `main` con oasdiff; sin base commiteada, deja constancia sin fallar (D11); un retiro decidido se anota en `openapi/oasdiff-ignorar.txt` (una línea `MÉTODO /ruta texto-de-oasdiff` por cambio) en el mismo commit |
 | `npm run secretos` | `gitleaks` sobre el árbol de trabajo (rápido; parte del hook `pre-push`) |
 | `npm run secretos:historial` | `gitleaks` sobre el historial completo de commits (lento; solo en `ci`) |
 | `npm run commits` | `commitlint` sobre el rango `merge-base(main, HEAD)..HEAD` (u override con `LUXE_COMMITS_DESDE`) |
