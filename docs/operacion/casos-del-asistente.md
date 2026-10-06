@@ -65,6 +65,16 @@ El contrato completo está en `openapi/openapi.json` y la documentación interac
 - **Privacidad.** Los logs de una escritura llevan el identificador del caso y el del usuario, nunca el texto; lo que se busca
   con `q` tampoco se escribe.
 
+## La pantalla «Casos de uso»
+
+En el back office (`Asistente › Casos de uso`, solo `admin`) los casos se ven agrupados por categoría, cada una con su
+contador. El buscador espera 300 ms tras la última tecla y consulta al servidor; los filtros de categoría y tipo también.
+«Nuevo caso» y «Editar» abren una ventana con categoría, título, «cuándo aplica», texto, modo y activo; el motivo de un
+rechazo aparece dentro de la ventana y lo escrito se conserva. Un caso del sistema lleva la etiqueta «Sistema», muestra
+cuándo se envía y solo permite editar el texto y la categoría: no tiene «Borrar» ni «Activo». Un caso inactivo se ve
+atenuado con la etiqueta «Inactivo». Abajo, «Categorías» permite crear, renombrar, subir, bajar y borrar (una con casos no
+se borra: la pantalla dice por qué).
+
 ## Cuándo se nota un cambio
 
 Al instante: cada escritura sube una versión compartida en Redis y cada mensaje del bot la compara con la de su copia en

@@ -39,8 +39,6 @@ describe('plataforma/errores — códigos del estilo del bot (Fase 11b, AGT23)',
 
 describe('plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2)', () => {
   it.each([
-    ['mensaje-fijo-invalido', 422],
-    ['mensaje-fijo-desconocido', 404],
     ['categoria-duplicada', 409],
     ['categoria-con-casos', 409],
     ['categoria-inexistente', 404],

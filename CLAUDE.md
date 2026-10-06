@@ -236,7 +236,7 @@ Fases 00a, 00b y 01:
 | `npm run contrato:generar` | Genera `openapi/openapi.json` (público) y `openapi/openapi.interno.json` (completo) desde el código (D1/D2 de la Fase 00b) |
 | `npm run contrato:deriva` | Regenera el contrato en memoria y lo compara byte a byte con lo commiteado; falla si difiere |
 | `npm run contrato:lint` | Lint del contrato con Spectral (`.spectral.yaml`) sobre ambos documentos |
-| `npm run contrato:diff` | Compara el documento público contra `main` con oasdiff; sin base commiteada, deja constancia sin fallar (D11) |
+| `npm run contrato:diff` | Compara el documento público contra `main` con oasdiff; sin base commiteada, deja constancia sin fallar (D11); un retiro decidido se anota en `openapi/oasdiff-ignorar.txt` (una línea `MÉTODO /ruta texto-de-oasdiff` por cambio) en el mismo commit |
 | `npm run secretos` | `gitleaks` sobre el árbol de trabajo (rápido; parte del hook `pre-push`) |
 | `npm run secretos:historial` | `gitleaks` sobre el historial completo de commits (lento; solo en `ci`) |
 | `npm run commits` | `commitlint` sobre el rango `merge-base(main, HEAD)..HEAD` (u override con `LUXE_COMMITS_DESDE`) |
@@ -247,7 +247,6 @@ Fases 00a, 00b y 01:
 | `npm run evals:anonimizar` | Convierte una conversación cruda de Chatwoot (`.evals-crudo/`, ignorado por git) en un caso del set dorado con marcadores estables; no escribe nada si sobrevive un dato personal (R14) |
 | `npm run prompt:estilo` | Edita el estilo del bot sin desplegar (Fase 08c): `-- ver`, `-- historial`, `-- publicar --archivo <ruta>` y `-- restaurar --version <n>`; valida el texto, guarda las últimas 10 versiones y no escribe el texto en logs. Tras publicar, correr los evals reales (EVL3) |
 | `npm run usuario:crear` | Crea un usuario del back office (Fase 11a): `-- --email <correo> --nombre <nombre> --rol admin\|asesor`; pide la contraseña dos veces sin mostrarla (mínimo 12 caracteres), exige una terminal interactiva, guarda solo el hash argon2id y no pisa un correo existente |
-| `npm run mensajes:sembrar` | Inserta en `parametro` los diez mensajes fijos del bot que no tienen fila, con su texto de respaldo (Fase 11b); idempotente, nunca pisa un texto editado e informa solo cuántas insertó y cuántas ya existían |
 | `npm run casos:sembrar` | Crea las categorías «Sistema» y «Políticas», los once casos del sistema (con el texto que ya haya en `parametro` o el de respaldo) y un caso de intención por cada `politica_<tema>`, retirando de `parametro` lo que copió (Fase 12); idempotente, nunca pisa un caso existente e informa solo cuántos insertó y cuántos ya existían |
 | `npm run ci:hook` | Subconjunto rápido que corre el hook `pre-push`: lint, typecheck, tests unitarios, deriva del contrato, secretos y commitlint |
 | `npm run ci` | Secuencia completa del servicio: `ci:hook` + fronteras + tests con cobertura + e2e + evals guionadas + lint/diff del contrato + auditoría + validación de workflows |

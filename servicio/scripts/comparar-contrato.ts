@@ -19,6 +19,12 @@ import { ejecutarHerramienta, IMAGEN_OASDIFF, resolverRaizRepositorio } from './
  * | Docker no responde | falla, nombra Docker Desktop (heredado de `ejecutarHerramienta`) |
  */
 const ARCHIVO_PUBLICO = 'openapi/openapi.json';
+/**
+ * Retiros e incompatibilidades **decididos** (una línea `MÉTODO /ruta <texto de oasdiff>` por cambio, formato de
+ * `--err-ignore`). El gate sigue bloqueando todo lo que no esté anotado aquí; quien retira una ruta la anota en el mismo
+ * commit y el PR deja constancia del porqué.
+ */
+const ARCHIVO_IGNORADOS = 'openapi/oasdiff-ignorar.txt';
 const RAMA_BASE = 'main';
 
 export const MENSAJE_SIN_BASE =
@@ -78,6 +84,15 @@ function contenidoEnRamaBase(raiz: string, ref: string): string | null {
   }
 }
 
+async function leerIgnorados(raiz: string): Promise<string | null> {
+  try {
+    return await readFile(path.join(raiz, ARCHIVO_IGNORADOS), 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 export async function compararContrato(
   raiz: string = resolverRaizRepositorio(),
   archivoActual: string = path.join(raiz, ARCHIVO_PUBLICO),
@@ -116,10 +131,19 @@ export async function compararContrato(
     const rutaActual = path.join(directorioTemporal, 'actual.json');
     const actual = await readFile(archivoActual, 'utf8');
     await Promise.all([writeFile(rutaBase, base, 'utf8'), writeFile(rutaActual, actual, 'utf8')]);
+    const ignorados = await leerIgnorados(raiz);
+    if (ignorados !== null) await writeFile(path.join(directorioTemporal, 'ignorar.txt'), ignorados, 'utf8');
 
     const resultado = await ejecutar(
       IMAGEN_OASDIFF,
-      ['breaking', '/repo/base.json', '/repo/actual.json', '--fail-on', 'ERR'],
+      [
+        'breaking',
+        '/repo/base.json',
+        '/repo/actual.json',
+        '--fail-on',
+        'ERR',
+        ...(ignorados === null ? [] : ['--err-ignore', '/repo/ignorar.txt']),
+      ],
       { montarDesde: directorioTemporal },
     );
 

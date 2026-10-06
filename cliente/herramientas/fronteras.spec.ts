@@ -41,11 +41,11 @@ async function reglasQueFallan(codigo: string, archivo: string): Promise<string[
 describe.skipIf(!hayLint)('CLT9 — Las fronteras del cliente fallan en el lint', () => {
   describe('imports prohibidos', () => {
     it.each([
-      ['un área importa otra área', 'areas/inventario/inventario.ts', "import { AREA_BOT } from '../bot/area';\nexport const x = AREA_BOT;\n"],
-      ['nucleo importa un área', 'nucleo/malo.ts', "import { AREA_BOT } from '../areas/bot/area';\nexport const x = AREA_BOT;\n"],
+      ['un área importa otra área', 'areas/inventario/inventario.ts', "import { AREA_ASISTENTE } from '../asistente/area';\nexport const x = AREA_ASISTENTE;\n"],
+      ['nucleo importa un área', 'nucleo/malo.ts', "import { AREA_ASISTENTE } from '../areas/asistente/area';\nexport const x = AREA_ASISTENTE;\n"],
       ['compartido importa nucleo', 'compartido/malo.ts', "import type { Rol } from '../nucleo/definicion-area';\nexport type X = Rol;\n"],
-      ['el shell importa un área', 'shell/malo.ts', "import { AREA_BOT } from '../areas/bot/area';\nexport const x = AREA_BOT;\n"],
-      ['un área importa el registro', 'areas/bot/malo.ts', "import { REGISTRO_DE_AREAS } from '../registro/registro';\nexport const x = REGISTRO_DE_AREAS;\n"],
+      ['el shell importa un área', 'shell/malo.ts', "import { AREA_ASISTENTE } from '../areas/asistente/area';\nexport const x = AREA_ASISTENTE;\n"],
+      ['un área importa el registro', 'areas/asistente/malo.ts', "import { REGISTRO_DE_AREAS } from '../registro/registro';\nexport const x = REGISTRO_DE_AREAS;\n"],
     ])('%s', async (_nombre, archivo, codigo) => {
       expect(await reglasQueFallan(codigo, archivo)).toContain('boundaries/dependencies');
     });
@@ -66,8 +66,8 @@ describe.skipIf(!hayLint)('CLT9 — Las fronteras del cliente fallan en el lint'
 
   describe('imports permitidos', () => {
     it.each([
-      ['un área usa nucleo y su propia carpeta', 'areas/bot/bueno.ts', "import type { DefinicionArea } from '../../nucleo/definicion-area';\nimport { AREA_BOT } from './area';\nexport const x: DefinicionArea = AREA_BOT;\n"],
-      ['el registro importa las áreas', 'areas/registro/bueno.ts', "import { AREA_BOT } from '../bot/area';\nexport const x = AREA_BOT;\n"],
+      ['un área usa nucleo y su propia carpeta', 'areas/asistente/bueno.ts', "import type { DefinicionArea } from '../../nucleo/definicion-area';\nimport { AREA_ASISTENTE } from './area';\nexport const x: DefinicionArea = AREA_ASISTENTE;\n"],
+      ['el registro importa las áreas', 'areas/registro/bueno.ts', "import { AREA_ASISTENTE } from '../asistente/area';\nexport const x = AREA_ASISTENTE;\n"],
       ['el shell usa el registro', 'shell/bueno.ts', "import { REGISTRO_DE_AREAS } from '../areas/registro/registro';\nexport const x = REGISTRO_DE_AREAS;\n"],
       ['nucleo usa el cliente generado', 'nucleo/bueno.ts', "import type { obtenerSesionActual } from '../api/fn/auth/obtener-sesion-actual';\nexport type X = typeof obtenerSesionActual;\n"],
     ])('%s', async (_nombre, archivo, codigo) => {

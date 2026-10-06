@@ -1,0 +1,2 @@
+GET /api/v1/mensajes-fijos api path removed without deprecation
+PUT /api/v1/mensajes-fijos/{clave} api path removed without deprecation

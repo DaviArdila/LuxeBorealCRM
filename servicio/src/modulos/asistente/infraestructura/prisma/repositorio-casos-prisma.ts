@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
 import { normalizarNombre, textoDeBusqueda } from '../../dominio/normalizar.js';
 import { CATEGORIAS_INICIALES, definicionDe, type ClaveSistema } from '../../dominio/sistema.js';
-import type { CasoDeIntencion, CasoDelSistema, RepositorioCasos } from '../../puertos/repositorio-casos.js';
+import type { CasoDeIntencion, RepositorioCasos } from '../../puertos/repositorio-casos.js';
 
 /** Lo que `crear` usa de la transacción: las dos tablas del asistente. */
 type Transaccion = Pick<PrismaService, 'categoriaCaso' | 'casoAsistente'>;
@@ -16,8 +16,11 @@ export class RepositorioCasosPrisma implements RepositorioCasos {
   constructor(private readonly prisma: PrismaService) {}
 
   async leerTextosDelSistema(): Promise<ReadonlyMap<string, string>> {
-    const casos = await this.leerCasosDelSistema();
-    return new Map([...casos].map(([clave, caso]) => [clave, caso.texto]));
+    const filas = await this.prisma.casoAsistente.findMany({
+      where: { claveSistema: { not: null } },
+      select: { claveSistema: true, texto: true },
+    });
+    return new Map(filas.flatMap((fila) => (fila.claveSistema === null ? [] : [[fila.claveSistema, fila.texto] as const])));
   }
 
   async leerCasosDeIntencion(): Promise<readonly CasoDeIntencion[]> {
@@ -27,18 +30,6 @@ export class RepositorioCasosPrisma implements RepositorioCasos {
       select: { titulo: true, tituloNormalizado: true, cuandoAplica: true, modo: true, texto: true },
     });
     return filas;
-  }
-
-  async leerCasosDelSistema(): Promise<ReadonlyMap<string, CasoDelSistema>> {
-    const filas = await this.prisma.casoAsistente.findMany({
-      where: { claveSistema: { not: null } },
-      select: { claveSistema: true, texto: true, actualizado: true },
-    });
-    return new Map(
-      filas.flatMap((fila) =>
-        fila.claveSistema === null ? [] : [[fila.claveSistema, { texto: fila.texto, actualizado: fila.actualizado }] as const],
-      ),
-    );
   }
 
   async guardarTextoDelSistema(clave: ClaveSistema, texto: string, ahora: Date): Promise<void> {
@@ -56,14 +47,6 @@ export class RepositorioCasosPrisma implements RepositorioCasos {
           actualizado: ahora,
         },
       });
-    });
-  }
-
-  async crearTextoDelSistemaSiFalta(clave: ClaveSistema, texto: string, ahora: Date): Promise<boolean> {
-    return this.prisma.$transaction(async (tx) => {
-      if ((await tx.casoAsistente.findUnique({ where: { claveSistema: clave }, select: { id: true } })) !== null) return false;
-      await this.crear(tx, clave, texto, ahora);
-      return true;
     });
   }
 

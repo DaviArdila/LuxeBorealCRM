@@ -17,6 +17,21 @@ describe('D11 — leerProblema devuelve código, título y motivo de un problem+
     });
   });
 
+  it('lee el problema de una respuesta pedida como texto (las rutas sin cuerpo, como un DELETE)', () => {
+    const error = new HttpErrorResponse({
+      status: 409,
+      error: JSON.stringify({ codigo: 'categoria-con-casos', title: 'La categoría tiene casos', detail: 'mueve sus casos primero' }),
+    });
+
+    expect(leerProblema(error)).toMatchObject({ estado: 409, codigo: 'categoria-con-casos', motivo: 'mueve sus casos primero' });
+  });
+
+  it('un cuerpo de texto que no es JSON devuelve el genérico con el estado', () => {
+    const error = new HttpErrorResponse({ status: 502, error: '<html>Bad gateway</html>' });
+
+    expect(leerProblema(error)).toMatchObject({ estado: 502, codigo: 'desconocido' });
+  });
+
   it('lee Retry-After en segundos de un 429', () => {
     const error = new HttpErrorResponse({
       status: 429,

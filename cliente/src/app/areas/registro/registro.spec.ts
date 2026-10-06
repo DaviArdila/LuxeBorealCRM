@@ -23,11 +23,11 @@ describe('D9 — El registro de áreas describe cada área con datos coherentes'
     }
   });
 
-  it('el área Bot es solo de admin y carga sus rutas en diferido', async () => {
-    const bot = REGISTRO_DE_AREAS.find((area) => area.id === 'bot');
+  it('el área Asistente es solo de admin y carga sus rutas en diferido', async () => {
+    const asistente = REGISTRO_DE_AREAS.find((area) => area.id === 'asistente');
 
-    expect(bot?.roles).toEqual(['admin']);
-    const rutas = await bot!.rutas();
-    expect(rutas.map((ruta) => ruta.path)).toEqual(['', 'estilo', 'mensajes-fijos']);
+    expect(asistente?.roles).toEqual(['admin']);
+    const rutas = await asistente!.rutas();
+    expect(rutas.map((ruta) => ruta.path)).toEqual(['', 'casos', 'estilo']);
   });
 });

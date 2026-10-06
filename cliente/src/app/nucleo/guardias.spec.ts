@@ -8,7 +8,7 @@ import { guardiaDeRol, guardiaDeSesion } from './guardias';
 import { SesionServicio } from './sesion.servicio';
 
 const RUTA = {} as ActivatedRouteSnapshot;
-const ESTADO = { url: '/bot/estilo' } as RouterStateSnapshot;
+const ESTADO = { url: '/asistente/estilo' } as RouterStateSnapshot;
 
 function preparar() {
   TestBed.configureTestingModule({

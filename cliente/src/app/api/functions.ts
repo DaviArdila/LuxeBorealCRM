@@ -35,7 +35,3 @@ export type { CerrarSesion$Params as CerrarSesion$Params } from './fn/auth/cerra
 export { cerrarSesion as cerrarSesion } from './fn/auth/cerrar-sesion';
 export type { ObtenerSesionActual$Params as ObtenerSesionActual$Params } from './fn/auth/obtener-sesion-actual';
 export { obtenerSesionActual as obtenerSesionActual } from './fn/auth/obtener-sesion-actual';
-export type { ListarMensajesFijos$Params as ListarMensajesFijos$Params } from './fn/mensajes-fijos/listar-mensajes-fijos';
-export { listarMensajesFijos as listarMensajesFijos } from './fn/mensajes-fijos/listar-mensajes-fijos';
-export type { GuardarMensajeFijo$Params as GuardarMensajeFijo$Params } from './fn/mensajes-fijos/guardar-mensaje-fijo';
-export { guardarMensajeFijo as guardarMensajeFijo } from './fn/mensajes-fijos/guardar-mensaje-fijo';
