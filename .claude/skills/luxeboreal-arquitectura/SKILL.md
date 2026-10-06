@@ -175,6 +175,24 @@ modulos/<m>/
 - Transacciones: el caso de uso las abre (servicio de transacción inyectable); los repositorios
   reciben el cliente transaccional.
 
+### Preparado para multiempresa (recomendación, sin implementar)
+
+La multiempresa está **propuesta y no iniciada**: ADR-0025 (`propuesta`) y su plan en
+`odd/tasks/multiempresa.md`. Mientras tanto rige ADR-0006: **no** se agrega `negocio_id`,
+`ContextoNegocio`, RLS ni nada de multiempresa. Estas reglas baratas evitan cerrarle la puerta:
+
+- Todo acceso a datos pasa por el repositorio del módulo dueño (ahí entrará el filtro por negocio).
+- Las llaves de Redis y las claves de MinIO se arman en **una** función por módulo, no con plantillas
+  sueltas repartidas por el código.
+- No se crea un `@unique` global en datos que serían por negocio (SKU, nombres, claves) sin anotarlo en
+  el inventario de `odd/tasks/multiempresa.md`.
+- Un job de BullMQ lleva en su payload todo lo que necesita y no deduce su contexto de estado global.
+- Nada de estado en memoria del proceso (`Map`, caché) que dependa de datos del negocio sin una llave
+  explícita.
+- Una credencial de canal nueva se lee en el adaptador por la configuración, nunca en dominio o
+  aplicación; la zona horaria y los demás datos del negocio no se agregan como constantes.
+- Una tabla, llave, cola o credencial nueva suma su fila al inventario de `odd/tasks/multiempresa.md`.
+
 ## 6. LLM
 
 - El agente solo conoce `LlmPort` (tipos propios). El SDK del proveedor solo aparece en
