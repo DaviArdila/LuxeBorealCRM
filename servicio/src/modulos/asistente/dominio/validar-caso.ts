@@ -4,6 +4,8 @@ import { contieneMarcadorDePlantilla, contieneSku, contieneValorEnPesos } from '
 export const MAX_CARACTERES_TEXTO_CASO = 1200;
 export const MAX_CARACTERES_TITULO_CASO = 80;
 export const MAX_CARACTERES_CUANDO_APLICA = 200;
+/** Un caso del sistema por evento describe cuándo lo envía el código, con más detalle que un «cuándo aplica» de intención. */
+export const MAX_CARACTERES_DESCRIPCION_EVENTO = 1000;
 
 export interface DatosCaso {
   readonly titulo: string;
@@ -34,8 +36,9 @@ export function validarCaso(caso: DatosCaso): ResultadoValidacionCaso {
   if (cuandoAplica.length === 0) {
     return { valido: false, motivo: 'el «cuándo aplica» está vacío' };
   }
-  if (cuandoAplica.length > MAX_CARACTERES_CUANDO_APLICA) {
-    return { valido: false, motivo: `el «cuándo aplica» supera ${String(MAX_CARACTERES_CUANDO_APLICA)} caracteres` };
+  const tope = caso.disparador === 'evento' ? MAX_CARACTERES_DESCRIPCION_EVENTO : MAX_CARACTERES_CUANDO_APLICA;
+  if (cuandoAplica.length > tope) {
+    return { valido: false, motivo: `el «cuándo aplica» supera ${String(tope)} caracteres` };
   }
   const texto = caso.texto.trim();
   if (texto.length === 0) {

@@ -73,6 +73,61 @@ export const CATALOGO_CODIGOS = Object.freeze({
     status: 404,
     title: 'El mensaje fijo no existe en la lista de mensajes editables',
   },
+  /** CAS1, CAS9: ya existe una categoría con ese nombre (sin distinguir mayúsculas ni acentos). */
+  'categoria-duplicada': {
+    status: 409,
+    title: 'Ya existe una categoría con ese nombre',
+  },
+  /** CAS2, CAS9: la categoría tiene casos; primero hay que moverlos o borrarlos. */
+  'categoria-con-casos': {
+    status: 409,
+    title: 'La categoría tiene casos y no se puede borrar',
+  },
+  /** CAS1, CAS9: la categoría pedida no existe. */
+  'categoria-inexistente': {
+    status: 404,
+    title: 'La categoría no existe',
+  },
+  /** CAS2: el nombre de la categoría está vacío o es demasiado largo; el motivo va en `detail`. */
+  'categoria-invalida': {
+    status: 422,
+    title: 'El nombre de la categoría no cumple las reglas para guardarse',
+  },
+  /** CAS2: el orden pedido no coincide con las categorías existentes. */
+  'orden-categorias-invalido': {
+    status: 422,
+    title: 'El orden no incluye exactamente las categorías existentes',
+  },
+  /** CAS1, CAS9: ya existe un caso con ese título (sin distinguir mayúsculas ni acentos). */
+  'caso-duplicado': {
+    status: 409,
+    title: 'Ya existe un caso con ese título',
+  },
+  /** CAS9: el caso pedido no existe. */
+  'caso-inexistente': {
+    status: 404,
+    title: 'El caso no existe',
+  },
+  /** CAS4: un caso con clave del sistema se edita pero no se borra ni se desactiva. */
+  'caso-del-sistema': {
+    status: 409,
+    title: 'Un caso del sistema no se puede borrar ni desactivar',
+  },
+  /** CAS3: otro admin modificó el caso después de que este lo leyó. */
+  'caso-modificado': {
+    status: 409,
+    title: 'El caso cambió desde que lo leíste',
+  },
+  /** CAS5: el caso incumple las reglas para guardarse; el motivo (sin copiar el texto) va en `detail`. */
+  'caso-invalido': {
+    status: 422,
+    title: 'El caso no cumple las reglas para guardarse',
+  },
+  /** API5, CAS10: el cursor del listado no se pudo leer. */
+  'cursor-invalido': {
+    status: 400,
+    title: 'El cursor del listado no es válido',
+  },
 } as const);
 
 /** Un código fuera de {@link CATALOGO_CODIGOS} no compila (D5). */
