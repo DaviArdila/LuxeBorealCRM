@@ -1,7 +1,7 @@
 # El cliente del back office
 
 **Resumen.** El cliente es una app web (Angular 22 con Angular Material) que vive en `cliente/` y habla con la API por el contrato. Hoy tiene
-tres pantallas: iniciar sesión, **Casos de uso** y **Estilo del bot**, solo para el rol `admin`. En desarrollo se
+cinco pantallas: iniciar sesión, **Casos de uso**, **Estilo del bot** y, en el grupo «Configuración», **Horario**, **Envíos** y **Gasto del LLM** (todas menos entrar, solo para el rol `admin`). En desarrollo se
 levantan la API (`servicio/`) y el cliente, y el navegador ve un solo origen. Qué se decidió y por qué:
 [ADR-0022](../adr/0022-cliente-angular-en-el-repo.md) y [ADR-0023](../adr/0023-estructura-servicio-y-cliente.md).
 
@@ -31,9 +31,12 @@ funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 | **Entrar** | Correo y contraseña. Tras varios fallos seguidos pide esperar y deshabilita el botón | No guarda el correo ni la contraseña en el navegador |
 | **Estilo del bot** | Muestra la versión vigente y su origen en modo lectura; «Editar» abre una ventana para cambiar el texto y publicarlo (con confirmación); el historial permite restaurar una versión anterior | No valida el texto: lo rechaza el servidor y te dice el motivo dentro de la ventana, sin borrar lo que escribiste |
 | **Casos de uso** | Lista los casos del asistente por categoría con su contador; busca (tras 300 ms sin teclear) y filtra por categoría y tipo; «Nuevo caso» y «Editar» abren la ventana del caso; crea, renombra, reordena y borra categorías | No borra ni desactiva un caso del sistema (lleva la etiqueta «Sistema»; solo se edita su texto) ni borra una categoría con casos: te dice el motivo |
+| **Horario** | Muestra los siete días con su rango o «Cerrado»; «Editar horario» abre una ventana con un interruptor y dos horas por día; las excepciones (días cerrados por fecha) se agregan y se quitan una a una, con confirmación al quitar | No valida las horas: el servidor lo hace y la ventana muestra el motivo sin borrar lo escrito |
+| **Envíos** | Muestra el recargo de contra entrega y el factor volumétrico; «Editar» abre la ventana | El bot no dice el recargo: es un dato interno de la venta (Fase 13) |
+| **Gasto del LLM** | Muestra el techo mensual (editable), el estado del mes y el gasto acumulado (solo lectura) | No deja cambiar el estado: lo escribe el sistema |
 
 Después de publicar o restaurar un estilo, la pantalla te recuerda correr las evals reales antes de que llegue a
-clientes: [cómo se hace](estilo-del-bot.md). Un caso editado rige en el siguiente mensaje del bot, sin reiniciar; cómo se escribe uno bueno está en [casos del asistente](casos-del-asistente.md).
+clientes: [cómo se hace](estilo-del-bot.md). Un caso editado rige en el siguiente mensaje del bot, sin reiniciar; cómo se escribe uno bueno está en [casos del asistente](casos-del-asistente.md). Lo que guardas en «Configuración» rige desde el siguiente mensaje y la pantalla lo dice: [qué cambia cuándo](configuracion-del-negocio.md).
 
 `aviso_datos` es el aviso de asistente automatizado que exige la política de privacidad (R14): es un caso del sistema, se
 puede editar, pero no lo dejes vacío ni le quites que habla con un asistente automatizado.
