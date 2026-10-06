@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RepositorioEstiloPrisma } from '../../../src/modulos/agente/infraestructura/prisma/repositorio-estilo-prisma.js';
 import { VersionEstiloRedis } from '../../../src/modulos/agente/infraestructura/redis/version-estilo-redis.js';
 import { CONFIGURACION, ConfiguracionModule, cargarConfiguracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { VersionEstiloDePrueba } from '../../soporte/version-estilo-de-prueba.js';
 
 // Fase 08c, T2 / Fase 12, T3: lectura del estilo desde `version_estilo` (AGT18, EST-D1) y versión compartida en Redis
 // (AGT19) contra Postgres y Redis reales.
@@ -34,8 +35,9 @@ async function crearContexto() {
   await prisma.versionEstilo.deleteMany();
   const redis = modulo.get<ClienteRedis>(REDIS_CLIENTE);
   if (redis.status === 'wait') await redis.connect();
-  await redis.del('agente:prompt:version');
-  return { repositorio: new RepositorioEstiloPrisma(prisma), version: new VersionEstiloRedis(redis), prisma, redis };
+  const version = new VersionEstiloDePrueba(redis);
+  await redis.del(version.claveDePrueba);
+  return { repositorio: new RepositorioEstiloPrisma(prisma), version, prisma, redis };
 }
 
 describe('RepositorioEstiloPrisma (Fase 08c, T2, integración)', () => {
@@ -101,10 +103,11 @@ describe('VersionEstiloRedis (Fase 08c, T2, integración)', () => {
   });
 
   it('AGT19 — usa la clave agente:prompt:version', async () => {
-    const { version, redis } = await crearContexto();
+    const { redis } = await crearContexto();
+    const incr = vi.spyOn(redis, 'incr');
 
-    await version.incrementar();
+    await new VersionEstiloRedis(redis).incrementar();
 
-    expect(await redis.get('agente:prompt:version')).toBe('1');
+    expect(incr).toHaveBeenCalledWith('agente:prompt:version');
   });
 });

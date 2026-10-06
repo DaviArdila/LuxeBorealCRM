@@ -12,12 +12,14 @@ import {
 } from '../../../src/modulos/asistente/index.js';
 import { RepositorioSemillaPrisma } from '../../../src/modulos/asistente/infraestructura/prisma/repositorio-semilla-prisma.js';
 import { VersionAsistenteRedis } from '../../../src/modulos/asistente/infraestructura/redis/version-asistente-redis.js';
+import { VERSION_ASISTENTE } from '../../../src/modulos/asistente/puertos/version-asistente.js';
 import { CONFIGURACION, ConfiguracionModule, cargarConfiguracion } from '../../../src/plataforma/config/index.js';
 import { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { VersionAsistenteDePrueba } from '../../soporte/version-asistente-de-prueba.js';
 
 // Fase 12, T4: el módulo `asistente` contra Postgres y Redis reales (CAS4, CAS6, CAS7).
 
@@ -40,19 +42,22 @@ async function crearContexto() {
     .useValue(cargarConfiguracion({ NODE_ENV: 'test', DATABASE_URL: urlPostgresDePrueba(), REDIS_URL: urlRedisDePrueba() }))
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(VERSION_ASISTENTE)
+    .useFactory({ factory: (redis: ClienteRedis) => new VersionAsistenteDePrueba(redis), inject: [REDIS_CLIENTE] })
     .compile();
   const prisma = modulo.get(PrismaService);
   await limpiar(prisma);
   const redis = modulo.get<ClienteRedis>(REDIS_CLIENTE);
   if (redis.status === 'wait') await redis.connect();
-  await redis.del('asistente:version');
+  const version = modulo.get<VersionAsistenteDePrueba>(VERSION_ASISTENTE);
+  await redis.del(version.claveDePrueba);
   return {
     prisma,
     redis,
     clock,
     sembrar: modulo.get(SembrarCasos),
     textos: modulo.get<TextosAsistente>(TEXTOS_ASISTENTE),
-    version: new VersionAsistenteRedis(redis),
+    version,
   };
 }
 
@@ -64,15 +69,23 @@ afterEach(async () => {
 });
 
 describe('VersionAsistenteRedis (Fase 12, T4, integración)', () => {
-  it('CAS7 — la versión parte en 0, cada incremento la sube y vive en asistente:version', async () => {
-    const { version, redis } = await crearContexto();
+  it('CAS7 — la versión parte en 0 y cada incremento la sube en uno', async () => {
+    const { version } = await crearContexto();
 
     expect(await version.obtener()).toBe('0');
     await version.incrementar();
     await version.incrementar();
 
     expect(await version.obtener()).toBe('2');
-    expect(await redis.get('asistente:version')).toBe('2');
+  });
+
+  it('CAS7 — la versión compartida vive en la clave asistente:version', async () => {
+    const { redis } = await crearContexto();
+    const incr = vi.spyOn(redis, 'incr');
+
+    await new VersionAsistenteRedis(redis).incrementar();
+
+    expect(incr).toHaveBeenCalledWith('asistente:version');
   });
 });
 

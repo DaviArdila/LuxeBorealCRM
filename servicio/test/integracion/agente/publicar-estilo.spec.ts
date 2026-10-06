@@ -5,12 +5,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { PublicarEstilo } from '../../../src/modulos/agente/aplicacion/publicar-estilo.js';
 import { RestaurarEstilo } from '../../../src/modulos/agente/aplicacion/restaurar-estilo.js';
 import { RepositorioEstiloPrisma } from '../../../src/modulos/agente/infraestructura/prisma/repositorio-estilo-prisma.js';
-import { VersionEstiloRedis } from '../../../src/modulos/agente/infraestructura/redis/version-estilo-redis.js';
 import { CONFIGURACION, ConfiguracionModule, cargarConfiguracion } from '../../../src/plataforma/config/index.js';
 import { PrismaModule, PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plataforma/redis/index.js';
 import { ClockSistema } from '../../../src/plataforma/reloj/index.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { VersionEstiloDePrueba } from '../../soporte/version-estilo-de-prueba.js';
 
 // Fase 08c, T4 / Fase 12, T3: publicar, historial y restaurar contra Postgres y Redis reales (AGT21, EST-D1, EST-D3,
 // EST-D5) sobre `version_estilo`.
@@ -37,9 +37,9 @@ async function crearContexto() {
   await prisma.versionEstilo.deleteMany();
   const redis = modulo.get<ClienteRedis>(REDIS_CLIENTE);
   if (redis.status === 'wait') await redis.connect();
-  await redis.del('agente:prompt:version');
   const repositorio = new RepositorioEstiloPrisma(prisma);
-  const version = new VersionEstiloRedis(redis);
+  const version = new VersionEstiloDePrueba(redis);
+  await redis.del(version.claveDePrueba);
   const publicar = new PublicarEstilo(repositorio, version, new ClockSistema());
   return { repositorio, version, publicar, restaurar: new RestaurarEstilo(repositorio, publicar), prisma };
 }
