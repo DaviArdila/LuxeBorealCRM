@@ -16,7 +16,7 @@ exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de f
 | Viñetas, saltos de línea, uso de emojis | Cuándo usar cada herramienta, envíos, pagos, ubicación |
 | Cómo ofrece fotos y cómo saluda | La plantilla del turno (horario, instrucciones) |
 
-Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
+Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v4.md`): nunca se
 queda sin estilo.
 
 ## Dónde vive y quién publicó

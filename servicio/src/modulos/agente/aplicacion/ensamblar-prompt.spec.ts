@@ -1,6 +1,7 @@
 import type { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import type { ConsultaCasos, EntradaIndice } from '../../asistente/index.js';
 import type { Horario } from '../../horario/index.js';
+import { validarEstilo } from '../dominio/validar-estilo.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
 import type { EstiloVigente, ProveedorEstilo } from './proveedor-estilo.js';
@@ -100,6 +101,16 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.estilo).toMatch(/pegot/i);
     expect(cargador.reglas).not.toMatch(/emoji/i);
     expect(cargador.reglas).not.toMatch(/Sin listas largas/i);
+  });
+
+  it('el estilo del repositorio es el de grifería, baño y lavaplatos y pasa la validación de publicación', () => {
+    const { cargador } = crear();
+
+    expect(validarEstilo(cargador.estilo)).toEqual({ valido: true });
+    expect(cargador.estilo).toMatch(/grifos/i);
+    expect(cargador.estilo).toMatch(/lavaplatos/i);
+    expect(cargador.estilo).toMatch(/sanitarios/i);
+    expect(cargador.estilo).not.toMatch(/asistente de ventas/i);
   });
 
   it('la parte variable dice si es horario de atención', async () => {

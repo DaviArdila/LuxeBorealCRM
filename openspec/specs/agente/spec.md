@@ -935,7 +935,7 @@ Fase que lo implementa: 11b
 
 - Dado que nunca se publicó un estilo,
 - Cuando un admin llama a `GET /api/v1/agente/estilo`,
-- Entonces la respuesta tiene origen `archivo` y el texto de `estilo.v3.md`.
+- Entonces la respuesta tiene origen `archivo` y el texto de `estilo.v4.md`.
 
 #### Scenario: Publicar por la API cambia la respuesta del siguiente turno
 
@@ -1031,7 +1031,7 @@ Fase que lo implementa: 12
 
 - Dado una base sin ninguna fila en `version_estilo`,
 - Cuando el agente pide el estilo,
-- Entonces rige `estilo.v3.md` con origen `archivo` (AGT18).
+- Entonces rige `estilo.v4.md` con origen `archivo` (AGT18).
 
 ### Requirement: EST-D3 — Cada versión guarda quién la publicó y la API lo muestra
 
