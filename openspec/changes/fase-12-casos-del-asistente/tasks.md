@@ -16,6 +16,34 @@ trabajo por tarea, Conventional Commits (encabezado y líneas del cuerpo ≤ 100
 subir), sin atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada tarea cita su commit al
 cerrarse.
 
+## Ejecución en la nube (leer antes de empezar)
+
+La fase está **aprobada** (2026-10-05) y P59-P63 están resueltas: ninguna tarea espera una decisión del dueño, incluida la
+migración de esquema de T3 y T4. T1 está fusionada; la sesión retoma en la **primera tarea sin marcar** de la checklist.
+
+**Flujo por tarea**: rama `fase-12-pK-<tema>` desde `main` actualizado → RED → GREEN → REFACTOR → un commit de unidad de
+trabajo → batería completa de `CLAUDE.md` → PR a `main` → CI en verde → fusionar con la cabeza exacta
+(`--match-head-commit`) → marcar la tarea `[x]` con el hash del commit en este archivo → siguiente tarea. Una tarea no
+empieza hasta que la anterior está fusionada en `main`.
+
+**Qué no hacer**
+- No usar worktrees aislados: el hook `commit-msg` falla en ellos (ruta duplicada de `COMMIT_EDITMSG`) y el `pre-push`
+  da falsos errores de lint por faltar `servicio/node_modules`. Se trabaja en el checkout principal.
+- No usar `--no-verify`. Si el `pre-push` falla, se busca la causa raíz; «flake» no es causa.
+- No commitear `cliente/angular.json` con `cli.analytics`: lo agrega el Angular CLI solo; se revierte con `git checkout`.
+- No abrir otra tarea con un PR sin fusionar debajo.
+
+**Trucos del entorno**
+- El `pre-push` tarda unos 5 minutos: correrlo en segundo plano.
+- Las pruebas de integración, e2e y evals necesitan Docker (Testcontainers): `dockerd` a mano (ver «Trabajo en la nube»
+  en `CLAUDE.md`).
+- Si Vite responde 504 «Outdated Optimize Dep», borrar `cliente/.angular/cache` y reiniciar `npm --prefix cliente start`.
+- `T1` superó las ~400 líneas con excepción escrita; si otra tarea también, se anota su excepción aquí antes del PR.
+
+**Se detiene y avisa** solo si: el CI falla y no se halla la causa, hay conflicto con `main`, la spec se contradice con el
+código real, o se llega a **T12** (sus pruebas `[manual]` son del dueño). En cada parada se deja el estado en este archivo.
+Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no se corrió antes.
+
 ## Partición de la fase
 
 `openspec/config.yaml` limita un change a 10 tareas y esta fase tiene 12, así que se parte en **tres subfases** de
