@@ -30,6 +30,12 @@
 - [x] T4 Corrección del usuario: restaurar `estilo.v3.md` y `VERSION_ESTILO = 'v3'`; mover el texto v4 a
       `prisma/datos/estilo-inicial.md` y sembrarlo como versión 1 en `version_estilo` solo con la tabla vacía
       (`casos:sembrar`, caso de uso `SembrarEstilo`, EST-D6).
+- [x] T5 Estilo inicial mejorado con saludo, formato de producto (el texto no repite el pie de la foto que
+      arma el backend), cierre, empatía y razones por regla. Ruta: inline (un archivo de datos y su test).
+      RED: `estilo-inicial.spec.ts` (5 de 7 fallaban); el primer borrador pasaba de 4000 caracteres y el test
+      lo atrapó; GREEN con 3.9k caracteres. Unit 198 archivos / 1574 tests, integración de la semilla 5/5,
+      lint y typecheck limpios. Fuera de alcance, a decidir: formato del pie (`producto.ts:67`), botones o
+      listas en el adaptador, y el texto de imagen del sistema que pide el SKU.
 
 ## Ruta por tarea
 
