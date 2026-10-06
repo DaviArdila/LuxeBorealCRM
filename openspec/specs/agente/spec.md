@@ -1111,3 +1111,32 @@ Fase que lo implementa: 12
 - Dado cualquier número de publicaciones,
 - Cuando se revisa `version_estilo`,
 - Entonces siempre hay exactamente una fila vigente.
+
+### Requirement: EST-D6 — Una base sin estilo recibe el estilo inicial del segmento, una sola vez
+
+`npm run casos:sembrar` MUST publicar el texto de `servicio/prisma/datos/estilo-inicial.md` como versión 1 de
+`version_estilo` solo cuando la tabla no tiene ninguna fila, ni vigente ni retirada. Si existe cualquier versión, la
+semilla MUST NOT agregar, cambiar ni restaurar nada. La publicación MUST pasar por `PublicarEstilo` (validación AGT20,
+versión compartida en Redis), con la versión sin autor, y el comando MUST informar `estilo: sembrado v1` o
+`estilo: ya existía` sin escribir el texto en pantalla ni en logs (R14). El archivo de respaldo `estilo.v3.md` no cambia
+(AGT18): rige solo mientras la tabla esté vacía.
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-y-casos-semilla.md`)
+
+#### Scenario: Una base nueva queda con el estilo inicial
+
+- Dado una base sin ninguna fila en `version_estilo`,
+- Cuando se corre `npm run casos:sembrar`,
+- Entonces existe la versión 1 vigente con el texto de `estilo-inicial.md`, sin autor, y el comando informa `estilo: sembrado v1`.
+
+#### Scenario: Una segunda corrida no agrega nada
+
+- Dado una base ya sembrada,
+- Cuando se vuelve a correr `npm run casos:sembrar`,
+- Entonces `version_estilo` no cambia y el comando informa `estilo: ya existía`.
+
+#### Scenario: Un estilo del usuario nunca se pisa
+
+- Dado una base con un estilo publicado por el usuario o con versiones retiradas,
+- Cuando se corre `npm run casos:sembrar`,
+- Entonces no se agrega ninguna versión.

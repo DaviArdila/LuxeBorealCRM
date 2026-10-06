@@ -5,6 +5,7 @@ import { ListarHistorialEstilo } from './aplicacion/listar-historial-estilo.js';
 import { ProveedorEstilo } from './aplicacion/proveedor-estilo.js';
 import { PublicarEstilo } from './aplicacion/publicar-estilo.js';
 import { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
+import { SembrarEstilo } from './aplicacion/sembrar-estilo.js';
 import { RepositorioEstiloPrisma } from './infraestructura/prisma/repositorio-estilo-prisma.js';
 import { CargadorPrompts } from './infraestructura/prompts/cargador-prompts.js';
 import { VersionEstiloRedis } from './infraestructura/redis/version-estilo-redis.js';
@@ -29,8 +30,9 @@ import { VERSION_ESTILO } from './puertos/version-estilo.js';
     ProveedorEstilo,
     PublicarEstilo,
     RestaurarEstilo,
+    SembrarEstilo,
     ListarHistorialEstilo,
   ],
-  exports: [CargadorPrompts, ProveedorEstilo, PublicarEstilo, RestaurarEstilo, ListarHistorialEstilo],
+  exports: [CargadorPrompts, ProveedorEstilo, PublicarEstilo, RestaurarEstilo, SembrarEstilo, ListarHistorialEstilo],
 })
 export class EstiloModule {}

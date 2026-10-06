@@ -223,7 +223,8 @@ sistema (con el texto que ya haya en `parametro` bajo su clave y, si no hay, el 
 cada fila `politica_<tema>` de `parametro` (con `contra_entrega` siempre, con su respaldo en código). Después de crear un
 caso a partir de una fila de `parametro`, la semilla MUST retirar esa fila en la misma transacción, para que el texto
 tenga un solo dueño. La semilla MUST NOT modificar un caso que ya exista y MUST informar solo cuántos casos insertó y cuántos ya existían, sin escribir
-textos en pantalla ni en logs (R14).
+textos en pantalla ni en logs (R14). El mismo comando siembra el estilo inicial del bot cuando `version_estilo` está
+vacía (`agente`, EST-D6).
 
 Fase que lo implementa: 12
 
