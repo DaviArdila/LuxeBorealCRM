@@ -119,7 +119,8 @@ secretos o configuración del repo).
   (el hook `commit-msg` no siempre se ejecuta).
 - **Después del push, verificar de verdad**: el PR abierto contra la base correcta, los checks de la cabeza
   (`npm run ci`) en verde y, tras fusionar, que el merge quedó en `main`. Si el CI falla se busca la causa
-  raíz (log del job); «flake» no es causa y no se reintenta a ciegas. Una rama de la cadena que cambia bajo
+  raíz (log del job); «flake» no es causa y no se reintenta a ciegas. Ante un CI rojo se corrige y se vuelve a empujar
+  hasta que quede en verde, y solo se detiene si no se encuentra la causa. Una rama de la cadena que cambia bajo
   otra se rebasa con `--force-with-lease` solo si es propia.
 - **Fusionar** con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes; el borrado de ramas
   remotas lo hace el usuario en la web.
