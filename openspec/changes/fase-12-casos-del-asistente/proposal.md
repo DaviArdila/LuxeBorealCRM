@@ -1,7 +1,7 @@
 # Proposal: Fase 12 — Casos de uso del asistente, estilo desacoplado y configuración del negocio
 
 - Change: `fase-12-casos-del-asistente` · Fase de la hoja de ruta: **12** · Rama: `fase-12-casos-del-asistente`
-- Fecha: 2026-10-05 · Estado: **spec en revisión** (solo el dueño la pasa a `aprobada`)
+- Fecha: 2026-10-05 · Estado: **aprobada (2026-10-05, el dueño: «procede con la implementación»)** (solo el dueño la pasa a `aprobada`)
 - Depende de: **11a y 11b cerradas** (sesión, roles, cliente Angular) y fusionadas en `main`.
 - ADR: [0024](../../../docs/adr/0024-casos-del-asistente.md) (`propuesta`). Se apoya en 0020, 0022 y 0023.
 
