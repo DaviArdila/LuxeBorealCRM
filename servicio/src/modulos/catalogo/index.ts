@@ -23,6 +23,7 @@ export {
   type OpcionesImportacion,
   type ReporteImportacion,
 } from './aplicacion/importar-catalogo.js';
+export { InvalidarCacheCatalogo } from './aplicacion/invalidar-cache-catalogo.js';
 export { ListarProductosActivos } from './aplicacion/listar-productos-activos.js';
 export { ObtenerCatalogoCompacto } from './aplicacion/obtener-catalogo-compacto.js';
 export { ObtenerFotosProducto } from './aplicacion/obtener-fotos-producto.js';

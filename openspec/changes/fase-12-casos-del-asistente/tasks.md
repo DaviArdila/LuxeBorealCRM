@@ -67,7 +67,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento) — rama `fase-12-p5-corte-textos-sistema`, commit `da19b9b` (PR 96)
 - [x] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo` — rama `fase-12-p6-consultar-caso`, commit `86d4d50` (PR 97; `size:exception` anotada en la tarea)
 - [x] T7 — API de categorías y casos con buscador y contrato — rama `fase-12-p7-api-casos`, commit `61a989f` (PR 98; `size:exception` anotada en la tarea)
-- [ ] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos»
+- [x] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos» — rama `fase-12-p8-pantalla-casos`, commits `7edcb43` y `698986b` (PR 99; `size:exception` anotada en la tarea; se añadió `openapi/oasdiff-ignorar.txt` para los retiros decididos)
 - [ ] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés
 - [ ] T10 — Pantallas de Configuración
 - [ ] T11 — Limpieza final: cero referencias al sistema viejo
@@ -256,6 +256,18 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - **Ruta**: delegada. **Slice**: `fase-12-p9-configuracion-api`. **Forecast**: ~500 líneas (`size:exception` anticipada).
 - **Docs**: `docs/operacion/configuracion-del-negocio.md` (nueva), spec de `configuracion-negocio` (se fusiona al cerrar).
 - **Evals**: `evals` en verde (el recargo sigue calculándose en código, R1).
+- **`size:exception` (T9)**: ~1.300 líneas de autoría (~520 de pruebas): módulo nuevo (dominio, aplicación, adaptador Prisma,
+  controlador con ocho rutas) con sus pruebas unitarias, de integración, e2e y de contrato, más el contrato y el cliente
+  generados. No se parte: el contrato regenerado debe coincidir con el código en cada commit.
+- **Desvíos**: (1) El registro tipado usa predicados puros por clave (`dominio/registro.ts`), no un esquema Zod por clave: el
+  dominio no importa librerías y las formas de `parametro` son pocas. (2) Se añaden dos rutas de excepciones
+  (`crearExcepcionHorario`, `borrarExcepcionHorario`): CFG2 pide crearlas y borrarlas de una en una. (3) «Cambiar el recargo
+  cambia la siguiente cotización» no es verificable hoy: ningún código lee `recargo_contraentrega_pct` (MODELO_DATOS §145: dato
+  interno de la Fase 13; CAS11 prohíbe que el bot lo cite). Se probó con el factor volumétrico, que sí entra en la cotización.
+  (4) El aviso de «valor del tipo equivocado» (CFG6) se implementó en el lector del factor volumétrico del catálogo, el único
+  que lee `parametro` hoy. (5) `catalogo` gana el caso de uso `InvalidarCacheCatalogo` para que `configuracion` no toque
+  sus puertos (CFG5). (6) El módulo se llama `ConfiguracionNegocioModule` porque `ConfiguracionModule` ya es el de
+  `plataforma/config`.
 
 ### T10 — Pantallas de Configuración
 
