@@ -1,4 +1,4 @@
-import { CASOS_DEL_SISTEMA, claveParametroLegada } from './sistema.js';
+import { CASOS_DEL_SISTEMA, CATEGORIAS_INICIALES, claveParametroLegada } from './sistema.js';
 
 /** Una categoría que la semilla garantiza (CAS6). */
 export interface CategoriaPlan {
@@ -25,11 +25,6 @@ export interface PlanSemilla {
 
 const PREFIJO_POLITICA = 'politica_';
 const PATRON_TEMA = /^[a-z0-9_]+$/;
-
-const CATEGORIAS: readonly CategoriaPlan[] = [
-  { nombre: 'Sistema', orden: 0 },
-  { nombre: 'Políticas', orden: 1 },
-];
 
 /** Los temas de política de desarrollo y de producción conocidos llevan acentos que la clave no puede traer. */
 const TITULOS_DE_TEMA: Readonly<Record<string, string>> = {
@@ -92,5 +87,5 @@ export function planificarSemilla(filas: ReadonlyMap<string, unknown>): PlanSemi
       ];
     });
 
-  return { categorias: CATEGORIAS, casos: [...delSistema, ...politicas] };
+  return { categorias: CATEGORIAS_INICIALES, casos: [...delSistema, ...politicas] };
 }

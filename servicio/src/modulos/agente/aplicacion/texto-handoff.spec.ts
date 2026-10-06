@@ -1,8 +1,8 @@
-import { RepositorioParametroAgenteEnMemoria } from '../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
 import { TextoHandoff } from './texto-handoff.js';
 
 function crear(dentroDeHorario: boolean) {
-  const parametros = new RepositorioParametroAgenteEnMemoria();
+  const parametros = new TextosAsistenteEnMemoria();
   parametros.textos.set('mensaje_handoff', 'Te paso con un asesor');
   parametros.textos.set('mensaje_handoff_fuera_horario', 'Te escribimos apenas abramos');
   const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 import {
   armarCotizacionConCobertura,
   elegirTarifa,
@@ -18,8 +19,8 @@ import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repos
  * calcula el peso facturable del producto, comprueba exclusión de cobertura (CAT7) antes que
  * elegir tarifa (CAT8, D3, prioridad ya fijada por el dominio), y arma la cotización. Sin
  * cobertura — por exclusión o por ausencia de tarifa que aplique — registra el evento (CAT9, D7:
- * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve el mensaje leído del
- * parámetro del negocio, sin ningún rango (CAT11). Con cobertura y contra entrega disponible añade la
+ * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve el mensaje del caso
+ * `mensaje_fuera_cobertura` del asistente, sin ningún rango (CAT11). Con cobertura y contra entrega disponible añade la
  * política `contra_entrega` (CAT10, CAT12). Un producto no encontrado no rechaza: cotiza
  * con peso cero (ninguna línea de peso), igual que un producto sin peso ni medidas (CAT6).
  */
@@ -30,6 +31,7 @@ export class CotizarEnvio {
     @Inject(REPOSITORIO_PARAMETRO_CATALOGO) private readonly repositorioParametro: RepositorioParametroCatalogo,
     @Inject(REPOSITORIO_ENVIO) private readonly repositorioEnvio: RepositorioEnvio,
     private readonly consultarPolitica: ConsultarPolitica,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
   async ejecutar(idOSku: string, destino: DestinoEnvio, cantidad = 1): Promise<ResultadoCotizacion> {
@@ -76,7 +78,7 @@ export class CotizarEnvio {
       departamentoId: null,
       ciudadId: null,
     });
-    const mensaje = await this.repositorioParametro.obtenerMensajeFueraCobertura();
+    const mensaje = await this.textos.textoDelSistema('mensaje_fuera_cobertura');
     return { cobertura: false, mensaje };
   }
 }

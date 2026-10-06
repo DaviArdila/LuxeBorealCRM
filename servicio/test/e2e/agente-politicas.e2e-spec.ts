@@ -25,12 +25,13 @@ import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-p
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 import { iniciarSesionComo } from '../soporte/sesion-e2e.js';
+import { fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
 
 const SECRETO = 'secreto-e2e-agente-politicas';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
 const DEBOUNCE_MS = 200;
 
-/** Textos del negocio (R15, AGT3) fijados en `parametro` para no depender de los de respaldo. */
+/** Textos del negocio (R15, AGT3) fijados en los casos del sistema para no depender de los de respaldo. */
 const TEXTOS = {
   mensaje_pedir_texto_audio: 'PEDIR-TEXTO-AUDIO',
   mensaje_imagen_no_procesada: 'IMAGEN-NO-PROCESADA',
@@ -202,9 +203,8 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     llm = new FakePuertoLlm();
     app = await crearAplicacion(chatwootFalso, llm, topeTurnos);
     const prisma = app.get(PrismaService);
-    for (const [clave, valor] of Object.entries(TEXTOS)) {
-      await prisma.parametro.upsert({ where: { clave }, create: { clave, valor }, update: { valor } });
-    }
+    await limpiarCasos(prisma);
+    await fijarTextosDelSistema(prisma, TEXTOS);
     return app;
   }
 
@@ -267,6 +267,29 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
     expect(mensajes[1]).toMatch(/^EDITADO-POR-API-(DENTRO|FUERA)$/);
+  }, 40_000);
+
+  it('CAS7 — Editar el caso de un evento cambia la respuesta del siguiente evento', async () => {
+    const aplicacion = await arrancar();
+    const servidor = aplicacion.getHttpServer() as Server;
+    const admin = await iniciarSesionComo(servidor, aplicacion.get(PrismaService), 'admin');
+    const primera = nuevaConversacion();
+    await enviarWebhook(aplicacion, { ...primera, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
+    const [antes] = await esperarMensajes(chatwootFalso, primera.idConversacion, 1);
+    expect(antes).toContain(TEXTOS.mensaje_pedir_texto_audio);
+
+    // El primer audio ya dejó el texto en la copia en memoria: editar el caso debe subir la versión compartida.
+    const guardado = await request(servidor)
+      .put('/api/v1/mensajes-fijos/mensaje_pedir_texto_audio')
+      .set('x-luxe-csrf', '1')
+      .set('cookie', admin.cookie)
+      .send({ texto: 'AUDIO-EDITADO-EN-EL-CASO' });
+    expect(guardado.status).toBe(200);
+    const segunda = nuevaConversacion();
+    await enviarWebhook(aplicacion, { ...segunda, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
+
+    const [despues] = await esperarMensajes(chatwootFalso, segunda.idConversacion, 1);
+    expect(despues).toContain('AUDIO-EDITADO-EN-EL-CASO');
   }, 40_000);
 
   it('R12 — Imagen entrante', async () => {

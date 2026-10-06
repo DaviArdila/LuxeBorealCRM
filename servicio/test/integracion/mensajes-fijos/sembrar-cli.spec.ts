@@ -25,11 +25,13 @@ beforeEach(async () => {
   process.env.REDIS_URL = urlRedisDePrueba();
   process.env.LOG_LEVEL = 'silent';
   prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: urlPostgresDePrueba() }) });
-  await prisma.parametro.deleteMany({ where: { clave: { in: CLAVES } } });
+  await prisma.casoAsistente.deleteMany();
+  await prisma.categoriaCaso.deleteMany();
 });
 
 afterEach(async () => {
-  await prisma.parametro.deleteMany({ where: { clave: { in: CLAVES } } });
+  await prisma.casoAsistente.deleteMany();
+  await prisma.categoriaCaso.deleteMany();
   await prisma.$disconnect();
   for (const clave of ENTORNO) {
     const valor = originales[clave];
@@ -43,21 +45,21 @@ describe('mensajes:sembrar contra Postgres real (T4, CFN3)', () => {
     const resultado = await sembrarMensajesFijos();
 
     expect(resultado).toEqual({ limpio: true, mensaje: 'mensajes:sembrar: 10 insertadas, 0 ya existían.' });
-    const filas = await prisma.parametro.findMany({ where: { clave: { in: CLAVES } } });
+    const filas = await prisma.casoAsistente.findMany({ where: { claveSistema: { in: CLAVES } } });
     expect(filas).toHaveLength(10);
     for (const fila of filas) {
-      expect(fila.valor, fila.clave).toBe(CATALOGO_REAL.find((m) => m.clave === fila.clave)?.textoRespaldo);
-      expect(resultado.mensaje).not.toContain(JSON.stringify(fila.valor));
+      expect(fila.texto, fila.claveSistema ?? '').toBe(CATALOGO_REAL.find((m) => m.clave === fila.claveSistema)?.textoRespaldo);
+      expect(resultado.mensaje).not.toContain(JSON.stringify(fila.texto));
     }
   });
 
   it('CFN3 — Correrla otra vez informa 0 insertadas y 10 existentes, y no pisa un texto editado', async () => {
     await sembrarMensajesFijos();
-    await prisma.parametro.update({ where: { clave: 'mensaje_handoff' }, data: { valor: 'Texto del dueño.' } });
+    await prisma.casoAsistente.update({ where: { claveSistema: 'mensaje_handoff' }, data: { texto: 'Texto del dueño.' } });
 
     const segunda = await sembrarMensajesFijos();
 
     expect(segunda).toEqual({ limpio: true, mensaje: 'mensajes:sembrar: 0 insertadas, 10 ya existían.' });
-    expect((await prisma.parametro.findUniqueOrThrow({ where: { clave: 'mensaje_handoff' } })).valor).toBe('Texto del dueño.');
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_handoff' } })).texto).toBe('Texto del dueño.');
   });
 });

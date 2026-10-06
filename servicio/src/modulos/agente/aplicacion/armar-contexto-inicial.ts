@@ -3,10 +3,7 @@ import { ObtenerFichaProducto } from '../../catalogo/index.js';
 import type { SesionHerramienta } from '../dominio/herramienta.js';
 import { CONTADORES_SESION, type ContadoresSesion } from '../puertos/contadores-sesion.js';
 import { CAPTURA_LEAD, type CapturaLead } from '../puertos/captura-lead.js';
-import {
-  REPOSITORIO_PARAMETRO_AGENTE,
-  type RepositorioParametroAgente,
-} from '../puertos/repositorio-parametro-agente.js';
+import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 import {
   REPOSITORIO_CONTACTO_AGENTE,
   type RepositorioContactoAgente,
@@ -34,7 +31,7 @@ export class ArmarContextoInicial {
     @Inject(REPOSITORIO_CONTACTO_AGENTE) private readonly contactos: RepositorioContactoAgente,
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
     @Inject(CAPTURA_LEAD) private readonly captura: CapturaLead,
-    @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
   async ejecutar(entrada: EntradaContextoInicial): Promise<readonly string[]> {
@@ -68,7 +65,7 @@ export class ArmarContextoInicial {
       if (!(await this.captura.pendiente(conversacionId))) {
         return null;
       }
-      const cierre = await this.parametros.obtenerTexto('mensaje_captura_completa');
+      const cierre = await this.textos.textoDelSistema('mensaje_captura_completa');
       return (
         'Fuera del horario de atención: el cliente ya mostró intención de compra. Sigue atendiéndolo con ' +
         'normalidad y pídele, uno a uno si hace falta, su nombre completo, un teléfono de contacto, la ' +

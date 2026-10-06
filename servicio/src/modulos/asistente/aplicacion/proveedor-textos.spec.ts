@@ -8,7 +8,7 @@ import { ProveedorTextos } from './proveedor-textos.js';
 
 // CAS7 (Fase 12, T4): el texto de un caso del sistema, con copia por versión compartida y respaldo del código.
 
-class RepositorioCasosFalso implements RepositorioCasos {
+class RepositorioCasosFalso implements Pick<RepositorioCasos, 'leerTextosDelSistema'> {
   lecturas = 0;
   falla = false;
   constructor(public textos: Record<string, string> = {}) {}

@@ -20,7 +20,6 @@ import { LockTurno } from '../../../src/modulos/conversaciones/infraestructura/r
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
 import { MarcaMensajeProcesado } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-mensaje-procesado.js';
 import { RepositorioConversacionPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-conversacion-prisma.js';
-import { RepositorioParametroConversacionesPrisma } from '../../../src/modulos/conversaciones/infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import {
   GENERADOR_RESPUESTA,
   type GeneradorRespuesta,
@@ -28,7 +27,8 @@ import {
   type SolicitudTurno,
 } from '../../../src/modulos/conversaciones/puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from '../../../src/modulos/conversaciones/puertos/interruptor-global.js';
-import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from '../../../src/modulos/conversaciones/puertos/repositorio-parametro-conversaciones.js';
+import { TEXTOS_ASISTENTE } from '../../../src/modulos/asistente/index.js';
+import { TextosAsistenteEnMemoria } from '../../fakes/textos-asistente-en-memoria.js';
 import { REPOSITORIO_CONVERSACION } from '../../../src/modulos/conversaciones/puertos/repositorio-conversacion.js';
 import {
   ENVIAR_RESPUESTA_TURNO,
@@ -201,7 +201,7 @@ async function crearAplicacion(
     ],
     providers: [
       { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
-      { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
+      { provide: TEXTOS_ASISTENTE, useValue: new TextosAsistenteEnMemoria() },
       { provide: CLAVE_INTERRUPTOR_GLOBAL_CONFIGURADA, useValue: claveInterruptorDePrueba() },
       { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
       { provide: LECTOR_MENSAJE_CANAL, useValue: lector },

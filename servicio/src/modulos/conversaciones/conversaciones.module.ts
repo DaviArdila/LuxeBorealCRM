@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Inject, Module, type DynamicModule, type OnModuleInit, type Type } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
+import { AsistenteModule } from '../asistente/index.js';
 import { CanalesModule, RegistroConsumidorEventosCanal, RegistroGuardiaEnvioCanal } from '../canales/index.js';
 import { AgenteEco } from './aplicacion/agente-eco.js';
 import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones.js';
@@ -18,7 +19,6 @@ import {
 import { BarridoEsperas, NOMBRE_COLA_BARRIDO_ESPERAS } from './infraestructura/colas/barrido-esperas.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from './infraestructura/colas/cola-turno.js';
 import { RepositorioConversacionPrisma } from './infraestructura/prisma/repositorio-conversacion-prisma.js';
-import { RepositorioParametroConversacionesPrisma } from './infraestructura/prisma/repositorio-parametro-conversaciones-prisma.js';
 import { BufferTurno } from './infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from './infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from './infraestructura/redis/interruptor-global-redis.js';
@@ -28,7 +28,6 @@ import { MarcaEsperaHandoff } from './infraestructura/redis/marca-espera-handoff
 import { MarcaMensajeProcesado } from './infraestructura/redis/marca-mensaje-procesado.js';
 import { GENERADOR_RESPUESTA } from './puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from './puertos/interruptor-global.js';
-import { REPOSITORIO_PARAMETRO_CONVERSACIONES } from './puertos/repositorio-parametro-conversaciones.js';
 import { MARCA_ESPERA_CLIENTE } from './puertos/marca-espera-cliente.js';
 import { REPOSITORIO_CONVERSACION } from './puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
@@ -36,6 +35,7 @@ import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
 const IMPORTS = [
   PrismaModule,
   RedisModule,
+  AsistenteModule,
   CanalesModule,
   BullModule.registerQueue({ name: NOMBRE_COLA_TURNO }),
   BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
@@ -47,7 +47,6 @@ const IMPORTS = [
 const PROVIDERS = [
   { provide: REPOSITORIO_CONVERSACION, useClass: RepositorioConversacionPrisma },
   { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
-  { provide: REPOSITORIO_PARAMETRO_CONVERSACIONES, useClass: RepositorioParametroConversacionesPrisma },
   { provide: INTERRUPTOR_GLOBAL, useClass: InterruptorGlobalRedis },
   { provide: ENVIAR_RESPUESTA_TURNO, useClass: EnviarRespuestaTurno },
   BufferTurno,

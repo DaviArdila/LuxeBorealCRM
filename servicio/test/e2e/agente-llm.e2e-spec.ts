@@ -30,6 +30,7 @@ import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-p
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 import { iniciarSesionComo } from '../soporte/sesion-e2e.js';
+import { fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
 
 const SECRETO = 'secreto-e2e-agente-llm';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -212,6 +213,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     llm = new FakePuertoLlm();
     almacenamiento = new AlmacenamientoEnMemoria();
     app = await crearAplicacion(chatwootFalso, llm, almacenamiento);
+    await limpiarCasos(app.get(PrismaService));
     return app;
   }
 
@@ -315,11 +317,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     const prisma = aplicacion.get(PrismaService);
     const producto = await sembrarProducto(prisma);
     await prisma.tarifaEstimada.deleteMany();
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_fuera_cobertura' },
-      create: { clave: 'mensaje_fuera_cobertura', valor: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' },
-      update: { valor: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_fuera_cobertura: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' });
     llm.encolar(
       llamada('c1', 'cotizar_envio', { id_producto: producto.sku, departamento: 'Vaupés', ciudad: 'Mitú' }),
       { respuesta: { texto: 'Lo siento, por ahora no enviamos a Mitú. ¿Tienes otra dirección?' } },
@@ -548,11 +546,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
   it('AGT6 — Una caída del proveedor deriva a un asesor con el texto de mensaje_error_llm', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_error_llm' },
-      create: { clave: 'mensaje_error_llm', valor: 'ERROR-LLM-TEXTO' },
-      update: { valor: 'ERROR-LLM-TEXTO' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_error_llm: 'ERROR-LLM-TEXTO' });
     llm.encolar({ error: new ErrorPasarelaLlm('proveedor-caido') });
 
     const { idConversacion } = await turno(aplicacion, 'Hola');
@@ -570,11 +564,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
   it('AGT6 — El techo de gasto deriva con el texto de mensaje_techo_gasto', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_techo_gasto' },
-      create: { clave: 'mensaje_techo_gasto', valor: 'TECHO-TEXTO' },
-      update: { valor: 'TECHO-TEXTO' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_techo_gasto: 'TECHO-TEXTO' });
     llm.encolar({ error: new ErrorPasarelaLlm('techo-alcanzado') });
 
     const { idConversacion } = await turno(aplicacion, 'Hola');
@@ -605,11 +595,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
   it('R1 — Si el monto sin rastro persiste, deriva a un asesor con el texto de cortesía', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_error_llm' },
-      create: { clave: 'mensaje_error_llm', valor: 'ERROR-LLM-TEXTO' },
-      update: { valor: 'ERROR-LLM-TEXTO' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_error_llm: 'ERROR-LLM-TEXTO' });
     llm.encolar({ respuesta: { texto: 'Cuesta $999.000' } }, { respuesta: { texto: 'Mejor $888.000' } });
 
     const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el anillo?');

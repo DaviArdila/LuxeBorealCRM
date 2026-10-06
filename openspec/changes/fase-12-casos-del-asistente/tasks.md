@@ -63,7 +63,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T1 — Menú lateral con submódulos (cliente) — rama `fase-12-p1-menu-lateral`, commit de unidad de trabajo único
 - [x] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente) — rama `fase-12-p2-ventana-edicion`, commit `0a6bc17` (PR 93; `size:exception`: 513 líneas, ~285 de pruebas)
 - [x] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó» — rama `fase-12-p3-estilo-desacoplado`, commit `6ad0d53` (PR 94; `size:exception` anotada en la tarea)
-- [ ] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento)
+- [x] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento) — rama `fase-12-p4-base-asistente`, commit `4c76947` (PR 95; `size:exception` anotada en la tarea)
 - [ ] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento)
 - [ ] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo`
 - [ ] T7 — API de categorías y casos con buscador y contrato
@@ -176,6 +176,10 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - **Ruta**: delegada (mapea 4 módulos). **Slice**: `fase-12-p5-corte-textos-sistema`. **Forecast**: ~350 líneas.
 - **Docs**: spec de `conversaciones` y `llm` (el texto viene del puerto), ADR-0024.
 - **Evals**: `evals` en verde, 100 %.
+- Desviaciones anotadas (T5): `asistente` suma `AdministrarTextosDelSistema` (leer, guardar y crear faltantes con subida de la
+  versión compartida) porque el adaptador de `mensajes-fijos` no puede tocar las tablas de otro módulo; se agrega la regla 16
+  de `dependency-cruiser` (`asistente` no importa a sus consumidores); `ConsultarPolitica` y `politica_<tema>` siguen en
+  `catalogo` hasta T6, así que `casos:sembrar` aún no se corre contra una base con políticas.
 
 ### T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo`
 

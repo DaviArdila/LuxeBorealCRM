@@ -1,4 +1,4 @@
-import { RepositorioParametroAgenteEnMemoria } from '../../../../../test/fakes/repositorio-parametro-agente-en-memoria.js';
+import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import type { RegistrarPidePersona } from '../../../leads/index.js';
 import { TextoHandoff } from '../texto-handoff.js';
@@ -28,7 +28,7 @@ function crear(accion: 'derivar' | 'capturar' = 'derivar', dentroDeHorario = tru
     },
   } as unknown as RegistrarPidePersona;
   const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
-  const politica = new PoliticaPidePersona(registrar, new TextoHandoff(horario, new RepositorioParametroAgenteEnMemoria()));
+  const politica = new PoliticaPidePersona(registrar, new TextoHandoff(horario, new TextosAsistenteEnMemoria()));
   return { politica, registros };
 }
 

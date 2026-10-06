@@ -27,6 +27,7 @@ import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-
 import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
+import { fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
 
 const SECRETO = 'secreto-e2e-leads';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -231,6 +232,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     llm = new FakePuertoLlm();
     almacenamiento = new AlmacenamientoEnMemoria();
     app = await crearAplicacion(chatwootFalso, telegramFalso, llm, almacenamiento, extra);
+    await limpiarCasos(app.get(PrismaService));
     return app;
   }
 
@@ -254,11 +256,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
   it('LDS3 — Petición explícita de hablar con una persona: deriva sin llamar al LLM', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_handoff' },
-      create: { clave: 'mensaje_handoff', valor: 'TE-PASO-CON-UN-ASESOR' },
-      update: { valor: 'TE-PASO-CON-UN-ASESOR' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'TE-PASO-CON-UN-ASESOR' });
 
     const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor');
 
@@ -302,11 +300,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
   it('AGT11 — La propuesta confirmada por la escala deriva: handoff, etiqueta y lead derivado', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await prisma.parametro.upsert({
-      where: { clave: 'mensaje_handoff' },
-      create: { clave: 'mensaje_handoff', valor: 'TE-PASO-CON-UN-ASESOR' },
-      update: { valor: 'TE-PASO-CON-UN-ASESOR' },
-    });
+    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'TE-PASO-CON-UN-ASESOR' });
     llm.encolar(
       llamada('c1', 'marcar_lead_caliente', {
         temperatura: 'caliente',

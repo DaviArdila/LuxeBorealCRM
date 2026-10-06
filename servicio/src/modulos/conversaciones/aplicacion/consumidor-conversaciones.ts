@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 import {
   LECTOR_MENSAJE_CANAL,
   SALIDA_CANAL,
@@ -17,10 +18,6 @@ import { MarcaMensajeProcesado } from '../infraestructura/redis/marca-mensaje-pr
 import type { MensajeTurno } from '../puertos/generador-respuesta.js';
 import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../puertos/marca-espera-cliente.js';
 import { INTERRUPTOR_GLOBAL, type InterruptorGlobal } from '../puertos/interruptor-global.js';
-import {
-  REPOSITORIO_PARAMETRO_CONVERSACIONES,
-  type RepositorioParametroConversaciones,
-} from '../puertos/repositorio-parametro-conversaciones.js';
 import {
   REPOSITORIO_CONVERSACION,
   type Conversacion,
@@ -42,8 +39,7 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     @Inject(REPOSITORIO_CONVERSACION) private readonly repositorio: RepositorioConversacion,
     @Inject(INTERRUPTOR_GLOBAL) private readonly interruptor: InterruptorGlobal,
     @Inject(LECTOR_MENSAJE_CANAL) private readonly lectorMensaje: LectorMensajeCanal,
-    @Inject(REPOSITORIO_PARAMETRO_CONVERSACIONES)
-    private readonly repositorioParametro: RepositorioParametroConversaciones,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
     @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -184,7 +180,7 @@ export class ConsumidorConversaciones implements ConsumidorEventosCanal {
     const fresca = await this.repositorio.obtenerPorId(conversacion.id);
     if (fresca === null || fresca.estado !== 'handoff_pendiente') return;
 
-    const mensajeEspera = await this.repositorioParametro.obtenerMensajeEsperaHandoff();
+    const mensajeEspera = await this.textos.textoDelSistema('mensaje_espera_handoff');
     await this.salidaCanal.enviarMensajes({
       idConversacion: String(conversacion.chatwootConversationId),
       idRespuesta: `espera-handoff-${conversacion.id}`,

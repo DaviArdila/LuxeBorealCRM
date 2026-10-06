@@ -3,11 +3,7 @@ import type { RespuestaTurno, SolicitudTurno } from '../../../conversaciones/ind
 import { decidirAudio, decidirNoTextuales } from '../../dominio/decidir-no-textuales.js';
 import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { CONTADORES_SESION, type ContadoresSesion } from '../../puertos/contadores-sesion.js';
-import {
-  REPOSITORIO_PARAMETRO_AGENTE,
-  type ClaveTextoAgente,
-  type RepositorioParametroAgente,
-} from '../../puertos/repositorio-parametro-agente.js';
+import { TEXTOS_ASISTENTE, type ClaveSistema, type TextosAsistente } from '../../../asistente/index.js';
 import { TextoHandoff } from '../texto-handoff.js';
 
 function responderTexto(paso: string, texto: string, extra?: Pick<RespuestaTurno, 'handoff'>): DecisionPolitica {
@@ -27,7 +23,7 @@ function responderTexto(paso: string, texto: string, extra?: Pick<RespuestaTurno
 export class PoliticaNoTextuales implements PoliticaTurno {
   constructor(
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
-    @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
     private readonly textoHandoff: TextoHandoff,
   ) {}
 
@@ -58,7 +54,7 @@ export class PoliticaNoTextuales implements PoliticaTurno {
     }
   }
 
-  private texto(clave: ClaveTextoAgente): Promise<string> {
-    return this.parametros.obtenerTexto(clave);
+  private texto(clave: ClaveSistema): Promise<string> {
+    return this.textos.textoDelSistema(clave);
   }
 }

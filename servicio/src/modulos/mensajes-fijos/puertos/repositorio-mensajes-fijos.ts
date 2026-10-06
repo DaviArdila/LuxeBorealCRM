@@ -4,15 +4,15 @@ export const REPOSITORIO_MENSAJES_FIJOS = Symbol('REPOSITORIO_MENSAJES_FIJOS');
 /** Token de la lista cerrada de mensajes fijos (CFN1): `readonly DefinicionMensajeFijo[]`. */
 export const CATALOGO_MENSAJES_FIJOS = Symbol('CATALOGO_MENSAJES_FIJOS');
 
-/** Una fila de `parametro`: el valor tal como está guardado (puede no ser texto) y cuándo se escribió. */
+/** El valor guardado de un mensaje fijo (el texto de su caso del sistema) y cuándo se escribió. */
 export interface FilaMensajeFijo {
   readonly valor: unknown;
   readonly actualizado: Date;
 }
 
 /**
- * Acceso a las filas de `parametro` de los mensajes fijos (D3 de la Fase 11b). Solo lee y escribe las claves que se le
- * piden: la lista cerrada de CFN1 la impone quien lo llama, así esta vía nunca se vuelve un editor genérico de parámetros.
+ * Acceso a los textos de los mensajes fijos (D3 de la Fase 11b; hoy son casos del sistema de `asistente`). Solo lee y escribe
+ * las claves que se le piden: la lista cerrada de CFN1 la impone quien lo llama, así esta vía nunca se vuelve un editor genérico de parámetros.
  */
 export interface RepositorioMensajesFijos {
   /** Solo las claves pedidas que tienen fila. */

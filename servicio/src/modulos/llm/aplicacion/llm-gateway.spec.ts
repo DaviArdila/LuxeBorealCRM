@@ -972,14 +972,13 @@ describe('modulos/llm/aplicacion — LlmGateway v3: techo mensual de gasto (LLM7
     aviso.mockRestore();
   });
 
-  it('el gateway nunca trae un texto propio para el techo: el mensaje lo lee otra fase del parámetro', async () => {
-    const { gateway, uso, parametros } = crearGateway(CON_TECHO);
+  it('el gateway nunca trae un texto propio para el techo: el mensaje lo entrega el puerto de textos del asistente', async () => {
+    const { gateway, uso } = crearGateway(CON_TECHO);
     uso.gastoMensualUsd = 10;
 
     const error = await fallo(gateway.generar(SOLICITUD));
 
     expect(error.message).toBe('Pasarela LLM: techo-alcanzado');
-    expect(parametros.lecturasDeMensaje).toBe(0);
   });
 
   it('si no puede verificar el gasto avisa con un error y deja pasar la llamada', async () => {

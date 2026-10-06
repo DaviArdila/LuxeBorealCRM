@@ -31,7 +31,7 @@ export class ProveedorTextos implements TextosAsistente {
   private copia: Copia | null = null;
 
   constructor(
-    @Inject(REPOSITORIO_CASOS) private readonly repositorio: RepositorioCasos,
+    @Inject(REPOSITORIO_CASOS) private readonly repositorio: Pick<RepositorioCasos, 'leerTextosDelSistema'>,
     @Inject(VERSION_ASISTENTE) private readonly version: VersionAsistente,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}

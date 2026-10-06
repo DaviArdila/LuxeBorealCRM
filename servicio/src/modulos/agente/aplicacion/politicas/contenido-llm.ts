@@ -7,10 +7,7 @@ import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { textoDelCliente } from '../../dominio/texto-del-cliente.js';
 import { HISTORIAL_CONVERSACION, type HistorialConversacion } from '../../puertos/historial-conversacion.js';
-import {
-  REPOSITORIO_PARAMETRO_AGENTE,
-  type RepositorioParametroAgente,
-} from '../../puertos/repositorio-parametro-agente.js';
+import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../../asistente/index.js';
 import { BucleHerramientas, type MotivoDerivacionBucle } from '../bucle-herramientas.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
@@ -45,7 +42,7 @@ export class ContenidoLlm implements PoliticaTurno {
     private readonly bucle: BucleHerramientas,
     private readonly prompt: EnsamblarPrompt,
     private readonly contextoInicial: ArmarContextoInicial,
-    @Inject(REPOSITORIO_PARAMETRO_AGENTE) private readonly parametros: RepositorioParametroAgente,
+    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
     private readonly mensajeTechoGasto: ObtenerMensajeTechoGasto,
     @Inject(HISTORIAL_CONVERSACION) private readonly historial: HistorialConversacion,
     @Inject(CONFIGURACION) private readonly configuracion: Pick<Configuracion, 'AGENTE_HISTORIAL_TURNOS'>,
@@ -118,7 +115,7 @@ export class ContenidoLlm implements PoliticaTurno {
     const texto =
       motivo === 'techo-gasto'
         ? await this.mensajeTechoGasto.ejecutar()
-        : await this.parametros.obtenerTexto('mensaje_error_llm');
+        : await this.textos.textoDelSistema('mensaje_error_llm');
     return { pasos: [{ paso: 'handoff-1', tipo: 'texto', texto }], handoff: { motivo: motivoDeHandoff(motivo) } };
   }
 }

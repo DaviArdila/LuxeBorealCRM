@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../plataforma/config/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
+import { AsistenteModule } from '../asistente/index.js';
 import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
 import {
   BuscarProductos,
@@ -34,7 +35,6 @@ import { RegistroHerramientas } from './aplicacion/registro-herramientas.js';
 import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
-import { RepositorioParametroAgentePrisma } from './infraestructura/prisma/repositorio-parametro-agente-prisma.js';
 import { CapturaLeadDeLeads } from './infraestructura/leads/captura-lead-de-leads.js';
 import { EvaluadorLeadDeLeads } from './infraestructura/leads/evaluador-lead-de-leads.js';
 import { RepositorioContactoAgentePrisma } from './infraestructura/prisma/repositorio-contacto-agente-prisma.js';
@@ -48,7 +48,6 @@ import {
   REPOSITORIO_CONTACTO_AGENTE,
   type RepositorioContactoAgente,
 } from './puertos/repositorio-contacto-agente.js';
-import { REPOSITORIO_PARAMETRO_AGENTE } from './puertos/repositorio-parametro-agente.js';
 
 /** R1: el LLM solo dispone de estas siete herramientas. */
 const TOTAL_HERRAMIENTAS = 7;
@@ -65,7 +64,7 @@ const TOTAL_HERRAMIENTAS = 7;
  */
 @Module({
   // Fase 08c: `EstiloModule` aporta `CargadorPrompts` y el estilo editable (`ProveedorEstilo`).
-  imports: [PrismaModule, RedisModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule, EstiloModule],
+  imports: [PrismaModule, RedisModule, AsistenteModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule, EstiloModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
@@ -74,7 +73,6 @@ const TOTAL_HERRAMIENTAS = 7;
     { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadDeLeads },
     { provide: CAPTURA_LEAD, useClass: CapturaLeadDeLeads },
     ArmarContextoInicial,
-    { provide: REPOSITORIO_PARAMETRO_AGENTE, useClass: RepositorioParametroAgentePrisma },
     TextoHandoff,
     PoliticaNoTextuales,
     PoliticaTopeTurnos,

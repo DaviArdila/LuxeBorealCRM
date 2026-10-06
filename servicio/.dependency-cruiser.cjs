@@ -195,6 +195,16 @@ module.exports = {
       from: { path: '^src/modulos/conversaciones/' },
       to: { path: '^src/modulos/agente/' },
     },
+    {
+      name: 'asistente-no-conoce-a-sus-consumidores',
+      comment:
+        'D2 de la Fase 12: asistente es dueño de la lista de casos del sistema y del puerto de textos; agente, ' +
+        'conversaciones, catalogo y llm importan su barril (puerto y claves) y asistente no importa a ninguno, así no ' +
+        'hay ciclos. Numerada 16.',
+      severity: 'error',
+      from: { path: '^src/modulos/asistente/' },
+      to: { path: '^src/modulos/(agente|conversaciones|catalogo|llm|mensajes-fijos)/' },
+    },
   ],
   options: {
     // Las fronteras del proyecto no analizan ciclos ni imports internos de paquetes de terceros

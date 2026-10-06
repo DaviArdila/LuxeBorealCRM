@@ -1,8 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { TEXTOS_FIJOS_AGENTE } from '../../agente/index.js';
-import { TEXTOS_FIJOS_CATALOGO } from '../../catalogo/index.js';
-import { TEXTOS_FIJOS_CONVERSACIONES } from '../../conversaciones/index.js';
-import { TEXTOS_FIJOS_LLM } from '../../llm/index.js';
 import { normalizarTexto } from '../../../compartido/texto/index.js';
 import { CASOS_DEL_SISTEMA, claveParametroLegada, textoDeRespaldo, type ClaveSistema } from './sistema.js';
 
@@ -57,13 +53,13 @@ describe('CASOS_DEL_SISTEMA (CAS4)', () => {
     expect(claveParametroLegada('aviso_datos')).toBe('aviso_datos');
   });
 
-  it('el respaldo coincide con el que hoy declara cada módulo (hasta que T5 los retire)', () => {
-    const modulos = [...TEXTOS_FIJOS_AGENTE, ...TEXTOS_FIJOS_CONVERSACIONES, ...TEXTOS_FIJOS_CATALOGO, ...TEXTOS_FIJOS_LLM];
+  it('CAT11 — el respaldo de fuera de cobertura no promete ningún contacto (eso depende de la Fase 08)', () => {
+    expect(textoDeRespaldo('mensaje_fuera_cobertura')).not.toMatch(/asesor|contactar/i);
+  });
 
-    expect(modulos).toHaveLength(DIEZ_MENSAJES.length);
-    for (const { clave, textoRespaldo, descripcion } of modulos) {
-      expect(textoDeRespaldo(clave as ClaveSistema), clave).toBe(textoRespaldo);
-      expect(CASOS_DEL_SISTEMA.find((c) => c.clave === clave)?.descripcion, clave).toBe(descripcion);
+  it('R1 — ningún respaldo trae un valor en pesos ni un SKU', () => {
+    for (const caso of CASOS_DEL_SISTEMA) {
+      expect(caso.textoRespaldo, caso.clave).not.toMatch(/\$\s?\d|SKU-/i);
     }
   });
 });

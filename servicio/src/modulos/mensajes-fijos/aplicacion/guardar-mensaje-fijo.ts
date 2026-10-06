@@ -18,7 +18,7 @@ export type ResultadoGuardarMensajeFijo =
 /**
  * Guarda el texto de un mensaje fijo (CFN2). Una clave fuera de la lista no escribe nada. El texto se guarda sin los
  * espacios y saltos de línea de los bordes (un editor deja un salto final que el cliente vería como una línea en blanco)
- * y se valida ya recortado. Rige desde el siguiente mensaje: los módulos dueños leen `parametro` en cada uso, sin caché.
+ * y se valida ya recortado. Rige desde el siguiente mensaje: guardar sube la versión compartida de `asistente` y el puerto de textos relee.
  */
 @Injectable()
 export class GuardarMensajeFijo {
