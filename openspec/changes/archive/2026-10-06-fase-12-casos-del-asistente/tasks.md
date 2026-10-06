@@ -70,8 +70,8 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos» — rama `fase-12-p8-pantalla-casos`, commits `7edcb43` y `698986b` (PR 99; `size:exception` anotada en la tarea; se añadió `openapi/oasdiff-ignorar.txt` para los retiros decididos)
 - [x] T9 — Configuración del negocio: registro tipado, endpoints e invalidación de cachés — rama `fase-12-p9-configuracion-api`, commit `3d4fb1d` (PR 100; `size:exception` y desvíos anotados en la tarea)
 - [x] T10 — Pantallas de Configuración — rama `fase-12-p10-configuracion-pantallas`, commit `1ccdcf3` (PR 101; `size:exception` y desvíos anotados en la tarea)
-- [ ] T11 — Limpieza final: cero referencias al sistema viejo
-- [ ] T12 — Guía de operación, cierre documental y tareas `[manual]` del dueño
+- [x] T11 — Limpieza final: cero referencias al sistema viejo — rama `fase-12-p11-limpieza`, commit `39ebfc7` (PR 102; desvíos anotados en la tarea)
+- [x] T12 — Guía de operación, cierre documental y tareas `[manual]` del dueño — rama `fase-12-p12-cierre` (el PR que archiva el change); las cuatro pruebas `[manual]` quedan listadas en `verify-report.md` y son del dueño
 
 ## Mapeo de escenarios por tarea (142 escenarios, 33 requisitos nuevos más R15 y CLT9 modificados)
 

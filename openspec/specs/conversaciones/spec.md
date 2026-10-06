@@ -136,7 +136,7 @@ mensaje se registra, pero no genera ninguna respuesta), y MUST registrar el cost
 al LLM en `uso_llm` para controlar el techo de gasto mensual (techo del negocio: 20 USD/mes entre VPS,
 LLM y Meta). El techo se hace cumplir también con un límite de gasto configurado en la consola del
 proveedor de LLM (operación, Fase 09). Al alcanzar el techo desde el código, el turno deriva a humano con
-el texto `mensaje_techo_gasto` (P17, Fase 07b).
+el texto del caso del sistema `mensaje_techo_gasto` (P17, Fase 07b; leído del puerto del asistente desde la Fase 12).
 
 (Previously: «collage por defecto»; la agrupación de fotos en un collage deja de ser el comportamiento
 por defecto y pasa a ser opcional del importador.)
@@ -220,7 +220,7 @@ Fase que lo implementa: 05
 ### Requirement: CNV3 — Aviso único de espera en handoff_pendiente
 
 Si el cliente escribe en estado `handoff_pendiente` después de que pasó `HANDOFF_ESPERA_MIN` sin eco
-humano, el sistema MUST enviar como máximo un único mensaje de espera por esa entrada a
+humano, el sistema MUST enviar (con el texto del caso del sistema `mensaje_espera_handoff`, Fase 12) como máximo un único mensaje de espera por esa entrada a
 `handoff_pendiente`, y MUST NOT enviar un segundo aunque el cliente siga escribiendo.
 
 Fase que lo implementa: 05

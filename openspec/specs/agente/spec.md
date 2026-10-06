@@ -13,13 +13,13 @@ directamente. Este dominio cubre esas dos garantías y el manejo de mensajes que
 
 El sistema MUST restringir el acceso a datos del LLM exclusivamente a las 7 herramientas definidas
 (`buscar_producto`, `obtener_ficha`, `cotizar_envio`, `enviar_fotos`, `marcar_lead_caliente`,
-`guardar_datos_contacto`, `consultar_politica`). El LLM MUST NOT ejecutar consultas libres contra la
+`guardar_datos_contacto`, `consultar_caso`). El LLM MUST NOT ejecutar consultas libres contra la
 base de datos ni ningún otro origen de datos. Cuando el cliente pregunte por una condición del negocio
 (contra entrega, devoluciones, garantía…), el bot MUST apoyarse en el texto que devuelve
-`consultar_politica` o en `politica_contraentrega_texto` de `cotizar_envio`, y MUST NOT inventar una
-condición que ninguna política contenga.
+`consultar_caso` o en `politica_contraentrega_texto` de `cotizar_envio`, y MUST NOT inventar una
+condición que ningún caso contenga.
 
-(Previously: 6 herramientas, sin `consultar_politica`.)
+(Previously: 6 herramientas, sin `consultar_politica`; desde la Fase 12 la herramienta es `consultar_caso`, CAS8.)
 
 Fase que lo implementa: 07
 
@@ -40,13 +40,12 @@ Fase que lo implementa: 07
 
 - Dado que el cliente pregunta, por ejemplo, si puede devolver un producto,
 - Cuando el bot responde,
-- Entonces llama a `consultar_politica` con el tema correspondiente y cita el texto que devuelve,
+- Entonces llama a `consultar_caso` con el título del caso correspondiente y cita el texto que devuelve,
   sin reescribir su contenido.
 
-#### Scenario: Una política que no existe no se inventa
+#### Scenario: Un caso que no existe no se inventa
 
-- Dado que el cliente pregunta por una condición para la que `consultar_politica` devuelve
-  `encontrada: false`,
+- Dado que el cliente pregunta por una condición para la que `consultar_caso` informa que el caso no existe,
 - Cuando el bot responde,
 - Entonces no afirma ninguna condición y ofrece derivar la consulta a un asesor.
 
@@ -182,7 +181,7 @@ Fase que lo implementa: 07a
 ### Requirement: AGT2 — Aviso de asistente automatizado en el primer turno de la conversación
 
 La primera respuesta del bot en una conversación (sesión inicial, sin turnos previos) MUST empezar
-con el texto del parámetro `aviso_datos`, dentro del **mismo** primer mensaje de texto de esa
+con el texto del caso del sistema `aviso_datos`, dentro del **mismo** primer mensaje de texto de esa
 respuesta (sin agregar un mensaje saliente, R13). Las respuestas siguientes, y las de sesiones
 posteriores de la misma conversación, MUST NOT repetirlo. Implementa el escenario «Aviso de asistente
 automatizado» de **R14** de forma determinista, sin depender de que el modelo lo recuerde.
@@ -207,25 +206,25 @@ Fase que lo implementa: 07a
 - Cuando el turno se ignora,
 - Entonces no se envía ningún mensaje y el aviso queda para la primera respuesta real.
 
-### Requirement: AGT3 — Los textos fijos del agente son parámetros del negocio
+### Requirement: AGT3 — Los textos fijos del agente son casos del sistema
 
-Los textos que el agente envía sin pasar por el LLM MUST leerse de `parametro` (R15):
+Los textos que el agente envía sin pasar por el LLM MUST leerse del puerto de textos del asistente (CAS7, R15; antes, de `parametro`):
 `mensaje_pedir_texto_audio`, `mensaje_imagen_no_procesada`, `aviso_datos`, `mensaje_handoff` (dentro
 del horario de atención) y `mensaje_handoff_fuera_horario` (fuera de él, según el puerto `HORARIO`).
-Si una clave no existe o está vacía, MUST usarse un texto de respaldo definido en un solo lugar del
-código del agente (patrón de las Fases 05 y 06), nunca repetido en varios archivos.
+Si el caso no existe o está vacío, MUST usarse su texto de respaldo, definido en un solo lugar del código de `asistente`
+(`dominio/sistema.ts`), nunca repetido en varios archivos.
 
 Fase que lo implementa: 07a
 
 #### Scenario: Un texto configurado por el negocio reemplaza al de respaldo
 
-- Dado el parámetro `mensaje_pedir_texto_audio` con un texto configurado,
+- Dado el caso `mensaje_pedir_texto_audio` con un texto configurado,
 - Cuando el cliente envía un audio,
 - Entonces el bot responde exactamente ese texto.
 
 #### Scenario: Sin el parámetro se usa el texto de respaldo
 
-- Dado que no existe el parámetro `mensaje_imagen_no_procesada`,
+- Dado que no existe el caso `mensaje_imagen_no_procesada`,
 - Cuando el cliente envía una imagen,
 - Entonces el bot responde el texto de respaldo del agente.
 
@@ -349,14 +348,14 @@ Fase que lo implementa: 07b
 
 ### Requirement: AGT8 — Herramientas de consulta devuelven datos listos para citar
 
-`buscar_producto`, `obtener_ficha`, `cotizar_envio` y `consultar_politica` MUST envolver los casos de
+`buscar_producto`, `obtener_ficha`, `cotizar_envio` y `consultar_caso` MUST envolver los casos de
 uso de `catalogo` sin recalcular nada (R2): `buscar_producto` devuelve hasta 5 resultados `{id, sku,
 nombre, descripcion_corta}` sin dinero; `obtener_ficha` devuelve `precio_texto` y `tiene_fotos`, y un
 error explícito si el producto no existe o está inactivo; `cotizar_envio` recibe `id_producto`,
 `departamento` y `ciudad` opcional y devuelve `rango_texto`, `dias_texto`, `contraentrega_disponible`
 y, con contra entrega, `politica_contraentrega_texto`, o `cobertura: false` con el mensaje de fuera de
-cobertura y el efecto `sin-cobertura`; `consultar_politica` devuelve el texto literal o
-`encontrada: false` con los temas disponibles.
+cobertura y el efecto `sin-cobertura`; `consultar_caso` devuelve el texto y el modo del caso o la lista de casos
+disponibles si el título no existe (CAS8).
 
 Fase que lo implementa: 07b
 
@@ -381,11 +380,11 @@ Fase que lo implementa: 07b
 - Entonces el resultado trae `cobertura: false` con el mensaje de fuera de cobertura, ningún rango, y
   el turno registra el efecto `sin-cobertura`.
 
-#### Scenario: consultar_politica devuelve el texto literal
+#### Scenario: consultar_caso devuelve el texto literal
 
-- Dado el parámetro `politica_devoluciones` configurado,
-- Cuando el modelo llama `consultar_politica` con el tema `devoluciones`,
-- Entonces el resultado trae `encontrada: true` y el texto sin ninguna modificación.
+- Dado el caso de intención «Devoluciones» configurado,
+- Cuando el modelo llama `consultar_caso` con ese título,
+- Entonces el resultado trae el texto y el modo del caso sin ninguna modificación.
 
 ### Requirement: AGT9 — enviar_fotos manda la portada por defecto y otro ángulo bajo demanda
 
@@ -973,3 +972,142 @@ Fase que lo implementa: 11b
 - Dado un estilo publicado por la API,
 - Cuando se revisan los logs del proceso,
 - Entonces aparecen la versión y el id del usuario, y no el texto del estilo.
+
+### Requirement: EST-D1 — Cada versión del estilo es una fila de `version_estilo`, con una sola vigente
+
+El estilo MUST guardarse en una tabla propia `version_estilo` con una fila por versión (número, texto, si es la
+vigente, fecha de publicación y quién la publicó). Exactamente una fila MUST ser la vigente, garantizado por la base
+(índice único parcial). Publicar MUST ser una transacción con un candado que serialice a quienes publican a la vez y
+que deje la fila nueva como vigente con el número siguiente; dos publicaciones simultáneas MUST NOT repetir un número.
+
+Fase que lo implementa: 12
+
+#### Scenario: Publicar crea una fila vigente nueva
+
+- Dado un estilo vigente en la versión 2,
+- Cuando un admin publica un texto válido,
+- Entonces existe una fila de versión 3 vigente y la 2 deja de serlo, sin borrarse.
+
+#### Scenario: Dos publicaciones a la vez no repiten la versión
+
+- Dado un estilo vigente en la versión 2,
+- Cuando dos admins publican al mismo tiempo,
+- Entonces quedan las versiones 3 y 4, la 4 vigente, sin números repetidos.
+
+#### Scenario: La base no admite dos versiones vigentes
+
+- Dado una fila vigente,
+- Cuando se intenta marcar otra fila como vigente sin desmarcar la primera,
+- Entonces la base lo rechaza (comprobación `[manual]` del índice único parcial, además del test de integración).
+
+### Requirement: EST-D2 — El comportamiento externo del estilo no cambia
+
+El puerto `RepositorioEstilo` MUST conservar su forma y los casos de uso `PublicarEstilo`, `RestaurarEstilo`,
+`ListarHistorialEstilo` y `ProveedorEstilo` MUST pasar sus tests sin cambiar los escenarios de AGT18-AGT22. La API
+(AGT23) y el comando `npm run prompt:estilo` MUST responder igual que antes, salvo el campo nuevo de EST-D3. Un estilo
+publicado MUST regir en el siguiente mensaje, con la copia en memoria y la versión compartida en Redis de AGT19.
+
+Fase que lo implementa: 12
+
+#### Scenario: Los tests de AGT18-AGT23 pasan sin editar sus escenarios
+
+- Dado el adaptador nuevo detrás del mismo puerto,
+- Cuando corren los tests de estilo del servicio,
+- Entonces pasan sin cambiar el texto de ningún escenario existente.
+
+#### Scenario: Un estilo publicado rige en el siguiente mensaje
+
+- Dado un estilo publicado desde la pantalla,
+- Cuando el cliente escribe,
+- Entonces el prompt del turno usa el texto nuevo, sin reiniciar.
+
+#### Scenario: El comando de estilo funciona igual
+
+- Dado `npm run prompt:estilo -- ver`, `historial`, `publicar` y `restaurar`,
+- Cuando se corren contra la base nueva,
+- Entonces producen los mismos resultados que antes del cambio.
+
+#### Scenario: Sin estilo guardado rige el archivo
+
+- Dado una base sin ninguna fila en `version_estilo`,
+- Cuando el agente pide el estilo,
+- Entonces rige `estilo.v3.md` con origen `archivo` (AGT18).
+
+### Requirement: EST-D3 — Cada versión guarda quién la publicó y la API lo muestra
+
+Cada versión MUST guardar el usuario que la publicó (o, cuando la publicó el comando `npm run prompt:estilo`, un valor
+que lo indique). Restaurar una versión MUST registrar a quien restauró como autor de la versión nueva. `obtenerEstilo` y
+`listarHistorialEstilo` MUST devolver `publicadoPor` con el nombre y el identificador del usuario, o `null` si fue el
+comando; ningún log MUST escribir el texto del estilo (R14), solo la versión y el identificador.
+
+Fase que lo implementa: 12
+
+#### Scenario: Publicar por la API guarda al usuario
+
+- Dado un admin con sesión,
+- Cuando publica un estilo válido,
+- Entonces la versión nueva guarda su identificador y `obtenerEstilo` devuelve su nombre en `publicadoPor`.
+
+#### Scenario: Publicar por el comando no tiene usuario
+
+- Dado un estilo publicado con `npm run prompt:estilo -- publicar`,
+- Cuando un admin consulta el historial,
+- Entonces esa versión trae `publicadoPor` nulo.
+
+#### Scenario: Restaurar registra a quien restauró
+
+- Dado una versión 1 en el historial,
+- Cuando un admin la restaura,
+- Entonces la versión nueva trae a ese admin en `publicadoPor` y el texto de la 1.
+
+#### Scenario: El historial muestra el autor de cada versión
+
+- Dado un historial con versiones publicadas por dos admins,
+- Cuando un admin llama a `listarHistorialEstilo`,
+- Entonces cada versión trae su `publicadoPor`.
+
+### Requirement: EST-D4 — La migración copia el estilo de `parametro` sin perder versiones
+
+La migración de esquema MUST copiar a `version_estilo` el estilo vigente y su historial de `parametro`
+(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) conservando sus números de versión, y MUST dejar
+la copia vigente como la de `prompt_estilo`. Sin estilo guardado MUST no crear filas. Las tres claves viejas MUST
+seguir en `parametro` hasta T11 (limpieza) y MUST borrarse allí.
+
+Fase que lo implementa: 12
+
+#### Scenario: La migración conserva el vigente y el historial
+
+- Dado una base con el estilo en la versión 5 y cuatro versiones en el historial,
+- Cuando se aplica la migración,
+- Entonces `version_estilo` tiene la versión 5 vigente y las cuatro anteriores con sus números y textos.
+
+#### Scenario: Sin estilo guardado la migración no crea filas
+
+- Dado una base sin `prompt_estilo`,
+- Cuando se aplica la migración,
+- Entonces `version_estilo` queda vacía y el agente usa el archivo.
+
+#### Scenario: Después de la limpieza las claves viejas desaparecen
+
+- Dado el cierre de T11,
+- Cuando se consulta `parametro`,
+- Entonces no existe ninguna clave `prompt_estilo*`.
+
+### Requirement: EST-D5 — El historial conserva las diez versiones anteriores a la vigente
+
+Publicar MUST podar las versiones más antiguas para que queden la vigente y como máximo diez anteriores (el límite de
+AGT21 no cambia). La versión vigente MUST NOT podarse nunca.
+
+Fase que lo implementa: 12
+
+#### Scenario: La undécima versión anterior se poda
+
+- Dado una vigente y diez anteriores,
+- Cuando un admin publica una versión nueva,
+- Entonces queda la nueva vigente y diez anteriores, y la más antigua desaparece.
+
+#### Scenario: La vigente nunca se poda
+
+- Dado cualquier número de publicaciones,
+- Cuando se revisa `version_estilo`,
+- Entonces siempre hay exactamente una fila vigente.
