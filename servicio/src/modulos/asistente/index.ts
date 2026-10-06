@@ -6,6 +6,8 @@
 export { AsistenteModule } from './asistente.module.js';
 export { SembrarCasos, type ResultadoSemilla } from './aplicacion/sembrar-casos.js';
 export { AdministrarTextosDelSistema } from './aplicacion/administrar-textos-del-sistema.js';
+export { CONSULTA_CASOS, type ConsultaCasos, type ModoCaso, type ResultadoCaso } from './puertos/consulta-casos.js';
+export { lineaDeIndice, type EntradaIndice } from './dominio/indice.js';
 export { TEXTOS_ASISTENTE, type TextosAsistente } from './puertos/textos-asistente.js';
 export type { CasoDelSistema } from './puertos/repositorio-casos.js';
 export {

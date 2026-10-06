@@ -192,7 +192,7 @@ describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
       'enviar_fotos',
       'marcar_lead_caliente',
       'guardar_datos_contacto',
-      'consultar_politica',
+      'consultar_caso',
     ]) {
       expect(fuente).not.toContain(nombre);
     }

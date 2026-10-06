@@ -2,8 +2,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Injectable, type OnModuleInit } from '@nestjs/common';
 
-/** Versión de los archivos de `prompts/`: el sufijo `.v3.md`. Un cambio de prompt sube la versión. */
-const VERSION_PROMPT = 'v3';
+/**
+ * Versión del prompt que se registra en cada turno. Un cambio de prompt sube la versión. Cada archivo lleva el sufijo de la
+ * última versión en que cambió: `reglas.v4.md` (Fase 12: `consultar_caso` y el índice de casos), `estilo.v3.md` y `turno.v3.md`.
+ */
+const VERSION_PROMPT = 'v4';
+const VERSION_REGLAS = 'v4';
+const VERSION_ESTILO = 'v3';
+const VERSION_TURNO = 'v3';
 
 /**
  * Carga una sola vez, al arrancar, los archivos versionados del prompt (D8 de la Fase 07b, AGT13): `reglas`
@@ -21,8 +27,8 @@ export class CargadorPrompts implements OnModuleInit {
 
   onModuleInit(): void {
     const carpeta = path.resolve(import.meta.dirname, '..', '..', 'prompts');
-    this.reglas = readFileSync(path.join(carpeta, `reglas.${VERSION_PROMPT}.md`), 'utf8');
-    this.estilo = readFileSync(path.join(carpeta, `estilo.${VERSION_PROMPT}.md`), 'utf8');
-    this.turno = readFileSync(path.join(carpeta, `turno.${VERSION_PROMPT}.md`), 'utf8');
+    this.reglas = readFileSync(path.join(carpeta, `reglas.${VERSION_REGLAS}.md`), 'utf8');
+    this.estilo = readFileSync(path.join(carpeta, `estilo.${VERSION_ESTILO}.md`), 'utf8');
+    this.turno = readFileSync(path.join(carpeta, `turno.${VERSION_TURNO}.md`), 'utf8');
   }
 }

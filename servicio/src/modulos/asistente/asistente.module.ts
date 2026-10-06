@@ -7,6 +7,7 @@ import { SembrarCasos } from './aplicacion/sembrar-casos.js';
 import { RepositorioCasosPrisma } from './infraestructura/prisma/repositorio-casos-prisma.js';
 import { RepositorioSemillaPrisma } from './infraestructura/prisma/repositorio-semilla-prisma.js';
 import { VersionAsistenteRedis } from './infraestructura/redis/version-asistente-redis.js';
+import { CONSULTA_CASOS } from './puertos/consulta-casos.js';
 import { REPOSITORIO_CASOS } from './puertos/repositorio-casos.js';
 import { REPOSITORIO_SEMILLA } from './puertos/repositorio-semilla.js';
 import { TEXTOS_ASISTENTE } from './puertos/textos-asistente.js';
@@ -25,9 +26,10 @@ import { VERSION_ASISTENTE } from './puertos/version-asistente.js';
     { provide: VERSION_ASISTENTE, useClass: VersionAsistenteRedis },
     ProveedorTextos,
     { provide: TEXTOS_ASISTENTE, useExisting: ProveedorTextos },
+    { provide: CONSULTA_CASOS, useExisting: ProveedorTextos },
     SembrarCasos,
     AdministrarTextosDelSistema,
   ],
-  exports: [TEXTOS_ASISTENTE, SembrarCasos, AdministrarTextosDelSistema],
+  exports: [TEXTOS_ASISTENTE, CONSULTA_CASOS, SembrarCasos, AdministrarTextosDelSistema],
 })
 export class AsistenteModule {}

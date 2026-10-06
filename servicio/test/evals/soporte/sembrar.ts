@@ -1,4 +1,8 @@
+import { RepositorioCasosPrisma } from '../../../src/modulos/asistente/infraestructura/prisma/repositorio-casos-prisma.js';
+import { normalizarNombre, textoDeBusqueda } from '../../../src/modulos/asistente/dominio/normalizar.js';
+import type { VersionAsistente } from '../../../src/modulos/asistente/puertos/version-asistente.js';
 import type { PrismaService } from '../../../src/plataforma/prisma/index.js';
+import { ClockSistema } from '../../../src/plataforma/reloj/index.js';
 
 /** Semilla estable del catálogo de las evals (D5): SKU fijos para que los guiones los nombren. */
 export const SKU = {
@@ -11,11 +15,27 @@ export const SKU = {
 export const PRECIO_ANILLO_COP = 389_000;
 export const PRECIO_COLLAR_COP = 259_000;
 
-export const POLITICAS_SEMILLA: Readonly<Record<string, string>> = {
-  contra_entrega:
-    'Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra.',
-  devoluciones: 'Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso.',
-};
+/** Texto del caso `contra_entrega` en las evals: corto y sin porcentaje, como el aprobado por el negocio. */
+export const TEXTO_CONTRA_ENTREGA_SEMILLA =
+  'Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra.';
+
+/** Un caso de intención que un caso de eval siembra (CAS8): su título es con lo que el agente lo consulta. */
+export interface CasoSemilla {
+  readonly titulo: string;
+  readonly cuandoAplica: string;
+  readonly texto: string;
+  readonly modo?: 'literal' | 'guia';
+  readonly activo?: boolean;
+}
+
+/** Los casos de intención que todo caso de eval encuentra sembrados, además de `contra_entrega`. */
+export const CASOS_SEMILLA_BASE: readonly CasoSemilla[] = [
+  {
+    titulo: 'Devoluciones',
+    cuandoAplica: 'Cuando el cliente pregunta si puede devolver o cambiar un producto.',
+    texto: 'Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso.',
+  },
+];
 
 const DEPARTAMENTOS = [
   { id: '05', nombre: 'Antioquia' },
@@ -73,20 +93,45 @@ export async function sembrarBase(prisma: PrismaService): Promise<void> {
       },
     });
   }
-  await fijarPoliticas(prisma, POLITICAS_SEMILLA);
 }
 
-/** Escribe (o borra, con `null`) filas `politica_<tema>` de `parametro`. */
-export async function fijarPoliticas(
+/**
+ * Deja los casos del asistente como los espera cada caso de eval (D5): borra los que dejó el anterior, siembra `contra_entrega`
+ * y los casos base, suma los del caso (y `relleno` casos de relleno para probar un índice grande) y sube la versión compartida
+ * para que la copia en memoria de la aplicación los lea. Determinista: dos corridas dejan lo mismo.
+ */
+export async function restablecerCasos(
   prisma: PrismaService,
-  politicas: Readonly<Record<string, string | null>>,
+  version: Pick<VersionAsistente, 'incrementar'>,
+  semilla: { readonly casos?: readonly CasoSemilla[]; readonly relleno?: number } = {},
 ): Promise<void> {
-  for (const [tema, texto] of Object.entries(politicas)) {
-    const clave = `politica_${tema}`;
-    if (texto === null) {
-      await prisma.parametro.deleteMany({ where: { clave } });
-    } else {
-      await prisma.parametro.upsert({ where: { clave }, create: { clave, valor: texto }, update: { valor: texto } });
-    }
+  const ahora = new ClockSistema().ahora();
+  await prisma.casoAsistente.deleteMany();
+  await prisma.categoriaCaso.deleteMany();
+  // `guardarTextoDelSistema` crea el caso y la categoría «Políticas» si faltan.
+  await new RepositorioCasosPrisma(prisma).guardarTextoDelSistema('contra_entrega', TEXTO_CONTRA_ENTREGA_SEMILLA, ahora);
+  const categoria = await prisma.categoriaCaso.findUniqueOrThrow({ where: { nombreNormalizado: normalizarNombre('Políticas') } });
+  const relleno: CasoSemilla[] = Array.from({ length: semilla.relleno ?? 0 }, (_, i) => ({
+    titulo: `Relleno ${String(i + 1).padStart(3, '0')}`,
+    cuandoAplica: 'Cuando el cliente pregunta por un tema de relleno.',
+    texto: 'Texto de relleno.',
+  }));
+  for (const caso of [...CASOS_SEMILLA_BASE, ...(semilla.casos ?? []), ...relleno]) {
+    await prisma.casoAsistente.create({
+      data: {
+        categoriaId: categoria.id,
+        titulo: caso.titulo,
+        tituloNormalizado: normalizarNombre(caso.titulo),
+        cuandoAplica: caso.cuandoAplica,
+        disparador: 'intencion',
+        modo: caso.modo ?? 'literal',
+        texto: caso.texto,
+        activo: caso.activo ?? true,
+        busquedaNormalizada: textoDeBusqueda(caso),
+        creado: ahora,
+        actualizado: ahora,
+      },
+    });
   }
+  await version.incrementar();
 }

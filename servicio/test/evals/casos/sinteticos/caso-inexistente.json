@@ -1,13 +1,14 @@
 {
-  "id": "r1-politica-inexistente",
-  "titulo": "R1 — Una política que no existe no se inventa",
+  "id": "caso-inexistente",
+  "titulo": "CAS8 — Un caso que no existe no se inventa: se ofrece un asesor",
   "origen": "sintetico",
+  "semilla": {},
   "turnos": [
     {
       "mensajes": [
         {
           "tipoContenido": "texto",
-          "texto": "¿Tienen garantía de por vida?"
+          "texto": "¿Aceptan pagos con criptomonedas?"
         }
       ],
       "guion": [
@@ -16,13 +17,13 @@
             {
               "nombre": "consultar_caso",
               "argumentos": {
-                "titulo": "Garantía"
+                "titulo": "Criptomonedas"
               }
             }
           ]
         },
         {
-          "texto": "No tengo información sobre una garantía. Si quieres, te paso con un asesor para que te la confirme."
+          "texto": "No tengo información sobre pagos con criptomonedas. Si quieres, te paso con un asesor para que te la confirme."
         }
       ],
       "aserciones": {
@@ -36,6 +37,7 @@
           "asesor"
         ],
         "textoAusente": [
+          "transferencia",
           "5 días"
         ],
         "sinEmojis": true,

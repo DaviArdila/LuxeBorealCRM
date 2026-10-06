@@ -9,7 +9,6 @@ import {
   type LineaPeso,
   type ResultadoCotizacion,
 } from '../dominio/envio.js';
-import { ConsultarPolitica } from './consultar-politica.js';
 import { REPOSITORIO_ENVIO, type RepositorioEnvio } from '../puertos/repositorio-envio.js';
 import { REPOSITORIO_PARAMETRO_CATALOGO, type RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
 import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repositorio-producto.js';
@@ -21,7 +20,7 @@ import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repos
  * cobertura — por exclusión o por ausencia de tarifa que aplique — registra el evento (CAT9, D7:
  * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve el mensaje del caso
  * `mensaje_fuera_cobertura` del asistente, sin ningún rango (CAT11). Con cobertura y contra entrega disponible añade la
- * política `contra_entrega` (CAT10, CAT12). Un producto no encontrado no rechaza: cotiza
+ * texto del caso `contra_entrega` (CAT10, CAS11). Un producto no encontrado no rechaza: cotiza
  * con peso cero (ninguna línea de peso), igual que un producto sin peso ni medidas (CAT6).
  */
 @Injectable()
@@ -30,7 +29,6 @@ export class CotizarEnvio {
     @Inject(REPOSITORIO_PRODUCTO) private readonly repositorioProducto: RepositorioProducto,
     @Inject(REPOSITORIO_PARAMETRO_CATALOGO) private readonly repositorioParametro: RepositorioParametroCatalogo,
     @Inject(REPOSITORIO_ENVIO) private readonly repositorioEnvio: RepositorioEnvio,
-    private readonly consultarPolitica: ConsultarPolitica,
     @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
@@ -65,9 +63,9 @@ export class CotizarEnvio {
     const cotizacion = armarCotizacionConCobertura(tarifa);
     if (!tarifa.contraentregaDisponible) return cotizacion;
 
-    // CAT10: con contra entrega el bot cita la política literal; nunca el porcentaje del recargo.
-    const politica = await this.consultarPolitica.ejecutar('contra_entrega');
-    return politica.encontrada ? { ...cotizacion, politicaContraentregaTexto: politica.texto } : cotizacion;
+    // CAT10, CAS11: con contra entrega el bot cita el caso `contra_entrega` literal (o su respaldo aprobado); nunca el
+    // porcentaje del recargo.
+    return { ...cotizacion, politicaContraentregaTexto: await this.textos.textoDelSistema('contra_entrega') };
   }
 
   private async registrarSinCobertura(productoId: string | null, destino: DestinoEnvio): Promise<ResultadoCotizacion> {

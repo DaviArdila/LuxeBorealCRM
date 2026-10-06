@@ -1,6 +1,6 @@
 {
   "id": "neg-texto-literal",
-  "titulo": "EVL2 — negativo: textoLiteral falla si la política no se cita sin cambios",
+  "titulo": "EVL2 — negativo: textoLiteral falla si el caso no se cita sin cambios",
   "origen": "sintetico",
   "esperaFallo": "textoLiteral",
   "turnos": [
@@ -15,9 +15,9 @@
         {
           "llamadas": [
             {
-              "nombre": "consultar_politica",
+              "nombre": "consultar_caso",
               "argumentos": {
-                "tema": "devoluciones"
+                "titulo": "Devoluciones"
               }
             }
           ]
@@ -29,7 +29,7 @@
       "aserciones": {
         "textoLiteral": [
           {
-            "herramienta": "consultar_politica",
+            "herramienta": "consultar_caso",
             "campo": "texto"
           }
         ]

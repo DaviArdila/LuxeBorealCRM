@@ -14,7 +14,7 @@ describe('test/evals — GrabadorLlm', () => {
     const mensajes: MensajeLlm[] = [{ rol: 'usuario', texto: 'envío y garantía' }];
     const guion: RespuestaGeneracion[] = [
       respuestaConLlamada('a', 'cotizar_envio'),
-      respuestaConLlamada('b', 'consultar_politica'),
+      respuestaConLlamada('b', 'consultar_caso'),
       { texto: 'Total $271.000 (259.000 + 12.000)' },
     ];
     const interno: LlmPort = { generar: () => Promise.resolve(guion.shift() as RespuestaGeneracion) };
@@ -23,12 +23,12 @@ describe('test/evals — GrabadorLlm', () => {
     await grabador.generar({ perfil: 'conversacion', mensajes });
     mensajes.push({ rol: 'usuario', resultadosHerramienta: [{ idLlamada: 'a', nombre: 'cotizar_envio', resultado: { total: '$271.000', envio: '$12.000', producto: '$259.000' }, esError: false }] });
     await grabador.generar({ perfil: 'conversacion', mensajes });
-    mensajes.push({ rol: 'usuario', resultadosHerramienta: [{ idLlamada: 'b', nombre: 'consultar_politica', resultado: { texto: 'Garantía' }, esError: false }] });
+    mensajes.push({ rol: 'usuario', resultadosHerramienta: [{ idLlamada: 'b', nombre: 'consultar_caso', resultado: { texto: 'Garantía' }, esError: false }] });
     await grabador.generar({ perfil: 'conversacion', mensajes });
 
     const grabacion = grabador.grabacion('Total $271.000 (259.000 + 12.000)', null);
 
-    expect(grabacion.resultados.map((r) => r.nombre)).toEqual(['cotizar_envio', 'consultar_politica']);
+    expect(grabacion.resultados.map((r) => r.nombre)).toEqual(['cotizar_envio', 'consultar_caso']);
     const [r] = evaluarAserciones(grabacion, { dineroConRastro: true });
     expect(r).toMatchObject({ nombre: 'dineroConRastro', ok: true });
   });

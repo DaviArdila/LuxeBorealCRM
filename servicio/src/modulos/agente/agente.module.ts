@@ -2,12 +2,11 @@ import { Module } from '@nestjs/common';
 import { CONFIGURACION, type Configuracion } from '../../plataforma/config/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
-import { AsistenteModule } from '../asistente/index.js';
+import { AsistenteModule, CONSULTA_CASOS, type ConsultaCasos } from '../asistente/index.js';
 import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
 import {
   BuscarProductos,
   CatalogoModule,
-  ConsultarPolitica,
   CotizarEnvio,
   ObtenerFichaProducto,
   ObtenerFotosProducto,
@@ -16,7 +15,7 @@ import { HorarioModule } from '../horario/index.js';
 import { LeadsModule } from '../leads/index.js';
 import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
-import { crearConsultarPolitica } from './aplicacion/herramientas/consultar-politica.js';
+import { crearConsultarCaso } from './aplicacion/herramientas/consultar-caso.js';
 import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
 import { crearGuardarDatosContacto } from './aplicacion/herramientas/guardar-datos-contacto.js';
 import { crearMarcarLeadCaliente } from './aplicacion/herramientas/marcar-lead-caliente.js';
@@ -87,7 +86,7 @@ const TOTAL_HERRAMIENTAS = 7;
         buscar: BuscarProductos,
         ficha: ObtenerFichaProducto,
         cotizar: CotizarEnvio,
-        politicas: ConsultarPolitica,
+        casos: ConsultaCasos,
         fotos: ObtenerFotosProducto,
         contadores: ContadoresSesion,
         configuracion: Configuracion,
@@ -98,7 +97,7 @@ const TOTAL_HERRAMIENTAS = 7;
         crearBuscarProducto(buscar),
         crearObtenerFicha(ficha),
         crearCotizarEnvio(cotizar),
-        crearConsultarPolitica(politicas),
+        crearConsultarCaso(casos),
         crearEnviarFotos(fotos, contadores, configuracion),
         crearGuardarDatosContacto(contactos, captura),
         crearMarcarLeadCaliente(evaluador),
@@ -107,7 +106,7 @@ const TOTAL_HERRAMIENTAS = 7;
         BuscarProductos,
         ObtenerFichaProducto,
         CotizarEnvio,
-        ConsultarPolitica,
+        CONSULTA_CASOS,
         ObtenerFotosProducto,
         CONTADORES_SESION,
         CONFIGURACION,

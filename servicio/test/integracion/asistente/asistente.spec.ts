@@ -6,8 +6,10 @@ import {
   AsistenteModule,
   CASOS_DEL_SISTEMA,
   SembrarCasos,
+  CONSULTA_CASOS,
   TEXTOS_ASISTENTE,
   textoDeRespaldo,
+  type ConsultaCasos,
   type TextosAsistente,
 } from '../../../src/modulos/asistente/index.js';
 import { RepositorioSemillaPrisma } from '../../../src/modulos/asistente/infraestructura/prisma/repositorio-semilla-prisma.js';
@@ -19,6 +21,7 @@ import { REDIS_CLIENTE, RedisModule, type ClienteRedis } from '../../../src/plat
 import { CLOCK, RelojModule } from '../../../src/plataforma/reloj/index.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
+import { crearCasoDeIntencion } from '../../soporte/textos-asistente.js';
 import { VersionAsistenteDePrueba } from '../../soporte/version-asistente-de-prueba.js';
 
 // Fase 12, T4: el módulo `asistente` contra Postgres y Redis reales (CAS4, CAS6, CAS7).
@@ -57,6 +60,7 @@ async function crearContexto() {
     clock,
     sembrar: modulo.get(SembrarCasos),
     textos: modulo.get<TextosAsistente>(TEXTOS_ASISTENTE),
+    casos: modulo.get<ConsultaCasos>(CONSULTA_CASOS),
     version,
   };
 }
@@ -246,5 +250,95 @@ describe('TextosAsistente contra Postgres y Redis (Fase 12, T4, integración)', 
     await version.incrementar();
 
     expect(await textos.textoDelSistema('aviso_datos')).toBe(textoDeRespaldo('aviso_datos'));
+  });
+});
+
+describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', () => {
+  it('CAS8 — El índice lista los casos de intención activos, sin el inactivo ni los del sistema que dispara el código', async () => {
+    const { casos, sembrar, prisma, version } = await crearContexto();
+    await sembrar.ejecutar();
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.', texto: 'Cubre ocho días.' });
+    await crearCasoDeIntencion(prisma, { titulo: 'Oferta vieja', cuandoAplica: 'Cuando preguntan por la oferta.', texto: 'Ya no existe.', activo: false });
+    await version.incrementar();
+
+    const indice = await casos.indice();
+
+    expect(indice.map((e) => e.titulo)).toEqual(['Contra entrega', 'Garantía']);
+    expect(indice[1]).toEqual({ titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.' });
+    expect(JSON.stringify(indice)).not.toContain('Cubre ocho días');
+  });
+
+  it('CAS8 — consultar_caso encuentra por título sin acentos ni mayúsculas, y lista los disponibles si no existe', async () => {
+    const { casos, prisma, version } = await crearContexto();
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', texto: 'Cubre ocho días.', modo: 'guia' });
+    await version.incrementar();
+
+    expect(await casos.consultar('GARANTIA')).toEqual({ encontrado: true, titulo: 'Garantía', modo: 'guia', texto: 'Cubre ocho días.' });
+    expect(await casos.consultar('Medios de pago')).toEqual({ encontrado: false, titulosDisponibles: ['Garantía'] });
+  });
+
+  it('CAS8 — Un caso desactivado ya no se consulta', async () => {
+    const { casos, prisma, version } = await crearContexto();
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', texto: 'Cubre ocho días.' });
+    await version.incrementar();
+    expect(await casos.consultar('Garantía')).toMatchObject({ encontrado: true });
+
+    await prisma.casoAsistente.update({ where: { tituloNormalizado: 'garantia' }, data: { activo: false } });
+    await version.incrementar();
+
+    expect(await casos.consultar('Garantía')).toEqual({ encontrado: false, titulosDisponibles: [] });
+  });
+
+  it('CAS8 — Los casos salen por el orden de su categoría y luego por título', async () => {
+    const { casos, prisma, version } = await crearContexto();
+    const ahora = new Date('2026-10-06T15:00:00.000Z');
+    const a = await prisma.categoriaCaso.create({ data: { nombre: 'Zeta', nombreNormalizado: 'zeta', orden: 0, creado: ahora, actualizado: ahora } });
+    const b = await prisma.categoriaCaso.create({ data: { nombre: 'Alfa', nombreNormalizado: 'alfa', orden: 1, creado: ahora, actualizado: ahora } });
+    for (const [categoriaId, titulo] of [[b.id, 'Abeja'], [a.id, 'Zorro'], [a.id, 'Águila'], [b.id, 'Búho']] as const) {
+      await prisma.casoAsistente.create({
+        data: {
+          categoriaId,
+          titulo,
+          tituloNormalizado: titulo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+          cuandoAplica: 'Cuando.',
+          disparador: 'intencion',
+          texto: 'T.',
+          busquedaNormalizada: 't',
+          creado: ahora,
+          actualizado: ahora,
+        },
+      });
+    }
+    await version.incrementar();
+
+    expect((await casos.indice()).map((e) => e.titulo)).toEqual(['Águila', 'Zorro', 'Abeja', 'Búho']);
+  });
+
+  it('CAS8 — Un índice de 70 casos se recorta a los primeros 60 y avisa solo con conteos', async () => {
+    const { casos, prisma, version } = await crearContexto();
+    for (let i = 1; i <= 70; i += 1) {
+      await crearCasoDeIntencion(prisma, { titulo: `Caso ${String(i).padStart(3, '0')}`, cuandoAplica: 'Cuando preguntan.', texto: 'TEXTO-CONFIDENCIAL' });
+    }
+    await version.incrementar();
+    const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    const indice = await casos.indice();
+
+    expect(indice).toHaveLength(60);
+    expect(indice[59]?.titulo).toBe('Caso 060');
+    expect(aviso).toHaveBeenCalledWith({ evento: 'asistente.indice-recortado', total: 70, incluidos: 60 });
+    expect(JSON.stringify(aviso.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
+  });
+
+  it('CAS8 — Un caso editado cambia el siguiente turno sin reiniciar', async () => {
+    const { casos, prisma, version } = await crearContexto();
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', texto: 'Antes.' });
+    await version.incrementar();
+    expect(await casos.consultar('Garantía')).toMatchObject({ texto: 'Antes.' });
+
+    await prisma.casoAsistente.update({ where: { tituloNormalizado: 'garantia' }, data: { texto: 'Después.' } });
+    await version.incrementar();
+
+    expect(await casos.consultar('Garantía')).toMatchObject({ texto: 'Después.' });
   });
 });

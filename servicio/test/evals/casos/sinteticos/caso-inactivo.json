@@ -1,0 +1,44 @@
+{
+  "id": "caso-inactivo",
+  "titulo": "CAS3 — Un caso desactivado no llega al bot: no se consulta ni se cita",
+  "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Promoción de aniversario",
+        "cuandoAplica": "Cuando el cliente pregunta por promociones.",
+        "texto": "Este caso está desactivado y no debe citarse.",
+        "activo": false
+      }
+    ]
+  },
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Tienen alguna promoción?"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Por ahora no tengo información de promociones. Si quieres, te paso con un asesor para que te cuente."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasProhibidas": [
+          "consultar_caso"
+        ],
+        "textoAusente": [
+          "desactivado"
+        ],
+        "menciona": [
+          "asesor"
+        ],
+        "sinEmojis": true,
+        "sinSku": true
+      }
+    }
+  ]
+}

@@ -1,7 +1,10 @@
 {
-  "id": "r1-politica",
-  "titulo": "R1 — El cliente pregunta por una política del negocio",
+  "id": "caso-indice-grande",
+  "titulo": "CAS8 — Con un índice de 70 casos el agente sigue consultando por título",
   "origen": "sintetico",
+  "semilla": {
+    "relleno": 70
+  },
   "turnos": [
     {
       "mensajes": [
@@ -22,7 +25,7 @@
           ]
         },
         {
-          "texto": "Sobre devoluciones: Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso."
+          "texto": "Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso."
         }
       ],
       "aserciones": {

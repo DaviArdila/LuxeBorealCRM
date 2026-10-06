@@ -16,7 +16,11 @@ export class AdministrarTextosDelSistema {
   private readonly logger = new Logger(AdministrarTextosDelSistema.name);
 
   constructor(
-    @Inject(REPOSITORIO_CASOS) private readonly repositorio: RepositorioCasos,
+    @Inject(REPOSITORIO_CASOS)
+    private readonly repositorio: Pick<
+      RepositorioCasos,
+      'leerCasosDelSistema' | 'guardarTextoDelSistema' | 'crearTextoDelSistemaSiFalta'
+    >,
     @Inject(VERSION_ASISTENTE) private readonly version: VersionAsistente,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}

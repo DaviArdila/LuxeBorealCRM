@@ -25,7 +25,6 @@
  * producto desactivar); T9 decide cómo lo traslada al puerto real.
  */
 
-import { esClavePolitica, temaDeClave, validarTemaPolitica, validarTextoPolitica } from './politica.js';
 import { ANGULOS_FOTO, esAnguloFoto, type AnguloFoto } from './angulo-foto.js';
 import { resolverLugar, type CatalogoLugares } from './resolver-lugar.js';
 
@@ -465,6 +464,38 @@ function validarCobertura(
   });
 
   return zonas;
+}
+
+// --- Filas `politica_<tema>` de `parametros.csv` --------------------------------------------------------------------
+// Las políticas pasaron a ser casos de uso del asistente (Fase 12): `casos:sembrar` copia las filas que ya hay. Mientras T11
+// no haga que el importador las rechace (CFG6), siguen validándose y guardándose como hasta ahora.
+
+const PREFIJO_POLITICA = 'politica_';
+const LIMITE_CARACTERES_POLITICA = 1200;
+
+function esClavePolitica(clave: string): boolean {
+  return clave.startsWith(PREFIJO_POLITICA);
+}
+
+function temaDeClave(clave: string): string {
+  return clave.slice(PREFIJO_POLITICA.length);
+}
+
+/** Devuelve el motivo del rechazo, o `null` si el tema es válido. */
+function validarTemaPolitica(tema: string): string | null {
+  if (!/^[a-z0-9_]+$/.test(tema)) {
+    return `el tema "${tema}" debe tener solo minúsculas sin acentos, dígitos y guion bajo`;
+  }
+  return null;
+}
+
+function validarTextoPolitica(textoCrudo: string): { readonly texto: string } | { readonly error: string } {
+  const texto = textoCrudo.trim();
+  if (texto === '') return { error: 'la política está vacía' };
+  if (texto.length > LIMITE_CARACTERES_POLITICA) {
+    return { error: `la política tiene ${texto.length} caracteres; el máximo es ${LIMITE_CARACTERES_POLITICA}` };
+  }
+  return { texto };
 }
 
 // --- IMP7: pestaña `parametros`, registro de parsers jsonb por clave conocida (Q3, R15) -----------
