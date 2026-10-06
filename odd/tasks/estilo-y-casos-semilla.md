@@ -21,7 +21,8 @@
 - [x] T2 Casos: 5 categorías y 15 casos de intención nuevos en el JSON de desarrollo, más el de
       «Derecho de retracto» en Políticas; test de que el archivo pasa `validar-caso` y la semilla es
       idempotente.
-- [ ] T3 Verificación completa y cierre.
+- [x] T3 Verificación completa y cierre (spot check del padre: 13 archivos / 144 tests unit en verde;
+      pendiente fuera de alcance: `test:e2e` y publicar v4 en bases con un estilo ya publicado).
 
 ## Ruta por tarea
 
