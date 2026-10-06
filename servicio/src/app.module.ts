@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AgenteModule } from './modulos/agente/index.js';
 import { CanalesModule } from './modulos/canales/index.js';
+import { ConfiguracionNegocioModule } from './modulos/configuracion/index.js';
 import { ConversacionesModule } from './modulos/conversaciones/index.js';
 import { UsuariosModule } from './modulos/usuarios/index.js';
 import { ColasModule } from './plataforma/colas/index.js';
@@ -28,6 +29,7 @@ import { SaludModule } from './plataforma/salud/index.js';
  * conoce a los dos; el módulo de la pasarela LLM no se cablea hasta la 07b. `UsuariosModule` (Fase 11a, D3)
  * registra las guardias globales de CSRF, sesión y roles: toda ruta de `/api/v1` exige sesión salvo `@Publico()`.
  * El módulo `asistente` expone los textos del bot al admin (Fase 12); depende de los barriles de los dueños.
+ * `ConfiguracionNegocioModule` (Fase 12, T9) expone al admin el horario, los envíos y el gasto del LLM.
  */
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { SaludModule } from './plataforma/salud/index.js';
     RedisModule,
     SaludModule,
     UsuariosModule,
+    ConfiguracionNegocioModule,
     ColasModule,
     CanalesModule,
     ConversacionesModule.conGenerador(AgenteModule),

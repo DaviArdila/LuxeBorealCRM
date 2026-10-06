@@ -113,6 +113,21 @@ export const CATALOGO_CODIGOS = Object.freeze({
     status: 422,
     title: 'El caso no cumple las reglas para guardarse',
   },
+  /** CFG1: un campo de un grupo de configuración no cumple su tipo o rango; el motivo de cada campo va en `detail`. */
+  'configuracion-invalida': {
+    status: 422,
+    title: 'La configuración no cumple las reglas para guardarse',
+  },
+  /** CFG2: ya existe una excepción de horario para esa fecha. */
+  'excepcion-duplicada': {
+    status: 409,
+    title: 'Ya existe una excepción de horario para esa fecha',
+  },
+  /** CFG2: la excepción de horario que se quiso borrar no existe. */
+  'excepcion-inexistente': {
+    status: 404,
+    title: 'La excepción de horario no existe',
+  },
   /** API5, CAS10: el cursor del listado no se pudo leer. */
   'cursor-invalido': {
     status: 400,

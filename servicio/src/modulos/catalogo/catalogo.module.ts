@@ -19,6 +19,7 @@ import { RepositorioEnvioPrisma } from './infraestructura/repositorio-envio-pris
 import { RepositorioImportacionPrisma } from './infraestructura/repositorio-importacion-prisma.js';
 import { RepositorioParametroCatalogoPrisma } from './infraestructura/repositorio-parametro-prisma.js';
 import { RepositorioProductoPrisma } from './infraestructura/repositorio-producto-prisma.js';
+import { InvalidarCacheCatalogo } from './aplicacion/invalidar-cache-catalogo.js';
 import { CACHE_CATALOGO } from './puertos/cache-catalogo.js';
 import { REPOSITORIO_ENVIO } from './puertos/repositorio-envio.js';
 import { REPOSITORIO_IMPORTACION_CATALOGO } from './puertos/repositorio-importacion.js';
@@ -63,6 +64,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     ResolverGeografiaImportacion,
     ProcesarFotos,
     ImportarCatalogo,
+    InvalidarCacheCatalogo,
   ],
   exports: [
     ObtenerFichaProducto,
@@ -73,6 +75,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
     ObtenerCatalogoCompacto,
     CotizarEnvio,
     ImportarCatalogo,
+    InvalidarCacheCatalogo,
   ],
 })
 export class CatalogoModule {}

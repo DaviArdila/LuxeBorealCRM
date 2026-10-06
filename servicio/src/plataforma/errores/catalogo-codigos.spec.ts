@@ -50,6 +50,9 @@ describe('plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2)
     ['caso-modificado', 409],
     ['caso-invalido', 422],
     ['cursor-invalido', 400],
+    ['configuracion-invalida', 422],
+    ['excepcion-duplicada', 409],
+    ['excepcion-inexistente', 404],
   ] as const)('%s responde %i', (codigo, status) => {
     const entrada = (CATALOGO_CODIGOS as Readonly<Record<string, { status: number; title: string }>>)[codigo];
 

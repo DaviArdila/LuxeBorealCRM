@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../plataforma/prisma/index.js';
 import { validarFactorVolumetrico } from '../dominio/envio.js';
 import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
@@ -10,6 +10,8 @@ import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parame
  */
 @Injectable()
 export class RepositorioParametroCatalogoPrisma implements RepositorioParametroCatalogo {
+  private readonly logger = new Logger(RepositorioParametroCatalogoPrisma.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -19,6 +21,11 @@ export class RepositorioParametroCatalogoPrisma implements RepositorioParametroC
    */
   async obtenerFactorVolumetrico(): Promise<number> {
     const fila = await this.prisma.parametro.findUnique({ where: { clave: 'factor_volumetrico' } });
-    return validarFactorVolumetrico(fila?.valor);
+    const factor = validarFactorVolumetrico(fila?.valor);
+    // CFG6: una fila con el tipo equivocado rige el valor por defecto, pero se avisa (sin el valor guardado, R14).
+    if (fila !== null && factor !== fila.valor) {
+      this.logger.warn({ evento: 'catalogo.parametro-invalido', clave: 'factor_volumetrico', aplicado: 'valor-por-defecto' });
+    }
+    return factor;
   }
 }
