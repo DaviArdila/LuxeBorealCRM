@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
 import { normalizarNombre, textoDeBusqueda } from '../../dominio/normalizar.js';
 import { CATEGORIAS_INICIALES, definicionDe, type ClaveSistema } from '../../dominio/sistema.js';
-import type { CasoDelSistema, RepositorioCasos } from '../../puertos/repositorio-casos.js';
+import type { CasoDeIntencion, CasoDelSistema, RepositorioCasos } from '../../puertos/repositorio-casos.js';
 
 /** Lo que `crear` usa de la transacción: las dos tablas del asistente. */
 type Transaccion = Pick<PrismaService, 'categoriaCaso' | 'casoAsistente'>;
@@ -18,6 +18,15 @@ export class RepositorioCasosPrisma implements RepositorioCasos {
   async leerTextosDelSistema(): Promise<ReadonlyMap<string, string>> {
     const casos = await this.leerCasosDelSistema();
     return new Map([...casos].map(([clave, caso]) => [clave, caso.texto]));
+  }
+
+  async leerCasosDeIntencion(): Promise<readonly CasoDeIntencion[]> {
+    const filas = await this.prisma.casoAsistente.findMany({
+      where: { disparador: 'intencion', activo: true },
+      orderBy: [{ categoria: { orden: 'asc' } }, { tituloNormalizado: 'asc' }],
+      select: { titulo: true, tituloNormalizado: true, cuandoAplica: true, modo: true, texto: true },
+    });
+    return filas;
   }
 
   async leerCasosDelSistema(): Promise<ReadonlyMap<string, CasoDelSistema>> {

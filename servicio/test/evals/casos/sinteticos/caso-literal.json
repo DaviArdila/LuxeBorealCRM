@@ -1,13 +1,22 @@
 {
-  "id": "r1-politica",
-  "titulo": "R1 — El cliente pregunta por una política del negocio",
+  "id": "caso-literal",
+  "titulo": "CAS8 — Un caso en modo literal se cita palabra por palabra",
   "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Medios de pago",
+        "cuandoAplica": "Cuando el cliente pregunta cómo puede pagar.",
+        "texto": "Aceptamos transferencia bancaria y pago contra entrega en las ciudades con cobertura. El plazo para pagar la transferencia es de 8 días."
+      }
+    ]
+  },
   "turnos": [
     {
       "mensajes": [
         {
           "tipoContenido": "texto",
-          "texto": "¿Puedo devolver el producto si no me gusta?"
+          "texto": "¿Cómo puedo pagar?"
         }
       ],
       "guion": [
@@ -16,13 +25,13 @@
             {
               "nombre": "consultar_caso",
               "argumentos": {
-                "titulo": "Devoluciones"
+                "titulo": "Medios de pago"
               }
             }
           ]
         },
         {
-          "texto": "Sobre devoluciones: Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso."
+          "texto": "Aceptamos transferencia bancaria y pago contra entrega en las ciudades con cobertura. El plazo para pagar la transferencia es de 8 días."
         }
       ],
       "aserciones": {
@@ -31,7 +40,7 @@
           {
             "nombre": "consultar_caso",
             "argumentos": {
-              "titulo": "Devoluciones"
+              "titulo": "Medios de pago"
             }
           }
         ],

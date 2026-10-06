@@ -2,20 +2,40 @@ import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import { textoDeRespaldo } from '../dominio/sistema.js';
-import type { RepositorioCasos } from '../puertos/repositorio-casos.js';
+import type { CasoDeIntencion, RepositorioCasos } from '../puertos/repositorio-casos.js';
 import type { VersionAsistente } from '../puertos/version-asistente.js';
 import { ProveedorTextos } from './proveedor-textos.js';
 
 // CAS7 (Fase 12, T4): el texto de un caso del sistema, con copia por versión compartida y respaldo del código.
 
-class RepositorioCasosFalso implements Pick<RepositorioCasos, 'leerTextosDelSistema'> {
+class RepositorioCasosFalso implements Pick<RepositorioCasos, 'leerTextosDelSistema' | 'leerCasosDeIntencion'> {
   lecturas = 0;
   falla = false;
-  constructor(public textos: Record<string, string> = {}) {}
+  constructor(
+    public textos: Record<string, string> = {},
+    public intencion: CasoDeIntencion[] = [],
+  ) {}
   leerTextosDelSistema(): Promise<ReadonlyMap<string, string>> {
     this.lecturas += 1;
     return this.falla ? Promise.reject(new Error('base caída')) : Promise.resolve(new Map(Object.entries(this.textos)));
   }
+  leerCasosDeIntencion(): Promise<readonly CasoDeIntencion[]> {
+    return this.falla ? Promise.reject(new Error('base caída')) : Promise.resolve(this.intencion);
+  }
+}
+
+function caso(titulo: string, extra: Partial<CasoDeIntencion> = {}): CasoDeIntencion {
+  return {
+    titulo,
+    tituloNormalizado: titulo
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, ''),
+    cuandoAplica: `Cuando preguntan por ${titulo.toLowerCase()}.`,
+    modo: 'literal',
+    texto: `Texto de ${titulo}.`,
+    ...extra,
+  };
 }
 
 class VersionAsistenteFalsa implements VersionAsistente {
@@ -34,8 +54,8 @@ function espiarAvisos() {
   return vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
 }
 
-function crear(textos: Record<string, string> = {}) {
-  const repositorio = new RepositorioCasosFalso(textos);
+function crear(textos: Record<string, string> = {}, intencion: CasoDeIntencion[] = []) {
+  const repositorio = new RepositorioCasosFalso(textos, intencion);
   const version = new VersionAsistenteFalsa();
   const clock = new ClockFalso(new Date('2026-10-06T12:00:00Z'));
   return { proveedor: new ProveedorTextos(repositorio, version, clock), repositorio, version, clock };
@@ -131,5 +151,72 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
     repositorio.falla = false;
 
     expect(await proveedor.textoDelSistema('mensaje_handoff')).toBe('T1');
+  });
+  it('CAS8 — El índice lista los casos de intención con su título y su «cuándo aplica»', async () => {
+    const { proveedor } = crear({}, [caso('Garantía'), caso('Devoluciones')]);
+
+    expect(await proveedor.indice()).toEqual([
+      { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por garantía.' },
+      { titulo: 'Devoluciones', cuandoAplica: 'Cuando preguntan por devoluciones.' },
+    ]);
+  });
+
+  it('CAS8 — consultar_caso devuelve el texto y el modo, sin distinguir mayúsculas ni acentos', async () => {
+    const { proveedor } = crear({}, [caso('Garantía', { texto: 'Cubre defectos de fábrica por ocho días.', modo: 'guia' })]);
+
+    expect(await proveedor.consultar('GARANTIA')).toEqual({
+      encontrado: true,
+      titulo: 'Garantía',
+      modo: 'guia',
+      texto: 'Cubre defectos de fábrica por ocho días.',
+    });
+  });
+
+  it('CAS8 — Un caso inexistente devuelve la lista de títulos disponibles', async () => {
+    const { proveedor } = crear({}, [caso('Garantía'), caso('Devoluciones')]);
+
+    expect(await proveedor.consultar('Medios de pago')).toEqual({
+      encontrado: false,
+      titulosDisponibles: ['Garantía', 'Devoluciones'],
+    });
+  });
+
+  it('CAS8 — Un índice de 70 casos se recorta a 60 y avisa solo con conteos', async () => {
+    const setenta = Array.from({ length: 70 }, (_, i) => caso(`Caso ${String(i + 1).padStart(3, '0')}`, { texto: 'TEXTO-CONFIDENCIAL' }));
+    const { proveedor } = crear({}, setenta);
+
+    const indice = await proveedor.indice();
+
+    expect(indice).toHaveLength(60);
+    expect(avisos).toHaveBeenCalledWith({ evento: 'asistente.indice-recortado', total: 70, incluidos: 60 });
+    expect(JSON.stringify(avisos.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
+  });
+
+  it('CAS8 — Un caso editado cambia el siguiente turno cuando sube la versión', async () => {
+    const { proveedor, repositorio, version } = crear({}, [caso('Garantía', { texto: 'Antes.' })]);
+    expect(await proveedor.consultar('Garantía')).toMatchObject({ texto: 'Antes.' });
+
+    repositorio.intencion = [caso('Garantía', { texto: 'Después.' })];
+    await version.incrementar();
+
+    expect(await proveedor.consultar('Garantía')).toMatchObject({ texto: 'Después.' });
+  });
+
+  it('CAS8 — El índice y la consulta comparten una sola lectura mientras la versión no cambia', async () => {
+    const { proveedor, repositorio } = crear({}, [caso('Garantía')]);
+
+    await proveedor.indice();
+    await proveedor.consultar('Garantía');
+    await proveedor.textoDelSistema('mensaje_handoff');
+
+    expect(repositorio.lecturas).toBe(1);
+  });
+
+  it('CAS8 — Una base caída deja el índice vacío y la consulta sin resultados, y el turno sigue', async () => {
+    const { proveedor, repositorio } = crear({}, [caso('Garantía')]);
+    repositorio.falla = true;
+
+    expect(await proveedor.indice()).toEqual([]);
+    expect(await proveedor.consultar('Garantía')).toEqual({ encontrado: false, titulosDisponibles: [] });
   });
 });

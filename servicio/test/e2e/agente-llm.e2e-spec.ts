@@ -19,6 +19,7 @@ import { PublicarEstilo, RestaurarEstilo } from '../../src/modulos/agente/index.
 import { ErrorPasarelaLlm, LLM_PORT } from '../../src/modulos/llm/index.js';
 import { ALMACENAMIENTO } from '../../src/modulos/medios/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
+import { VERSION_ASISTENTE, type VersionAsistente } from '../../src/modulos/asistente/puertos/version-asistente.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { AlmacenamientoEnMemoria } from '../fakes/almacenamiento-en-memoria.js';
@@ -30,7 +31,7 @@ import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-p
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
 import { iniciarSesionComo } from '../soporte/sesion-e2e.js';
-import { fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
+import { crearCasoDeIntencion, fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
 
 const SECRETO = 'secreto-e2e-agente-llm';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -276,13 +277,65 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     // R1: el modelo recibió exactamente las siete herramientas.
     expect(llm.solicitudes[0]?.herramientas?.map((h) => h.nombre).sort()).toEqual([
       'buscar_producto',
-      'consultar_politica',
+      'consultar_caso',
       'cotizar_envio',
       'enviar_fotos',
       'guardar_datos_contacto',
       'marcar_lead_caliente',
       'obtener_ficha',
     ]);
+  }, 40_000);
+
+  it('CAS8 — Un caso creado por un admin llega al modelo en el índice y por consultar_caso, sin reiniciar', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const texto = 'Aceptamos transferencia bancaria y pago contra entrega en las ciudades con cobertura.';
+    await crearCasoDeIntencion(prisma, { titulo: 'Medios de pago', cuandoAplica: 'Cuando el cliente pregunta cómo puede pagar.', texto });
+    await aplicacion.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }).incrementar();
+    llm.encolar(llamada('c1', 'consultar_caso', { titulo: 'Medios de pago' }), { respuesta: { texto } });
+
+    const { idConversacion } = await turno(aplicacion, '¿Cómo puedo pagar?');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain(texto);
+    // El índice del prompt trae el título y el «cuándo aplica», nunca el texto del caso.
+    expect(llm.solicitudes[0]?.systemPrompt).toContain('- Medios de pago: Cuando el cliente pregunta cómo puede pagar.');
+    expect(llm.solicitudes[0]?.systemPrompt).not.toContain(texto);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ encontrado: true, titulo: 'Medios de pago', modo: 'literal', texto });
+  }, 40_000);
+
+  it('CAS8 — Un caso que no existe devuelve los títulos disponibles y el turno sigue', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por garantía.', texto: 'Cubre ocho días.' });
+    await aplicacion.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }).incrementar();
+    llm.encolar(llamada('c1', 'consultar_caso', { titulo: 'Criptomonedas' }), { respuesta: { texto: 'No tengo esa información, te paso con un asesor.' } });
+
+    const { idConversacion } = await turno(aplicacion, '¿Aceptan criptomonedas?');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ encontrado: false, titulos_disponibles: ['Garantía'] });
+  }, 40_000);
+
+  it('CAS11 — La cotización con contra entrega usa el texto editado del caso contra_entrega', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    const producto = await sembrarProducto(prisma);
+    await prisma.tarifaEstimada.create({
+      data: { rangoMinCop: 12_000, rangoMaxCop: 18_000, diasMin: 2, diasMax: 4, contraentregaDisponible: true },
+    });
+    await fijarTextosDelSistema(prisma, { contra_entrega: 'CONTRA-ENTREGA-EDITADA: pagas al recibir y el recargo se suma al total.' });
+    llm.encolar(
+      llamada('c1', 'cotizar_envio', { id_producto: producto.sku, departamento: 'Antioquia', ciudad: 'Medellín' }),
+      { respuesta: { texto: 'Listo.' } },
+    );
+
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el envío a Medellín?');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({
+      politica_contraentrega_texto: 'CONTRA-ENTREGA-EDITADA: pagas al recibir y el recargo se suma al total.',
+    });
   }, 40_000);
 
   it('CAT10 — La cotización con contra entrega llega con la política literal', async () => {

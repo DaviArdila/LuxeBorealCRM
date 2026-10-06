@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { INestApplicationContext } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { VERSION_ASISTENTE, type VersionAsistente } from '../../src/modulos/asistente/puertos/version-asistente.js';
 import { ProveedorEstilo } from '../../src/modulos/agente/index.js';
 import { GENERADOR_RESPUESTA, type GeneradorRespuesta } from '../../src/modulos/conversaciones/index.js';
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
@@ -41,6 +42,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
   let contexto: INestApplicationContext;
   let generador: GeneradorRespuesta;
   let prisma: PrismaService;
+  let versionCasos: VersionAsistente;
   const resumenes: CasoResumen[] = [];
 
   beforeAll(async () => {
@@ -48,6 +50,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
     contexto = await componerAgente({ llm: grabador, urlOpenRouter: simulador.valor.url });
     generador = contexto.get<GeneradorRespuesta>(GENERADOR_RESPUESTA);
     prisma = contexto.get(PrismaService);
+    versionCasos = contexto.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false });
     await sembrarBase(prisma);
   });
 
@@ -58,7 +61,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
 
   for (const caso of sinteticos) {
     it(caso.titulo, async () => {
-      const resultados = await ejecutarCaso({ caso: caso, generador, grabador, prisma });
+      const resultados = await ejecutarCaso({ caso: caso, generador, grabador, prisma, versionCasos });
       resumenes.push({ id: caso.id, titulo: caso.titulo, resultados });
       expect(resultados.length, `${caso.id}: el caso no evaluó ninguna aserción`).toBeGreaterThan(0);
       for (const resultado of resultados) {
@@ -69,7 +72,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
 
   for (const caso of negativos) {
     it(caso.titulo, async () => {
-      const resultados = await ejecutarCaso({ caso, generador, grabador, prisma });
+      const resultados = await ejecutarCaso({ caso, generador, grabador, prisma, versionCasos });
       const esperada = resultados.find((resultado) => resultado.nombre === caso.esperaFallo);
       expect(esperada, `${caso.id}: el caso no declara la aserción ${String(caso.esperaFallo)}`).toBeDefined();
       // Si la aserción pasa, no detecta la violación: el negativo falla nombrando el caso (EVL2).
@@ -95,7 +98,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
     if (saludo === undefined) throw new Error('falta el caso saludo');
 
     const resumenDeUnaCorrida = async (): Promise<string> => {
-      const resultados = await ejecutarCaso({ caso: saludo, generador, grabador, prisma });
+      const resultados = await ejecutarCaso({ caso: saludo, generador, grabador, prisma, versionCasos });
       return armarResumen([{ id: saludo.id, titulo: saludo.titulo, resultados }], calcularVeredicto(resultados, 'guionado'), 'guionado');
     };
 

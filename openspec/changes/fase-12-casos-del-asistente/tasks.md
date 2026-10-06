@@ -64,7 +64,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - [x] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente) — rama `fase-12-p2-ventana-edicion`, commit `0a6bc17` (PR 93; `size:exception`: 513 líneas, ~285 de pruebas)
 - [x] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó» — rama `fase-12-p3-estilo-desacoplado`, commit `6ad0d53` (PR 94; `size:exception` anotada en la tarea)
 - [x] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento) — rama `fase-12-p4-base-asistente`, commit `4c76947` (PR 95; `size:exception` anotada en la tarea)
-- [ ] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento)
+- [x] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento) — rama `fase-12-p5-corte-textos-sistema`, commit `da19b9b` (PR 96)
 - [ ] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo`
 - [ ] T7 — API de categorías y casos con buscador y contrato
 - [ ] T8 — Pantalla «Casos de uso»; se retira «Mensajes fijos»
@@ -195,6 +195,15 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 - **Docs**: spec de `agente` (AGT8 modificado), `openspec/specs/catalogo/spec.md` (CAT12 retirado al archivar).
 - **Evals**: `evals` en verde 100 % con los casos nuevos. **Tarea para el dueño en T12**: corrida real (EVL3), porque
   cambia lo que lee el LLM.
+- `size:exception` (T6): ~1.170 líneas añadidas y ~550 borradas; ~600 son pruebas (índice, proveedor, herramienta, prompt, evals
+  nuevas, e2e, integración y el test estático) y ~400 borradas son la política vieja de `catalogo` con sus pruebas. Herramienta,
+  índice, reglas v4 y la cotización no funcionan por separado: el prompt cita `consultar_caso`.
+- Desviaciones anotadas (T6): el prompt pasa a la versión `v4` solo en `reglas.v4.md` (`estilo.v3.md` y `turno.v3.md` no
+  cambian, así que el cargador lleva una versión por archivo); el importador conserva sus helpers de `politica_<tema>` dentro
+  de `validar-catalogo.ts` hasta que T11 lo haga rechazarlas (CFG6); el formato de `semilla` de las evals pasa de
+  `politicas` a `casos` (y `relleno` para el índice grande) y cada caso de eval restablece los casos antes de correr; la
+  creación de casos de intención llega con la API de T7, así que los e2e y las evals los siembran directo en la base y suben
+  la versión compartida.
 
 ### T7 — API de categorías y casos con buscador y contrato
 

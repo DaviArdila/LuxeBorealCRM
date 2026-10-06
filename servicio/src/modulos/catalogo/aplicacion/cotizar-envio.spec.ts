@@ -1,13 +1,10 @@
 import { formatearDias, formatearRangoCop } from '../../../compartido/dinero/index.js';
-import type { ClaveSistema, TextosAsistente } from '../../asistente/index.js';
+import { textoDeRespaldo, type ClaveSistema, type TextosAsistente } from '../../asistente/index.js';
 import type { CandidataExclusion, CandidataTarifa, DestinoEnvio } from '../dominio/envio.js';
 import type { Producto } from '../dominio/producto.js';
 import type { NuevoEventoFueraCobertura, RepositorioEnvio } from '../puertos/repositorio-envio.js';
-import { POLITICA_CONTRAENTREGA_POR_DEFECTO } from '../dominio/politica.js';
 import type { RepositorioParametroCatalogo } from '../puertos/repositorio-parametro.js';
-import type { RepositorioPolitica } from '../puertos/repositorio-politica.js';
 import type { RepositorioProducto } from '../puertos/repositorio-producto.js';
-import { ConsultarPolitica } from './consultar-politica.js';
 import { CotizarEnvio } from './cotizar-envio.js';
 
 const PRODUCTO: Producto = {
@@ -47,28 +44,18 @@ class RepositorioParametroFalso implements RepositorioParametroCatalogo {
   }
 }
 
-/** El texto de `mensaje_fuera_cobertura` sale del puerto del asistente; `solicitado` deja ver si se pidió. */
+/** Los textos salen del puerto del asistente; `claves` deja ver cuáles se pidieron. */
 class TextosFalsos implements TextosAsistente {
-  solicitado = false;
-  constructor(private readonly mensajeFueraCobertura: string) {}
+  readonly claves: ClaveSistema[] = [];
+  constructor(
+    private readonly mensajeFueraCobertura: string,
+    private readonly configurados: Partial<Record<ClaveSistema, string>> = {},
+  ) {}
   textoDelSistema(clave: ClaveSistema): Promise<string> {
-    this.solicitado = true;
-    return Promise.resolve(clave === 'mensaje_fuera_cobertura' ? this.mensajeFueraCobertura : `[${clave}]`);
+    this.claves.push(clave);
+    if (clave === 'mensaje_fuera_cobertura') return Promise.resolve(this.mensajeFueraCobertura);
+    return Promise.resolve(this.configurados[clave] ?? textoDeRespaldo(clave));
   }
-}
-
-class RepositorioPoliticaFalso implements RepositorioPolitica {
-  constructor(private readonly politicas: Readonly<Record<string, string>> = {}) {}
-  obtener(tema: string): Promise<string | null> {
-    return Promise.resolve(this.politicas[tema] ?? null);
-  }
-  listarTemas(): Promise<string[]> {
-    return Promise.resolve(Object.keys(this.politicas));
-  }
-}
-
-function politicas(configuradas: Readonly<Record<string, string>> = {}): ConsultarPolitica {
-  return new ConsultarPolitica(new RepositorioPoliticaFalso(configuradas));
 }
 
 class RepositorioEnvioFalso implements RepositorioEnvio {
@@ -95,7 +82,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []), // sin exclusiones, sin ninguna tarifa que aplique
-      politicas(),
       new TextosFalsos('sin cobertura'),
     );
 
@@ -111,7 +97,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      politicas(),
       new TextosFalsos('sin cobertura'),
     );
 
@@ -131,7 +116,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []),
-      politicas(),
       new TextosFalsos('Mensaje configurado del negocio'),
     );
 
@@ -150,7 +134,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      politicas(),
       new TextosFalsos('sin cobertura por exclusión'),
     );
 
@@ -186,7 +169,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      politicas(),
       textos,
     );
 
@@ -194,7 +176,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
 
     expect(resultado.cobertura).toBe(true);
     expect(repositorioEnvio.eventoRegistrado).toBeUndefined();
-    expect(textos.solicitado).toBe(false);
+    expect(textos.claves).not.toContain('mensaje_fuera_cobertura');
   });
 
   const TARIFA_CON_CONTRAENTREGA: CandidataTarifa = {
@@ -211,13 +193,12 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     creado: new Date('2026-01-01'),
   };
 
-  function cotizador(tarifa: CandidataTarifa, configuradas: Readonly<Record<string, string>> = {}): CotizarEnvio {
+  function cotizador(tarifa: CandidataTarifa, configuradas: Partial<Record<ClaveSistema, string>> = {}): CotizarEnvio {
     return new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], [tarifa]),
-      politicas(configuradas),
-      new TextosFalsos('sin cobertura'),
+      new TextosFalsos('sin cobertura', configuradas),
     );
   }
 
@@ -229,7 +210,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       rangoTexto: formatearRangoCop(30000, 40000),
       diasTexto: formatearDias(2, 4),
       contraentregaDisponible: true,
-      politicaContraentregaTexto: POLITICA_CONTRAENTREGA_POR_DEFECTO,
+      politicaContraentregaTexto: textoDeRespaldo('contra_entrega'),
     });
   });
 
@@ -245,5 +226,15 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     const resultado = await cotizador(TARIFA_CON_CONTRAENTREGA, { contra_entrega: 'Texto del negocio.' }).ejecutar('SKU-1', DESTINO);
 
     expect(resultado).toMatchObject({ politicaContraentregaTexto: 'Texto del negocio.' });
+  });
+
+  it('CAS11 — La cotización usa el caso contra_entrega editado y, sin caso, el respaldo aprobado', async () => {
+    const editado = await cotizador(TARIFA_CON_CONTRAENTREGA, { contra_entrega: 'Texto editado en el caso.' }).ejecutar('SKU-1', DESTINO);
+    const sinCaso = await cotizador(TARIFA_CON_CONTRAENTREGA).ejecutar('SKU-1', DESTINO);
+
+    expect(editado).toMatchObject({ politicaContraentregaTexto: 'Texto editado en el caso.' });
+    expect(sinCaso).toMatchObject({ politicaContraentregaTexto: textoDeRespaldo('contra_entrega') });
+    expect(textoDeRespaldo('contra_entrega')).not.toContain('%');
+    expect(textoDeRespaldo('contra_entrega')).toContain('se suma al total de tu compra');
   });
 });

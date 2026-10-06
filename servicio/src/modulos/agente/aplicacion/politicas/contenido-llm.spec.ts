@@ -18,6 +18,7 @@ import { EnsamblarPrompt } from '../ensamblar-prompt.js';
 import type { ProveedorEstilo } from '../proveedor-estilo.js';
 import { TextoHandoff } from '../texto-handoff.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
+import type { ConsultaCasos } from '../../../asistente/index.js';
 import { ContenidoLlm } from './contenido-llm.js';
 
 // Escenarios AGT4 (imágenes después del texto) y AGT6 de la spec de la Fase 07b, sobre el pipeline.
@@ -67,6 +68,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     { obtener: () => Promise.resolve({ texto: cargador.estilo, version: 3, origen: 'base' as const }) } as unknown as ProveedorEstilo,
     { ejecutar: () => Promise.resolve('- SKU-1: Anillo') } as unknown as ObtenerCatalogoCompacto,
     { estaDentroDeHorario: () => Promise.resolve(true) },
+    { indice: () => Promise.resolve([]) } as unknown as ConsultaCasos,
   );
   const contactos = new RepositorioContactoAgenteEnMemoria();
   const ficha = { ejecutar: () => Promise.reject(new ProductoNoDisponible()) } as unknown as ObtenerFichaProducto;
@@ -336,7 +338,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v3', versionEstilo: 3 });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v4', versionEstilo: 3 });
     // R14: ningún registro del turno lleva el texto del estilo.
     expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });

@@ -82,7 +82,27 @@ const caso = z
     origen: z.enum(['sintetico', 'real-anonimizado']),
     revisadoPor: z.string().min(1).optional(),
     fecha: z.string().min(1).optional(),
-    semilla: z.object({ politicas: z.record(z.string(), z.string().nullable()).optional() }).strict().optional(),
+    semilla: z
+      .object({
+        /** Casos de intención que el caso siembra (CAS8) además de `contra_entrega` y los casos base. */
+        casos: z
+          .array(
+            z
+              .object({
+                titulo: z.string().min(1),
+                cuandoAplica: z.string().min(1),
+                texto: z.string().min(1),
+                modo: z.enum(['literal', 'guia']).optional(),
+                activo: z.boolean().optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+        /** Cuántos casos de relleno se suman para probar un índice grande (CAS8). */
+        relleno: z.number().int().min(1).max(200).optional(),
+      })
+      .strict()
+      .optional(),
     contacto: z.object({ nombre: z.string().min(1).optional() }).strict().optional(),
     turnos: z.array(turno).min(1),
     esperaFallo: z.enum(NOMBRES_ASERCION).optional(),

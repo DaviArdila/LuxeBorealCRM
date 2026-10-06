@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { VERSION_ASISTENTE, type VersionAsistente } from '../../../src/modulos/asistente/puertos/version-asistente.js';
 import { GENERADOR_RESPUESTA, type GeneradorRespuesta } from '../../../src/modulos/conversaciones/index.js';
 import { LLM_PORT, LlmModule, type LlmPort } from '../../../src/modulos/llm/index.js';
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
@@ -114,6 +115,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
           generador,
           grabador,
           prisma,
+          versionCasos: app.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }),
           llmReal: gateway,
           alCrearConversacion: (id) => conversacionesPorCaso.set(caso.id, [...(conversacionesPorCaso.get(caso.id) ?? []), id]),
         });

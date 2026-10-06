@@ -14,9 +14,9 @@
         {
           "llamadas": [
             {
-              "nombre": "consultar_politica",
+              "nombre": "consultar_caso",
               "argumentos": {
-                "tema": "contra_entrega"
+                "titulo": "Contra entrega"
               }
             }
           ]
@@ -30,7 +30,7 @@
         "dineroConRastro": true,
         "textoLiteral": [
           {
-            "herramienta": "consultar_politica",
+            "herramienta": "consultar_caso",
             "campo": "texto"
           }
         ],

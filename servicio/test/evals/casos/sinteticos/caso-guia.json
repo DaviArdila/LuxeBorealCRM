@@ -1,0 +1,62 @@
+{
+  "id": "caso-guia",
+  "titulo": "CAS8 — Un caso en modo guía se usa como base sin agregar datos",
+  "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Cuidado de las joyas",
+        "cuandoAplica": "Cuando el cliente pregunta cómo cuidar o limpiar una joya.",
+        "texto": "Evitar el contacto con agua, perfumes y cremas, y guardar cada pieza por separado.",
+        "modo": "guia"
+      }
+    ]
+  },
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cómo cuido mis joyas?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_caso",
+              "argumentos": {
+                "titulo": "Cuidado de las joyas"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Lo mejor es que evites el contacto con agua, perfumes y cremas, y que guardes cada pieza por separado."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "consultar_caso",
+            "argumentos": {
+              "titulo": "Cuidado de las joyas"
+            }
+          }
+        ],
+        "dineroConRastro": true,
+        "textoAusente": [
+          "días",
+          "horas",
+          "garantía"
+        ],
+        "menciona": [
+          "agua"
+        ],
+        "sinEmojis": true,
+        "sinSku": true
+      }
+    }
+  ]
+}

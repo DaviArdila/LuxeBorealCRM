@@ -67,11 +67,11 @@ describe('test/evals — evaluarAserciones', () => {
   });
 
   it('textoLiteral exige que el campo devuelto por la herramienta aparezca sin cambios', () => {
-    const resultado = { nombre: 'consultar_politica', resultado: { encontrada: true, texto: 'Se suma al total.' }, esError: false };
+    const resultado = { nombre: 'consultar_caso', resultado: { encontrada: true, texto: 'Se suma al total.' }, esError: false };
 
-    expect(unica(grabacion({ textoFinal: 'Ojo: Se suma al total.', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_politica', campo: 'texto' }] }).ok).toBe(true);
-    expect(unica(grabacion({ textoFinal: 'se suma al total', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_politica', campo: 'texto' }] }).ok).toBe(false);
-    expect(unica(grabacion({ textoFinal: 'x' }), { textoLiteral: [{ herramienta: 'consultar_politica', campo: 'texto' }] }).ok).toBe(false);
+    expect(unica(grabacion({ textoFinal: 'Ojo: Se suma al total.', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(true);
+    expect(unica(grabacion({ textoFinal: 'se suma al total', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(false);
+    expect(unica(grabacion({ textoFinal: 'x' }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(false);
   });
 
   it('textoAusente falla si aparece un texto que no debía citarse', () => {

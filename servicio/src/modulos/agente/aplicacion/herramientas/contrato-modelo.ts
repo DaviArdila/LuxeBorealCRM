@@ -1,4 +1,5 @@
-import type { ResultadoCotizacion, ResultadoPolitica } from '../../../catalogo/index.js';
+import type { ResultadoCaso } from '../../../asistente/index.js';
+import type { ResultadoCotizacion } from '../../../catalogo/index.js';
 
 /**
  * Único lugar donde los resultados de `catalogo` (camelCase, tipos del dominio) se traducen al
@@ -20,8 +21,8 @@ export function cotizacionParaElModelo(cotizacion: ResultadoCotizacion): Record<
   };
 }
 
-export function politicaParaElModelo(politica: ResultadoPolitica): Record<string, unknown> {
-  return politica.encontrada
-    ? { encontrada: true, texto: politica.texto }
-    : { encontrada: false, temas_disponibles: politica.temasDisponibles };
+export function casoParaElModelo(caso: ResultadoCaso): Record<string, unknown> {
+  return caso.encontrado
+    ? { encontrado: true, titulo: caso.titulo, modo: caso.modo, texto: caso.texto }
+    : { encontrado: false, titulos_disponibles: caso.titulosDisponibles };
 }

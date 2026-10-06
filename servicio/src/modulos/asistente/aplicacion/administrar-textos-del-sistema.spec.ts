@@ -7,12 +7,11 @@ import { AdministrarTextosDelSistema } from './administrar-textos-del-sistema.js
 
 // CAS4/CAS7 (Fase 12, T5): leer, guardar y crear los textos de los casos del sistema, para el adaptador de `mensajes-fijos`.
 
-class RepositorioCasosFalso implements RepositorioCasos {
+class RepositorioCasosFalso
+  implements Pick<RepositorioCasos, 'leerCasosDelSistema' | 'guardarTextoDelSistema' | 'crearTextoDelSistemaSiFalta'>
+{
   casos = new Map<string, CasoDelSistema>();
   guardados: { clave: string; texto: string; ahora: Date }[] = [];
-  leerTextosDelSistema(): Promise<ReadonlyMap<string, string>> {
-    return Promise.resolve(new Map([...this.casos].map(([clave, caso]) => [clave, caso.texto])));
-  }
   leerCasosDelSistema(): Promise<ReadonlyMap<string, CasoDelSistema>> {
     return Promise.resolve(this.casos);
   }

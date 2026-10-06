@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizarTexto } from '../../../compartido/texto/index.js';
+import { MAX_CARACTERES_TEXTO_CASO } from './validar-caso.js';
 import { CASOS_DEL_SISTEMA, claveParametroLegada, textoDeRespaldo, type ClaveSistema } from './sistema.js';
 
 // CAS4 (Fase 12, T4): la lista cerrada de casos del sistema es la única fuente de los textos de respaldo.
@@ -55,6 +56,12 @@ describe('CASOS_DEL_SISTEMA (CAS4)', () => {
 
   it('CAT11 — el respaldo de fuera de cobertura no promete ningún contacto (eso depende de la Fase 08)', () => {
     expect(textoDeRespaldo('mensaje_fuera_cobertura')).not.toMatch(/asesor|contactar/i);
+  });
+
+  it('CAS11 — el respaldo de contra_entrega cabe en el tope de un caso y no cita porcentajes', () => {
+    expect(textoDeRespaldo('contra_entrega').length).toBeLessThanOrEqual(MAX_CARACTERES_TEXTO_CASO);
+    expect(textoDeRespaldo('contra_entrega')).not.toContain('%');
+    expect(textoDeRespaldo('contra_entrega')).toContain('se suma al total de tu compra');
   });
 
   it('R1 — ningún respaldo trae un valor en pesos ni un SKU', () => {
