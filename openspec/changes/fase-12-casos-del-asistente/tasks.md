@@ -32,7 +32,7 @@ cerrarse.
 
 ## Checklist
 
-- [ ] T1 — Menú lateral con submódulos (cliente)
+- [x] T1 — Menú lateral con submódulos (cliente) — rama `fase-12-p1-menu-lateral`, commit de unidad de trabajo único
 - [ ] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente)
 - [ ] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó»
 - [ ] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento)
@@ -74,6 +74,8 @@ cerrarse.
 - **Pruebas**: componentes del shell y del menú en `cliente/src/app/shell/`; `npm --prefix cliente run ci`. RED: el menú
   actual no tiene grupos ni compacto, los 16 escenarios fallan primero.
 - **Ruta**: delegada (un escritor, 2+ archivos no triviales). **Slice**: `fase-12-p1-menu-lateral`. **Forecast**: ~450
+  `size:exception` (T1): ~840 líneas cambiadas (733 añadidas, 109 borradas); ~315 son pruebas de SHL1-SHL7 y ~260 el
+  componente nuevo con sus estilos. No se parte: menú, shell y registro de áreas no funcionan por separado.
   líneas (con tests).
 - **Docs en el mismo commit**: `docs/operacion/cliente-back-office.md` (menú y cómo registrar un grupo).
 - **Evals**: no aplican (sin cambios en el servidor).
