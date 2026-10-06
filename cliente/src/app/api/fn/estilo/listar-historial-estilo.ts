@@ -14,6 +14,10 @@ export interface ListarHistorialEstilo$Params {
 export function listarHistorialEstilo(http: HttpClient, rootUrl: string, params?: ListarHistorialEstilo$Params, context?: HttpContext): Observable<StrictHttpResponse<{
 'versiones': Array<{
 'fecha': string;
+'publicadoPor': ({
+'id': string;
+'nombre': string;
+} | null);
 'texto': string;
 'version': number;
 }>;
@@ -30,6 +34,10 @@ export function listarHistorialEstilo(http: HttpClient, rootUrl: string, params?
       return r as StrictHttpResponse<{
       'versiones': Array<{
       'fecha': string;
+      'publicadoPor': ({
+      'id': string;
+      'nombre': string;
+      } | null);
       'texto': string;
       'version': number;
       }>;

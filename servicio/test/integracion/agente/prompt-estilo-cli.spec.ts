@@ -13,17 +13,26 @@ import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestruc
 // Fase 08c, T5: `npm run prompt:estilo` de punta a punta con el contexto real de Nest, Postgres y Redis (AGT22).
 
 const CLAVES_ENTORNO = ['NODE_ENV', 'DATABASE_URL', 'REDIS_URL'] as const;
-const CLAVES_PARAMETRO = ['prompt_estilo', 'prompt_estilo_version', 'prompt_estilo_historial'];
 
 let carpeta: string;
 let restaurar: (() => void) | undefined;
+
+async function autoresGuardados(): Promise<(string | null)[]> {
+  const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
+    .overrideProvider(CONFIGURACION)
+    .useValue(cargarConfiguracion({ NODE_ENV: 'test', DATABASE_URL: urlPostgresDePrueba(), REDIS_URL: urlRedisDePrueba() }))
+    .compile();
+  const filas = await modulo.get(PrismaService).versionEstilo.findMany({ orderBy: { version: 'asc' } });
+  await modulo.close();
+  return filas.map((fila) => fila.publicadoPorId);
+}
 
 async function limpiarBase(): Promise<void> {
   const modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, PrismaModule] })
     .overrideProvider(CONFIGURACION)
     .useValue(cargarConfiguracion({ NODE_ENV: 'test', DATABASE_URL: urlPostgresDePrueba(), REDIS_URL: urlRedisDePrueba() }))
     .compile();
-  await modulo.get(PrismaService).parametro.deleteMany({ where: { clave: { in: CLAVES_PARAMETRO } } });
+  await modulo.get(PrismaService).versionEstilo.deleteMany();
   await modulo.close();
 }
 
@@ -120,5 +129,19 @@ describe('Comando prompt:estilo de punta a punta (Fase 08c, T5, AGT22)', () => {
       expect(JSON.stringify(espia.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
     }
     expect(JSON.stringify(escrituras.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
+  });
+  it('EST-D3 — Publicar por el comando no tiene usuario', async () => {
+    await promptEstilo(['publicar', '--archivo', await archivo('a.md', 'Primer estilo')]);
+
+    expect(await autoresGuardados()).toEqual([null]);
+  });
+
+  it('EST-D2 — El comando muestra y publica igual contra la tabla nueva', async () => {
+    const publicado = await promptEstilo(['publicar', '--archivo', await archivo('a.md', 'Estilo por comando')]);
+    const historial = await promptEstilo(['historial']);
+
+    expect(publicado.mensaje).toContain('versión 1');
+    expect(historial.mensaje).toContain('versión 1');
+    expect(historial.mensaje).toContain('(historial vacío)');
   });
 });

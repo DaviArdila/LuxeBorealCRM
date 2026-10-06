@@ -11,11 +11,12 @@ import { EstiloController } from './estilo.controller.js';
 const admin: PerfilUsuario = { id: '0199a000-0000-7000-8000-000000000001', nombre: 'Dueño', email: 'a@b.co', rol: 'admin' };
 
 function crear(opciones: {
-  readonly vigente?: { texto: string; version: number; origen: 'base' | 'archivo' };
-  readonly historial?: { version: number; texto: string; fecha: string }[];
+  readonly vigente?: { texto: string; version: number; origen: 'base' | 'archivo'; publicadoPor?: { id: string; nombre: string } };
+  readonly historial?: { version: number; texto: string; fecha: string; publicadoPor?: { id: string; nombre: string } }[];
   readonly publicacion?: ResultadoPublicacion;
 } = {}) {
   const llamadas: string[] = [];
+  const autores: ({ id: string; nombre: string } | undefined)[] = [];
   const proveedor = {
     obtener: () => Promise.resolve(opciones.vigente ?? { texto: 'Estilo del archivo', version: 0, origen: 'archivo' as const }),
   } as Pick<ProveedorEstilo, 'obtener'>;
@@ -23,14 +24,16 @@ function crear(opciones: {
     ejecutar: () => Promise.resolve({ vigente: null, historial: opciones.historial ?? [] }),
   } as Pick<ListarHistorialEstilo, 'ejecutar'>;
   const publicar = {
-    ejecutar: (texto: string) => {
+    ejecutar: (texto: string, autor?: { id: string; nombre: string }) => {
       llamadas.push(`publicar:${texto}`);
+      autores.push(autor);
       return Promise.resolve(opciones.publicacion ?? { publicado: true as const, version: 4 });
     },
   } as Pick<PublicarEstilo, 'ejecutar'>;
   const restaurar = {
-    ejecutar: (version: number) => {
+    ejecutar: (version: number, autor?: { id: string; nombre: string }) => {
       llamadas.push(`restaurar:${String(version)}`);
+      autores.push(autor);
       return Promise.resolve(opciones.publicacion ?? { publicado: true as const, version: 4 });
     },
   } as Pick<RestaurarEstilo, 'ejecutar'>;
@@ -40,30 +43,30 @@ function crear(opciones: {
     publicar as PublicarEstilo,
     restaurar as RestaurarEstilo,
   );
-  return { controlador, llamadas };
+  return { controlador, llamadas, autores };
 }
 
 describe('EstiloController (AGT23)', () => {
   it('AGT23 — Un admin consulta el estilo vigente: versión, origen y texto', async () => {
     const { controlador } = crear({ vigente: { texto: 'Estilo tres', version: 3, origen: 'base' } });
 
-    await expect(controlador.obtenerEstilo()).resolves.toEqual({ version: 3, origen: 'base', texto: 'Estilo tres' });
+    await expect(controlador.obtenerEstilo()).resolves.toEqual({ version: 3, origen: 'base', texto: 'Estilo tres', publicadoPor: null });
   });
 
   it('AGT23 — Sin estilo publicado la versión es null y el origen es archivo', async () => {
     const { controlador } = crear();
 
-    await expect(controlador.obtenerEstilo()).resolves.toEqual({ version: null, origen: 'archivo', texto: 'Estilo del archivo' });
+    await expect(controlador.obtenerEstilo()).resolves.toEqual({ version: null, origen: 'archivo', texto: 'Estilo del archivo', publicadoPor: null });
   });
 
-  it('el historial se entrega con versión, fecha y texto, en el orden del caso de uso', async () => {
+  it('el historial se entrega con versión, fecha, texto y autor, en el orden del caso de uso', async () => {
     const historial = [
       { version: 2, texto: 'Dos', fecha: '2026-10-02T10:00:00.000Z' },
       { version: 1, texto: 'Uno', fecha: '2026-10-01T10:00:00.000Z' },
     ];
     const { controlador } = crear({ historial });
 
-    await expect(controlador.listarHistorialEstilo()).resolves.toEqual({ versiones: historial });
+    await expect(controlador.listarHistorialEstilo()).resolves.toEqual({ versiones: historial.map((v) => ({ ...v, publicadoPor: null })) });
   });
 
   it('publicar entrega la versión nueva', async () => {
@@ -102,5 +105,37 @@ describe('EstiloController (AGT23)', () => {
     const { controlador } = crear({ publicacion: { publicado: false, motivo: 'el estilo contiene un SKU (AGT16)', razon: 'invalido' } });
 
     await expect(controlador.restaurarEstilo({ version: 1 }, admin)).rejects.toMatchObject({ codigo: 'estilo-invalido' });
+  });
+  it('EST-D3 — La consulta del vigente trae el nombre y el identificador de quien lo publicó', async () => {
+    const ana = { id: '0199a000-0000-7000-8000-00000000000a', nombre: 'Ana' };
+    const { controlador } = crear({ vigente: { texto: 'Estilo tres', version: 3, origen: 'base', publicadoPor: ana } });
+
+    await expect(controlador.obtenerEstilo()).resolves.toMatchObject({ version: 3, publicadoPor: ana });
+  });
+
+  it('EST-D3 — El historial muestra el autor de cada versión y null si la publicó el comando', async () => {
+    const ana = { id: '0199a000-0000-7000-8000-00000000000a', nombre: 'Ana' };
+    const { controlador } = crear({
+      historial: [
+        { version: 2, texto: 'Dos', fecha: '2026-10-02T10:00:00.000Z', publicadoPor: ana },
+        { version: 1, texto: 'Uno', fecha: '2026-10-01T10:00:00.000Z' },
+      ],
+    });
+
+    const { versiones } = await controlador.listarHistorialEstilo();
+
+    expect(versiones.map((v) => v.publicadoPor)).toEqual([ana, null]);
+  });
+
+  it('EST-D3 — Publicar y restaurar registran al usuario de la sesión como autor', async () => {
+    const { controlador, autores } = crear();
+
+    await controlador.publicarEstilo({ texto: 'Estilo nuevo' }, admin);
+    await controlador.restaurarEstilo({ version: 1 }, admin);
+
+    expect(autores).toEqual([
+      { id: admin.id, nombre: admin.nombre },
+      { id: admin.id, nombre: admin.nombre },
+    ]);
   });
 });

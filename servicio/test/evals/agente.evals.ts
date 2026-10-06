@@ -114,7 +114,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
       expect(estilo).toMatchObject({ origen: 'base' });
       expect(estilo.texto).toContain('tono muy formal');
     } finally {
-      await prisma.parametro.deleteMany({ where: { clave: { startsWith: 'prompt_estilo' } } });
+      await prisma.versionEstilo.deleteMany();
       // Invalida la copia en memoria del proveedor: el resto de la corrida vuelve al estilo del archivo.
       await contexto.get<ClienteRedis>(REDIS_CLIENTE).incr('agente:prompt:version');
       await rm(carpeta, { recursive: true, force: true });

@@ -13,6 +13,7 @@ const CARPETA_MIGRACIONES = path.join(RAIZ_REPOSITORIO, 'prisma', 'migrations');
 const NOMBRE_INDICE_ZONA = 'zona_sin_cobertura_departamento_id_ciudad_id_key';
 const NOMBRE_CHECK_CANTIDAD = 'movimiento_inventario_cantidad_positiva_check';
 const NOMBRE_CHECK_USUARIO = 'movimiento_inventario_usuario_si_origen_usuario_check';
+const NOMBRE_INDICE_ESTILO_VIGENTE = 'version_estilo_vigente_key';
 
 async function conTransaccion<T>(accion: (cliente: Client) => Promise<T>): Promise<T> {
   const cliente = new Client({ connectionString: urlPostgresDePrueba() });
@@ -162,7 +163,7 @@ describe('Restricciones manuales de esquema (T2, integración)', () => {
     await conTransaccion(async (cliente) => {
       const marcas = leerMarcasManuales(CARPETA_MIGRACIONES);
       expect(marcas.map((marca) => marca.nombre).sort()).toEqual(
-        [NOMBRE_INDICE_ZONA, NOMBRE_CHECK_CANTIDAD, NOMBRE_CHECK_USUARIO].sort(),
+        [NOMBRE_INDICE_ZONA, NOMBRE_CHECK_CANTIDAD, NOMBRE_CHECK_USUARIO, NOMBRE_INDICE_ESTILO_VIGENTE].sort(),
       );
 
       const resultado = await verificarMarcasManuales(cliente, marcas);
@@ -201,6 +202,19 @@ describe('Restricciones manuales de esquema (T2, integración)', () => {
       );
       expect(resultado.ok).toBe(false);
       expect(resultado.faltantes).toContain(NOMBRE_CHECK_CANTIDAD);
+    });
+  });
+  it('PER9 — Un índice único parcial [manual] reemplazado por uno total se considera faltante', async () => {
+    await conTransaccion(async (cliente) => {
+      await cliente.query(`DROP INDEX "${NOMBRE_INDICE_ESTILO_VIGENTE}"`);
+      await cliente.query(`CREATE UNIQUE INDEX "${NOMBRE_INDICE_ESTILO_VIGENTE}" ON version_estilo (vigente)`);
+
+      const resultado = await verificarMarcasManuales(
+        cliente,
+        leerMarcasManuales(CARPETA_MIGRACIONES),
+      );
+      expect(resultado.ok).toBe(false);
+      expect(resultado.faltantes).toContain(NOMBRE_INDICE_ESTILO_VIGENTE);
     });
   });
 });

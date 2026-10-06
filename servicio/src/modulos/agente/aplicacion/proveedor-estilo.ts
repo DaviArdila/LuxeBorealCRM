@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK } from '../../../plataforma/reloj/index.js';
 import type { Clock } from '../../../plataforma/reloj/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
-import { REPOSITORIO_ESTILO, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
+import { REPOSITORIO_ESTILO, type AutorEstilo, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
 import { VERSION_ESTILO, type VersionEstilo } from '../puertos/version-estilo.js';
 
 /**
@@ -17,6 +17,8 @@ export interface EstiloVigente {
   /** `0` cuando rige el archivo de respaldo. */
   readonly version: number;
   readonly origen: 'base' | 'archivo';
+  /** Quien publicó la versión vigente (EST-D3); ausente si fue el comando o rige el archivo. */
+  readonly publicadoPor?: AutorEstilo;
 }
 
 interface Copia {
@@ -26,7 +28,7 @@ interface Copia {
 }
 
 /**
- * Entrega el estilo del agente (AGT18, AGT19, D3 de la Fase 08c): lo lee de `parametro` con el archivo versionado
+ * Entrega el estilo del agente (AGT18, AGT19, D3 de la Fase 08c): lo lee de `version_estilo` con el archivo versionado
  * como respaldo y guarda una copia en memoria mientras la versión compartida de Redis no cambie. Nunca lanza: si
  * la base falla rige el archivo, y si Redis falla no hay copia confiable y se lee la base (el turno sigue). Estado
  * de **instancia**, nunca un `let` de módulo; el tiempo sale del `Clock` inyectado.
@@ -74,7 +76,12 @@ export class ProveedorEstilo {
     try {
       const guardado = await this.repositorio.leerVigente();
       if (guardado !== null && guardado.texto.trim().length > 0) {
-        return { texto: guardado.texto, version: guardado.version, origen: 'base' };
+        return {
+          texto: guardado.texto,
+          version: guardado.version,
+          origen: 'base',
+          ...(guardado.publicadoPor === undefined ? {} : { publicadoPor: guardado.publicadoPor }),
+        };
       }
     } catch {
       this.logger.warn({ evento: 'agente.estilo-base-no-disponible' });

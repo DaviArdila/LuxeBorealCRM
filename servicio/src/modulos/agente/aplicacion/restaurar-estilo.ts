@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { REPOSITORIO_ESTILO, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
+import { REPOSITORIO_ESTILO, type AutorEstilo, type RepositorioEstilo } from '../puertos/repositorio-estilo.js';
 import { PublicarEstilo, type ResultadoPublicacion } from './publicar-estilo.js';
 
 /**
  * Restaura una versión del historial (AGT21): publica su texto como una versión **nueva**, sin reescribir el
- * pasado, y lo valida como cualquier estilo (uno viejo que hoy sería inválido se rechaza).
+ * pasado, y lo valida como cualquier estilo (uno viejo que hoy sería inválido se rechaza). Quien restaura queda como autor de
+ * la versión nueva (EST-D3).
  */
 @Injectable()
 export class RestaurarEstilo {
@@ -13,7 +14,7 @@ export class RestaurarEstilo {
     private readonly publicar: PublicarEstilo,
   ) {}
 
-  async ejecutar(version: number): Promise<ResultadoPublicacion> {
+  async ejecutar(version: number, autor?: AutorEstilo): Promise<ResultadoPublicacion> {
     const historial = await this.repositorio.leerHistorial();
     const encontrada = historial.find((candidata) => candidata.version === version);
     if (encontrada === undefined) {
@@ -23,6 +24,6 @@ export class RestaurarEstilo {
         razon: 'version-inexistente',
       };
     }
-    return this.publicar.ejecutar(encontrada.texto);
+    return this.publicar.ejecutar(encontrada.texto, autor);
   }
 }

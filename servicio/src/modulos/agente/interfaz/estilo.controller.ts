@@ -7,6 +7,7 @@ import { ListarHistorialEstilo } from '../aplicacion/listar-historial-estilo.js'
 import { ProveedorEstilo } from '../aplicacion/proveedor-estilo.js';
 import { PublicarEstilo, type ResultadoPublicacion } from '../aplicacion/publicar-estilo.js';
 import { RestaurarEstilo } from '../aplicacion/restaurar-estilo.js';
+import type { AutorEstilo } from '../puertos/repositorio-estilo.js';
 import {
   esquemaEstiloVigente,
   esquemaHistorialEstilo,
@@ -19,6 +20,11 @@ import {
   type RestaurarEstiloCuerpo,
   type VersionEstiloRespuesta,
 } from './esquemas-estilo.js';
+
+/** El autor que se guarda con cada versión publicada o restaurada: identificador y nombre (instantánea, EST-D3). */
+function autorDe(usuario: PerfilUsuario): AutorEstilo {
+  return { id: usuario.id, nombre: usuario.nombre };
+}
 
 /**
  * Administración del estilo del bot por la API (AGT23, D1 de la Fase 11b), solo para `admin` (API7). Es el mismo
@@ -45,7 +51,12 @@ export class EstiloController {
   @respuestaDesdeZod(esquemaEstiloVigente, { description: 'Versión vigente (null si rige el archivo), origen y texto.' })
   async obtenerEstilo(): Promise<EstiloVigenteRespuesta> {
     const estilo = await this.proveedor.obtener();
-    return { version: estilo.origen === 'base' ? estilo.version : null, origen: estilo.origen, texto: estilo.texto };
+    return {
+      version: estilo.origen === 'base' ? estilo.version : null,
+      origen: estilo.origen,
+      texto: estilo.texto,
+      publicadoPor: estilo.publicadoPor ?? null,
+    };
   }
 
   @Get('historial')
@@ -54,7 +65,9 @@ export class EstiloController {
   @respuestaDesdeZod(esquemaHistorialEstilo, { description: 'Versiones retiradas, la más reciente primero.' })
   async listarHistorialEstilo(): Promise<HistorialEstiloRespuesta> {
     const { historial } = await this.listar.ejecutar();
-    return { versiones: historial.map(({ version, fecha, texto }) => ({ version, fecha, texto })) };
+    return {
+      versiones: historial.map(({ version, fecha, texto, publicadoPor }) => ({ version, fecha, texto, publicadoPor: publicadoPor ?? null })),
+    };
   }
 
   @Put()
@@ -68,7 +81,7 @@ export class EstiloController {
     @Body({ schema: esquemaPublicarEstilo }) cuerpo: PublicarEstiloCuerpo,
     @UsuarioActual() usuario: PerfilUsuario,
   ): Promise<VersionEstiloRespuesta> {
-    const version = this.versionNueva(await this.publicar.ejecutar(cuerpo.texto));
+    const version = this.versionNueva(await this.publicar.ejecutar(cuerpo.texto, autorDe(usuario)));
     this.logger.log({ evento: 'agente.estilo-publicado', version, usuarioId: usuario.id });
     return { version };
   }
@@ -85,7 +98,7 @@ export class EstiloController {
     @Body({ schema: esquemaRestaurarEstilo }) cuerpo: RestaurarEstiloCuerpo,
     @UsuarioActual() usuario: PerfilUsuario,
   ): Promise<VersionEstiloRespuesta> {
-    const version = this.versionNueva(await this.restaurar.ejecutar(cuerpo.version));
+    const version = this.versionNueva(await this.restaurar.ejecutar(cuerpo.version, autorDe(usuario)));
     this.logger.log({
       evento: 'agente.estilo-restaurado',
       version,

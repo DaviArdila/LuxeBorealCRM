@@ -35,6 +35,7 @@ const TABLAS_V1 = [
   'evento_entrante',
   'outbox',
   'uso_llm',
+  'version_estilo',
 ] as const;
 
 const EXCEPCIONES_PK = new Map([
