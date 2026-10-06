@@ -42,3 +42,10 @@ export function contieneValorEnPesos(texto: string): boolean {
 export function contieneMarcadorDePlantilla(texto: string): boolean {
   return PATRON_PLANTILLA.test(texto);
 }
+
+const PATRON_SKU = /\bSKU-[A-Z0-9]+\b/i;
+
+/** `true` si el texto trae un SKU (`SKU-GL001`): el SKU es interno y el cliente no lo ve (AGT16). */
+export function contieneSku(texto: string): boolean {
+  return PATRON_SKU.test(texto);
+}

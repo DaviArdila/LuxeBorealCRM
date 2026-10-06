@@ -15,6 +15,8 @@ const NOMBRE_INDICE_ZONA = 'zona_sin_cobertura_departamento_id_ciudad_id_key';
 const NOMBRE_CHECK_CANTIDAD = 'movimiento_inventario_cantidad_positiva_check';
 const NOMBRE_CHECK_USUARIO = 'movimiento_inventario_usuario_si_origen_usuario_check';
 const NOMBRE_INDICE_ESTILO_VIGENTE = 'version_estilo_vigente_key';
+const NOMBRE_CHECK_EVENTO = 'caso_asistente_evento_requiere_sistema_check';
+const NOMBRE_CHECK_SISTEMA_ACTIVO = 'caso_asistente_sistema_activo_check';
 
 export type TipoObjetoManual = 'indice_nulls_not_distinct' | 'indice_unico_parcial' | 'check' | 'desconocido';
 
@@ -44,6 +46,22 @@ const FORMAS_ESPERADAS = new Map<string, FormaEsperada>([
       tipo: 'indice_nulls_not_distinct',
       tabla: 'zona_sin_cobertura',
       columnas: ['departamento_id', 'ciudad_id'],
+    },
+  ],
+  [
+    NOMBRE_CHECK_EVENTO,
+    {
+      tipo: 'check',
+      tabla: 'caso_asistente',
+      expresion: "disparador<>'evento'orclave_sistemaisnotnullandmodo='literal'",
+    },
+  ],
+  [
+    NOMBRE_CHECK_SISTEMA_ACTIVO,
+    {
+      tipo: 'check',
+      tabla: 'caso_asistente',
+      expresion: 'clave_sistemaisnulloractivo',
     },
   ],
   [
@@ -150,7 +168,7 @@ async function existeCheck(
 ): Promise<boolean> {
   const resultado = await cliente.query<{ expresion: string }>(
     `SELECT regexp_replace(
-       regexp_replace(lower(pg_get_expr(conbin, conrelid)), '::origen_movimiento', '', 'g'),
+       regexp_replace(lower(pg_get_expr(conbin, conrelid)), '::[a-z_]+', '', 'g'),
        '[[:space:]()"]', '', 'g'
      ) AS expresion
      FROM pg_constraint

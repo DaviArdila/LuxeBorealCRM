@@ -36,6 +36,8 @@ const TABLAS_V1 = [
   'outbox',
   'uso_llm',
   'version_estilo',
+  'categoria_caso',
+  'caso_asistente',
 ] as const;
 
 const EXCEPCIONES_PK = new Map([

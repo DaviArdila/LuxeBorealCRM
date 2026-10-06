@@ -16,6 +16,7 @@ import { importarCatalogo, type ResultadoImportarCatalogoCli } from './importar-
 import { anonimizarConversacion, type ResultadoAnonimizar } from './evals/anonimizar.js';
 import { promptEstilo, type ResultadoPromptEstiloCli } from './prompt-estilo.js';
 import { usuarioCrear, type ResultadoUsuarioCrearCli } from './usuario-crear.js';
+import { sembrarCasos, type ResultadoSembrarCasosCli } from './sembrar-casos.js';
 import { sembrarMensajesFijos, type ResultadoSembrarMensajesFijosCli } from './sembrar-mensajes-fijos.js';
 
 /**
@@ -45,7 +46,8 @@ type Resultado =
   | ResultadoAnonimizar
   | ResultadoPromptEstiloCli
   | ResultadoUsuarioCrearCli
-  | ResultadoSembrarMensajesFijosCli;
+  | ResultadoSembrarMensajesFijosCli
+  | ResultadoSembrarCasosCli;
 
 function imprimirResultado(resultado: Resultado): void {
   process.stdout.write(`${resultado.mensaje}\n`);
@@ -108,11 +110,14 @@ async function main(): Promise<void> {
     case 'mensajes:sembrar':
       imprimirResultado(await sembrarMensajesFijos());
       return;
+    case 'casos:sembrar':
+      imprimirResultado(await sembrarCasos());
+      return;
     default:
       process.stderr.write(
         `cli: comando desconocido "${comando ?? ''}". Comandos válidos: secretos, commits, ` +
           'auditoria [--directorio <carpeta>], contrato:generar, contrato:deriva, contrato:diff, flujos, ' +
-          'semilla:geografia, catalogo:importar, evals:anonimizar, prompt:estilo, usuario:crear, mensajes:sembrar.\n',
+          'semilla:geografia, catalogo:importar, evals:anonimizar, prompt:estilo, usuario:crear, mensajes:sembrar, casos:sembrar.\n',
       );
       process.exitCode = 1;
   }

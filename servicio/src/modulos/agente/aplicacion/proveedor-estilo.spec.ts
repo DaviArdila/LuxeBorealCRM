@@ -134,6 +134,7 @@ describe('agente/aplicacion — ProveedorEstilo (AGT18, AGT19)', () => {
 
     expect(repositorio.lecturas).toBe(1);
   });
+
   it('EST-D3 — El estilo vigente trae a quien lo publicó', async () => {
     const ana = { id: '0199a000-0000-7000-8000-00000000000a', nombre: 'Ana' };
     const { proveedor } = crear({ texto: 'Estilo de Ana.', version: 3, publicadoPor: ana });

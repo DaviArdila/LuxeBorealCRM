@@ -62,7 +62,7 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
 
 - [x] T1 — Menú lateral con submódulos (cliente) — rama `fase-12-p1-menu-lateral`, commit de unidad de trabajo único
 - [x] T2 — Ventana emergente de edición compartida y «Estilo del bot» al patrón (cliente) — rama `fase-12-p2-ventana-edicion`, commit `0a6bc17` (PR 93; `size:exception`: 513 líneas, ~285 de pruebas)
-- [ ] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó»
+- [x] T3 — Estilo desacoplado: tabla `version_estilo` y «quién publicó» — rama `fase-12-p3-estilo-desacoplado`, commit `6ad0d53` (PR 94; `size:exception` anotada en la tarea)
 - [ ] T4 — Base del asistente: tablas, módulo, puerto de textos y semilla (sin cambiar el comportamiento)
 - [ ] T5 — Corte de los textos del sistema al puerto del asistente (sin cambiar el comportamiento)
 - [ ] T6 — `consultar_caso`, índice de casos y contra entrega; se borran las políticas de `catalogo`
@@ -151,6 +151,13 @@ Al cerrar T11, proponer (sin ejecutar) `judgment-day` sobre el rango T5-T6 si no
   existe.
 - **Ruta**: delegada. **Slice**: `fase-12-p4-base-asistente`. **Forecast**: ~550 líneas (`size:exception` anticipada
   en `proposal.md`: esquema y ~60 % de tests).
+  `size:exception` (T4, real): ~1.800 líneas añadidas, ~950 de pruebas; el resto es el módulo nuevo completo (dominio con
+  los once textos de respaldo, puertos, proveedor, semilla y adaptadores), la migración, `MODELO_DATOS.md` y el comando. Pasó
+  de las ~550 anticipadas porque la semilla, el proveedor y las restricciones de base tienen cada uno su prueba contra
+  Postgres real; no se parte porque el módulo sin su semilla ni sus restricciones no se puede verificar.
+  Alcance real: los CAS1 y CAS4 se prueban a nivel de base (restricciones de Postgres, `asistente-restricciones.spec.ts`);
+  la API que los traduce a `409`/`404` llega en T7. `consultar_caso`, el índice y `ConsultaCasos` quedan en T6; en T4 el
+  puerto solo entrega `textoDelSistema`. Se agrega `contieneSku` a `compartido/texto` (lo usaban el estilo y ahora los casos).
 - **Docs**: `MODELO_DATOS.md`, ADR-0024, `openspec/specs/asistente/spec.md` (se fusiona al cerrar).
 - **Evals**: sin cambios.
 

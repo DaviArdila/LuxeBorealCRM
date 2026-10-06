@@ -1,6 +1,6 @@
 # 0024. Casos de uso del asistente, estilo en su propia tabla y configuración tipada
 
-- Estado: propuesta (la tabla `version_estilo` ya está implementada en la Fase 12, T3; el resto sigue pendiente)
+- Estado: propuesta (implementadas en la Fase 12: `version_estilo` (T3) y las tablas `categoria_caso` y `caso_asistente`, el módulo `asistente`, el puerto de textos y la semilla (T4); el resto sigue pendiente)
 - Fecha: 2026-10-05
 - Matiza: ADR-0020 (el estilo sigue siendo editable desde la base con el archivo como respaldo, pero deja de vivir en
   `parametro`)

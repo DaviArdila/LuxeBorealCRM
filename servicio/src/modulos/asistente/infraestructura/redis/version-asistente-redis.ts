@@ -1,18 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { asegurarConexion, REDIS_CLIENTE } from '../../../../plataforma/redis/index.js';
 import type { ClienteRedis } from '../../../../plataforma/redis/index.js';
-import type { VersionEstilo } from '../../puertos/version-estilo.js';
+import type { VersionAsistente } from '../../puertos/version-asistente.js';
 
-/** Clave de versión compartida en Redis (AGT19), gemela de `catalogo:version`. */
-const CLAVE_VERSION = 'agente:prompt:version';
+/** Clave de versión compartida en Redis (CAS7), gemela de `agente:prompt:version` y `catalogo:version`. */
+const CLAVE_VERSION = 'asistente:version';
 
-/**
- * Adaptador Redis de {@link VersionEstilo}. Conexión perezosa con `asegurarConexion` de `plataforma/redis`, igual
- * que `CacheCatalogoRedis` e `IndicadorRedis`.
- */
+/** Adaptador Redis de {@link VersionAsistente}; conexión perezosa con `asegurarConexion` de `plataforma/redis`. */
 @Injectable()
-export class VersionEstiloRedis implements VersionEstilo {
-  /** Clave de la versión; protegida para que las pruebas de integración usen una por worker y no se pisen entre archivos. */
+export class VersionAsistenteRedis implements VersionAsistente {
+  /** Protegida para que las pruebas de integración usen una clave por worker y no se pisen entre archivos. */
   protected readonly clave: string = CLAVE_VERSION;
 
   constructor(@Inject(REDIS_CLIENTE) private readonly redis: ClienteRedis) {}

@@ -59,6 +59,7 @@ erDiagram
     USUARIO ||--o{ VENTA : registra
     USUARIO ||--o{ MOVIMIENTO_INVENTARIO : ejecuta
     USUARIO ||--o{ VERSION_ESTILO : publica
+    CATEGORIA_CASO ||--o{ CASO_ASISTENTE : agrupa
 
     DEPARTAMENTO ||--o{ CIUDAD : contiene
     CIUDAD ||--o{ ENVIO : "destino de"
@@ -165,6 +166,45 @@ Fase 12 (T11) como respaldo.
 - El historial conserva la vigente y como máximo diez anteriores (AGT21); publicar poda las más antiguas.
 - La migración copia el estilo vigente y su historial desde `parametro` conservando los números de versión; la fecha
   de publicación de cada versión es la de retiro de la anterior (la de la más antigua del historial, la suya propia).
+
+### `categoria_caso` y `caso_asistente` — NUEVAS (Fase 12, T4; ADR-0024)
+Todo lo que el bot le dice al cliente: **casos de uso** agrupados en **categorías**. Reemplazan a los mensajes fijos
+y a las políticas `politica_<tema>` de `parametro` (R15): si el cliente lo lee, es un caso; si el código lo usa para
+calcular o decidir, es un parámetro del negocio.
+
+`categoria_caso`
+
+| Columna | Tipo | Nulo | Nota |
+|---|---|---|---|
+| `id` | uuid | no | PK, UUID v7 |
+| `nombre` | text | no | como lo escribió el dueño |
+| `nombre_normalizado` | text | no | único; minúsculas y sin acentos, calculado en código al escribir |
+| `orden` | int | no | posición en el listado |
+| `creado`, `actualizado` | timestamptz | no | |
+
+`caso_asistente`
+
+| Columna | Tipo | Nulo | Nota |
+|---|---|---|---|
+| `id` | uuid | no | PK, UUID v7 |
+| `categoria_id` | uuid | no | FK a `categoria_caso` (`ON DELETE RESTRICT`: una categoría con casos no se borra) |
+| `titulo` | text | no | con él el agente pide un caso (`consultar_caso`) |
+| `titulo_normalizado` | text | no | único; minúsculas y sin acentos |
+| `cuando_aplica` | text | no | cuándo se envía (caso del sistema) o cuándo usarlo (caso de intención) |
+| `disparador` | enum `disparador_caso` | no | `evento` (lo dispara el código) o `intencion` (lo consulta el LLM) |
+| `clave_sistema` | text | sí | único; clave de la lista cerrada del código (`mensaje_handoff`, `contra_entrega`…) |
+| `modo` | enum `modo_caso` | no | `literal` (se cita palabra por palabra) o `guia` (base para redactar); por defecto `literal` |
+| `texto` | text | no | validado en código (CAS5): sin pesos, SKU ni marcadores `{{…}}`; nunca en logs (R14) |
+| `activo` | boolean | no | un caso inactivo no llega al bot |
+| `busqueda_normalizada` | text | no | título, «cuándo aplica» y texto normalizados, para el buscador sin la extensión `unaccent` |
+| `creado`, `actualizado` | timestamptz | no | |
+
+- `disparador` y `clave_sistema` son independientes: `contra_entrega` es de **intención** (el LLM puede consultarlo) y
+  tiene clave del sistema (el código lo adjunta a la cotización). Un caso con clave del sistema se edita pero no se
+  borra ni se desactiva.
+- Dos `CHECK` escritos a mano `[manual]` (Prisma no los expresa; los guarda la comprobación PER9):
+  `caso_asistente_evento_requiere_sistema_check` (un caso de `evento` exige clave del sistema y modo `literal`) y
+  `caso_asistente_sistema_activo_check` (un caso con clave del sistema nunca está inactivo).
 
 ## 4. Envíos (rediseñado con el usuario, P4)
 
