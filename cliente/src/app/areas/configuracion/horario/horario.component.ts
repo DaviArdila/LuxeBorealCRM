@@ -6,8 +6,10 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { AvisoComponent } from '../../../compartido/aviso.component';
+import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
+import { RejillaComponent } from '../../../compartido/rejilla.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { type Dia, type DiasDelHorario, HorarioServicio } from './horario.servicio';
 
@@ -21,6 +23,9 @@ const NOMBRES: Readonly<Record<Dia, string>> = {
   dom: 'Domingo',
 };
 const ORDEN: readonly Dia[] = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
+
+const AYUDA =
+  'Fuera de este horario el bot avisa que un asesor responderá cuando abra. Las excepciones cierran un día completo.';
 
 interface DiaEditable {
   readonly dia: Dia;
@@ -37,6 +42,7 @@ interface DiaEditable {
   providers: [HorarioServicio],
   imports: [
     AvisoComponent,
+    CabeceraPaginaComponent,
     ConfirmacionComponent,
     DialogoEdicionComponent,
     MatButton,
@@ -50,18 +56,19 @@ interface DiaEditable {
     MatInput,
     MatLabel,
     MatSlideToggle,
+    RejillaComponent,
   ],
   template: `
-    <h1>Horario de atención</h1>
-    <app-aviso tipo="info">
-      Fuera de este horario el bot avisa que un asesor responderá cuando abra. Las excepciones cierran un día completo.
-    </app-aviso>
+    <app-cabecera-pagina titulo="Horario de atención" [ayuda]="ayuda" />
     @if (guardado()) {
-      <app-aviso tipo="info">Guardado: el cambio rige desde el siguiente mensaje del cliente.</app-aviso>
+      <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
+        Guardado: el cambio rige desde el siguiente mensaje del cliente.
+      </app-aviso>
     }
     @if (motivo(); as texto) {
-      <app-aviso tipo="error">{{ texto }}</app-aviso>
+      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
     }
+    <app-rejilla minimo="26rem">
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title><h2 class="titulo-tarjeta">Horario por día</h2></mat-card-title>
@@ -104,6 +111,7 @@ interface DiaEditable {
         </div>
       </mat-card-content>
     </mat-card>
+    </app-rejilla>
 
     <app-dialogo-edicion titulo="Editar horario" [(abierta)]="editando" [hayCambios]="true" [alGuardar]="guardar"
                          [mensajeDeError]="motivoDe">
@@ -145,9 +153,8 @@ interface DiaEditable {
     :host {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--luxe-espacio-m);
     }
-    h1,
     .titulo-tarjeta {
       margin: 0;
     }
@@ -192,6 +199,7 @@ interface DiaEditable {
   `,
 })
 export class HorarioComponent {
+  protected readonly ayuda = AYUDA;
   protected readonly servicio = inject(HorarioServicio);
   protected readonly motivo = signal<string | null>(null);
   protected readonly guardado = signal(false);

@@ -5,27 +5,30 @@ import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { AvisoComponent } from '../../../compartido/aviso.component';
+import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { EnviosServicio } from './envios.servicio';
+
+const AYUDA =
+  'El bot no dice el recargo ni calcula con él: es un dato interno para el total de la venta. ' +
+  'El factor volumétrico sí entra en la cotización de envío.';
 
 /** SHL11: el recargo de contra entrega y el factor volumétrico; se editan en una ventana y rigen desde el siguiente mensaje. */
 @Component({
   selector: 'app-envios',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [EnviosServicio],
-  imports: [AvisoComponent, DialogoEdicionComponent, MatButton, MatCard, MatCardContent, MatCardHeader, MatCardTitle, MatFormField, MatHint, MatIcon, MatInput, MatLabel],
+  imports: [AvisoComponent, CabeceraPaginaComponent, DialogoEdicionComponent, MatButton, MatCard, MatCardContent, MatCardHeader, MatCardTitle, MatFormField, MatHint, MatIcon, MatInput, MatLabel],
   template: `
-    <h1>Envíos</h1>
-    <app-aviso tipo="info">
-      El bot no dice el recargo ni calcula con él: es un dato interno para el total de la venta. El factor volumétrico sí
-      entra en la cotización de envío.
-    </app-aviso>
+    <app-cabecera-pagina titulo="Envíos" [ayuda]="ayuda" />
     @if (guardado()) {
-      <app-aviso tipo="info">Guardado: el cambio rige desde el siguiente mensaje del cliente.</app-aviso>
+      <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
+        Guardado: el cambio rige desde el siguiente mensaje del cliente.
+      </app-aviso>
     }
     @if (motivo(); as texto) {
-      <app-aviso tipo="error">{{ texto }}</app-aviso>
+      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
     }
     <mat-card appearance="outlined">
       <mat-card-header>
@@ -62,9 +65,8 @@ import { EnviosServicio } from './envios.servicio';
     :host {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--luxe-espacio-m);
     }
-    h1,
     .titulo-tarjeta,
     .valor {
       margin: 0;
@@ -84,6 +86,7 @@ import { EnviosServicio } from './envios.servicio';
   `,
 })
 export class EnviosComponent {
+  protected readonly ayuda = AYUDA;
   protected readonly servicio = inject(EnviosServicio);
   protected readonly motivo = signal<string | null>(null);
   protected readonly guardado = signal(false);

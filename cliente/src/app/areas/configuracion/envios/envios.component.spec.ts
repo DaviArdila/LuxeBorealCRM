@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { EnviosComponent } from './envios.component';
 
@@ -64,6 +66,7 @@ describe('SHL11 — Pantalla «Envíos»', () => {
 
     expect(el.querySelector('[data-recargo]')!.textContent).toContain('6.5');
     expect(el.textContent).toContain('siguiente mensaje');
+    expect(el.querySelector('app-aviso.flotante')!.textContent).toContain('siguiente mensaje');
   });
 
   it('SHL11 — Un recargo inválido muestra su motivo en la ventana y conserva lo escrito', async () => {
@@ -82,5 +85,15 @@ describe('SHL11 — Pantalla «Envíos»', () => {
 
     expect(document.querySelector('mat-dialog-container')!.textContent).toContain('el recargo debe estar entre 0 y 100');
     expect(document.querySelector<HTMLInputElement>('[data-campo="recargo"]')!.value).toBe('150');
+  });
+
+  it('SHL11 — Usa la cabecera de página: el título es el h1 y la explicación va en la ayuda, no en un aviso fijo', async () => {
+    const { fixture, el } = await abrir();
+
+    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(el.querySelector('app-cabecera-pagina h1')!.textContent).toBe('Envíos');
+    expect(globo.message).toContain('El bot no dice el recargo');
+    expect(el.textContent).not.toContain('El bot no dice el recargo');
+    expect(el.querySelectorAll('app-aviso:not(.flotante)')).toHaveLength(0);
   });
 });

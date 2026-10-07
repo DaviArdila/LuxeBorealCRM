@@ -103,8 +103,8 @@ menu: [
 |---|---|
 | Filtra por rol | Oculta las entradas y los hijos que el rol no puede usar; un grupo sin hijos visibles no aparece. El servidor sigue siendo quien decide |
 | Marca dónde estás | La pantalla activa se resalta y lleva `aria-current="page"`; el grupo que la contiene arranca desplegado |
-| Modo compacto | El botón del pie deja solo los íconos, con el título como ayuda emergente. Se recuerda en el navegador (`luxe.menu.compacto`); si el almacenamiento está bloqueado, funciona igual sin recordarlo |
-| En un teléfono | A 640 px o menos el menú es un cajón: arranca cerrado, se abre con el botón de la barra y se cierra al elegir una pantalla |
+| Riel que se expande | En un escritorio el menú es un riel fijo de solo íconos (4.5 rem) con el logo arriba. Al pasar el mouse o con el foco del teclado se expande a 16 rem por encima del contenido, sin empujarlo, y se contrae al salir. No hay botón de compactar ni preferencia guardada |
+| En un teléfono | A 640 px o menos el menú es un cajón: arranca cerrado, se abre con el botón de la barra mínima (hamburguesa y logo) y se cierra al elegir una pantalla |
 | Pie | Muestra el nombre y el rol del usuario y el botón «Cerrar sesión» |
 
 Todo se maneja con teclado: cada grupo es un botón con `aria-expanded` y el foco se ve. Un ícono sin `icono` propio usa el
