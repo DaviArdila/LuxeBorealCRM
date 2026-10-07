@@ -46,7 +46,6 @@ Qué pregunta responde cada documento:
 | Cómo crear usuarios, cuánto dura una sesión y qué hacer si alguien queda bloqueado | `docs/operacion/usuarios-y-sesiones.md` |
 | Cómo cambiar el horario, el recargo, el factor volumétrico y el techo del LLM sin desplegar | `docs/operacion/configuracion-del-negocio.md` |
 | Cómo levantar el cliente del back office, qué hace cada pantalla y cómo agregar un área | `docs/operacion/cliente-back-office.md` |
-| Cómo ver las bases de desarrollo desde el navegador con CloudBeaver | `docs/operacion/cloudbeaver.md` |
 | Qué expone cada módulo (puertos, casos de uso) | TSDoc en el código exportado |
 | Historial de cambios publicados | `CHANGELOG.md` (generado desde Conventional Commits) |
 | Investigación y evidencia detrás de una decisión | `docs/analisis/` |
