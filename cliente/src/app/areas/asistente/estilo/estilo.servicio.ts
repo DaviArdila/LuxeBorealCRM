@@ -51,6 +51,14 @@ export class EstiloServicio {
     this.fijarSecciones(await this.api.invoke(ordenarSeccionesEstilo, { body: { ids: [...ids] } }));
   }
 
+  /** Muestra al instante el orden que se va a mandar; si el servidor lo rechaza, `cargar` devuelve el real. */
+  aplicarOrden(ids: readonly string[]): void {
+    const posicion = new Map(ids.map((id, indice) => [id, indice]));
+    this.secciones.update((secciones) =>
+      [...secciones].sort((a, b) => (posicion.get(a.id) ?? a.orden) - (posicion.get(b.id) ?? b.orden)),
+    );
+  }
+
   async restaurar(version: number): Promise<number> {
     return (await this.api.invoke(restaurarEstilo, { body: { version } })).version;
   }

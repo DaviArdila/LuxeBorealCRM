@@ -2,6 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { CdkDropList } from '@angular/cdk/drag-drop';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { EstiloComponent } from './estilo.component';
 
@@ -54,6 +57,18 @@ async function cerrada(fixture: ComponentFixture<EstiloComponent>): Promise<void
 
 type Montada = Awaited<ReturnType<typeof montar>>;
 
+/** Simula soltar la tarjeta `de` en la posición `a`: el arrastre real del CDK no se puede hacer en jsdom. */
+async function soltar(fixture: ComponentFixture<EstiloComponent>, de: number, a: number): Promise<void> {
+  const lista = fixture.debugElement.query(By.directive(CdkDropList)).injector.get(CdkDropList);
+  lista.dropped.emit({ previousIndex: de, currentIndex: a } as never);
+  await asentar(fixture);
+}
+
+async function abrirHistorial(fixture: ComponentFixture<EstiloComponent>): Promise<void> {
+  porEtiqueta('Historial').click();
+  await asentar(fixture);
+}
+
 /** Atiende las tres lecturas con las que la pantalla se abre o se recarga. */
 function atenderLecturas(control: HttpTestingController, secciones: object = lista(), vigente: object = VIGENTE): void {
   control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush(vigente);
@@ -101,7 +116,7 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     const { el } = await abrir();
 
     const filas = [...el.querySelectorAll('[data-seccion]')];
-    expect(filas.map((f) => f.querySelector('strong')!.textContent)).toEqual(['Saludo', 'Formato', 'Cierre']);
+    expect(filas.map((f) => f.querySelector('h3')!.textContent!.trim())).toEqual(['Saludo', 'Formato', 'Cierre']);
     expect(filas[0]!.textContent).toContain(`${'Texto de Saludo.'.length} caracteres`);
     expect(filas[2]!.textContent).toContain('Apagada');
   });
@@ -250,22 +265,105 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     expect(reintento.request.body).toMatchObject({ actualizado: '2026-10-09T10:00:00.000Z', texto: 'Mi versión.' });
   });
 
-  it('subir y bajar mandan el orden completo; la primera no sube y la última no baja', async () => {
+  it('arrastrar una tarjeta manda el orden completo y la lista queda en el orden nuevo', async () => {
     const { fixture, control } = await abrir();
 
-    expect(porEtiqueta('Subir Saludo').disabled).toBe(true);
-    expect(porEtiqueta('Bajar Cierre').disabled).toBe(true);
-
-    porEtiqueta('Bajar Saludo').click();
-    await asentar(fixture);
+    await soltar(fixture, 0, 1);
 
     const peticion = control.expectOne((p) => p.method === 'PUT' && p.url === URL_ORDEN);
     expect(peticion.request.body).toEqual({ ids: ['s-2', 's-1', 's-3'] });
     peticion.flush(lista([seccion('s-2', 'Formato', 0), seccion('s-1', 'Saludo', 1), seccion('s-3', 'Cierre', 2, { activo: false })]));
     await asentar(fixture);
 
-    const titulos = [...document.querySelectorAll('[data-seccion] strong')].map((t) => t.textContent);
+    const titulos = [...document.querySelectorAll('[data-seccion] h3')].map((t) => t.textContent!.trim());
     expect(titulos).toEqual(['Formato', 'Saludo', 'Cierre']);
+  });
+
+  it('el orden nuevo se ve al soltar, antes de que responda el servidor', async () => {
+    const { fixture, control } = await abrir();
+
+    await soltar(fixture, 2, 0);
+
+    const titulos = [...document.querySelectorAll('[data-seccion] h3')].map((t) => t.textContent!.trim());
+    expect(titulos).toEqual(['Cierre', 'Saludo', 'Formato']);
+    control.expectOne((p) => p.method === 'PUT' && p.url === URL_ORDEN);
+  });
+
+  it('soltar la tarjeta donde estaba no manda nada', async () => {
+    const { fixture, control } = await abrir();
+
+    await soltar(fixture, 1, 1);
+
+    control.expectNone((p) => p.method === 'PUT');
+  });
+
+  it('cada tarjeta tiene su asa de arrastre', async () => {
+    const { el } = await abrir();
+
+    expect(el.querySelectorAll('[data-seccion] .asa')).toHaveLength(3);
+  });
+
+  it('con una búsqueda activa no se puede arrastrar, porque no se ve el orden completo', async () => {
+    const { fixture, control, el } = await abrir();
+
+    const buscador = el.querySelector<HTMLInputElement>('[data-campo="buscar-seccion"]')!;
+    buscador.value = 'form';
+    buscador.dispatchEvent(new Event('input'));
+    await asentar(fixture);
+    await soltar(fixture, 0, 1);
+
+    expect([...el.querySelectorAll('[data-seccion] h3')].map((t) => t.textContent!.trim())).toEqual(['Formato']);
+    control.expectNone((p) => p.method === 'PUT');
+  });
+
+  it('el buscador filtra las secciones por título o por texto', async () => {
+    const { fixture, el } = await abrir();
+    const buscador = el.querySelector<HTMLInputElement>('[data-campo="buscar-seccion"]')!;
+
+    buscador.value = 'texto de cierre';
+    buscador.dispatchEvent(new Event('input'));
+    await asentar(fixture);
+    expect([...el.querySelectorAll('[data-seccion] h3')].map((t) => t.textContent!.trim())).toEqual(['Cierre']);
+
+    buscador.value = 'nada';
+    buscador.dispatchEvent(new Event('input'));
+    await asentar(fixture);
+    expect(el.querySelector('[data-seccion]')).toBeNull();
+    expect(el.querySelector('[data-sin-resultados]')).not.toBeNull();
+  });
+
+  it('hacer clic en una tarjeta abre la ventana con la sección', async () => {
+    const { fixture, el } = await abrir();
+
+    el.querySelector<HTMLButtonElement>('[data-seccion] button[data-accion="abrir"]')!.click();
+    await asentar(fixture);
+
+    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.value).toBe('Saludo');
+  });
+
+  it('la posición de la ventana de edición reordena con teclado y manda el orden completo', async () => {
+    const { fixture, control } = await abrir();
+
+    porEtiqueta('Editar Saludo').click();
+    await asentar(fixture);
+    expect(document.querySelector<HTMLInputElement>('[data-campo="posicion"]')!.value).toBe('1');
+    escribir('posicion', '3');
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    control.expectNone((p) => p.method === 'PATCH');
+    const orden = control.expectOne((p) => p.method === 'PUT' && p.url === URL_ORDEN);
+    expect(orden.request.body).toEqual({ ids: ['s-2', 's-3', 's-1'] });
+  });
+
+  it('una sección nueva no ofrece posición', async () => {
+    const { fixture } = await abrir();
+
+    boton('Nueva sección').click();
+    await asentar(fixture);
+
+    expect(document.querySelector('[data-campo="posicion"]')).toBeNull();
   });
 
   it('un 422 al encender recarga la lista para que el interruptor vuelva al estado del servidor y dice el motivo', async () => {
@@ -288,8 +386,7 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
   it('ordenar vuelve a leer la versión vigente y el historial, porque el servidor publica una versión nueva', async () => {
     const { fixture, control } = await abrir();
 
-    porEtiqueta('Bajar Saludo').click();
-    await asentar(fixture);
+    await soltar(fixture, 0, 1);
     control
       .expectOne((p) => p.method === 'PUT' && p.url === URL_ORDEN)
       .flush(lista([seccion('s-2', 'Formato', 0), seccion('s-1', 'Saludo', 1), seccion('s-3', 'Cierre', 2, { activo: false })]));
@@ -326,38 +423,53 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
   it('un rechazo al ordenar muestra el motivo del servidor', async () => {
     const { fixture, control, el } = await abrir();
 
-    porEtiqueta('Bajar Saludo').click();
-    await asentar(fixture);
+    await soltar(fixture, 0, 1);
     control.expectOne((p) => p.method === 'PUT').flush(...problema('orden-secciones-invalido', 'faltan secciones', 422));
     await asentar(fixture);
 
     expect(el.textContent).toContain('faltan secciones');
+    atenderLecturas(control);
+    await asentar(fixture);
+    expect([...el.querySelectorAll('[data-seccion] h3')].map((t) => t.textContent!.trim())).toEqual(['Saludo', 'Formato', 'Cierre']);
+  });
+
+  it('El historial vive en una ventana que abre el botón «Historial»', async () => {
+    const { fixture, el } = await abrir();
+    expect(el.querySelector('table')).toBeNull();
+
+    await abrirHistorial(fixture);
+
+    expect(document.querySelector('mat-dialog-container table')).not.toBeNull();
   });
 
   it('El historial muestra quién publicó cada versión, o «Comando» si no tiene usuario', async () => {
-    const { el } = await abrir();
+    const { fixture } = await abrir();
+    await abrirHistorial(fixture);
 
-    const filas = [...el.querySelectorAll('tr.mat-mdc-row')].map((fila) => fila.textContent ?? '');
+    const filas = [...document.querySelectorAll('tr.mat-mdc-row')].map((fila) => fila.textContent ?? '');
     expect(filas[0]).toContain('Luis');
     expect(filas[1]).toContain('Comando');
   });
 
   it('El historial lista versión, fecha y un extracto, y permite ver el texto completo', async () => {
-    const { fixture, el } = await abrir();
+    const { fixture } = await abrir();
+    await abrirHistorial(fixture);
 
-    expect(el.textContent).toContain('03/10/2026');
-    expect(el.textContent).not.toContain('Estilo dos. '.repeat(30));
+    const ventana = document.querySelector('mat-dialog-container')!;
+    expect(ventana.textContent).toContain('03/10/2026');
+    expect(ventana.textContent).not.toContain('Estilo dos. '.repeat(30));
 
     boton('Ver texto').click();
     await asentar(fixture);
 
-    expect(el.textContent).toContain('Estilo dos. '.repeat(30).trim());
+    expect(ventana.textContent).toContain('Estilo dos. '.repeat(30).trim());
   });
 
   it('Restaurar pide confirmación, reemplaza las secciones y recarga la lista', async () => {
     const { fixture, control, el } = await abrir();
+    await abrirHistorial(fixture);
 
-    const restaurar = [...el.querySelectorAll<HTMLButtonElement>('button')].filter((b) => b.textContent?.trim() === 'Restaurar');
+    const restaurar = [...document.querySelectorAll<HTMLButtonElement>('button')].filter((b) => b.textContent?.trim() === 'Restaurar');
     restaurar[1]!.click(); // la versión 1
     await asentar(fixture);
     boton('Confirmar').click();
@@ -375,9 +487,11 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     expect(el.textContent).toContain('evals reales');
   });
 
-  it('remite a «Casos de uso» para lo que responde el bot', async () => {
-    const { el } = await abrir();
+  it('remite a «Casos de uso» en la ayuda de la cabecera', async () => {
+    const { fixture, el } = await abrir();
 
-    expect(el.textContent).toContain('«Casos de uso»');
+    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(globo.message).toContain('«Casos de uso»');
+    expect(el.querySelector('h1')!.textContent).toBe('Estilo del bot');
   });
 });
