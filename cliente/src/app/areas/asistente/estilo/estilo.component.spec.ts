@@ -332,13 +332,39 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     expect(el.querySelector('[data-sin-resultados]')).not.toBeNull();
   });
 
-  it('hacer clic en una tarjeta abre la ventana con la sección', async () => {
+  it('hacer clic en una tarjeta abre la lectura de la sección (texto completo, largo y estado), sin formulario', async () => {
     const { fixture, el } = await abrir();
 
     el.querySelector<HTMLButtonElement>('[data-seccion] button[data-accion="abrir"]')!.click();
     await asentar(fixture);
 
-    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.value).toBe('Saludo');
+    const lectura = document.querySelector('[data-lectura-seccion]')!;
+    expect(document.querySelector('mat-dialog-container h2')!.textContent).toContain('Saludo');
+    expect(lectura.textContent).toContain('Texto de Saludo.');
+    expect(lectura.textContent).toContain('16 caracteres');
+    expect(lectura.textContent).toContain('Activa');
+    expect(document.querySelector('[data-campo="titulo"]')).toBeNull();
+  });
+
+  it('desde la lectura, «Editar» abre la ventana de edición con la sección', async () => {
+    const { fixture, el } = await abrir();
+    const cierre = [...el.querySelectorAll('[data-seccion]')].find((t) => t.querySelector('h3')!.textContent!.trim() === 'Cierre')!;
+    cierre.querySelector<HTMLButtonElement>('button[data-accion="abrir"]')!.click();
+    await asentar(fixture);
+    expect(document.querySelector('[data-lectura-seccion]')!.textContent).toContain('Apagada');
+
+    boton('Editar').click();
+    await asentar(fixture);
+
+    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.value).toBe('Cierre');
+  });
+
+  it('el buscador va bajo la cabecera, en la barra de filtros; el contador sigue en la cabecera', async () => {
+    const { el } = await abrir();
+
+    expect(el.querySelector('app-cabecera-pagina [data-campo="buscar-seccion"]')).toBeNull();
+    expect(el.querySelector('.luxe-filtros [data-campo="buscar-seccion"]')).not.toBeNull();
+    expect(el.querySelector('app-cabecera-pagina [data-contador-global]')).not.toBeNull();
   });
 
   it('la posición de la ventana de edición reordena con teclado y manda el orden completo', async () => {

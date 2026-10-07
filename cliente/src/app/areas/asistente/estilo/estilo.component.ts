@@ -36,7 +36,8 @@ interface Restauracion {
 /**
  * SHL9: el estilo del bot en secciones (crear, editar, ordenar, apagar). Las secciones son tarjetas de una
  * rejilla que se reordenan arrastrando (en la ventana de edición hay un campo «Posición» para hacerlo con
- * teclado); el historial y la restauración viven en una ventana que abre el botón «Historial».
+ * teclado); una tarjeta abre su lectura y desde ahí se edita, como en «Casos de uso». El buscador va bajo la
+ * cabecera; el historial y la restauración viven en una ventana que abre el botón «Historial».
  */
 @Component({
   selector: 'app-estilo',
@@ -73,11 +74,6 @@ interface Restauracion {
   ],
   template: `
     <app-cabecera-pagina titulo="Estilo del bot" [ayuda]="ayuda">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">
-        <mat-label>Buscar sección</mat-label>
-        <input matInput type="search" data-campo="buscar-seccion" [value]="busqueda()"
-               (input)="busqueda.set($any($event.target).value)" />
-      </mat-form-field>
       <span class="medidor" data-contador-global [class.cerca]="cercaDelTope()" [class.excedido]="excedido()">
         <span class="cifras">{{ servicio.caracteresCompuestos() }} / {{ servicio.maximo() }} caracteres en total</span>
         <span class="barra-medidor" role="meter" aria-label="Caracteres usados" aria-valuemin="0"
@@ -109,6 +105,14 @@ interface Restauracion {
       }
     </app-cabecera-pagina>
 
+    <div class="luxe-filtros">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">
+        <mat-label>Buscar sección</mat-label>
+        <input matInput type="search" data-campo="buscar-seccion" [value]="busqueda()"
+               (input)="busqueda.set($any($event.target).value)" />
+      </mat-form-field>
+    </div>
+
     @if (servicio.vigente(); as vigente) {
       <p class="vigente">
         @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
@@ -125,7 +129,7 @@ interface Restauracion {
         <app-tarjeta-elemento data-seccion cdkDrag [cdkDragDisabled]="reordenDeshabilitado()" [titulo]="seccion.titulo"
           [etiquetas]="etiquetasDe(seccion)" [vista]="seccion.texto" [atenuada]="!seccion.activo"
           [tono]="seccion.activo ? 'primario' : 'neutro'" [clicable]="true"
-          (abrir)="editarSeccion(seccion)">
+          (abrir)="leer(seccion)">
           <span acciones class="luxe-compacto">
             <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
               <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
@@ -141,6 +145,27 @@ interface Restauracion {
         </app-tarjeta-elemento>
       }
     </app-rejilla>
+
+    <ng-template #plantillaLectura>
+      @if (seccionLeida(); as seccion) {
+        <h2 mat-dialog-title>{{ seccion.titulo }}</h2>
+        <mat-dialog-content>
+          <div class="lectura" data-lectura-seccion>
+            <p class="meta">
+              <span>{{ seccion.texto.length }} caracteres</span>
+              <span class="estado" [class.apagada]="!seccion.activo">{{ seccion.activo ? 'Activa' : 'Apagada' }}</span>
+            </p>
+            <p class="texto">{{ seccion.texto }}</p>
+          </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+          <button mat-button type="button" mat-dialog-close>Cerrar</button>
+          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="editarSeccion(seccion)">
+            <mat-icon fontIcon="edit" aria-hidden="true" />Editar
+          </button>
+        </mat-dialog-actions>
+      }
+    </ng-template>
 
     <ng-template #plantillaHistorial>
       <h2 mat-dialog-title>Historial</h2>
@@ -220,7 +245,29 @@ interface Restauracion {
       gap: var(--luxe-espacio-m);
     }
     .buscador {
-      width: 14rem;
+      width: min(100%, 20rem);
+    }
+    .lectura .meta {
+      display: flex;
+      gap: var(--luxe-espacio-s);
+      align-items: center;
+      margin: 0 0 var(--luxe-espacio-m);
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-label-large);
+    }
+    .estado {
+      padding: 0.0625rem 0.5rem;
+      border-radius: var(--mat-sys-corner-full);
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+    .estado.apagada {
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .lectura .texto {
+      margin: 0;
+      color: var(--mat-sys-on-surface);
     }
     .crear {
       background: var(--mat-sys-primary);
@@ -311,7 +358,9 @@ export class EstiloComponent {
   protected readonly servicio = inject(EstiloServicio);
   private readonly dialogos = inject(MatDialog);
   private readonly plantillaHistorial = viewChild.required<TemplateRef<unknown>>('plantillaHistorial');
+  private readonly plantillaLectura = viewChild.required<TemplateRef<unknown>>('plantillaLectura');
   private referenciaHistorial: MatDialogRef<unknown> | null = null;
+  private referenciaLectura: MatDialogRef<unknown> | null = null;
 
   protected readonly ayuda = AYUDA;
   protected readonly maximoTitulo = MAXIMO_TITULO;
@@ -341,6 +390,10 @@ export class EstiloComponent {
   /** Con una lista filtrada el orden completo no se ve: arrastrar queda apagado hasta limpiar la búsqueda. */
   protected readonly reordenDeshabilitado = computed(() => this.ocupado() || this.busqueda().trim() !== '');
 
+  /** La sección abierta en la ventana de lectura; se lee de la lista para ver siempre lo último del servidor. */
+  protected readonly seccionLeidaId = signal<string | null>(null);
+  protected readonly seccionLeida = computed(() => this.servicio.secciones().find((s) => s.id === this.seccionLeidaId()) ?? null);
+
   protected readonly editando = signal(false);
   protected readonly editandoId = signal<string | null>(null);
   protected readonly titulo = signal('');
@@ -352,7 +405,10 @@ export class EstiloComponent {
   private posicionOriginal = 0;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.referenciaHistorial?.close());
+    inject(DestroyRef).onDestroy(() => {
+      this.referenciaHistorial?.close();
+      this.referenciaLectura?.close();
+    });
     void this.cargar();
   }
 
@@ -378,6 +434,19 @@ export class EstiloComponent {
   };
 
   // --- Secciones ---
+
+  /** Abre la lectura de la sección (texto completo, largo y estado); desde ahí «Editar» abre la edición. */
+  protected leer(seccion: SeccionDelEstilo): void {
+    this.referenciaLectura?.close();
+    this.seccionLeidaId.set(seccion.id);
+    const referencia = this.dialogos.open(this.plantillaLectura(), { width: '44rem', maxWidth: '94vw', autoFocus: 'first-tabbable' });
+    this.referenciaLectura = referencia;
+    referencia.afterClosed().subscribe(() => {
+      if (this.referenciaLectura !== referencia) return;
+      this.referenciaLectura = null;
+      this.seccionLeidaId.set(null);
+    });
+  }
 
   protected nuevaSeccion(): void {
     this.editandoId.set(null);

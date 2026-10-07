@@ -1,3 +1,4 @@
+import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -50,7 +51,9 @@ interface Grupo {
 /**
  * SHL10: los casos del asistente. La vista principal es una rejilla de categorías; una categoría abre una ventana
  * con las tarjetas de sus casos, un caso abre su lectura completa y desde ahí se edita (ventana de edición
- * anidada). La gestión de categorías vive en una ventana propia que abre el botón «Categorías» de la cabecera.
+ * anidada). Las fichas de categoría se reordenan arrastrándolas (sin búsqueda ni filtros); la gestión de
+ * categorías vive en una ventana propia que abre el botón «Categorías» de la cabecera. Los casos de una categoría
+ * no se reordenan: el servidor no guarda ese orden.
  */
 @Component({
   selector: 'app-casos',
@@ -59,6 +62,9 @@ interface Grupo {
   imports: [
     AvisoComponent,
     CabeceraPaginaComponent,
+    CdkDrag,
+    CdkDragHandle,
+    CdkDropList,
     ConfirmacionComponent,
     DialogoEdicionComponent,
     EditorConContadorComponent,
@@ -133,11 +139,18 @@ interface Grupo {
       </div>
     }
 
-    <app-rejilla>
+    <app-rejilla cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="soltarCategoria($event)">
       @for (grupo of grupos(); track grupo.id) {
         <app-tarjeta-elemento data-categoria variante="categoria" tono="primario" [titulo]="grupo.nombre" [conteo]="grupo.casos.length"
           [titulos]="titulosDe(grupo)" [etiquetas]="grupo.casos.some(inactivo) ? ['Con inactivos'] : []" [clicable]="true"
-          (abrir)="abrirCategoria(grupo.id)" />
+          cdkDrag [cdkDragDisabled]="reordenDeshabilitado()" [attr.data-arrastre]="reordenDeshabilitado() ? 'apagado' : 'activo'"
+          (abrir)="abrirCategoria(grupo.id)">
+          <span acciones class="luxe-compacto">
+            <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
+              <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
+            </span>
+          </span>
+        </app-tarjeta-elemento>
       }
     </app-rejilla>
 
@@ -305,6 +318,25 @@ interface Grupo {
       background: var(--mat-sys-primary);
       color: var(--mat-sys-on-primary);
     }
+    .asa {
+      display: inline-flex;
+      align-items: center;
+      color: var(--mat-sys-on-surface-variant);
+      cursor: grab;
+    }
+    [data-arrastre='apagado'] .asa {
+      visibility: hidden;
+    }
+    .cdk-drag-preview {
+      border-radius: var(--luxe-radio-tarjeta);
+      box-shadow: var(--mat-sys-level3);
+    }
+    .cdk-drag-placeholder {
+      opacity: 0.3;
+    }
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
+    }
     .vacio {
       display: flex;
       flex-direction: column;
@@ -379,6 +411,8 @@ export class CasosComponent {
   protected readonly hayFiltros = computed(
     () => this.busqueda().trim() !== '' || this.categoriaFiltro() !== '' || this.tipoFiltro() !== '',
   );
+  /** Con búsqueda o filtros no se ve el orden completo: arrastrar categorías queda apagado hasta limpiarlos. */
+  protected readonly reordenDeshabilitado = computed(() => this.ocupado() || this.hayFiltros());
 
   /**
    * Las categorías en su orden con sus casos. Con filtros, solo las que tienen casos que mostrar o cuyo nombre
@@ -643,6 +677,27 @@ export class CasosComponent {
     this.ocupado.set(true);
     try {
       await this.intentar(() => this.servicio.ordenarCategorias(ids));
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+
+  /**
+   * Suelta una ficha de categoría en otra posición: se ve el orden nuevo al instante y se manda el orden completo
+   * (CAS2). Si el servidor lo rechaza, la pantalla dice el motivo y vuelve a leer el orden real.
+   */
+  protected async soltarCategoria(evento: CdkDragDrop<unknown>): Promise<void> {
+    if (evento.previousIndex === evento.currentIndex || this.reordenDeshabilitado()) return;
+    const ids = this.servicio.categorias().map((c) => c.id);
+    moveItemInArray(ids, evento.previousIndex, evento.currentIndex);
+    this.servicio.aplicarOrdenCategorias(ids);
+    this.ocupado.set(true);
+    this.motivo.set(null);
+    try {
+      await this.servicio.ordenarCategorias(ids);
+    } catch (error) {
+      this.motivo.set(this.motivoDe(error));
+      await this.servicio.cargar(this.filtros()).catch(() => undefined);
     } finally {
       this.ocupado.set(false);
     }

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
+import { CdkDropList } from '@angular/cdk/drag-drop';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
@@ -116,6 +117,16 @@ function escribir(campo: string, texto: string): void {
 
 const fichas = (el: HTMLElement) => [...el.querySelectorAll('[data-categoria]')];
 const nombresDeFichas = (el: HTMLElement) => fichas(el).map((f) => f.querySelector('h3')!.textContent!.trim());
+
+/** Simula soltar la ficha `de` en la posición `a`: el arrastre real del CDK no se puede hacer en jsdom. */
+async function soltar(fixture: ComponentFixture<CasosComponent>, de: number, a: number): Promise<void> {
+  const lista = fixture.debugElement.query(By.directive(CdkDropList)).injector.get(CdkDropList);
+  lista.dropped.emit({ previousIndex: de, currentIndex: a } as never);
+  await asentar(fixture);
+}
+
+const ordenDeCategorias = (control: HttpTestingController): TestRequest =>
+  control.expectOne((p) => p.method === 'PUT' && p.url === `${URL_CATEGORIAS}/orden`);
 
 /** Pulsa la ficha de una categoría y espera a que se abra su ventana. */
 async function abrirCategoria(fixture: ComponentFixture<CasosComponent>, nombre: string): Promise<void> {
@@ -435,5 +446,73 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
 
     expect(el.textContent).toContain('No hay casos');
     expect(el.querySelector('[data-vacio]')!.textContent).toContain('Nuevo caso');
+  });
+});
+
+describe('SHL10 — Las categorías se reordenan arrastrando sus fichas', () => {
+  it('SHL10 — Cada ficha de categoría tiene su asa de arrastre; los casos de una categoría no', async () => {
+    const { fixture, el } = await abrir();
+
+    expect(el.querySelectorAll('[data-categoria] .asa')).toHaveLength(3);
+    await abrirCategoria(fixture, 'Políticas');
+    expect(document.querySelectorAll('[data-caso] .asa')).toHaveLength(0);
+  });
+
+  it('SHL10 — Soltar una ficha muestra el orden nuevo al instante y manda el orden completo', async () => {
+    const { fixture, control, el } = await abrir();
+
+    await soltar(fixture, 2, 0);
+
+    expect(nombresDeFichas(el)).toEqual(['Vacía', 'Sistema', 'Políticas']);
+    const orden = ordenDeCategorias(control);
+    expect(orden.request.body).toEqual({ ids: ['c-3', 'c-1', 'c-2'] });
+    orden.flush({
+      categorias: [
+        { id: 'c-3', nombre: 'Vacía', orden: 1, totalCasos: 0 },
+        { id: 'c-1', nombre: 'Sistema', orden: 2, totalCasos: 1 },
+        { id: 'c-2', nombre: 'Políticas', orden: 3, totalCasos: 2 },
+      ],
+    });
+    await asentar(fixture);
+    expect(nombresDeFichas(el)).toEqual(['Vacía', 'Sistema', 'Políticas']);
+  });
+
+  it('SHL10 — Si el servidor rechaza el orden, la pantalla recarga el orden real y dice el motivo', async () => {
+    const { fixture, control, el } = await abrir();
+
+    await soltar(fixture, 0, 1);
+    ordenDeCategorias(control).flush(
+      { codigo: 'orden-invalido', title: 'Orden inválido', detail: 'el orden no incluye todas las categorías' },
+      { status: 422, statusText: 'x' },
+    );
+    await asentar(fixture);
+    await recargar(fixture, control);
+
+    expect(nombresDeFichas(el)).toEqual(['Sistema', 'Políticas', 'Vacía']);
+    expect(el.querySelector('app-cabecera-pagina app-aviso')!.textContent).toContain('el orden no incluye todas las categorías');
+  });
+
+  it('SHL10 — Soltar la ficha donde estaba no manda nada', async () => {
+    const { fixture, control } = await abrir();
+
+    await soltar(fixture, 1, 1);
+
+    control.expectNone((p) => p.method === 'PUT');
+  });
+
+  it('SHL10 — Con una búsqueda o un filtro activos no se puede arrastrar, porque no se ve el orden completo', async () => {
+    const { fixture, control, el } = await abrir();
+    const buscador = el.querySelector<HTMLInputElement>('[data-campo="buscar"]')!;
+    buscador.value = 'garan';
+    buscador.dispatchEvent(new Event('input'));
+    await esperar(350);
+    listaDeCasos(control).flush({ items: [caso()], siguienteCursor: null });
+    await asentar(fixture);
+
+    await soltar(fixture, 0, 0);
+    await soltar(fixture, 0, 1);
+
+    control.expectNone((p) => p.method === 'PUT');
+    expect(el.querySelector('[data-categoria]')!.getAttribute('data-arrastre')).toBe('apagado');
   });
 });
