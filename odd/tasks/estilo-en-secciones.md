@@ -35,15 +35,15 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 
 ## Progreso
 (commits por tarea se anotan aquí)
-- T1 (delegado, un escritor): commit 771ae07 (feat(agente): estilo en secciones con foto compuesta en version_estilo). Ruta: delegado. Tests: unit, integracion y persistencia en verde.
+- T1 (delegado, un escritor): commit c380f6c (feat(agente): estilo en secciones con foto compuesta en version_estilo). Ruta: delegado. Tests: unit, integracion y persistencia en verde.
 
 - T2 (delegado, un escritor): commit de T2: ver git log (feat(agente): API admin de secciones del estilo). Ruta: delegado. Tests: unit, integracion, e2e y contrato en verde; 4 codigos nuevos en el catalogo (seccion-inexistente, seccion-duplicada, seccion-modificada, orden-secciones-invalido).
-- T2 commit: 41b2c3d (feat(agente): endpoints admin de secciones del estilo).
+- T2 commit: 8b80422 (feat(agente): endpoints admin de secciones del estilo).
 - T3 (delegado, un escritor): subcomando `prompt:estilo secciones` (solo lectura, sin textos); publicar/restaurar ya reemplazaban secciones (T1); semilla y EVALS_ESTILO confirmadas con tests de integracion y evals; prueba de equivalencia del prompt ensamblado. Ruta: delegado. Commit: ver git log (feat(agente): subcomando secciones del CLI de estilo).
-- T3 commit: e2d71d2 (feat(agente): subcomando secciones del CLI de estilo).
+- T3 commit: 78c89ac (feat(agente): subcomando secciones del CLI de estilo).
 - T4 (delegado, un escritor): pantalla `/asistente/estilo` en secciones (lista, crear/editar en ventana, subir/bajar, encender/apagar, contador global con aviso al 90 %, 409 `seccion-modificada` recarga y toma la marca nueva, restaurar recarga). Se retiró la publicación de texto único de la UI (el endpoint sigue). Cliente HTTP regenerado. Ruta: delegado. Proof: `npm --prefix cliente run ci` en verde (17 tests de la pantalla).
-- Review nativo del rango de T4 aprobado (3 hallazgos consultivos corregidos en este commit: R3-001 interruptor tras rechazo, R3-002 versión/historial tras ordenar, R3-003 conflicto 409 con recarga caída cubierto por prueba). Hash de T4: 25893e0.
-- Fix de T4 (delegado): commit e30b7e3 (fix(cliente): interruptor, orden y conflicto del estilo tras un rechazo del servidor).
+- Review nativo del rango de T4 aprobado (3 hallazgos consultivos corregidos en este commit: R3-001 interruptor tras rechazo, R3-002 versión/historial tras ordenar, R3-003 conflicto 409 con recarga caída cubierto por prueba). Hash de T4: 127681c.
+- Fix de T4 (delegado): commit c32c9f7 (fix(cliente): interruptor, orden y conflicto del estilo tras un rechazo del servidor).
 - T5 (delegado, un escritor): estilo-del-bot.md reescrito para secciones, requisitos EST-S1..S5, EST-API y EST-CLI en
   `openspec/specs/agente/spec.md`, ADR-0026 (propuesta, el usuario la acepta), fila en el índice de ADR y `-- secciones`
   en la tabla de comandos de CLAUDE.md. MODELO_DATOS.md ya traía `seccion_estilo` desde T1 (sin cambios). Sin preguntas
@@ -55,18 +55,18 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 
 | Tarea | Commit |
 |---|---|
-| T1 | 771ae07 |
-| T2 | 41b2c3d |
-| T3 | e2d71d2 |
-| T4 | 25893e0 |
-| Fix de T4 | e30b7e3 |
+| T1 | c380f6c |
+| T2 | 8b80422 |
+| T3 | 78c89ac |
+| T4 | 127681c |
+| Fix de T4 | c32c9f7 |
 | T5 | ver git log |
 
 ## Review nativo
 
 | Rango | Resultado |
 |---|---|
-| T4 | Aprobado y reconocido; hallazgos consultivos corregidos en e30b7e3 |
+| T4 | Aprobado y reconocido; hallazgos consultivos corregidos en c32c9f7 |
 | T1 + T2 | No se pudo revisar: `lens_context_budget_exceeded` por el JSON regenerado de OpenAPI |
 | T3 y el fix de T4 | Bajo el presupuesto de revisión |
 
@@ -85,3 +85,9 @@ Líneas de autoría (sumas más borrados) desde `f11b4b6`, sin `openapi/*.json` 
 | 5 | `docs/estilo-secciones` | T5: documentación y ADR-0026 | ~330 |
 
 El PR 1 podría partirse en dominio/migración y repositorio/proveedor si el usuario lo pide; no se parte por el tamaño solo.
+
+## Nota del rebase
+
+La cadena se rebasó sobre `origin/main` (2026-10-07) para recoger `sharp 0.35.5` (GHSA-wq5f-xc86-pv6w), que
+tumbaba el CI. Los hashes de arriba son los posteriores al rebase. El ADR pasó de 0025 a 0026 porque `main`
+ya usaba el 0025 (multiempresa).
