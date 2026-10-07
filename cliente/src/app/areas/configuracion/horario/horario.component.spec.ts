@@ -2,8 +2,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { HorarioComponent } from './horario.component';
 
@@ -164,10 +162,12 @@ describe('SHL11 — Pantalla «Horario»', () => {
   it('SHL11 — Usa la cabecera de página: el título es el h1 y la explicación va en la ayuda, no en un aviso fijo', async () => {
     const { fixture, el } = await abrir();
 
-    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
-    expect(el.querySelector('app-cabecera-pagina h1')!.textContent).toBe('Horario de atención');
-    expect(globo.message).toContain('Fuera de este horario');
     expect(el.textContent).not.toContain('Fuera de este horario');
+    el.querySelector<HTMLButtonElement>('button[data-accion="ayuda-avisos"]')!.click();
+    await fixture.whenStable();
+    const ayuda = el.querySelector('[data-ayuda]')!.textContent;
+    expect(el.querySelector('app-cabecera-pagina h1')!.textContent).toBe('Horario de atención');
+    expect(ayuda).toContain('Fuera de este horario');
     expect(el.querySelectorAll('app-aviso:not(.flotante)')).toHaveLength(0);
   });
 

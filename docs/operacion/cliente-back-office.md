@@ -103,7 +103,7 @@ menu: [
 |---|---|
 | Filtra por rol | Oculta las entradas y los hijos que el rol no puede usar; un grupo sin hijos visibles no aparece. El servidor sigue siendo quien decide |
 | Marca dónde estás | La pantalla activa se resalta y lleva `aria-current="page"`; el grupo que la contiene arranca desplegado |
-| Riel que se expande | En un escritorio el menú es un riel fijo de solo íconos (4.5 rem) con el logo arriba. Al pasar el mouse o con el foco del teclado se expande a 16 rem por encima del contenido, sin empujarlo, y se contrae al salir. No hay botón de compactar ni preferencia guardada |
+| Riel que se expande | En un escritorio el menú es un riel fijo de solo íconos (4.5 rem): el ícono del logo, el de cada grupo o pantalla y el de cerrar sesión; los textos se ocultan y nada desborda a lo ancho. Al pasar el mouse o con el foco del teclado se expande a 16 rem por encima del contenido, sin empujarlo, y se contrae al salir. No hay botón de compactar ni preferencia guardada |
 | En un teléfono | A 640 px o menos el menú es un cajón: arranca cerrado, se abre con el botón de la barra mínima (hamburguesa y logo) y se cierra al elegir una pantalla |
 | Pie | Muestra el nombre y el rol del usuario y el botón «Cerrar sesión» |
 
@@ -138,7 +138,9 @@ con el framework).
 | Necesitas | Usa |
 |---|---|
 | Botón, tarjeta, campo de texto, tabla, diálogo, chip | El componente de Material (`mat-flat-button`, `mat-card`, `mat-form-field` + `matInput`, `mat-table`…) |
-| Un mensaje en línea (error, advertencia, información) | `<app-aviso tipo="error">` de `compartido/`; Material no trae uno |
+| El título de una pantalla, sus acciones, su ayuda y sus avisos | `<app-cabecera-pagina titulo="…" [ayuda]="…">` de `compartido/`: el título usa la fuente de títulos (Manrope, token `--luxe-fuente-titulo`) y al final de las acciones hay un solo botón «Ayuda y avisos» (ícono `info`) que abre un panel con la ayuda y la lista de avisos |
+| Un aviso que aparece y se guarda | `<app-aviso tipo="error" [flotante]="true">` **dentro** de `<app-cabecera-pagina>`: se ve unos segundos bajo la cabecera, a la derecha, y luego se pliega en el botón «Ayuda y avisos», que muestra cuántos hay y toma el tono del más grave (rojo si hay un error). Un error sigue ahí hasta que alguien lo cierra |
+| Un mensaje en línea (error, advertencia, información) | `<app-aviso tipo="error">` de `compartido/` sin `flotante`; Material no trae uno |
 | Pedir confirmación antes de actuar | `<app-confirmacion>` de `compartido/` (abre un diálogo de Material) |
 | Editar un valor o crear uno | `<app-dialogo-edicion>` de `compartido/` (ver «Edición en ventana emergente») |
 | Un ícono | `<mat-icon fontIcon="nombre" aria-hidden="true" />`, con el nombre de [Material Symbols](https://fonts.google.com/icons) |

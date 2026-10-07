@@ -21,15 +21,16 @@ const AYUDA =
   providers: [EnviosServicio],
   imports: [AvisoComponent, CabeceraPaginaComponent, DialogoEdicionComponent, MatButton, MatCard, MatCardContent, MatCardHeader, MatCardTitle, MatFormField, MatHint, MatIcon, MatInput, MatLabel],
   template: `
-    <app-cabecera-pagina titulo="Envíos" [ayuda]="ayuda" />
-    @if (guardado()) {
-      <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
-        Guardado: el cambio rige desde el siguiente mensaje del cliente.
-      </app-aviso>
-    }
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
-    }
+    <app-cabecera-pagina titulo="Envíos" [ayuda]="ayuda">
+      @if (guardado()) {
+        <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
+          Guardado: el cambio rige desde el siguiente mensaje del cliente.
+        </app-aviso>
+      }
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+    </app-cabecera-pagina>
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title><h2 class="titulo-tarjeta">Valores vigentes</h2></mat-card-title>

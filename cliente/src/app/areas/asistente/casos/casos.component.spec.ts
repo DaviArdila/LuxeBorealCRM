@@ -2,8 +2,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { CasosComponent } from './casos.component';
 
@@ -152,10 +150,12 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
   it('SHL10 — La cabecera lleva la explicación en la ayuda y no en un aviso fijo', async () => {
     const { fixture, el } = await abrir();
 
-    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
-    expect(globo.message).toContain('Estilo del bot');
-    expect(el.querySelector('h1')!.textContent).toBe('Casos de uso');
     expect(el.textContent).not.toContain('Aquí se editan');
+    el.querySelector<HTMLButtonElement>('button[data-accion="ayuda-avisos"]')!.click();
+    await fixture.whenStable();
+    const ayuda = el.querySelector('[data-ayuda]')!.textContent;
+    expect(ayuda).toContain('Estilo del bot');
+    expect(el.querySelector('h1')!.textContent).toBe('Casos de uso');
   });
 
   it('SHL10 — El buscador llama al servidor con retardo y muestra solo lo que responde', async () => {

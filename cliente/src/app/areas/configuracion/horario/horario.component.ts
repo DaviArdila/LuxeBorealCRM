@@ -59,15 +59,16 @@ interface DiaEditable {
     RejillaComponent,
   ],
   template: `
-    <app-cabecera-pagina titulo="Horario de atención" [ayuda]="ayuda" />
-    @if (guardado()) {
-      <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
-        Guardado: el cambio rige desde el siguiente mensaje del cliente.
-      </app-aviso>
-    }
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
-    }
+    <app-cabecera-pagina titulo="Horario de atención" [ayuda]="ayuda">
+      @if (guardado()) {
+        <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
+          Guardado: el cambio rige desde el siguiente mensaje del cliente.
+        </app-aviso>
+      }
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+    </app-cabecera-pagina>
     <app-rejilla minimo="26rem">
     <mat-card appearance="outlined">
       <mat-card-header>

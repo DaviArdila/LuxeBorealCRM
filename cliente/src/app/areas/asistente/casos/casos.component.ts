@@ -83,10 +83,10 @@ interface Grupo {
       <button mat-stroked-button type="button" data-accion="categorias" (click)="abrirGestor()">
         <mat-icon fontIcon="category" aria-hidden="true" />Categorías
       </button>
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
     </app-cabecera-pagina>
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
-    }
 
     <div class="barra">
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">

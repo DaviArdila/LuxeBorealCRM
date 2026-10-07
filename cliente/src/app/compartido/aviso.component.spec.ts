@@ -41,27 +41,26 @@ describe('Aviso en línea', () => {
   });
 });
 
-describe('Aviso flotante', () => {
+describe('Aviso flotante (mensaje breve que se pliega en la cabecera)', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   function montarFlotante(tipo: TipoDeAviso, segundos = 5) {
-    const { fixture, el } = montar(tipo);
+    const { fixture, el } = montar(tipo, true);
     fixture.componentRef.setInput('flotante', true);
     fixture.componentRef.setInput('segundos', segundos);
     fixture.detectChanges();
     return { fixture, el };
   }
 
-  it('aparece abierto con su mensaje y se ancla a la esquina', () => {
+  it('aparece abierto con su mensaje', () => {
     const { el } = montarFlotante('advertencia');
 
     expect(el.classList).toContain('flotante');
     expect(el.classList).not.toContain('plegado');
-    expect(el.querySelector('[data-accion="mostrar-aviso"]')).toBeNull();
   });
 
-  it('tras los segundos indicados se pliega a un ícono con nombre accesible', () => {
+  it('tras los segundos indicados se pliega (la cabecera lo guarda en su botón), sin íconos propios en la esquina', () => {
     const { fixture, el } = montarFlotante('error', 5);
 
     vi.advanceTimersByTime(4999);
@@ -70,35 +69,19 @@ describe('Aviso flotante', () => {
 
     vi.advanceTimersByTime(1);
     fixture.detectChanges();
-    const icono = el.querySelector<HTMLButtonElement>('[data-accion="mostrar-aviso"]')!;
     expect(el.classList).toContain('plegado');
-    expect(icono.getAttribute('aria-label')).toBe('Mostrar aviso de error');
-    expect(el.querySelector('.insignia')).not.toBeNull();
+    expect(el.querySelector('[data-accion="mostrar-aviso"]')).toBeNull();
     expect(el.getAttribute('role')).toBe('alert');
   });
 
-  it('un error plegado no desaparece solo, por mucho que pase el tiempo', () => {
+  it('un error plegado no desaparece solo: sigue con su mensaje y su «Cerrar aviso» hasta que alguien lo descarte', () => {
     const { fixture, el } = montarFlotante('error', 1);
 
     vi.advanceTimersByTime(600_000);
     fixture.detectChanges();
 
-    expect(el.querySelector('[data-accion="mostrar-aviso"]')).not.toBeNull();
-  });
-
-  it('al pulsar el ícono se reabre y vuelve a plegarse después', () => {
-    const { fixture, el } = montarFlotante('info', 3);
-    vi.advanceTimersByTime(3000);
-    fixture.detectChanges();
-
-    el.querySelector<HTMLButtonElement>('[data-accion="mostrar-aviso"]')!.click();
-    fixture.detectChanges();
-    expect(el.classList).not.toContain('plegado');
-    expect(el.querySelector('[data-accion="mostrar-aviso"]')).toBeNull();
-
-    vi.advanceTimersByTime(3000);
-    fixture.detectChanges();
-    expect(el.classList).toContain('plegado');
+    expect(el.textContent).toBeDefined();
+    expect(el.querySelector('button[aria-label="Cerrar aviso"]')).not.toBeNull();
   });
 
   it('sin flotante nunca se pliega', () => {
@@ -109,6 +92,6 @@ describe('Aviso flotante', () => {
     fixture.detectChanges();
 
     expect(el.classList).not.toContain('flotante');
-    expect(el.querySelector('[data-accion="mostrar-aviso"]')).toBeNull();
+    expect(el.classList).not.toContain('plegado');
   });
 });

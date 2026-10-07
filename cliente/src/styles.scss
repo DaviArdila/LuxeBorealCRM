@@ -37,6 +37,10 @@ html {
   --luxe-riel-ancho: 4.5rem;
   --luxe-menu-ancho: 16rem;
   --luxe-pagina-ancho: 90rem;
+  /* Títulos de módulo y de tarjeta: Manrope variable, alojada con la app (@fontsource-variable/manrope). */
+  --luxe-fuente-titulo: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --luxe-titulo-pagina-tamano: clamp(1.5rem, 1.25rem + 0.8vw, 2rem);
+  --luxe-titulo-tarjeta-tamano: 1.05rem;
 }
 
 *,
@@ -56,10 +60,4 @@ body {
   line-height: 1.5;
   background: var(--mat-sys-surface-container-low);
   color: var(--mat-sys-on-surface);
-}
-
-/* Globo de ayuda de app-cabecera-pagina: vive en el overlay, fuera de los estilos del componente. */
-.luxe-ayuda .mdc-tooltip__surface {
-  max-width: 28rem;
-  white-space: pre-line;
 }

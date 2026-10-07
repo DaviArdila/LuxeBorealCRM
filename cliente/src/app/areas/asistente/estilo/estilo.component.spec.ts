@@ -4,7 +4,6 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { CdkDropList } from '@angular/cdk/drag-drop';
 import { By } from '@angular/platform-browser';
-import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { EstiloComponent } from './estilo.component';
 
@@ -490,8 +489,10 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
   it('remite a «Casos de uso» en la ayuda de la cabecera', async () => {
     const { fixture, el } = await abrir();
 
-    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
-    expect(globo.message).toContain('«Casos de uso»');
+    el.querySelector<HTMLButtonElement>('button[data-accion="ayuda-avisos"]')!.click();
+    await fixture.whenStable();
+    const ayuda = el.querySelector('[data-ayuda]')!.textContent;
+    expect(ayuda).toContain('«Casos de uso»');
     expect(el.querySelector('h1')!.textContent).toBe('Estilo del bot');
   });
 });

@@ -89,6 +89,20 @@ interface Restauracion {
       <button mat-icon-button type="button" data-accion="historial" aria-label="Historial" (click)="abrirHistorial()">
         <mat-icon fontIcon="history" aria-hidden="true" />
       </button>
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+      @if (recordatorioEvals()) {
+        <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="recordatorioEvals.set(false)">
+          Un estilo nuevo exige correr las evals reales antes de llegar a clientes
+          (<code>EVALS_MODO=real npm run evals</code>).
+        </app-aviso>
+      }
+      @if (cercaDelTope()) {
+        <app-aviso tipo="info" [flotante]="true">
+          <span data-aviso-tope>El estilo está cerca del tope: solo cuentan las secciones activas.</span>
+        </app-aviso>
+      }
     </app-cabecera-pagina>
 
     @if (servicio.vigente(); as vigente) {
@@ -97,20 +111,6 @@ interface Restauracion {
         · origen: {{ vigente.origen }}
         @if (vigente.origen === 'base') { · publicado por {{ vigente.publicadoPor?.nombre ?? 'Comando' }} }
       </p>
-    }
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
-    }
-    @if (recordatorioEvals()) {
-      <app-aviso tipo="info" [flotante]="true" [nivel]="1" [descartable]="true" (descartar)="recordatorioEvals.set(false)">
-        Un estilo nuevo exige correr las evals reales antes de llegar a clientes
-        (<code>EVALS_MODO=real npm run evals</code>).
-      </app-aviso>
-    }
-    @if (cercaDelTope()) {
-      <app-aviso tipo="info" [flotante]="true" [nivel]="2">
-        <span data-aviso-tope>El estilo está cerca del tope: solo cuentan las secciones activas.</span>
-      </app-aviso>
     }
 
     @if (visibles().length === 0 && busqueda().trim() !== '') {
