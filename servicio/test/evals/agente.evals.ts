@@ -116,8 +116,13 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
       expect(aplicado).not.toBeNull();
       expect(estilo).toMatchObject({ origen: 'base' });
       expect(estilo.texto).toContain('tono muy formal');
+      // EST-D2: el candidato queda como secciones y como foto compuesta, en la base de la corrida.
+      const secciones = await prisma.seccionEstilo.findMany({ orderBy: { orden: 'asc' } });
+      expect(secciones.map((s) => [s.titulo, s.activo])).toEqual([['Candidato', true]]);
+      await expect(prisma.versionEstilo.count({ where: { vigente: true } })).resolves.toBe(1);
     } finally {
       await prisma.versionEstilo.deleteMany();
+      await prisma.seccionEstilo.deleteMany();
       // Invalida la copia en memoria del proveedor: el resto de la corrida vuelve al estilo del archivo.
       await contexto.get<ClienteRedis>(REDIS_CLIENTE).incr('agente:prompt:version');
       await rm(carpeta, { recursive: true, force: true });

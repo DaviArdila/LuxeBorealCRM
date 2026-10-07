@@ -5,6 +5,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PublicarEstilo } from '../../../src/modulos/agente/aplicacion/publicar-estilo.js';
 import { SembrarEstilo } from '../../../src/modulos/agente/aplicacion/sembrar-estilo.js';
+import { componerEstilo, dividirEstilo } from '../../../src/modulos/agente/dominio/secciones-estilo.js';
 import { validarEstilo } from '../../../src/modulos/agente/dominio/validar-estilo.js';
 import { RepositorioEstiloPrisma } from '../../../src/modulos/agente/infraestructura/prisma/repositorio-estilo-prisma.js';
 import { CONFIGURACION, ConfiguracionModule, cargarConfiguracion } from '../../../src/plataforma/config/index.js';
@@ -38,6 +39,7 @@ async function crearContexto() {
     .compile();
   const prisma = modulo.get(PrismaService);
   await prisma.versionEstilo.deleteMany();
+  await prisma.seccionEstilo.deleteMany();
   const redis = modulo.get<ClienteRedis>(REDIS_CLIENTE);
   if (redis.status === 'wait') await redis.connect();
   const repositorio = new RepositorioEstiloPrisma(prisma);
@@ -98,5 +100,31 @@ describe('Semilla del estilo inicial (EST-D6, integración)', () => {
     await expect(sembrar.ejecutar('# Estilo inicial\n')).resolves.toEqual({ sembrado: false });
 
     await expect(prisma.versionEstilo.count()).resolves.toBe(1);
+  });
+
+  it('EST-D6 — Sembrar deja la versión 1 y las secciones partidas del estilo inicial, activas y desde el orden 0', async () => {
+    const { sembrar, prisma, repositorio } = await crearContexto();
+    const texto = await readFile(ARCHIVO_ESTILO_INICIAL, 'utf8');
+
+    await sembrar.ejecutar(texto);
+
+    const secciones = await prisma.seccionEstilo.findMany({ orderBy: { orden: 'asc' } });
+    const esperadas = dividirEstilo(texto);
+    expect(secciones.map((s) => s.titulo)).toEqual(esperadas.map((s) => s.titulo));
+    expect(secciones.map((s) => s.orden)).toEqual(esperadas.map((_, i) => i));
+    expect(secciones.every((s) => s.activo)).toBe(true);
+    expect(componerEstilo(secciones).trimEnd()).toBe((await repositorio.leerVigente())?.texto.trimEnd());
+  });
+
+  it('EST-D6 — Una segunda corrida no toca las secciones, ni siquiera editadas', async () => {
+    const { sembrar, prisma } = await crearContexto();
+    const texto = await readFile(ARCHIVO_ESTILO_INICIAL, 'utf8');
+    await sembrar.ejecutar(texto);
+    await prisma.seccionEstilo.updateMany({ where: { orden: 0 }, data: { texto: 'Editada por el admin' } });
+    const antes = await prisma.seccionEstilo.findMany({ orderBy: { orden: 'asc' } });
+
+    await expect(sembrar.ejecutar(texto)).resolves.toEqual({ sembrado: false });
+
+    await expect(prisma.seccionEstilo.findMany({ orderBy: { orden: 'asc' } })).resolves.toEqual(antes);
   });
 });

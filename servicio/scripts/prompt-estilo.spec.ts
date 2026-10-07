@@ -20,6 +20,13 @@ function dependencias(sobrescribir: Partial<DependenciasEstilo> = {}): Dependenc
     },
     publicar: { ejecutar: () => Promise.resolve({ publicado: true as const, version: 4 }) },
     restaurar: { ejecutar: () => Promise.resolve({ publicado: true as const, version: 5 }) },
+    secciones: {
+      listar: () =>
+        Promise.resolve([
+          { id: 'a', titulo: 'Saludo', texto: 'TEXTO-PRIVADO-A', orden: 0, activo: true, creado: new Date(0), actualizado: new Date(0) },
+          { id: 'b', titulo: 'Cierre', texto: 'Hasta pronto', orden: 1, activo: false, creado: new Date(0), actualizado: new Date(0) },
+        ]),
+    },
     leerArchivo: () => Promise.resolve('Estilo desde archivo'),
     ...sobrescribir,
   };
@@ -29,6 +36,7 @@ describe('scripts/prompt-estilo — parseo de argumentos (AGT22)', () => {
   it('reconoce ver, historial, publicar --archivo y restaurar --version', () => {
     expect(parsearArgumentosEstilo(['ver'])).toEqual({ accion: 'ver' });
     expect(parsearArgumentosEstilo(['historial'])).toEqual({ accion: 'historial' });
+    expect(parsearArgumentosEstilo(['secciones'])).toEqual({ accion: 'secciones' });
     expect(parsearArgumentosEstilo(['publicar', '--archivo', 'mi-estilo.md'])).toEqual({ accion: 'publicar', archivo: 'mi-estilo.md' });
     expect(parsearArgumentosEstilo(['restaurar', '--version', '2'])).toEqual({ accion: 'restaurar', version: 2 });
   });
@@ -113,5 +121,22 @@ describe('scripts/prompt-estilo — reporte (AGT22)', () => {
 
     expect(resultado.limpio).toBe(false);
     expect(resultado.mensaje).toContain('--archivo');
+  });
+
+  it('EST-D2 — secciones lista orden, estado, título y largo sin copiar ningún texto', async () => {
+    const resultado = await ejecutarEstilo(['secciones'], dependencias());
+
+    expect(resultado.limpio).toBe(true);
+    expect(resultado.mensaje).toContain('0 · activa · Saludo · 15 caracteres');
+    expect(resultado.mensaje).toContain('1 · apagada · Cierre · 12 caracteres');
+    expect(resultado.mensaje).not.toContain('TEXTO-PRIVADO-A');
+    expect(resultado.mensaje).not.toContain('Hasta pronto');
+  });
+
+  it('EST-D2 — secciones sin ninguna lo dice con claridad', async () => {
+    const resultado = await ejecutarEstilo(['secciones'], dependencias({ secciones: { listar: () => Promise.resolve([]) } }));
+
+    expect(resultado.limpio).toBe(true);
+    expect(resultado.mensaje).toMatch(/sin secciones/i);
   });
 });

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { componerEstilo, dividirEstilo } from '../dominio/secciones-estilo.js';
 import type { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import type { ConsultaCasos, EntradaIndice } from '../../asistente/index.js';
 import type { Horario } from '../../horario/index.js';
@@ -196,5 +199,17 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.reglas).toMatch(/sin agregar datos que el caso no trae/i);
     expect(cargador.reglas).toMatch(/solo si el título está en el índice/i);
     expect(cargador.reglas).toMatch(/`encontrado: false`/);
+  });
+
+  it('EST-S1 — El prompt con las secciones sembradas es idéntico al del estilo inicial', async () => {
+    const inicial = readFileSync(path.join(import.meta.dirname, '../../../../prisma/datos/estilo-inicial.md'), 'utf8');
+    const sembradas = componerEstilo(dividirEstilo(inicial).map((seccion, orden) => ({ ...seccion, orden, activo: true })));
+    const delTexto = crear(CATALOGO, true, { texto: inicial, version: 1, origen: 'base' });
+    const delasSecciones = crear(CATALOGO, true, { texto: sembradas, version: 1, origen: 'base' });
+
+    const a = await delTexto.ensamblar.ensamblar({ instruccionesTurno: [] });
+    const b = await delasSecciones.ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(b.texto).toBe(a.texto);
   });
 });
