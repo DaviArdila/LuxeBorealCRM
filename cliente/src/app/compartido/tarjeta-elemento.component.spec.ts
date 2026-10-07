@@ -8,6 +8,7 @@ import { TarjetaElementoComponent } from './tarjeta-elemento.component';
     <app-tarjeta-elemento [titulo]="titulo" [etiquetas]="etiquetas" [vista]="vista" [clicable]="clicable"
       [atenuada]="atenuada" [tono]="tono" [variante]="variante" [conteo]="conteo" [titulos]="titulos" (abrir)="abiertas = abiertas + 1">
       <button type="button" acciones data-prueba="editar">Editar</button>
+      <span esquina data-prueba="interruptor">Activo</span>
     </app-tarjeta-elemento>
   `,
 })
@@ -41,6 +42,14 @@ describe('Tarjeta de elemento', () => {
     expect(Array.from(el.querySelectorAll('[data-etiqueta]')).map((e) => e.textContent)).toEqual(['Sistema', 'Guía']);
     expect(el.querySelector('[data-vista]')!.textContent).toBe('Hola, ¿en qué te ayudo?');
     expect(el.querySelector('[data-prueba="editar"]')).not.toBeNull();
+  });
+
+  it('proyecta la ranura esquina en la cabecera, junto al título y no al pie', async () => {
+    const { el } = await montar({ clicable: true });
+
+    const esquina = el.querySelector('[data-prueba="interruptor"]')!;
+    expect(esquina.closest('.cabecera')).not.toBeNull();
+    expect(esquina.closest('.pie')).toBeNull();
   });
 
   it('sin etiquetas ni vista no dibuja esos bloques', async () => {

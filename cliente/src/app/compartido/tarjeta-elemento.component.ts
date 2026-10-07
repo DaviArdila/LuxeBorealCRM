@@ -6,7 +6,8 @@ export type TonoDeTarjeta = 'neutro' | 'primario' | 'secundario' | 'terciario';
  * Tarjeta redondeada de un elemento de una lista (un caso, una sección, una categoría). El título va en su propia
  * fila con la fuente de títulos; debajo, la vista previa recortada y, al pie, las etiquetas y la ranura
  * `[acciones]` (íconos), que nunca le quitan ancho al título. `tono` pinta un acento a la izquierda según el tipo
- * (por ejemplo, sistema, guía o literal). Con `clicable` el título es un botón real que cubre toda la tarjeta
+ * (por ejemplo, sistema, guía o literal). La ranura `[esquina]` pone un control (un interruptor) arriba a la
+ * derecha, junto al título. Con `clicable` el título es un botón real que cubre toda la tarjeta
  * (teclado y lector de pantalla sin trabajo extra) y emite `abrir`; las acciones quedan por encima. La variante
  * `categoria` muestra el conteo y los primeros títulos. `atenuada` marca un elemento inactivo.
  */
@@ -31,6 +32,7 @@ export type TonoDeTarjeta = 'neutro' | 'primario' | 'secundario' | 'terciario';
       @if (conteo() !== null) {
         <span class="conteo" data-conteo>{{ conteo() }}</span>
       }
+      <span class="esquina"><ng-content select="[esquina]" /></span>
     </div>
     @if (variante() === 'categoria') {
       <ul class="titulos" data-titulos>
@@ -178,6 +180,16 @@ export type TonoDeTarjeta = 'neutro' | 'primario' | 'secundario' | 'terciario';
       background: var(--mat-sys-surface-container-high);
       color: var(--mat-sys-on-surface-variant);
       font: var(--mat-sys-label-small);
+    }
+    .esquina {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex: none;
+      align-items: center;
+    }
+    .esquina:empty {
+      display: none;
     }
     .acciones {
       position: relative;

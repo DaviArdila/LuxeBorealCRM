@@ -130,17 +130,17 @@ interface Restauracion {
           [etiquetas]="etiquetasDe(seccion)" [vista]="seccion.texto" [atenuada]="!seccion.activo"
           [tono]="seccion.activo ? 'primario' : 'neutro'" [clicable]="true"
           (abrir)="leer(seccion)">
+          <mat-slide-toggle esquina class="luxe-interruptor-mini" hideIcon [checked]="seccion.activo"
+                            [disabled]="ocupado()" [attr.aria-label]="'Activar ' + seccion.titulo"
+                            (change)="alternar(seccion, $event.checked, $event.source)" />
           <span acciones class="luxe-compacto">
-            <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
-              <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
-            </span>
-            <mat-slide-toggle class="luxe-interruptor-mini" hideIcon [checked]="seccion.activo" [disabled]="ocupado()"
-                              [attr.aria-label]="'Activar ' + seccion.titulo"
-                              (change)="alternar(seccion, $event.checked, $event.source)" />
             <button mat-icon-button type="button" [disabled]="ocupado()"
                     [attr.aria-label]="'Editar ' + seccion.titulo" (click)="editarSeccion(seccion)">
               <mat-icon fontIcon="edit" aria-hidden="true" />
             </button>
+            <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
+              <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
+            </span>
           </span>
         </app-tarjeta-elemento>
       }
