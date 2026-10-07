@@ -1140,3 +1140,149 @@ Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-y-caso
 - Dado una base con un estilo publicado por el usuario o con versiones retiradas,
 - Cuando se corre `npm run casos:sembrar`,
 - Entonces no se agrega ninguna versión.
+
+### Requirement: EST-S1 — El estilo se compone de secciones, sin categorías
+
+El estilo del bot MUST componerse de las filas de `seccion_estilo` (`MODELO_DATOS.md`): cada sección tiene título único
+(sin distinguir mayúsculas ni acentos), texto, `orden` y `activo`. El bot MUST recibir **un solo bloque**: las secciones
+activas por `orden`, cada una como `# título`, una línea en blanco y su texto (`componerEstilo`). El estilo MUST ser
+contexto siempre activo del prompt y MUST NOT ser una herramienta que el modelo decide invocar. No hay categorías ni
+borrado de secciones: apagar (`activo = false`) es la única forma de retirarla. `ProveedorEstilo` MUST seguir cacheando
+un solo texto (el compuesto) en memoria, con la versión compartida en Redis y el vencimiento de 5 minutos de AGT18, sin
+consultas extra por turno.
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: El bot recibe las secciones activas en su orden
+
+- Dado tres secciones, la segunda apagada,
+- Cuando se arma el prompt del turno,
+- Entonces el estilo es la primera y la tercera como `# título`, línea en blanco y texto, en su orden.
+
+#### Scenario: Un título repetido no se acepta
+
+- Dado una sección «Tono»,
+- Cuando se crea otra llamada «tono»,
+- Entonces se rechaza como duplicada y no cambia nada.
+
+### Requirement: EST-S2 — Cada sección y el compuesto se validan antes de guardarse
+
+Cada sección MUST cumplir las reglas de AGT20 (sin valores en pesos, SKU ni marcadores `{{...}}`), tener un título de una
+línea de hasta 100 caracteres y un texto sin líneas que empiecen por `# ` (partirían la sección). El estilo compuesto
+resultante MUST tener entre 1 y 4.000 caracteres. Un cambio que no cumple MUST revertirse completo: la versión vigente y
+las secciones no cambian, y el motivo nombra la regla sin copiar el texto (R14).
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: El tope se aplica a la suma
+
+- Dado un estilo compuesto de 3.900 caracteres,
+- Cuando se crea una sección que lo llevaría a 4.100,
+- Entonces se rechaza con `estilo-invalido` y no se crea.
+
+#### Scenario: Un texto con encabezado propio se rechaza
+
+- Dado un texto de sección con una línea que empieza por `# `,
+- Cuando se guarda,
+- Entonces se rechaza con `estilo-invalido`.
+
+### Requirement: EST-S3 — La migración parte el estilo vigente en secciones
+
+La migración `estilo_secciones` MUST dividir el texto de la versión vigente de `version_estilo` por sus encabezados `# `:
+lo anterior al primero queda como la sección «General», las secciones sin texto se descartan, los títulos repetidos se
+numeran y los saltos de línea de Windows no cambian el resultado. Sin versión vigente MUST NOT insertar nada. Recompuestas,
+las secciones MUST dar el mismo texto del estilo vigente.
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: Un estilo sin encabezados es una sola sección
+
+- Dado un estilo vigente sin ningún `# `,
+- Cuando corre la migración,
+- Entonces existe una sección «General» con ese texto.
+
+### Requirement: EST-S4 — Publicar y restaurar reemplazan las secciones
+
+Publicar un estilo completo (`PUT /api/v1/agente/estilo`, `prompt:estilo -- publicar`) y restaurar una versión del
+historial MUST reemplazar todas las secciones por la división del texto por encabezados `# ` (`dividirEstilo`) y guardar la
+versión nueva en `version_estilo`, todo en una transacción. Las reglas de AGT20 a AGT22 no cambian.
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: Restaurar devuelve las secciones de esa versión
+
+- Dado un historial con la versión 1 de dos secciones y un estilo vigente de cuatro,
+- Cuando un admin restaura la versión 1,
+- Entonces quedan las dos secciones de esa versión y existe una versión nueva con su texto.
+
+### Requirement: EST-S5 — Cada cambio que altera el compuesto guarda su foto
+
+Crear, editar, apagar, encender o reordenar una sección MUST guardar en `version_estilo`, dentro de la misma transacción, la
+foto del estilo compuesto resultante (la versión nueva es la vigente; el historial conserva las diez anteriores, EST-D5) y
+subir la versión compartida en Redis para que el cambio llegue al siguiente mensaje (AGT19). Un cambio que deja el
+compuesto igual MUST NOT crear versión. Cada versión conserva quién la publicó (EST-D3).
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: Crear una sección crea una versión
+
+- Dado un estilo vigente en la versión 2,
+- Cuando un admin crea una sección válida,
+- Entonces la versión 3 es la vigente y contiene el compuesto con la sección al final.
+
+#### Scenario: Un cambio que no altera el compuesto no crea versión
+
+- Dado una sección apagada,
+- Cuando se apaga otra vez,
+- Entonces la versión vigente no cambia.
+
+### Requirement: EST-API — Las secciones se administran por la API, solo por un admin
+
+El sistema MUST exponer, solo al rol `admin` (API7, USR6), estas operaciones, con sus reglas en EST-S2 y EST-S5:
+
+- `GET /api/v1/agente/estilo/secciones` (`listarSeccionesEstilo`): las secciones por orden, activas o no, el largo del
+  compuesto y su máximo.
+- `POST /api/v1/agente/estilo/secciones` (`crearSeccionEstilo`): crea al final; `201`, `409` `seccion-duplicada` o `422`
+  `estilo-invalido`.
+- `PATCH /api/v1/agente/estilo/secciones/:id` (`editarSeccionEstilo`): edita título, texto o `activo` con la marca
+  `actualizado` que se leyó (bloqueo optimista); `404` `seccion-inexistente`, `409` `seccion-modificada` si otro admin la
+  cambió, `409` `seccion-duplicada` o `422` `estilo-invalido`.
+- `PUT /api/v1/agente/estilo/secciones/orden` (`ordenarSeccionesEstilo`): recibe la lista completa de ids; `422`
+  `orden-secciones-invalido` si no coincide con las secciones existentes.
+
+No MUST existir una operación de borrado. Ni las respuestas de error ni los logs MUST llevar el texto de una sección: solo
+ids, la versión y el id del usuario (R14).
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: Editar con una marca vieja se rechaza
+
+- Dado una sección que otro admin editó después de leerla,
+- Cuando el primero la edita con la marca que leyó,
+- Entonces la respuesta es `409` con `seccion-modificada` y nada cambia.
+
+#### Scenario: Reordenar con una lista incompleta se rechaza
+
+- Dado tres secciones,
+- Cuando un admin envía el orden con solo dos ids,
+- Entonces la respuesta es `422` con `orden-secciones-invalido` y el orden no cambia.
+
+#### Scenario: Un asesor no administra las secciones
+
+- Dado un asesor con sesión,
+- Cuando llama a cualquiera de las operaciones de secciones,
+- Entonces la respuesta es `403` con `rol-insuficiente`.
+
+### Requirement: EST-CLI — El comando lista las secciones sin mostrar sus textos
+
+`npm run prompt:estilo -- secciones` MUST ser de solo lectura y listar cada sección con su orden, si está activa o apagada,
+su título y su largo. MUST NOT imprimir el texto de ninguna sección (R14). Crear, editar y ordenar secciones se hace
+desde la pantalla del back office.
+
+Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)
+
+#### Scenario: El listado no muestra textos
+
+- Dado un estilo de varias secciones,
+- Cuando se corre `npm run prompt:estilo -- secciones`,
+- Entonces aparecen orden, estado, título y largo de cada una, y ningún texto.

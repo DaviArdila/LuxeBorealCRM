@@ -1,9 +1,12 @@
 # Cómo cambiar el estilo del bot
 
-**Resumen.** El estilo del bot (tono, longitud, formato, emojis) se cambia desde la pantalla «Estilo del bot» del
-back office o con un comando, sin desplegar y con vuelta atrás. Cada versión guarda **quién la publicó**. Solo el estilo es editable: las reglas de dinero, datos y herramientas no se pueden tocar. Antes de
-exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de fondo:
-[ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md).
+**Resumen.** El estilo del bot (tono, longitud, formato, emojis) es una lista de **secciones** que el admin crea, edita,
+ordena y apaga desde la pantalla «Estilo del bot» (`/asistente/estilo`), sin desplegar y con vuelta atrás. El bot recibe
+todas las secciones activas juntas, como un solo bloque. Cada versión guarda **quién la publicó**. Solo el estilo es
+editable: las reglas de dinero, datos y herramientas no se pueden tocar. Antes de exponer un estilo nuevo a clientes, se
+mide con los evals reales. Decisiones de fondo:
+[ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md) y
+[ADR-0026](../adr/0026-estilo-del-bot-en-secciones.md).
 
 > Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
 > `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
@@ -19,11 +22,42 @@ exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de f
 Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
 queda sin estilo.
 
+## Las secciones
+
+Una sección es un trozo del estilo con **título** (una línea, hasta 100 caracteres, único) y **texto**. Por ejemplo:
+«Tono», «Longitud de los mensajes», «Emojis». Se componen en el orden de la lista; las apagadas no llegan al bot.
+
+| Quiero… | Cómo |
+|---|---|
+| Agregar una sección | «Nueva sección» en la pantalla: queda al final |
+| Cambiar una | Editarla en la ventana; si otro admin la cambió antes, la pantalla avisa y recarga la lista |
+| Cambiar el orden | Botones de subir y bajar |
+| Quitarla del bot | Apagarla. No hay borrado: se enciende de nuevo cuando haga falta |
+| Ver el largo | El contador global muestra el total sobre 4.000 y avisa al llegar al 90 % |
+| Volver a una versión | «Restaurar» en el historial: **reemplaza todas las secciones** por las de esa versión |
+
+Cada cambio que altera el estilo compuesto guarda una **versión** (foto del compuesto) en el historial; un cambio que lo
+deja igual no crea versión. El tope de **4.000 caracteres** se cuenta sobre el compuesto completo, no por sección. Un
+texto de sección no puede tener líneas que empiecen por `# ` (partirían la sección). Las demás reglas están en
+«Qué rechaza el comando».
+
+## Cómo lo recibe el bot
+
+El bot recibe **un solo bloque**: las secciones activas por orden, cada una como `# título`, una línea en blanco y su
+texto. Va siempre en el prompt, como contexto, y **no es una herramienta**.
+
+- **Por qué no una herramienta.** Que el modelo pidiera sus secciones agregaría una vuelta extra al LLM en cada turno
+  (más latencia y costo) y correría el riesgo de que no las pidiera: el tono se perdería sin avisar.
+- **Costo de leerlo.** Medido en local (2026-10-07): leer 9 secciones cuesta lo mismo que leer un solo texto
+  (~0,55 ms p50). La comprobación de versión por turno es un `GET` de Redis (~0,36 ms).
+- **Caché.** El bot guarda el texto compuesto en memoria, compara por turno la versión compartida en Redis y lo relee si
+  cambió o pasaron 5 minutos. No consulta las secciones en cada mensaje.
+
 ## El estilo inicial de una base nueva
 
 Una base nueva no queda con el estilo genérico del archivo: `npm run casos:sembrar` publica como **versión 1** el estilo
 pensado para una tienda colombiana de grifos, accesorios de baño y lavaplatos de acero inoxidable (trato de «usted» por
-defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md`.
+defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md` y queda partido en secciones por sus encabezados `# `.
 
 - **Cuándo aplica.** Solo si `version_estilo` no tiene ninguna fila, ni vigente ni retirada. Si ya hay un estilo publicado
   (por la pantalla o por el comando), o aunque solo queden versiones retiradas, la semilla no hace nada y nunca pisa lo que
@@ -38,25 +72,27 @@ defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md`.
 
 ## Dónde vive y quién publicó
 
-Desde la Fase 12 el estilo vive en su propia tabla, `version_estilo` ([MODELO_DATOS.md](../../MODELO_DATOS.md)): una fila
-por versión, con el texto, la fecha de publicación y el autor. La pantalla muestra la versión vigente con su autor y el
+Desde la Fase 12 el historial vive en su propia tabla, `version_estilo` ([MODELO_DATOS.md](../../MODELO_DATOS.md)): una fila
+por versión (la foto del estilo compuesto), con el texto, la fecha de publicación y el autor. La pantalla muestra la versión vigente con su autor y el
 historial con el autor de cada versión. Lo publicado por la pantalla lleva el nombre del usuario; lo publicado con
 `npm run prompt:estilo` no tiene usuario y se muestra como «Comando». Restaurar una versión deja como autor de la
 versión nueva a quien restauró. El nombre se guarda tal como estaba al publicar: si el usuario cambia de nombre, el
 historial no cambia.
 
 La migración copió el estilo y su historial desde `parametro` conservando los números de versión. Las claves viejas
-(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) las borró la migración de limpieza: el estilo vive solo en
-`version_estilo`.
+(`prompt_estilo`, `prompt_estilo_version`, `prompt_estilo_historial`) las borró la migración de limpieza: el estilo vive en
+`seccion_estilo` (lo editable) y `version_estilo` (sus fotos).
 
 ## El flujo recomendado
 
-1. **Escribe el estilo** en un archivo de texto, por ejemplo `mi-estilo.md`. Mira el actual con
-   `npm run prompt:estilo -- ver` y parte de ahí.
+1. **Escribe el estilo** en un archivo de texto, por ejemplo `mi-estilo.md`, con un encabezado `# ` por sección. Mira el
+   actual con `npm run prompt:estilo -- ver` y parte de ahí.
+   Para un cambio chico, edita la sección en la pantalla: es más simple que el archivo.
 2. **Mídelo antes de publicarlo** con el LLM real (cuesta unos centavos, necesita tu clave de OpenAI):
    `EVALS_MODO=real EVALS_ESTILO=./mi-estilo.md npm run evals`. El estilo se publica solo en la base de la corrida, no en
    la tuya. Debe quedar **APROBADA**.
-3. **Publícalo**: `npm run prompt:estilo -- publicar --archivo ./mi-estilo.md`. El siguiente mensaje del bot ya lo usa.
+3. **Publícalo**: `npm run prompt:estilo -- publicar --archivo ./mi-estilo.md`. Reemplaza todas las secciones por las del
+   archivo. El siguiente mensaje del bot ya lo usa.
 4. **Pruébalo por WhatsApp** con una conversación real.
 5. **Si no te gusta**, vuelve atrás (ver abajo).
 
@@ -85,9 +121,9 @@ Un estilo rechazado no cambia nada: el vigente sigue igual y el comando termina 
 ## Volver atrás
 
 - **A una versión estable:** `npm run prompt:estilo -- historial` para ver las versiones y
-  `npm run prompt:estilo -- restaurar --version <n>`. No borra nada: la restaurada pasa a ser una versión nueva y el
+  `npm run prompt:estilo -- restaurar --version <n>`. No borra nada: la restaurada pasa a ser una versión nueva (con sus secciones) y el
   historial conserva las anteriores (últimas 10).
-- **Al archivo del repositorio:** vacía la tabla `version_estilo` (`DELETE FROM version_estilo;`). El bot vuelve al archivo
+- **Al archivo del repositorio:** vacía la tabla `version_estilo` (`DELETE FROM version_estilo;`; las secciones quedan, pero no rigen sin versión vigente). El bot vuelve al archivo
   en cuanto expira su copia (máximo 5 minutos) o alguien publica de nuevo.
 
 ## Cosas que conviene saber
