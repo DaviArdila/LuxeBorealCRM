@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_CARACTERES_ESTILO, validarEstilo } from './validar-estilo.js';
+import { MAX_CARACTERES_ESTILO, MAX_CARACTERES_TITULO_SECCION, validarEstilo, validarSeccionEstilo } from './validar-estilo.js';
 
 // Escenarios AGT20 de `openspec/changes/fase-08c-prompts-en-base-de-datos/specs/agente/spec.md`.
 
@@ -40,5 +40,40 @@ describe('agente/dominio/validar-estilo', () => {
 
   it('el motivo nunca copia el texto del estilo (R14)', () => {
     expect(motivoDe('Texto secreto $12.345 aquí')).not.toContain('secreto');
+  });
+});
+
+describe('validarSeccionEstilo (EST-S2)', () => {
+  function motivoSeccion(titulo: string, texto: string): string {
+    const resultado = validarSeccionEstilo({ titulo, texto });
+    expect(resultado.valido).toBe(false);
+    return resultado.valido ? '' : resultado.motivo;
+  }
+
+  it('EST-S2 — Una sección con título y texto sin reglas rotas se acepta', () => {
+    expect(validarSeccionEstilo({ titulo: 'Saludo', texto: 'Saluda una vez.\n\n## Nota\nBreve.' })).toEqual({ valido: true });
+  });
+
+  it('EST-S2 — El título y el texto no pueden estar vacíos y el título es de una línea', () => {
+    expect(motivoSeccion('  ', 'texto')).toMatch(/título/i);
+    expect(motivoSeccion('Uno\nDos', 'texto')).toMatch(/título/i);
+    expect(motivoSeccion('a'.repeat(MAX_CARACTERES_TITULO_SECCION + 1), 'texto')).toContain(String(MAX_CARACTERES_TITULO_SECCION));
+    expect(motivoSeccion('Saludo', ' \n ')).toMatch(/vac/i);
+  });
+
+  it('EST-S2 — Un encabezado «# » dentro del texto se rechaza porque partiría la sección', () => {
+    expect(motivoSeccion('Saludo', 'Hola\n# Otra\nmás')).toMatch(/encabezado/i);
+  });
+
+  it('EST-S2 — Aplican las reglas del estilo: pesos, SKU y marcadores, en el texto y en el título', () => {
+    expect(motivoSeccion('Saludo', 'Cuesta $389.000')).toMatch(/pesos/i);
+    expect(motivoSeccion('Saludo', 'Usa el SKU-GL001')).toMatch(/SKU/);
+    expect(motivoSeccion('Saludo', 'Hoy {{horario}}')).toMatch(/plantilla/i);
+    expect(motivoSeccion('Precio $12.000', 'texto')).toMatch(/pesos/i);
+  });
+
+  it('EST-S2 — El motivo nunca copia el texto de la sección (R14)', () => {
+    expect(motivoSeccion('Saludo', 'secreto $12.345')).not.toContain('secreto');
+    expect(motivoSeccion('Saludo', 'secreto\n# otra')).not.toContain('secreto');
   });
 });
