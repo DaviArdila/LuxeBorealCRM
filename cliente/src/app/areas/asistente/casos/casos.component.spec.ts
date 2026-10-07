@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { CasosComponent } from './casos.component';
 
@@ -67,10 +69,12 @@ function esperar(milisegundos: number): Promise<void> {
   return new Promise((resolver) => setTimeout(resolver, milisegundos));
 }
 
+const ventanas = () => document.querySelectorAll('mat-dialog-container').length;
+
 /** La animación de cierre de Material no tiene duración fija en jsdom: se espera por tiempo, no por vueltas. */
-async function cerrada(fixture: ComponentFixture<CasosComponent>): Promise<void> {
+async function ventanasHasta(fixture: ComponentFixture<CasosComponent>, cuantas: number): Promise<void> {
   const limite = Date.now() + 3000;
-  while (document.querySelector('mat-dialog-container') && Date.now() < limite) {
+  while (ventanas() !== cuantas && Date.now() < limite) {
     await esperar(20);
     await fixture.whenStable();
   }
@@ -89,6 +93,13 @@ async function abrir(casos: object = CASOS, categorias: object = CATEGORIAS) {
   return montada;
 }
 
+/** Vuelve a atender las dos lecturas que siguen a un cambio. */
+async function recargar(fixture: ComponentFixture<CasosComponent>, control: HttpTestingController, casos: object = CASOS) {
+  control.expectOne((p) => p.method === 'GET' && p.url === URL_CATEGORIAS).flush(CATEGORIAS);
+  listaDeCasos(control).flush(casos);
+  await asentar(fixture);
+}
+
 function boton(texto: string): HTMLButtonElement {
   return [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === texto)!;
 }
@@ -103,20 +114,48 @@ function escribir(campo: string, texto: string): void {
   control.dispatchEvent(new Event('input'));
 }
 
+const fichas = (el: HTMLElement) => [...el.querySelectorAll('[data-categoria]')];
+const nombresDeFichas = (el: HTMLElement) => fichas(el).map((f) => f.querySelector('h3')!.textContent!.trim());
+
+/** Pulsa la ficha de una categoría y espera a que se abra su ventana. */
+async function abrirCategoria(fixture: ComponentFixture<CasosComponent>, nombre: string): Promise<void> {
+  const ficha = fichas(fixture.nativeElement as HTMLElement).find((f) => f.querySelector('h3')!.textContent!.trim() === nombre)!;
+  ficha.querySelector<HTMLButtonElement>('button[data-accion="abrir"]')!.click();
+  await asentar(fixture);
+}
+
+/** Pulsa el título de un caso dentro de la ventana de su categoría. */
+async function abrirCaso(fixture: ComponentFixture<CasosComponent>, titulo: string): Promise<void> {
+  const tarjeta = [...document.querySelectorAll('[data-caso]')].find((c) => c.querySelector('h3')!.textContent!.trim() === titulo)!;
+  tarjeta.querySelector<HTMLButtonElement>('button[data-accion="abrir"]')!.click();
+  await asentar(fixture);
+}
+
 describe('SHL10 — Pantalla «Casos de uso»', () => {
   afterEach(() => (document.body.innerHTML = ''));
 
-  it('SHL10 — Los casos se agrupan por categoría con su contador', async () => {
+  it('SHL10 — La vista principal es una rejilla de categorías con su conteo y los primeros títulos', async () => {
     const { el } = await abrir();
 
-    const grupos = [...el.querySelectorAll('[data-categoria]')].map((g) => g.textContent ?? '');
-    expect(grupos[0]).toContain('Sistema');
-    expect(grupos[0]).toContain('(1)');
-    expect(grupos[0]).toContain('Traspaso a un asesor');
-    expect(grupos[1]).toContain('Políticas');
-    expect(grupos[1]).toContain('(2)');
-    expect(grupos[1]).toContain('Garantía');
-    expect(grupos[1]).toContain('Devoluciones');
+    expect(nombresDeFichas(el)).toEqual(['Sistema', 'Políticas', 'Vacía']);
+    const [sistema, politicas, vacia] = fichas(el);
+    expect(sistema!.querySelector('[data-conteo]')!.textContent).toBe('1');
+    expect(sistema!.textContent).toContain('Traspaso a un asesor');
+    expect(politicas!.querySelector('[data-conteo]')!.textContent).toBe('2');
+    expect(politicas!.textContent).toContain('Garantía');
+    expect(politicas!.textContent).toContain('Devoluciones');
+    expect(politicas!.textContent).toContain('Con inactivos');
+    expect(vacia!.querySelector('[data-conteo]')!.textContent).toBe('0');
+    expect(el.querySelector('[data-caso]')).toBeNull();
+  });
+
+  it('SHL10 — La cabecera lleva la explicación en la ayuda y no en un aviso fijo', async () => {
+    const { fixture, el } = await abrir();
+
+    const globo = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(globo.message).toContain('Estilo del bot');
+    expect(el.querySelector('h1')!.textContent).toBe('Casos de uso');
+    expect(el.textContent).not.toContain('Aquí se editan');
   });
 
   it('SHL10 — El buscador llama al servidor con retardo y muestra solo lo que responde', async () => {
@@ -133,8 +172,22 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(busqueda.request.params.get('q')).toBe('garan');
     busqueda.flush({ items: [caso()], siguienteCursor: null });
     await asentar(fixture);
+    expect(nombresDeFichas(el)).toEqual(['Políticas']);
     expect(el.textContent).toContain('Garantía');
     expect(el.textContent).not.toContain('Devoluciones');
+  });
+
+  it('SHL10 — El buscador también deja las categorías cuyo nombre coincide', async () => {
+    const { fixture, control, el } = await abrir();
+    const buscador = el.querySelector<HTMLInputElement>('[data-campo="buscar"]')!;
+
+    buscador.value = 'vac';
+    buscador.dispatchEvent(new Event('input'));
+    await esperar(350);
+    listaDeCasos(control).flush({ items: [], siguienteCursor: null });
+    await asentar(fixture);
+
+    expect(nombresDeFichas(el)).toEqual(['Vacía']);
   });
 
   it('SHL10 — Crear un caso desde la ventana llama a crearCaso, la cierra y lo muestra en su categoría', async () => {
@@ -157,15 +210,14 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
       texto: 'Aceptamos transferencia.',
       modo: 'literal',
     });
-    creacion.flush(caso({ id: 'k-9', titulo: 'Medios de pago', categoriaId: 'c-1', categoriaNombre: 'Sistema' }), { status: 201, statusText: 'Created' });
+    const nuevo = caso({ id: 'k-9', titulo: 'Medios de pago', categoriaId: 'c-1', categoriaNombre: 'Sistema' });
+    creacion.flush(nuevo, { status: 201, statusText: 'Created' });
     await asentar(fixture);
-    control.expectOne((p) => p.method === 'GET' && p.url === URL_CATEGORIAS).flush(CATEGORIAS);
-    listaDeCasos(control).flush({ items: [HANDOFF, caso({ id: 'k-9', titulo: 'Medios de pago', categoriaId: 'c-1', categoriaNombre: 'Sistema' })], siguienteCursor: null });
-    await asentar(fixture);
-    await cerrada(fixture);
+    await recargar(fixture, control, { items: [HANDOFF, nuevo], siguienteCursor: null });
+    await ventanasHasta(fixture, 0);
 
-    expect(document.querySelector('mat-dialog-container')).toBeNull();
-    expect(el.querySelector('[data-categoria]')!.textContent).toContain('Medios de pago');
+    expect(ventanas()).toBe(0);
+    expect(fichas(el)[0]!.textContent).toContain('Medios de pago');
   });
 
   it('SHL10 — Un rechazo del servidor queda dentro de la ventana y conserva lo escrito', async () => {
@@ -188,10 +240,54 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(document.querySelector<HTMLTextAreaElement>('[data-campo="texto"]')!.value).toBe('Cuesta $50.000.');
   });
 
-  it('SHL10 — «Editar» abre la ventana con el caso y guarda con la fecha de actualización', async () => {
+  it('SHL10 — Una categoría abre una ventana con las tarjetas de sus casos y sus etiquetas', async () => {
+    const { fixture } = await abrir();
+
+    await abrirCategoria(fixture, 'Políticas');
+
+    const tarjetas = [...document.querySelectorAll('[data-caso]')];
+    expect(tarjetas.map((t) => t.querySelector('h3')!.textContent!.trim())).toEqual(['Garantía', 'Devoluciones']);
+    expect(tarjetas[0]!.textContent).toContain('Cuando preguntan por la garantía');
+    expect(tarjetas[0]!.textContent).toContain('La garantía es de un año.');
+    expect(tarjetas[0]!.classList).not.toContain('atenuada');
+    expect(tarjetas[1]!.classList).toContain('atenuada');
+    expect(tarjetas[1]!.textContent).toContain('Inactivo');
+  });
+
+  it('SHL10 — Un caso abre su lectura completa y «Editar» abre la ventana de edición encima', async () => {
     const { fixture, control } = await abrir();
 
-    document.querySelector<HTMLButtonElement>('button[aria-label="Editar Garantía"]')!.click();
+    await abrirCategoria(fixture, 'Políticas');
+    await abrirCaso(fixture, 'Garantía');
+    const lectura = document.querySelector('[data-lectura]')!;
+    expect(lectura.textContent).toContain('La garantía es de un año.');
+    expect(lectura.textContent).toContain('Cuando preguntan por la garantía');
+    expect(document.querySelector('[data-campo="titulo"]')).toBeNull();
+
+    boton('Editar').click();
+    await asentar(fixture);
+    expect(ventanas()).toBe(3);
+    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.value).toBe('Garantía');
+    escribir('texto', 'La garantía es de dos años.');
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    const edicion = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-1`);
+    expect(edicion.request.body).toMatchObject({ actualizado: '2026-10-02T10:00:00.000Z', texto: 'La garantía es de dos años.' });
+    edicion.flush(caso({ texto: 'La garantía es de dos años.' }));
+    await asentar(fixture);
+    await recargar(fixture, control, { items: [HANDOFF, caso({ texto: 'La garantía es de dos años.' })], siguienteCursor: null });
+    await ventanasHasta(fixture, 2);
+
+    expect(document.querySelector('[data-lectura]')!.textContent).toContain('dos años');
+  });
+
+  it('SHL10 — El lápiz de la tarjeta abre la edición directa con la fecha de actualización', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Políticas');
+    botonConEtiqueta('Editar Garantía')!.click();
     await asentar(fixture);
     expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.value).toBe('Garantía');
     escribir('texto', 'La garantía es de dos años.');
@@ -203,23 +299,52 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(edicion.request.body).toMatchObject({ actualizado: '2026-10-02T10:00:00.000Z', texto: 'La garantía es de dos años.' });
   });
 
-  it('SHL10 — Un caso del sistema tiene la etiqueta «Sistema» y su descripción, sin borrar ni desactivar', async () => {
-    const { fixture, el } = await abrir();
+  it('SHL10 — Borrar un caso pide confirmación y llama al servidor solo al confirmar', async () => {
+    const { fixture, control } = await abrir();
 
-    const grupo = el.querySelector('[data-categoria]')!;
-    expect(grupo.textContent).toContain('Sistema');
-    expect(grupo.textContent).toContain('Cuando el bot pasa la conversación a un asesor');
+    await abrirCategoria(fixture, 'Políticas');
+    botonConEtiqueta('Borrar Garantía')!.click();
+    await asentar(fixture);
+    expect(document.body.textContent).toContain('¿Borrar el caso «Garantía»?');
+    control.expectNone((p) => p.method === 'DELETE');
+    boton('Confirmar').click();
+    await asentar(fixture);
+
+    control.expectOne((p) => p.method === 'DELETE' && p.url === `${URL_CASOS}/k-1`).flush(null, { status: 204, statusText: 'x' });
+  });
+
+  it('SHL10 — Un caso del sistema tiene la etiqueta «Sistema» y su descripción, sin borrar ni desactivar', async () => {
+    const { fixture } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    const tarjeta = document.querySelector('[data-caso]')!;
+    expect(tarjeta.textContent).toContain('Sistema');
+    expect(tarjeta.textContent).toContain('Cuando el bot pasa la conversación a un asesor');
     expect(botonConEtiqueta('Borrar Traspaso a un asesor')).toBeUndefined();
-    expect(botonConEtiqueta('Borrar Garantía')).toBeDefined();
 
     botonConEtiqueta('Editar Traspaso a un asesor')!.click();
     await asentar(fixture);
     expect(document.querySelector('[data-campo="activo"]')).toBeNull();
   });
 
-  it('SHL10 — Una categoría con casos no se borra: la pantalla muestra el motivo y la categoría sigue', async () => {
-    const { fixture, control, el } = await abrir();
+  it('SHL10 — La gestión de categorías vive en la ventana del botón «Categorías»', async () => {
+    const { fixture, el } = await abrir();
+    expect(el.querySelector('[data-categorias]')).toBeNull();
 
+    boton('Categorías').click();
+    await asentar(fixture);
+
+    const lista = document.querySelector('[data-categorias]')!;
+    expect(lista.textContent).toContain('Sistema');
+    expect(lista.textContent).toContain('Políticas');
+    expect(lista.textContent).toContain('Vacía');
+  });
+
+  it('SHL10 — Una categoría con casos no se borra: la pantalla muestra el motivo y la categoría sigue', async () => {
+    const { fixture, control } = await abrir();
+
+    boton('Categorías').click();
+    await asentar(fixture);
     botonConEtiqueta('Borrar categoría Políticas')!.click();
     await asentar(fixture);
     boton('Confirmar').click();
@@ -229,12 +354,14 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
       .flush({ codigo: 'categoria-con-casos', title: 'La categoría tiene casos', detail: 'mueve o borra sus casos primero' }, { status: 409, statusText: 'x' });
     await asentar(fixture);
 
-    expect(el.textContent).toContain('mueve o borra sus casos primero');
-    expect(el.querySelector('[data-categorias]')!.textContent).toContain('Políticas');
+    expect(document.querySelector('mat-dialog-container')!.textContent).toContain('mueve o borra sus casos primero');
+    expect(document.querySelector('[data-categorias]')!.textContent).toContain('Políticas');
   });
 
   it('SHL10 — Se pueden crear, renombrar y reordenar categorías', async () => {
     const { fixture, control } = await abrir();
+    boton('Categorías').click();
+    await asentar(fixture);
 
     boton('Nueva categoría').click();
     await asentar(fixture);
@@ -246,10 +373,8 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(creada.request.body).toEqual({ nombre: 'Envíos' });
     creada.flush({ id: 'c-4', nombre: 'Envíos', orden: 4, totalCasos: 0 }, { status: 201, statusText: 'Created' });
     await asentar(fixture);
-    control.expectOne((p) => p.method === 'GET' && p.url === URL_CATEGORIAS).flush(CATEGORIAS);
-    listaDeCasos(control).flush(CASOS);
-    await asentar(fixture);
-    await cerrada(fixture);
+    await recargar(fixture, control);
+    await ventanasHasta(fixture, 1);
 
     botonConEtiqueta('Renombrar categoría Políticas')!.click();
     await asentar(fixture);
@@ -261,25 +386,13 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(renombrada.request.body).toEqual({ nombre: 'Políticas de la tienda' });
     renombrada.flush({ id: 'c-2', nombre: 'Políticas de la tienda', orden: 2, totalCasos: 2 });
     await asentar(fixture);
-    control.expectOne((p) => p.method === 'GET' && p.url === URL_CATEGORIAS).flush(CATEGORIAS);
-    listaDeCasos(control).flush(CASOS);
-    await asentar(fixture);
-    await cerrada(fixture);
+    await recargar(fixture, control);
+    await ventanasHasta(fixture, 1);
 
     botonConEtiqueta('Subir categoría Políticas')!.click();
     await asentar(fixture);
     const orden = control.expectOne((p) => p.method === 'PUT' && p.url === `${URL_CATEGORIAS}/orden`);
     expect(orden.request.body).toEqual({ ids: ['c-2', 'c-1', 'c-3'] });
-  });
-
-  it('SHL10 — Un caso inactivo se ve atenuado con la etiqueta «Inactivo»', async () => {
-    const { el } = await abrir();
-
-    const fila = [...el.querySelectorAll('[data-caso]')].find((f) => f.textContent?.includes('Devoluciones'))!;
-    expect(fila.classList.contains('inactivo')).toBe(true);
-    expect(fila.textContent).toContain('Inactivo');
-    const activa = [...el.querySelectorAll('[data-caso]')].find((f) => f.textContent?.includes('Garantía'))!;
-    expect(activa.classList.contains('inactivo')).toBe(false);
   });
 
   it('SHL10 — Sin casos muestra un estado vacío con la acción de crear', async () => {

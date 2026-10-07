@@ -11,7 +11,7 @@ controles ~10 % más compactos.
 ## Tareas
 - [x] T1 Tokens `--luxe-*` y densidad -10 % de filtros/botones (`cliente/src/styles.scss`) (ae1258e)
 - [x] T2 Shell: riel fijo 4.5rem con expansión superpuesta al hover/foco; logo al menú; sin barra superior en escritorio; sin botón «Compactar menú»; `.pagina` más ancha (e655ae9)
-- [x] T3 Compartidos: `app-cabecera-pagina`, `app-rejilla`, `app-tarjeta-elemento`, `app-aviso` modo flotante plegable
+- [x] T3 Compartidos: `app-cabecera-pagina`, `app-rejilla`, `app-tarjeta-elemento`, `app-aviso` modo flotante plegable (09a62d8)
 - [ ] T4 Casos de uso: grilla de categorías → ventana de casos → ventana de lectura → edición; filtros compactos
 - [ ] T5 Estilo del bot: buscador, grilla de secciones, arrastrar para reordenar, historial en ventana, aviso de tope flotante
 - [ ] T6 Configuración (horario, envíos, gasto LLM) e Inicio con cabecera y grilla
