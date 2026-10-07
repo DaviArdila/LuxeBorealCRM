@@ -10,3 +10,11 @@ export { PublicarEstilo, type ResultadoPublicacion } from './aplicacion/publicar
 export { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
 export { SembrarEstilo, type ResultadoSembrarEstilo } from './aplicacion/sembrar-estilo.js';
 export { ListarHistorialEstilo, type EstiloConHistorial } from './aplicacion/listar-historial-estilo.js';
+export {
+  AdministrarSeccionesEstilo,
+  type EntradaSeccionEstilo,
+} from './aplicacion/administrar-secciones-estilo.js';
+export type {
+  ResultadoCambioSecciones,
+  SeccionEstilo,
+} from './puertos/repositorio-secciones-estilo.js';

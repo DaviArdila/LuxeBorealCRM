@@ -38,6 +38,7 @@ const TABLAS_V1 = [
   'version_estilo',
   'categoria_caso',
   'caso_asistente',
+  'seccion_estilo',
 ] as const;
 
 const EXCEPCIONES_PK = new Map([

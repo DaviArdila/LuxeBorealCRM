@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
+import { normalizarTexto } from '../../../../compartido/texto/index.js';
+import { dividirEstilo } from '../../dominio/secciones-estilo.js';
 import {
-  MAX_VERSIONES_HISTORIAL,
   type AutorEstilo,
   type EstiloGuardado,
   type RepositorioEstilo,
   type VersionHistorial,
 } from '../../puertos/repositorio-estilo.js';
-
-/** Clave del candado consultivo que serializa las publicaciones (no es una clave de `parametro`). */
-const CLAVE_CANDADO = 'version_estilo';
+import { bloquearEstilo, guardarFotoDelEstilo } from './foto-estilo.js';
 
 interface FilaVersion {
   readonly version: number;
@@ -58,38 +57,27 @@ export class RepositorioEstiloPrisma implements RepositorioEstilo {
   }
 
   /**
-   * Una transacción con un candado consultivo serializa a quienes publican a la vez (si no, dos lecturas de la
-   * misma versión repetirían el número); como la primera publicación aún no tiene filas que bloquear, el candado
-   * es por clave y no por fila. Pasa la vigente a no vigente, inserta la nueva y poda lo que exceda el historial.
+   * Una transacción con el candado del estilo serializa a quienes publican a la vez (si no, dos lecturas de la misma
+   * versión repetirían el número). Guarda la foto con el texto tal cual (vigente, historial, poda) y reemplaza las secciones
+   * por la división del texto por encabezados `# `, para que lo publicado por el comando o restaurado desde el historial
+   * quede también como secciones. Las secciones nacen todas activas y con título único (`dividirEstilo`).
    */
   async publicar(texto: string, fecha: Date, autor?: AutorEstilo | null): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CLAVE_CANDADO}))`;
-      const mayor = await tx.versionEstilo.aggregate({ _max: { version: true } });
-      const nueva = (mayor._max.version ?? 0) + 1;
-
-      await tx.versionEstilo.updateMany({ where: { vigente: true }, data: { vigente: false } });
-      await tx.versionEstilo.create({
-        data: {
-          version: nueva,
-          texto,
-          vigente: true,
-          publicadoEn: fecha,
-          publicadoPorId: autor?.id ?? null,
-          publicadoPorNombre: autor?.nombre ?? null,
-        },
+      await bloquearEstilo(tx);
+      const version = await guardarFotoDelEstilo(tx, texto, fecha, autor);
+      await tx.seccionEstilo.deleteMany();
+      await tx.seccionEstilo.createMany({
+        data: dividirEstilo(texto).map((seccion, orden) => ({
+          titulo: seccion.titulo,
+          tituloNormalizado: normalizarTexto(seccion.titulo),
+          texto: seccion.texto,
+          orden,
+          creado: fecha,
+          actualizado: fecha,
+        })),
       });
-
-      const sobrantes = await tx.versionEstilo.findMany({
-        where: { vigente: false },
-        orderBy: { version: 'desc' },
-        skip: MAX_VERSIONES_HISTORIAL,
-        select: { id: true },
-      });
-      if (sobrantes.length > 0) {
-        await tx.versionEstilo.deleteMany({ where: { id: { in: sobrantes.map((fila) => fila.id) } } });
-      }
-      return nueva;
+      return version;
     });
   }
 }

@@ -155,6 +155,27 @@ Fase 12 (T11).
 - La migración copia el estilo vigente y su historial desde `parametro` conservando los números de versión; la fecha
   de publicación de cada versión es la de retiro de la anterior (la de la más antigua del historial, la suya propia).
 
+### `seccion_estilo` — NUEVA (estilo en secciones; aprobada 2026-10-07)
+El estilo del bot se compone de secciones que el admin crea, edita, ordena y apaga. El bot sigue recibiendo un solo
+bloque: las secciones activas por `orden`, cada una como `# título`, una línea en blanco y su texto. `version_estilo`
+pasa a ser la foto de ese compuesto (historial, restaurar, CLI y evals siguen igual).
+
+| Columna | Tipo | Nulo | Nota |
+|---|---|---|---|
+| `id` | uuid | no | PK, UUID v7 |
+| `titulo` | text | no | una línea, hasta 100 caracteres |
+| `titulo_normalizado` | text | no | único; minúsculas y sin acentos, se calcula en código |
+| `texto` | text | no | sin líneas que empiecen por `# ` (partirían la sección); reglas del estilo (AGT20), nunca en logs (R14) |
+| `orden` | int | no | posición en el compuesto |
+| `activo` | boolean | no | por defecto `true`; apagar es la única forma de retirar una sección (no hay borrado) |
+| `creado`, `actualizado` | timestamptz | no | `actualizado` es la marca del bloqueo optimista al editar |
+
+- Cada cambio que altera el compuesto valida el total (tope de 4.000 caracteres, no vacío) y guarda su foto en
+  `version_estilo` dentro de la misma transacción; un cambio que deja el compuesto igual no crea versión.
+- Publicar un estilo completo o restaurar una versión reemplaza todas las secciones con la división del texto por
+  encabezados `# ` (lo anterior al primero es la sección «General»).
+- La migración `estilo_secciones` parte el estilo vigente por esos encabezados; sin versión vigente no inserta nada.
+
 ### `categoria_caso` y `caso_asistente` — NUEVAS (Fase 12, T4; ADR-0024)
 Todo lo que el bot le dice al cliente: **casos de uso** agrupados en **categorías**. Reemplazan a los mensajes fijos
 y a las políticas `politica_<tema>` de `parametro` (R15): si el cliente lo lee, es un caso; si el código lo usa para

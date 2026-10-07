@@ -564,6 +564,22 @@ model VersionEstilo {
   @@map("version_estilo")
 }
 
+/// Una sección del estilo del bot (estilo en secciones, ODD estilo-en-secciones; MODELO_DATOS.md §3). El estilo que recibe el
+/// bot es la suma de las activas por `orden`; cada cambio que altera esa suma guarda una foto en `version_estilo`.
+/// `titulo_normalizado` (minúsculas, sin acentos) se calcula en código y es único.
+model SeccionEstilo {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  titulo            String
+  tituloNormalizado String   @unique @map("titulo_normalizado")
+  texto             String
+  orden             Int
+  activo            Boolean  @default(true)
+  creado            DateTime @default(now()) @db.Timestamptz(3)
+  actualizado       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("seccion_estilo")
+}
+
 enum DisparadorCaso {
   evento
   intencion
