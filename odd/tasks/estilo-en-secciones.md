@@ -40,10 +40,10 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 - T2 (delegado, un escritor): commit de T2: ver git log (feat(agente): API admin de secciones del estilo). Ruta: delegado. Tests: unit, integracion, e2e y contrato en verde; 4 codigos nuevos en el catalogo (seccion-inexistente, seccion-duplicada, seccion-modificada, orden-secciones-invalido).
 - T2 commit: 8b80422 (feat(agente): endpoints admin de secciones del estilo).
 - T3 (delegado, un escritor): subcomando `prompt:estilo secciones` (solo lectura, sin textos); publicar/restaurar ya reemplazaban secciones (T1); semilla y EVALS_ESTILO confirmadas con tests de integracion y evals; prueba de equivalencia del prompt ensamblado. Ruta: delegado. Commit: ver git log (feat(agente): subcomando secciones del CLI de estilo).
-- T3 commit: 78c89ac (feat(agente): subcomando secciones del CLI de estilo).
+- T3 commit: 5bbda24 (feat(agente): subcomando secciones del CLI de estilo).
 - T4 (delegado, un escritor): pantalla `/asistente/estilo` en secciones (lista, crear/editar en ventana, subir/bajar, encender/apagar, contador global con aviso al 90 %, 409 `seccion-modificada` recarga y toma la marca nueva, restaurar recarga). Se retiró la publicación de texto único de la UI (el endpoint sigue). Cliente HTTP regenerado. Ruta: delegado. Proof: `npm --prefix cliente run ci` en verde (17 tests de la pantalla).
-- Review nativo del rango de T4 aprobado (3 hallazgos consultivos corregidos en este commit: R3-001 interruptor tras rechazo, R3-002 versión/historial tras ordenar, R3-003 conflicto 409 con recarga caída cubierto por prueba). Hash de T4: 127681c.
-- Fix de T4 (delegado): commit c32c9f7 (fix(cliente): interruptor, orden y conflicto del estilo tras un rechazo del servidor).
+- Review nativo del rango de T4 aprobado (3 hallazgos consultivos corregidos en este commit: R3-001 interruptor tras rechazo, R3-002 versión/historial tras ordenar, R3-003 conflicto 409 con recarga caída cubierto por prueba). Hash de T4: afb9db1.
+- Fix de T4 (delegado): commit 5b33231 (fix(cliente): interruptor, orden y conflicto del estilo tras un rechazo del servidor).
 - T5 (delegado, un escritor): estilo-del-bot.md reescrito para secciones, requisitos EST-S1..S5, EST-API y EST-CLI en
   `openspec/specs/agente/spec.md`, ADR-0026 (propuesta, el usuario la acepta), fila en el índice de ADR y `-- secciones`
   en la tabla de comandos de CLAUDE.md. MODELO_DATOS.md ya traía `seccion_estilo` desde T1 (sin cambios). Sin preguntas
@@ -57,16 +57,16 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 |---|---|
 | T1 | c380f6c |
 | T2 | 8b80422 |
-| T3 | 78c89ac |
-| T4 | 127681c |
-| Fix de T4 | c32c9f7 |
+| T3 | 5bbda24 |
+| T4 | afb9db1 |
+| Fix de T4 | 5b33231 |
 | T5 | ver git log |
 
 ## Review nativo
 
 | Rango | Resultado |
 |---|---|
-| T4 | Aprobado y reconocido; hallazgos consultivos corregidos en c32c9f7 |
+| T4 | Aprobado y reconocido; hallazgos consultivos corregidos en 5b33231 |
 | T1 + T2 | No se pudo revisar: `lens_context_budget_exceeded` por el JSON regenerado de OpenAPI |
 | T3 y el fix de T4 | Bajo el presupuesto de revisión |
 
@@ -91,3 +91,5 @@ El PR 1 podría partirse en dominio/migración y repositorio/proveedor si el usu
 La cadena se rebasó sobre `origin/main` (2026-10-07) para recoger `sharp 0.35.5` (GHSA-wq5f-xc86-pv6w), que
 tumbaba el CI. Los hashes de arriba son los posteriores al rebase. El ADR pasó de 0025 a 0026 porque `main`
 ya usaba el 0025 (multiempresa).
+El cliente HTTP generado (`cliente/src/app/api/`) se movió al corte de la API (commit `bb25c67`): sin él
+`api:deriva` fallaba en los cortes 2 y 3, donde el contrato ya tenía los endpoints.
