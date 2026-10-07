@@ -234,6 +234,63 @@ describe('SHL4 — El menú es un riel que se expande al pasar el mouse', () => 
   });
 });
 
+describe('SHL4 — El riel plegado muestra solo íconos y nunca desborda a lo ancho', () => {
+  const riel = (el: HTMLElement) => el.querySelector<HTMLElement>('app-menu-lateral')!;
+  const iconos = (contenedor: Element) =>
+    Array.from(contenedor.querySelectorAll('mat-icon.icono')).map((icono) => icono.getAttribute('fontIcon'));
+
+  it('SHL4 — Plegado: el logo, los grupos, las entradas y cerrar sesión llevan su ícono fijo (no se encoge)', async () => {
+    const { el } = await preparar(ADMIN, [ASISTENTE, CONFIGURACION, PRUEBA]);
+
+    expect(riel(el).getAttribute('data-riel')).toBe('plegado');
+    expect(iconos(el.querySelector('app-menu-lateral a.marca')!)).toEqual(['auto_awesome']);
+    expect(iconos(el.querySelector(grupo('Asistente'))!)).toEqual(['forum']);
+    expect(iconos(el.querySelector(grupo('Configuración'))!)).toEqual(['settings']);
+    expect(iconos(el.querySelector('a[data-entrada="/prueba/uno"]')!)).toEqual(['star']);
+    expect(iconos(el.querySelector('button[data-accion="cerrar-sesion"]')!)).toEqual(['logout']);
+  });
+
+  it('SHL4 — Plegado: cada texto va en una etiqueta que el CSS oculta, y el ícono queda fuera de ella', async () => {
+    const { el } = await preparar(ADMIN, [ASISTENTE, PRUEBA]);
+
+    for (const item of Array.from(el.querySelectorAll('app-menu-lateral .item, app-menu-lateral .marca'))) {
+      const etiqueta = item.querySelector('.titulo')!;
+      expect(etiqueta.textContent.trim()).not.toBe('');
+      expect(etiqueta.querySelector('mat-icon')).toBeNull();
+    }
+  });
+
+  it('SHL4 — El mouse y el foco expanden el riel; al salir vuelve a plegarse', async () => {
+    const { fixture, el } = await preparar(ADMIN, [PRUEBA]);
+    const menu = riel(el);
+
+    menu.dispatchEvent(new MouseEvent('mouseenter'));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('expandido');
+    expect(menu.classList).toContain('expandido');
+
+    menu.dispatchEvent(new MouseEvent('mouseleave'));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('plegado');
+
+    el.querySelector<HTMLElement>('a[data-entrada]')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('expandido');
+
+    el.querySelector<HTMLElement>('a[data-entrada]')!.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+    );
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('plegado');
+  });
+
+  it('SHL4 — En un teléfono el menú no es riel y no lleva estado de pliegue', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA], { telefono: true });
+
+    expect(riel(el).hasAttribute('data-riel')).toBe(false);
+  });
+});
+
 describe('SHL5 — En un teléfono el menú es un cajón', () => {
   it('SHL5 — El cajón está cerrado al cargar en un teléfono', async () => {
     const { el } = await preparar(ADMIN, [PRUEBA], { telefono: true });
