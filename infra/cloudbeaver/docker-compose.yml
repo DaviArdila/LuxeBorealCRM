@@ -1,0 +1,19 @@
+# CloudBeaver local para inspeccionar las bases de desarrollo (ver docs/operacion/cloudbeaver.md).
+# No incluye base de datos: se conecta a las que ya levantan servicio/docker-compose.yml (host 5435)
+# e infra/chatwoot/docker-compose.yml (host 5433), por eso usa host.docker.internal.
+name: luxeborealcrm-cloudbeaver
+
+services:
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${LUXE_CLOUDBEAVER_PUERTO_HOST:-8978}:8978'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - luxeborealcrm_cloudbeaver_datos:/opt/cloudbeaver/workspace
+
+volumes:
+  luxeborealcrm_cloudbeaver_datos:
+    name: luxeborealcrm_cloudbeaver_datos
