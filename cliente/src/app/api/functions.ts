@@ -9,6 +9,14 @@ export type { ListarHistorialEstilo$Params as ListarHistorialEstilo$Params } fro
 export { listarHistorialEstilo as listarHistorialEstilo } from './fn/estilo/listar-historial-estilo';
 export type { RestaurarEstilo$Params as RestaurarEstilo$Params } from './fn/estilo/restaurar-estilo';
 export { restaurarEstilo as restaurarEstilo } from './fn/estilo/restaurar-estilo';
+export type { ListarSeccionesEstilo$Params as ListarSeccionesEstilo$Params } from './fn/estilo/listar-secciones-estilo';
+export { listarSeccionesEstilo as listarSeccionesEstilo } from './fn/estilo/listar-secciones-estilo';
+export type { CrearSeccionEstilo$Params as CrearSeccionEstilo$Params } from './fn/estilo/crear-seccion-estilo';
+export { crearSeccionEstilo as crearSeccionEstilo } from './fn/estilo/crear-seccion-estilo';
+export type { OrdenarSeccionesEstilo$Params as OrdenarSeccionesEstilo$Params } from './fn/estilo/ordenar-secciones-estilo';
+export { ordenarSeccionesEstilo as ordenarSeccionesEstilo } from './fn/estilo/ordenar-secciones-estilo';
+export type { EditarSeccionEstilo$Params as EditarSeccionEstilo$Params } from './fn/estilo/editar-seccion-estilo';
+export { editarSeccionEstilo as editarSeccionEstilo } from './fn/estilo/editar-seccion-estilo';
 export type { ListarCasos$Params as ListarCasos$Params } from './fn/asistente/listar-casos';
 export { listarCasos as listarCasos } from './fn/asistente/listar-casos';
 export type { CrearCaso$Params as CrearCaso$Params } from './fn/asistente/crear-caso';

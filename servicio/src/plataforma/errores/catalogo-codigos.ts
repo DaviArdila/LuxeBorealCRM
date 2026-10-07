@@ -63,6 +63,26 @@ export const CATALOGO_CODIGOS = Object.freeze({
     status: 404,
     title: 'La versión del estilo no existe en el historial',
   },
+  /** EST-API: la sección del estilo pedida no existe. */
+  'seccion-inexistente': {
+    status: 404,
+    title: 'La sección del estilo no existe',
+  },
+  /** EST-API: ya existe una sección con ese título (sin distinguir mayúsculas ni acentos). */
+  'seccion-duplicada': {
+    status: 409,
+    title: 'Ya existe una sección del estilo con ese título',
+  },
+  /** EST-API: otro admin modificó la sección después de que este la leyó. */
+  'seccion-modificada': {
+    status: 409,
+    title: 'La sección del estilo cambió desde que la leíste',
+  },
+  /** EST-API: el orden pedido no coincide con las secciones existentes. */
+  'orden-secciones-invalido': {
+    status: 422,
+    title: 'El orden no incluye exactamente las secciones existentes',
+  },
   /** CAS1, CAS9: ya existe una categoría con ese nombre (sin distinguir mayúsculas ni acentos). */
   'categoria-duplicada': {
     status: 409,

@@ -21,7 +21,7 @@ leer un texto (~0,55 ms p50); el chequeo por turno sigue siendo un GET de Redis 
 ## Tareas
 - [x] T1 Backend núcleo: Prisma `seccion_estilo` + migración (parte el estilo vigente por `#`), dominio
       (compuesto + validación), repositorio, `ProveedorEstilo`/publicación como foto compuesta.
-- [ ] T2 API admin: CRUD + reordenar + restaurar sobre secciones, 409 por `actualizado`, contrato OpenAPI.
+- [x] T2 API admin: CRUD + reordenar + restaurar sobre secciones, 409 por `actualizado`, contrato OpenAPI.
 - [ ] T3 CLI `prompt:estilo`, semilla y evals (`EVALS_ESTILO`) sobre el texto compuesto.
 - [ ] T4 Cliente Angular: lista de secciones (crear/editar/ordenar/activar) + historial.
 - [ ] T5 Docs: estilo-del-bot.md, MODELO_DATOS.md, spec agente, ADR (propuesta), CHANGELOG no se toca.
@@ -35,5 +35,6 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 
 ## Progreso
 (commits por tarea se anotan aquí)
-- T1 (delegado, un escritor): commit pendiente de hash, ver abajo.
+- T1 (delegado, un escritor): commit 771ae07 (feat(agente): estilo en secciones con foto compuesta en version_estilo). Ruta: delegado. Tests: unit, integracion y persistencia en verde.
 
+- T2 (delegado, un escritor): commit de T2: ver git log (feat(agente): API admin de secciones del estilo). Ruta: delegado. Tests: unit, integracion, e2e y contrato en verde; 4 codigos nuevos en el catalogo (seccion-inexistente, seccion-duplicada, seccion-modificada, orden-secciones-invalido).
