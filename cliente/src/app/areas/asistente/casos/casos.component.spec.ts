@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { MatTooltip } from '@angular/material/tooltip';
+import { By } from '@angular/platform-browser';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { CasosComponent } from './casos.component';
 
@@ -193,7 +195,7 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
   it('SHL10 — Crear un caso desde la ventana llama a crearCaso, la cierra y lo muestra en su categoría', async () => {
     const { fixture, control, el } = await abrir();
 
-    boton('Nuevo caso').click();
+    botonConEtiqueta('Crear nuevo caso')!.click();
     await asentar(fixture);
     escribir('titulo', 'Medios de pago');
     escribir('cuando-aplica', 'Cuando preguntan cómo pagar');
@@ -223,7 +225,7 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
   it('SHL10 — Un rechazo del servidor queda dentro de la ventana y conserva lo escrito', async () => {
     const { fixture, control } = await abrir();
 
-    boton('Nuevo caso').click();
+    botonConEtiqueta('Crear nuevo caso')!.click();
     await asentar(fixture);
     escribir('titulo', 'Precios');
     escribir('cuando-aplica', 'Cuando preguntan');
@@ -331,7 +333,7 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     const { fixture, el } = await abrir();
     expect(el.querySelector('[data-categorias]')).toBeNull();
 
-    boton('Categorías').click();
+    botonConEtiqueta('Categorías')!.click();
     await asentar(fixture);
 
     const lista = document.querySelector('[data-categorias]')!;
@@ -343,7 +345,7 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
   it('SHL10 — Una categoría con casos no se borra: la pantalla muestra el motivo y la categoría sigue', async () => {
     const { fixture, control } = await abrir();
 
-    boton('Categorías').click();
+    botonConEtiqueta('Categorías')!.click();
     await asentar(fixture);
     botonConEtiqueta('Borrar categoría Políticas')!.click();
     await asentar(fixture);
@@ -360,7 +362,7 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
 
   it('SHL10 — Se pueden crear, renombrar y reordenar categorías', async () => {
     const { fixture, control } = await abrir();
-    boton('Categorías').click();
+    botonConEtiqueta('Categorías')!.click();
     await asentar(fixture);
 
     boton('Nueva categoría').click();
@@ -393,6 +395,22 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     await asentar(fixture);
     const orden = control.expectOne((p) => p.method === 'PUT' && p.url === `${URL_CATEGORIAS}/orden`);
     expect(orden.request.body).toEqual({ ids: ['c-2', 'c-1', 'c-3'] });
+  });
+
+  it('SHL10 — Crear y «Categorías» son botones de ícono compactos con globo y nombre accesible', async () => {
+    const { fixture, el } = await abrir();
+
+    for (const [etiqueta, globo] of [
+      ['Crear nuevo caso', 'Crear nuevo caso'],
+      ['Categorías', 'Categorías'],
+    ] as const) {
+      const boton = el.querySelector<HTMLButtonElement>(`app-cabecera-pagina button[aria-label="${etiqueta}"]`)!;
+      expect(boton.classList).toContain('mat-mdc-icon-button');
+      expect(boton.textContent.trim()).toBe('');
+      const tooltip = fixture.debugElement.query(By.css(`button[aria-label="${etiqueta}"]`)).injector.get(MatTooltip);
+      expect(tooltip.message).toBe(globo);
+    }
+    expect(el.querySelector('.luxe-filtros [data-campo="buscar"]')).not.toBeNull();
   });
 
   it('SHL10 — Sin casos muestra un estado vacío con la acción de crear', async () => {

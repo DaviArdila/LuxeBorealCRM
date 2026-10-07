@@ -61,3 +61,34 @@ body {
   background: var(--mat-sys-surface-container-low);
   color: var(--mat-sys-on-surface);
 }
+
+/*
+ * Controles compactos (~15 % menos que la densidad -1 del tema). Barras de filtros (`.luxe-filtros`): densidad -3,
+ * campos de 44 px con el texto en body-medium; los campos `outline` conservan su etiqueta flotante. Acciones de la
+ * cabecera (`.luxe-compacto`): densidad -2, botones de ícono de 32 px.
+ */
+.luxe-filtros {
+  @include mat.theme((density: -3));
+}
+
+.luxe-compacto {
+  @include mat.theme((density: -2));
+}
+
+.luxe-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--luxe-espacio-s);
+  @include mat.form-field-overrides(
+    (
+      container-text-size: var(--mat-sys-body-medium-size),
+      outlined-label-text-size: var(--mat-sys-body-medium-size),
+    )
+  );
+  @include mat.select-overrides((trigger-text-size: var(--mat-sys-body-medium-size)));
+}
+
+.luxe-filtros .mat-mdc-form-field {
+  min-width: 10rem;
+}

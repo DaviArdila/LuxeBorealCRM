@@ -9,6 +9,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltip } from '@angular/material/tooltip';
 import { AvisoComponent } from '../../../compartido/aviso.component';
 import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
@@ -66,6 +67,7 @@ interface Restauracion {
     MatLabel,
     MatSlideToggle,
     MatTableModule,
+    MatTooltip,
     RejillaComponent,
     TarjetaElementoComponent,
   ],
@@ -83,10 +85,12 @@ interface Restauracion {
           <span class="relleno" [style.width.%]="porcentaje()"></span>
         </span>
       </span>
-      <button mat-flat-button type="button" [disabled]="ocupado()" (click)="nuevaSeccion()">
-        <mat-icon fontIcon="add" aria-hidden="true" />Nueva sección
+      <button mat-icon-button type="button" class="crear" data-accion="nueva-seccion" aria-label="Crear nueva sección"
+              matTooltip="Crear nueva sección" [disabled]="ocupado()" (click)="nuevaSeccion()">
+        <mat-icon fontIcon="add" aria-hidden="true" />
       </button>
-      <button mat-icon-button type="button" data-accion="historial" aria-label="Historial" (click)="abrirHistorial()">
+      <button mat-icon-button type="button" data-accion="historial" aria-label="Historial" matTooltip="Historial"
+              (click)="abrirHistorial()">
         <mat-icon fontIcon="history" aria-hidden="true" />
       </button>
       @if (motivo(); as texto) {
@@ -216,6 +220,13 @@ interface Restauracion {
     }
     .buscador {
       width: 14rem;
+    }
+    .crear {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+    }
+    .crear:disabled {
+      opacity: 0.5;
     }
     .vigente {
       margin: 0;

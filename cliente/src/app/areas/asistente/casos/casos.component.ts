@@ -15,6 +15,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { MatTooltip } from '@angular/material/tooltip';
 import { AvisoComponent } from '../../../compartido/aviso.component';
 import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
@@ -75,20 +76,26 @@ interface Grupo {
     MatOption,
     MatSelect,
     MatSlideToggle,
+    MatTooltip,
     RejillaComponent,
     TarjetaElementoComponent,
   ],
   template: `
     <app-cabecera-pagina titulo="Casos de uso" [ayuda]="ayuda">
-      <button mat-stroked-button type="button" data-accion="categorias" (click)="abrirGestor()">
-        <mat-icon fontIcon="category" aria-hidden="true" />Categorías
+      <button mat-icon-button type="button" class="crear" data-accion="nuevo-caso" aria-label="Crear nuevo caso"
+              matTooltip="Crear nuevo caso" (click)="nuevoCaso()">
+        <mat-icon fontIcon="add" aria-hidden="true" />
+      </button>
+      <button mat-icon-button type="button" data-accion="categorias" aria-label="Categorías" matTooltip="Categorías"
+              (click)="abrirGestor()">
+        <mat-icon fontIcon="category" aria-hidden="true" />
       </button>
       @if (motivo(); as texto) {
         <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
       }
     </app-cabecera-pagina>
 
-    <div class="barra">
+    <div class="barra luxe-filtros">
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">
         <mat-label>Buscar</mat-label>
         <input matInput type="search" data-campo="buscar" [value]="busqueda()"
@@ -111,9 +118,6 @@ interface Grupo {
           <mat-option value="intencion">Por intención</mat-option>
         </mat-select>
       </mat-form-field>
-      <button mat-flat-button type="button" (click)="nuevoCaso()">
-        <mat-icon fontIcon="add" aria-hidden="true" />Nuevo caso
-      </button>
     </div>
 
     @if (servicio.casos().length === 0) {
@@ -292,14 +296,13 @@ interface Grupo {
       flex-direction: column;
       gap: var(--luxe-espacio-m);
     }
-    .barra {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: center;
-    }
     .buscador {
       flex: 1 1 14rem;
+      max-width: 24rem;
+    }
+    .crear {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
     }
     .vacio {
       display: flex;

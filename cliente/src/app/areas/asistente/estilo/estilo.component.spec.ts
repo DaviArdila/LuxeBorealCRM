@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { CdkDropList } from '@angular/cdk/drag-drop';
+import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
 import { EstiloComponent } from './estilo.component';
@@ -167,7 +168,7 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
   it('«Nueva sección» crea con título y texto y recarga la lista', async () => {
     const { fixture, control } = await abrir();
 
-    boton('Nueva sección').click();
+    porEtiqueta('Crear nueva sección').click();
     await asentar(fixture);
     escribir('titulo', 'Despedida');
     escribir('texto', 'Cierra con calidez.');
@@ -359,7 +360,7 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
   it('una sección nueva no ofrece posición', async () => {
     const { fixture } = await abrir();
 
-    boton('Nueva sección').click();
+    porEtiqueta('Crear nueva sección').click();
     await asentar(fixture);
 
     expect(document.querySelector('[data-campo="posicion"]')).toBeNull();
@@ -484,6 +485,18 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     expect(el.textContent).toContain('Versión 5');
     expect(el.textContent).toContain('Restaurada');
     expect(el.textContent).toContain('evals reales');
+  });
+
+  it('«Nueva sección» e «Historial» son botones de ícono compactos con globo y nombre accesible', async () => {
+    const { fixture, el } = await abrir();
+
+    for (const etiqueta of ['Crear nueva sección', 'Historial']) {
+      const boton = el.querySelector<HTMLButtonElement>(`app-cabecera-pagina button[aria-label="${etiqueta}"]`)!;
+      expect(boton.classList).toContain('mat-mdc-icon-button');
+      expect(boton.textContent.trim()).toBe('');
+      const tooltip = fixture.debugElement.query(By.css(`button[aria-label="${etiqueta}"]`)).injector.get(MatTooltip);
+      expect(tooltip.message).toBe(etiqueta);
+    }
   });
 
   it('remite a «Casos de uso» en la ayuda de la cabecera', async () => {
