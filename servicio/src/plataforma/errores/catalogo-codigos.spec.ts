@@ -39,6 +39,10 @@ describe('plataforma/errores — códigos del estilo del bot (Fase 11b, AGT23)',
 
 describe('plataforma/errores — códigos de los mensajes fijos (Fase 11b, CFN2)', () => {
   it.each([
+    ['seccion-inexistente', 404],
+    ['seccion-duplicada', 409],
+    ['seccion-modificada', 409],
+    ['orden-secciones-invalido', 422],
     ['categoria-duplicada', 409],
     ['categoria-con-casos', 409],
     ['categoria-inexistente', 404],

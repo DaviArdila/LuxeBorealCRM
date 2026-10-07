@@ -33,3 +33,48 @@ export type HistorialEstiloRespuesta = z.infer<typeof esquemaHistorialEstilo>;
 
 export const esquemaVersionEstilo = z.object({ version: z.int() });
 export type VersionEstiloRespuesta = z.infer<typeof esquemaVersionEstilo>;
+
+// --- Secciones del estilo (EST-API) ------------------------------------------------------------------------------------
+
+const id = z.uuid();
+
+export const esquemaSeccionEstilo = z.object({
+  id,
+  titulo: z.string(),
+  texto: z.string(),
+  orden: z.int(),
+  activo: z.boolean(),
+  /** La fecha que el cliente devuelve al editar: si cambió, la edición se rechaza con `seccion-modificada`. */
+  actualizado: z.string(),
+});
+export type SeccionEstiloRespuesta = z.infer<typeof esquemaSeccionEstilo>;
+
+/** Las secciones por `orden` y cuánto ocupa el estilo compuesto (las activas) frente al tope, para mostrarlo al editar. */
+export const esquemaListaSeccionesEstilo = z.object({
+  secciones: z.array(esquemaSeccionEstilo),
+  caracteresCompuestos: z.int(),
+  maximo: z.int(),
+});
+export type ListaSeccionesEstiloRespuesta = z.infer<typeof esquemaListaSeccionesEstilo>;
+
+/** Solo la forma, con topes absurdos; las reglas (título, contenido, tope del compuesto) responden `422`. */
+export const esquemaCrearSeccionEstilo = z.object({
+  titulo: z.string().max(1000),
+  texto: z.string().max(MAX_CARACTERES_ESTILO * 2),
+  activo: z.boolean().optional(),
+});
+export type CrearSeccionEstiloCuerpo = z.infer<typeof esquemaCrearSeccionEstilo>;
+
+export const esquemaEditarSeccionEstilo = z.object({
+  /** La `actualizado` que el cliente leyó. */
+  actualizado: z.iso.datetime(),
+  titulo: z.string().max(1000).optional(),
+  texto: z.string().max(MAX_CARACTERES_ESTILO * 2).optional(),
+  activo: z.boolean().optional(),
+});
+export type EditarSeccionEstiloCuerpo = z.infer<typeof esquemaEditarSeccionEstilo>;
+
+export const esquemaIdSeccionEstilo = id;
+
+export const esquemaOrdenSeccionesEstilo = z.object({ ids: z.array(id).max(500) });
+export type OrdenSeccionesEstiloCuerpo = z.infer<typeof esquemaOrdenSeccionesEstilo>;
