@@ -14,7 +14,7 @@ controles ~10 % más compactos.
 - [x] T3 Compartidos: `app-cabecera-pagina`, `app-rejilla`, `app-tarjeta-elemento`, `app-aviso` modo flotante plegable (09a62d8)
 - [x] T4 Casos de uso: grilla de categorías → ventana de casos → ventana de lectura → edición; filtros compactos (4a2c249)
 - [x] T5 Estilo del bot: buscador, grilla de secciones, arrastrar para reordenar, historial en ventana, aviso de tope flotante (519c3f6)
-- [ ] T6 Configuración (horario, envíos, gasto LLM) e Inicio con cabecera y grilla
+- [x] T6 Configuración (horario, envíos, gasto LLM) e Inicio con cabecera y grilla (affb14f)
 - [ ] T7 (tras visto bueno) documentar la filosofía + ADR propuesta
 
 ## Verificación
