@@ -23,7 +23,7 @@ leer un texto (~0,55 ms p50); el chequeo por turno sigue siendo un GET de Redis 
       (compuesto + validación), repositorio, `ProveedorEstilo`/publicación como foto compuesta.
 - [x] T2 API admin: CRUD + reordenar + restaurar sobre secciones, 409 por `actualizado`, contrato OpenAPI.
 - [x] T3 CLI `prompt:estilo`, semilla y evals (`EVALS_ESTILO`) sobre el texto compuesto.
-- [ ] T4 Cliente Angular: lista de secciones (crear/editar/ordenar/activar) + historial.
+- [x] T4 Cliente Angular: lista de secciones (crear/editar/ordenar/activar) + historial.
 - [ ] T5 Docs: estilo-del-bot.md, MODELO_DATOS.md, spec agente, ADR (propuesta), CHANGELOG no se toca.
 
 ## Criterios de aceptación
@@ -40,3 +40,6 @@ Delegado: un escritor por tarea (≥2 archivos no triviales cada una), mapa prev
 - T2 (delegado, un escritor): commit de T2: ver git log (feat(agente): API admin de secciones del estilo). Ruta: delegado. Tests: unit, integracion, e2e y contrato en verde; 4 codigos nuevos en el catalogo (seccion-inexistente, seccion-duplicada, seccion-modificada, orden-secciones-invalido).
 - T2 commit: 41b2c3d (feat(agente): endpoints admin de secciones del estilo).
 - T3 (delegado, un escritor): subcomando `prompt:estilo secciones` (solo lectura, sin textos); publicar/restaurar ya reemplazaban secciones (T1); semilla y EVALS_ESTILO confirmadas con tests de integracion y evals; prueba de equivalencia del prompt ensamblado. Ruta: delegado. Commit: ver git log (feat(agente): subcomando secciones del CLI de estilo).
+- T3 commit: e2d71d2 (feat(agente): subcomando secciones del CLI de estilo).
+- T4 (delegado, un escritor): pantalla `/asistente/estilo` en secciones (lista, crear/editar en ventana, subir/bajar, encender/apagar, contador global con aviso al 90 %, 409 `seccion-modificada` recarga y toma la marca nueva, restaurar recarga). Se retiró la publicación de texto único de la UI (el endpoint sigue). Cliente HTTP regenerado. Ruta: delegado. Proof: `npm --prefix cliente run ci` en verde (17 tests de la pantalla).
+- Review nativo del rango de T4 aprobado (3 hallazgos consultivos corregidos en este commit: R3-001 interruptor tras rechazo, R3-002 versión/historial tras ordenar, R3-003 conflicto 409 con recarga caída cubierto por prueba). Hash de T4: 25893e0.
