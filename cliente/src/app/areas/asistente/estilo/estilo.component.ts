@@ -103,7 +103,7 @@ interface Restauracion {
               <span class="acciones-seccion">
                 <mat-slide-toggle [checked]="seccion.activo" [disabled]="ocupado()"
                                   [attr.aria-label]="'Activar ' + seccion.titulo"
-                                  (change)="alternar(seccion, $event.checked)" />
+                                  (change)="alternar(seccion, $event.checked, $event.source)" />
                 <button mat-icon-button type="button" [disabled]="primera || ocupado()"
                         [attr.aria-label]="'Subir ' + seccion.titulo" (click)="mover(seccion, -1)">
                   <mat-icon fontIcon="arrow_upward" aria-hidden="true" />
@@ -351,12 +351,15 @@ export class EstiloComponent {
     if (vigente !== undefined) this.actualizadoDeLaSeccion = vigente.actualizado;
   }
 
-  protected async alternar(seccion: SeccionDelEstilo, activo: boolean): Promise<void> {
+  protected async alternar(seccion: SeccionDelEstilo, activo: boolean, interruptor?: { checked: boolean }): Promise<void> {
     await this.mutar(async () => {
       try {
         await this.servicio.editar(seccion.id, { actualizado: seccion.actualizado, activo });
       } catch (error) {
-        if (leerProblema(error).codigo === 'seccion-modificada') await this.cargar();
+        // Cualquier rechazo: el interruptor ya cambió en pantalla, la lista recargada lo devuelve al estado del servidor.
+        await this.cargar();
+        // Si el servidor conserva el mismo valor, el enlace `[checked]` no cambia y no repinta: se devuelve a mano.
+        if (interruptor !== undefined) interruptor.checked = this.servicio.secciones().find((s) => s.id === seccion.id)?.activo ?? seccion.activo;
         throw error;
       }
       this.recordatorioEvals.set(true);
@@ -374,6 +377,8 @@ export class EstiloComponent {
     await this.mutar(async () => {
       await this.servicio.ordenar(ids);
       this.recordatorioEvals.set(true);
+      // Reordenar publica una versión nueva: se relee también la vigente y el historial.
+      await this.cargar();
     });
   }
 

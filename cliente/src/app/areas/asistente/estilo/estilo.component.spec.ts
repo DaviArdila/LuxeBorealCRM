@@ -268,6 +268,61 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     expect(titulos).toEqual(['Formato', 'Saludo', 'Cierre']);
   });
 
+  it('un 422 al encender recarga la lista para que el interruptor vuelva al estado del servidor y dice el motivo', async () => {
+    const { fixture, control, el } = await abrir();
+
+    document.querySelectorAll<HTMLElement>('[data-seccion] button[role="switch"]')[2]!.click();
+    await asentar(fixture);
+    control
+      .expectOne((p) => p.method === 'PATCH' && p.url === `${URL_SECCIONES}/s-3`)
+      .flush(...problema('estilo-invalido', 'superaría el tope de caracteres', 422));
+    await asentar(fixture);
+    atenderLecturas(control);
+    await asentar(fixture);
+
+    expect(el.textContent).toContain('superaría el tope de caracteres');
+    const interruptor = document.querySelectorAll<HTMLElement>('[data-seccion] button[role="switch"]')[2]!;
+    expect(interruptor.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('ordenar vuelve a leer la versión vigente y el historial, porque el servidor publica una versión nueva', async () => {
+    const { fixture, control } = await abrir();
+
+    porEtiqueta('Bajar Saludo').click();
+    await asentar(fixture);
+    control
+      .expectOne((p) => p.method === 'PUT' && p.url === URL_ORDEN)
+      .flush(lista([seccion('s-2', 'Formato', 0), seccion('s-1', 'Saludo', 1), seccion('s-3', 'Cierre', 2, { activo: false })]));
+    await asentar(fixture);
+    atenderLecturas(
+      control,
+      lista([seccion('s-2', 'Formato', 0), seccion('s-1', 'Saludo', 1), seccion('s-3', 'Cierre', 2, { activo: false })]),
+      { ...VIGENTE, version: 4 },
+    );
+    await asentar(fixture);
+
+    expect(document.querySelector('.vigente')!.textContent).toContain('Versión 4');
+  });
+
+  it('un 409 `seccion-modificada` con la recarga caída conserva el conflicto original en la ventana', async () => {
+    const montada = await abrir();
+    const { fixture, control } = montada;
+    await editarSaludo(montada, 'Mi versión.');
+
+    boton('Guardar').click();
+    await asentar(fixture);
+    control.expectOne((p) => p.method === 'PATCH').flush(...problema('seccion-modificada', 'otra persona la cambió', 409));
+    await asentar(fixture);
+    control.expectOne((p) => p.method === 'GET' && p.url === URL_ESTILO).flush(...problema('caido', 'sin conexión', 503));
+    control.expectOne((p) => p.method === 'GET' && p.url === URL_HISTORIAL).flush(HISTORIAL);
+    control.expectOne((p) => p.method === 'GET' && p.url === URL_SECCIONES).flush(lista());
+    await asentar(fixture);
+
+    const dialogo = document.querySelector('mat-dialog-container')!.textContent;
+    expect(dialogo).toContain('otra persona');
+    expect(dialogo).not.toContain('sin conexión');
+  });
+
   it('un rechazo al ordenar muestra el motivo del servidor', async () => {
     const { fixture, control, el } = await abrir();
 
