@@ -57,3 +57,9 @@ body {
   background: var(--mat-sys-surface-container-low);
   color: var(--mat-sys-on-surface);
 }
+
+/* Globo de ayuda de app-cabecera-pagina: vive en el overlay, fuera de los estilos del componente. */
+.luxe-ayuda .mdc-tooltip__surface {
+  max-width: 28rem;
+  white-space: pre-line;
+}
