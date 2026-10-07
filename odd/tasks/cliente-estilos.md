@@ -9,7 +9,7 @@ barra superior, avisos que se pliegan a un icono, grillas de tarjetas con ventan
 controles ~10 % más compactos.
 
 ## Tareas
-- [ ] T1 Tokens `--luxe-*` y densidad -10 % de filtros/botones (`cliente/src/styles.scss`)
+- [x] T1 Tokens `--luxe-*` y densidad -10 % de filtros/botones (`cliente/src/styles.scss`) (ae1258e)
 - [ ] T2 Shell: riel fijo 4.5rem con expansión superpuesta al hover/foco; logo al menú; sin barra superior en escritorio; sin botón «Compactar menú»; `.pagina` más ancha
 - [ ] T3 Compartidos: `app-cabecera-pagina`, `app-rejilla`, `app-tarjeta-elemento`, `app-aviso` modo flotante plegable
 - [ ] T4 Casos de uso: grilla de categorías → ventana de casos → ventana de lectura → edición; filtros compactos
