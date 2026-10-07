@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
+  AdministrarSeccionesEstilo,
   EstiloModule,
   ListarHistorialEstilo,
   ProveedorEstilo,
@@ -17,6 +18,7 @@ export class ArgumentosEstiloInvalidos extends Error {}
 export type ArgumentosEstilo =
   | { readonly accion: 'ver' }
   | { readonly accion: 'historial' }
+  | { readonly accion: 'secciones' }
   | { readonly accion: 'publicar'; readonly archivo: string }
   | { readonly accion: 'restaurar'; readonly version: number };
 
@@ -29,13 +31,14 @@ export interface ResultadoPromptEstiloCli {
 export interface DependenciasEstilo {
   readonly proveedor: Pick<ProveedorEstilo, 'obtener'>;
   readonly listar: Pick<ListarHistorialEstilo, 'ejecutar'>;
+  readonly secciones: Pick<AdministrarSeccionesEstilo, 'listar'>;
   readonly publicar: Pick<PublicarEstilo, 'ejecutar'>;
   readonly restaurar: Pick<RestaurarEstilo, 'ejecutar'>;
   readonly leerArchivo: (ruta: string) => Promise<string>;
 }
 
 const AYUDA =
-  'prompt:estilo exige una acción: ver, historial, publicar --archivo <ruta> o restaurar --version <n>.';
+  'prompt:estilo exige una acción: ver, historial, secciones, publicar --archivo <ruta> o restaurar --version <n>.';
 
 function valorDeFlag(argumentos: readonly string[], nombre: string): string | null {
   const indice = argumentos.indexOf(nombre);
@@ -48,6 +51,7 @@ export function parsearArgumentosEstilo(argumentos: readonly string[]): Argument
   switch (accion) {
     case 'ver':
     case 'historial':
+    case 'secciones':
       return { accion };
     case 'publicar': {
       const archivo = valorDeFlag(resto, '--archivo');
@@ -98,6 +102,14 @@ export async function ejecutarEstilo(argumentos: readonly string[], dependencias
       if (historial.length === 0) lineas.push('  (historial vacío)');
       return { limpio: true, mensaje: lineas.join('\n') };
     }
+    case 'secciones': {
+      const secciones = await dependencias.secciones.listar();
+      if (secciones.length === 0) return { limpio: true, mensaje: 'prompt:estilo: sin secciones (rige el archivo de respaldo).' };
+      const lineas = secciones.map(
+        (s) => `  ${String(s.orden)} · ${s.activo ? 'activa' : 'apagada'} · ${s.titulo} · ${String(s.texto.length)} caracteres`,
+      );
+      return { limpio: true, mensaje: ['prompt:estilo: secciones del estilo (orden · estado · título · largo).', ...lineas].join('\n') };
+    }
     case 'publicar': {
       let texto: string;
       try {
@@ -129,7 +141,7 @@ function reportar(
 @Module({ imports: [ConfiguracionModule, RelojModule, EstiloModule] })
 class ContextoPromptEstilo {}
 
-/** Comando `npm run prompt:estilo` (AGT22): `ver`, `historial`, `publicar --archivo` y `restaurar --version`. */
+/** Comando `npm run prompt:estilo` (AGT22): `ver`, `historial`, `secciones`, `publicar --archivo` y `restaurar --version`. */
 export async function promptEstilo(argumentos: readonly string[]): Promise<ResultadoPromptEstiloCli> {
   try {
     parsearArgumentosEstilo(argumentos);
@@ -141,6 +153,7 @@ export async function promptEstilo(argumentos: readonly string[]): Promise<Resul
     return await ejecutarEstilo(argumentos, {
       proveedor: contexto.get(ProveedorEstilo),
       listar: contexto.get(ListarHistorialEstilo),
+      secciones: contexto.get(AdministrarSeccionesEstilo),
       publicar: contexto.get(PublicarEstilo),
       restaurar: contexto.get(RestaurarEstilo),
       leerArchivo: (ruta) => readFile(ruta, 'utf8'),

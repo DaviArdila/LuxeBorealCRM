@@ -66,8 +66,9 @@ La migración copió el estilo y su historial desde `parametro` conservando los 
 |---|---|
 | `npm run prompt:estilo -- ver` | Muestra el estilo que usa el bot, su versión y si viene de la base o del archivo |
 | `npm run prompt:estilo -- historial` | Lista las versiones anteriores (versión, fecha en que dejaron de estar vigentes y tamaño) |
-| `npm run prompt:estilo -- publicar --archivo <ruta>` | Valida y publica un estilo nuevo |
-| `npm run prompt:estilo -- restaurar --version <n>` | Publica el texto de una versión anterior como una versión nueva |
+| `npm run prompt:estilo -- secciones` | Lista las secciones del estilo (orden, activa o apagada, título y largo); no muestra sus textos. Para crearlas o editarlas usa la pantalla |
+| `npm run prompt:estilo -- publicar --archivo <ruta>` | Valida y publica un estilo nuevo; lo parte por sus encabezados `# ` y reemplaza las secciones por esas partes |
+| `npm run prompt:estilo -- restaurar --version <n>` | Publica el texto de una versión anterior como una versión nueva y vuelve a partirlo en secciones |
 
 ## Qué rechaza el comando
 

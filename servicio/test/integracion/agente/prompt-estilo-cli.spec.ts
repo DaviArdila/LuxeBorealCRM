@@ -33,6 +33,7 @@ async function limpiarBase(): Promise<void> {
     .useValue(cargarConfiguracion({ NODE_ENV: 'test', DATABASE_URL: urlPostgresDePrueba(), REDIS_URL: urlRedisDePrueba() }))
     .compile();
   await modulo.get(PrismaService).versionEstilo.deleteMany();
+  await modulo.get(PrismaService).seccionEstilo.deleteMany();
   await modulo.close();
 }
 
@@ -143,5 +144,29 @@ describe('Comando prompt:estilo de punta a punta (Fase 08c, T5, AGT22)', () => {
     expect(publicado.mensaje).toContain('versión 1');
     expect(historial.mensaje).toContain('versión 1');
     expect(historial.mensaje).toContain('(historial vacío)');
+  });
+
+  it('EST-D2 — Publicar parte el archivo en secciones y secciones las lista sin copiar sus textos', async () => {
+    await promptEstilo(['publicar', '--archivo', await archivo('a.md', '# Saludo\n\nTEXTO-DE-SALUDO\n\n# Cierre\n\nTEXTO-DE-CIERRE\n')]);
+
+    const listado = await promptEstilo(['secciones']);
+
+    expect(listado.limpio).toBe(true);
+    expect(listado.mensaje).toContain('0 · activa · Saludo');
+    expect(listado.mensaje).toContain('1 · activa · Cierre');
+    expect(listado.mensaje).not.toContain('TEXTO-DE');
+  });
+
+  it('EST-D2 — Restaurar una versión anterior reemplaza las secciones y ver muestra el texto compuesto', async () => {
+    await promptEstilo(['publicar', '--archivo', await archivo('a.md', '# Uno\n\nPrimer texto\n')]);
+    await promptEstilo(['publicar', '--archivo', await archivo('b.md', '# Dos\n\nSegundo texto\n\n# Tres\n\nTercer texto\n')]);
+
+    await promptEstilo(['restaurar', '--version', '1']);
+    const listado = await promptEstilo(['secciones']);
+    const visto = await promptEstilo(['ver']);
+
+    expect(listado.mensaje).toContain('0 · activa · Uno');
+    expect(listado.mensaje).not.toContain('Dos');
+    expect(visto.mensaje).toContain('Primer texto');
   });
 });
