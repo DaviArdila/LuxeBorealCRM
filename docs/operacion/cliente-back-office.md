@@ -144,6 +144,8 @@ con el framework).
 | Pedir confirmación antes de actuar | `<app-confirmacion>` de `compartido/` (abre un diálogo de Material) |
 | Editar un valor o crear uno | `<app-dialogo-edicion>` de `compartido/` (ver «Edición en ventana emergente») |
 | Un ícono | `<mat-icon fontIcon="nombre" aria-hidden="true" />`, con el nombre de [Material Symbols](https://fonts.google.com/icons) |
+| La tarjeta de un elemento (caso, sección, categoría) | `<app-tarjeta-elemento>` de `compartido/`: título en su propia fila con la fuente de títulos, vista previa recortada y, al pie, etiquetas y acciones (íconos). `tono` pinta el acento de la izquierda (en Casos: `primario` literal, `secundario` guía, `terciario` sistema); una inactiva se atenúa. Dentro de una ventana la rejilla deja un respiro para que el contorno y la sombra no se recorten |
+| Un interruptor dentro de una tarjeta | `mat-slide-toggle` con `hideIcon` y la clase `luxe-interruptor-mini` (32 × 18 px) |
 | Una barra de filtros (buscador y listas) | Un contenedor con la clase global `luxe-filtros` (`styles.scss`): densidad -3, campos de 44 px y texto más pequeño |
 | Una acción de la cabecera (crear, historial, categorías) | Un `mat-icon-button` con `matTooltip` y `aria-label` (p. ej. `+` con «Crear nuevo caso»); la cabecera ya los compacta (`luxe-compacto`, densidad -2) |
 | Un color | Un token del tema, p. ej. `var(--mat-sys-primary)` o `var(--mat-sys-on-surface-variant)`; nunca un valor fijo |

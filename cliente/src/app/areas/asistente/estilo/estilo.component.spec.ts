@@ -499,6 +499,19 @@ describe('Pantalla «Estilo del bot» en secciones', () => {
     }
   });
 
+  it('el interruptor de cada tarjeta es mini (sin ícono) y el acento marca si la sección está activa', async () => {
+    const { el } = await abrir();
+
+    const tarjetas = [...el.querySelectorAll('[data-seccion]')];
+    expect(tarjetas.length).toBeGreaterThan(0);
+    for (const tarjeta of tarjetas) {
+      const interruptor = tarjeta.querySelector('mat-slide-toggle')!;
+      expect(interruptor.classList).toContain('luxe-interruptor-mini');
+      expect(interruptor.querySelector('.mdc-switch__icons')).toBeNull();
+      expect(tarjeta.getAttribute('data-tono')).toBe(tarjeta.classList.contains('atenuada') ? 'neutro' : 'primario');
+    }
+  });
+
   it('remite a «Casos de uso» en la ayuda de la cabecera', async () => {
     const { fixture, el } = await abrir();
 

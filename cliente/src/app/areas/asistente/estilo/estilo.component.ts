@@ -123,13 +123,14 @@ interface Restauracion {
     <app-rejilla cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="soltar($event)">
       @for (seccion of visibles(); track seccion.id) {
         <app-tarjeta-elemento data-seccion cdkDrag [cdkDragDisabled]="reordenDeshabilitado()" [titulo]="seccion.titulo"
-          [etiquetas]="etiquetasDe(seccion)" [vista]="seccion.texto" [atenuada]="!seccion.activo" [clicable]="true"
+          [etiquetas]="etiquetasDe(seccion)" [vista]="seccion.texto" [atenuada]="!seccion.activo"
+          [tono]="seccion.activo ? 'primario' : 'neutro'" [clicable]="true"
           (abrir)="editarSeccion(seccion)">
-          <span acciones>
+          <span acciones class="luxe-compacto">
             <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
               <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
             </span>
-            <mat-slide-toggle [checked]="seccion.activo" [disabled]="ocupado()"
+            <mat-slide-toggle class="luxe-interruptor-mini" hideIcon [checked]="seccion.activo" [disabled]="ocupado()"
                               [attr.aria-label]="'Activar ' + seccion.titulo"
                               (change)="alternar(seccion, $event.checked, $event.source)" />
             <button mat-icon-button type="button" [disabled]="ocupado()"

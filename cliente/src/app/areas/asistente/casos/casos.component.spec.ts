@@ -413,6 +413,23 @@ describe('SHL10 — Pantalla «Casos de uso»', () => {
     expect(el.querySelector('.luxe-filtros [data-campo="buscar"]')).not.toBeNull();
   });
 
+  it('SHL10 — El acento de cada caso dice su tipo: sistema, guía o literal', async () => {
+    const { fixture } = await abrir(
+      {
+        items: [
+          caso({ id: 'k-1' }),
+          caso({ id: 'k-3', titulo: 'Tono', modo: 'guia' }),
+          caso({ id: 'k-4', titulo: 'Aviso de datos', claveSistema: 'aviso_datos' }),
+        ],
+        siguienteCursor: null,
+      },
+    );
+    await abrirCategoria(fixture, 'Políticas');
+
+    const tonos = [...document.querySelectorAll('[data-caso]')].map((t) => t.getAttribute('data-tono'));
+    expect(tonos).toEqual(['primario', 'secundario', 'terciario']);
+  });
+
   it('SHL10 — Sin casos muestra un estado vacío con la acción de crear', async () => {
     const { el } = await abrir({ items: [], siguienteCursor: null }, { categorias: [] });
 

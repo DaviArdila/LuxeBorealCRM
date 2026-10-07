@@ -92,3 +92,27 @@ body {
 .luxe-filtros .mat-mdc-form-field {
   min-width: 10rem;
 }
+
+/*
+ * Interruptor mini (32 × 18 px) para las tarjetas, con `hideIcon`. El margen de la perilla es el ancho de la pista
+ * menos la perilla menos el hueco vertical, como en los valores por defecto de Material (52 × 32).
+ */
+.luxe-interruptor-mini {
+  @include mat.slide-toggle-overrides(
+    (
+      track-width: 32px,
+      track-height: 18px,
+      track-outline-width: 1.5px,
+      selected-track-outline-width: 1.5px,
+      unselected-handle-size: 10px,
+      unselected-handle-horizontal-margin: 0 4px,
+      selected-handle-size: 14px,
+      selected-handle-horizontal-margin: 0 16px,
+      pressed-handle-size: 16px,
+      unselected-pressed-handle-horizontal-margin: 0 1px,
+      selected-pressed-handle-horizontal-margin: 0 15px,
+      state-layer-size: 28px,
+      touch-target-display: none,
+    )
+  );
+}

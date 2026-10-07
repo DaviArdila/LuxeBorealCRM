@@ -22,7 +22,7 @@ import { ConfirmacionComponent } from '../../../compartido/confirmacion.componen
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
 import { RejillaComponent } from '../../../compartido/rejilla.component';
-import { TarjetaElementoComponent } from '../../../compartido/tarjeta-elemento.component';
+import { TarjetaElementoComponent, type TonoDeTarjeta } from '../../../compartido/tarjeta-elemento.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { CasosServicio, type Caso, type CategoriaDeCasos, type FiltrosDeCasos } from './casos.servicio';
 
@@ -135,7 +135,7 @@ interface Grupo {
 
     <app-rejilla>
       @for (grupo of grupos(); track grupo.id) {
-        <app-tarjeta-elemento data-categoria variante="categoria" [titulo]="grupo.nombre" [conteo]="grupo.casos.length"
+        <app-tarjeta-elemento data-categoria variante="categoria" tono="primario" [titulo]="grupo.nombre" [conteo]="grupo.casos.length"
           [titulos]="titulosDe(grupo)" [etiquetas]="grupo.casos.some(inactivo) ? ['Con inactivos'] : []" [clicable]="true"
           (abrir)="abrirCategoria(grupo.id)" />
       }
@@ -151,9 +151,10 @@ interface Grupo {
           <app-rejilla minimo="19rem">
             @for (caso of grupo.casos; track caso.id) {
               <app-tarjeta-elemento data-caso [titulo]="caso.titulo" [etiquetas]="etiquetasDe(caso)"
-                [vista]="caso.cuandoAplica" [atenuada]="!caso.activo" [clicable]="true" (abrir)="leer(caso)">
+                [vista]="caso.cuandoAplica" [atenuada]="!caso.activo" [tono]="tonoDe(caso)" [clicable]="true"
+                (abrir)="leer(caso)">
                 <p class="extracto">{{ extracto(caso.texto) }}</p>
-                <span acciones>
+                <span acciones class="luxe-compacto">
                   <button mat-icon-button type="button" [attr.aria-label]="'Editar ' + caso.titulo" (click)="editarCaso(caso)">
                     <mat-icon fontIcon="edit" aria-hidden="true" />
                   </button>
@@ -449,6 +450,12 @@ export class CasosComponent {
       ...(caso.activo ? [] : ['Inactivo']),
       ...(caso.modo === 'guia' ? ['Guía'] : []),
     ];
+  }
+
+  /** Acento de la tarjeta: sistema, guía o literal. */
+  protected tonoDe(caso: Caso): TonoDeTarjeta {
+    if (this.esDelSistema(caso)) return 'terciario';
+    return caso.modo === 'guia' ? 'secundario' : 'primario';
   }
 
   protected titulosDe(grupo: Grupo): readonly string[] {

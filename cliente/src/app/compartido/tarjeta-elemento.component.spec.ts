@@ -6,7 +6,7 @@ import { TarjetaElementoComponent } from './tarjeta-elemento.component';
   imports: [TarjetaElementoComponent],
   template: `
     <app-tarjeta-elemento [titulo]="titulo" [etiquetas]="etiquetas" [vista]="vista" [clicable]="clicable"
-      [atenuada]="atenuada" [variante]="variante" [conteo]="conteo" [titulos]="titulos" (abrir)="abiertas = abiertas + 1">
+      [atenuada]="atenuada" [tono]="tono" [variante]="variante" [conteo]="conteo" [titulos]="titulos" (abrir)="abiertas = abiertas + 1">
       <button type="button" acciones data-prueba="editar">Editar</button>
     </app-tarjeta-elemento>
   `,
@@ -17,6 +17,7 @@ class AnfitrionComponent {
   vista: string | null = null;
   clicable = false;
   atenuada = false;
+  tono: 'neutro' | 'primario' | 'secundario' | 'terciario' = 'neutro';
   variante: 'elemento' | 'categoria' = 'elemento';
   conteo: number | null = null;
   titulos: readonly string[] = [];
@@ -96,5 +97,25 @@ describe('Tarjeta de elemento', () => {
       'Precios',
     ]);
     expect(el.querySelector('[data-vista]')).toBeNull();
+  });
+
+  it('el título ocupa su propia fila: las acciones van en el pie, con las etiquetas, y no le quitan ancho', async () => {
+    const { el } = await montar({ etiquetas: ['Sistema'] });
+
+    const cabecera = el.querySelector('.cabecera')!;
+    const pie = el.querySelector('.pie')!;
+    expect(cabecera.querySelector('h3')).not.toBeNull();
+    expect(cabecera.querySelector('[data-prueba="editar"]')).toBeNull();
+    expect(pie.querySelector('[data-prueba="editar"]')).not.toBeNull();
+    expect(pie.querySelector('[data-etiqueta]')).not.toBeNull();
+  });
+
+  it('el tono marca el tipo con un acento (neutro por defecto)', async () => {
+    const neutra = await montar();
+    expect(neutra.tarjeta.getAttribute('data-tono')).toBe('neutro');
+
+    TestBed.resetTestingModule();
+    const sistema = await montar({ tono: 'terciario' });
+    expect(sistema.tarjeta.getAttribute('data-tono')).toBe('terciario');
   });
 });
