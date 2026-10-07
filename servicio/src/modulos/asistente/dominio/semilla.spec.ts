@@ -142,6 +142,7 @@ describe('leerArchivoDeCasos (CAS6, datos de desarrollo)', () => {
 
     const resultado = leerArchivoDeCasos(JSON.parse(readFileSync(ruta, 'utf8')));
 
-    expect(resultado.ok && resultado.casos.map((c) => c.titulo)).toEqual(['Devoluciones', 'Garantía', 'Instalación']);
+    // Las tres políticas de siempre abren el archivo; el resto del contenido lo cubre `casos-desarrollo.spec.ts`.
+    expect(resultado.ok && resultado.casos.slice(0, 3).map((c) => c.titulo)).toEqual(['Devoluciones', 'Garantía', 'Instalación']);
   });
 });

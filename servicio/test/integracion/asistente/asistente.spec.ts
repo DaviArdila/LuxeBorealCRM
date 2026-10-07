@@ -207,9 +207,13 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     const espiados = [vi.spyOn(Logger.prototype, 'log'), vi.spyOn(Logger.prototype, 'warn'), vi.spyOn(Logger.prototype, 'error')];
     const salida = vi.spyOn(process.stdout, 'write');
 
-    const informe = await ejecutarSembrarCasos({ sembrar });
+    const informe = await ejecutarSembrarCasos({
+      sembrar,
+      sembrarEstilo: { ejecutar: () => Promise.resolve({ sembrado: false }) },
+      leerEstiloInicial: () => Promise.resolve('# Estilo\n'),
+    });
 
-    expect(informe).toEqual({ limpio: true, mensaje: 'casos:sembrar: 11 insertados, 0 ya existían.' });
+    expect(informe).toEqual({ limpio: true, mensaje: 'casos:sembrar: 11 insertados, 0 ya existían.\nestilo: ya existía' });
     for (const espia of espiados) expect(JSON.stringify(espia.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
     expect(JSON.stringify(salida.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
   });

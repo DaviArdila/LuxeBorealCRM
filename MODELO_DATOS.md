@@ -126,7 +126,7 @@ registro tipado por clave: `horario_atencion` (siete claves `lun`…`dom`, cada 
 `recargo_contraentrega_pct` (5), `factor_volumetrico` (4000), `llm_techo_mensual_usd` y `llm_estado_techo` (esta última la
 escribe el gateway del LLM, no el negocio). Se editan por los grupos de Configuración de la API. Ningún texto que lea el
 cliente (aviso de datos, mensajes de traspaso, cierre, error, espera, techo, audio, imagen, fuera de cobertura, políticas)
-ni el estilo del bot vive aquí: los primeros son casos de `caso_asistente` y el segundo está en `version_estilo`. Las claves
+ni el estilo del bot vive aquí: los primeros son casos de `caso_asistente` y el segundo está en `version_estilo` (que `npm run casos:sembrar` siembra con el estilo inicial, versión 1, solo si la tabla está vacía). Las claves
 `mensaje_*`, `aviso_*`, `politica_*` y `prompt_estilo*` de una base anterior las retira la migración del estilo y
 `npm run casos:sembrar`.
 

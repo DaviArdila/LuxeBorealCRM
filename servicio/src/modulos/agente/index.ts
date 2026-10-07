@@ -8,4 +8,5 @@ export { EstiloModule } from './estilo.module.js';
 export { ProveedorEstilo, type EstiloVigente } from './aplicacion/proveedor-estilo.js';
 export { PublicarEstilo, type ResultadoPublicacion } from './aplicacion/publicar-estilo.js';
 export { RestaurarEstilo } from './aplicacion/restaurar-estilo.js';
+export { SembrarEstilo, type ResultadoSembrarEstilo } from './aplicacion/sembrar-estilo.js';
 export { ListarHistorialEstilo, type EstiloConHistorial } from './aplicacion/listar-historial-estilo.js';

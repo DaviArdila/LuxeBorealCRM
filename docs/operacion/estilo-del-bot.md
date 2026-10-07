@@ -19,6 +19,23 @@ exponer un estilo nuevo a clientes, se mide con los evals reales. Decisión de f
 Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
 queda sin estilo.
 
+## El estilo inicial de una base nueva
+
+Una base nueva no queda con el estilo genérico del archivo: `npm run casos:sembrar` publica como **versión 1** el estilo
+pensado para una tienda colombiana de grifos, accesorios de baño y lavaplatos de acero inoxidable (trato de «usted» por
+defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md`.
+
+- **Cuándo aplica.** Solo si `version_estilo` no tiene ninguna fila, ni vigente ni retirada. Si ya hay un estilo publicado
+  (por la pantalla o por el comando), o aunque solo queden versiones retiradas, la semilla no hace nada y nunca pisa lo que
+  alguien decidió. Es idempotente: una segunda corrida informa `estilo: ya existía`; la primera, `estilo: sembrado v1`.
+- **Cómo se ve.** `npm run prompt:estilo -- ver` lo muestra como «versión 1, origen base de datos»; en la pantalla figura sin
+  autor («Comando»), igual que lo publicado con el comando.
+- **Cómo se cambia.** Como cualquier estilo: publicar uno nuevo (el flujo de abajo). Editar `estilo-inicial.md` solo afecta a
+  bases nuevas; en una base que ya tiene versiones no cambia nada.
+- **Cómo volver a él.** En una base que ya tiene versiones, publícalo como una versión nueva:
+  `npm run prompt:estilo -- publicar --archivo prisma/datos/estilo-inicial.md` (desde `servicio/`). Sin él, el respaldo
+  `estilo.v3.md` rige solo mientras la tabla esté vacía.
+
 ## Dónde vive y quién publicó
 
 Desde la Fase 12 el estilo vive en su propia tabla, `version_estilo` ([MODELO_DATOS.md](../../MODELO_DATOS.md)): una fila
