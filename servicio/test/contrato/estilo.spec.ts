@@ -54,13 +54,13 @@ describe('AGT23 — el estilo del bot en el contrato público', () => {
     }
   });
 
-  it('el cuerpo de publicarEstilo limita el texto a 4000 caracteres y el de restaurarEstilo pide una versión entera', async () => {
+  it('el cuerpo de publicarEstilo limita el texto a 10000 caracteres y el de restaurarEstilo pide una versión entera', async () => {
     const ops = await operaciones();
 
     const publicar = ops['publicarEstilo']?.requestBody?.content['application/json']?.schema as { properties?: { texto?: { maxLength?: number } } };
     const restaurar = ops['restaurarEstilo']?.requestBody?.content['application/json']?.schema as { properties?: { version?: { type?: string; minimum?: number } } };
 
-    expect(publicar.properties?.texto?.maxLength).toBe(4000);
+    expect(publicar.properties?.texto?.maxLength).toBe(10000);
     expect(restaurar.properties?.version).toMatchObject({ type: 'integer', minimum: 1 });
   });
 });

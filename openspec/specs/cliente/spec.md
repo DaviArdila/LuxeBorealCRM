@@ -397,7 +397,7 @@ Fase que lo implementa: 12
 ### Requirement: SHL9 — La pantalla «Estilo del bot» usa la ventana emergente y muestra quién publicó
 
 La pantalla (ahora en el área `asistente`) MUST mostrar en modo lectura la versión vigente, su origen, quién la publicó y
-el texto, y «Editar» MUST abrir la ventana de SHL8 con el editor y el contador sobre 4.000 caracteres; «Publicar» desde
+el texto, y «Editar» MUST abrir la ventana de SHL8 con el editor y el contador sobre 10.000 caracteres; «Publicar» desde
 la ventana MUST pedir confirmación y llamar a `publicarEstilo`. El historial MUST mostrar versión, fecha, autor y un
 extracto, con ver el texto completo y restaurar previa confirmación. Después de publicar o restaurar MUST mantenerse el
 recordatorio de evals reales (EVL3). La pantalla MUST aclarar que lo que el bot responde en cada situación va en

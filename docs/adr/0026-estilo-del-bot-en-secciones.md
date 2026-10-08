@@ -3,6 +3,8 @@
 - Estado: propuesta
 - Fecha: 2026-10-07
 
+> **Nota 2026-10-07.** El tope de 4.000 caracteres que cita este ADR sube a 10.000 ([ADR-0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md), enmienda). Se sigue aplicando a la suma de las secciones activas.
+
 ## Contexto
 
 El estilo del bot era un único texto (hasta 4.000 caracteres) en `version_estilo` ([ADR-0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md),

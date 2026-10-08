@@ -170,7 +170,7 @@ pasa a ser la foto de ese compuesto (historial, restaurar, CLI y evals siguen ig
 | `activo` | boolean | no | por defecto `true`; apagar es la única forma de retirar una sección (no hay borrado) |
 | `creado`, `actualizado` | timestamptz | no | `actualizado` es la marca del bloqueo optimista al editar |
 
-- Cada cambio que altera el compuesto valida el total (tope de 4.000 caracteres, no vacío) y guarda su foto en
+- Cada cambio que altera el compuesto valida el total (tope de 10.000 caracteres, no vacío) y guarda su foto en
   `version_estilo` dentro de la misma transacción; un cambio que deja el compuesto igual no crea versión.
 - Publicar un estilo completo o restaurar una versión reemplaza todas las secciones con la división del texto por
   encabezados `# ` (lo anterior al primero es la sección «General»).

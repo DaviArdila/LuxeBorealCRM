@@ -829,7 +829,7 @@ Fase que lo implementa: 08c
 
 ### Requirement: AGT20 — El estilo se valida antes de publicarse
 
-Un estilo MUST rechazarse, con el motivo, si está vacío o en blanco, si supera 4.000 caracteres, si contiene un
+Un estilo MUST rechazarse, con el motivo, si está vacío o en blanco, si supera 10.000 caracteres, si contiene un
 valor en pesos (R1, R2), un SKU con la forma `SKU-XXXX` (AGT16) o un marcador de plantilla `{{...}}`. Un estilo
 válido MUST aceptarse sin modificarlo.
 
@@ -1169,7 +1169,7 @@ Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-sec
 
 Cada sección MUST cumplir las reglas de AGT20 (sin valores en pesos, SKU ni marcadores `{{...}}`), tener un título de una
 línea de hasta 100 caracteres y un texto sin líneas que empiecen por `# ` (partirían la sección). El estilo compuesto
-resultante MUST tener entre 1 y 4.000 caracteres. Un cambio que no cumple MUST revertirse completo: la versión vigente y
+resultante MUST tener entre 1 y 10.000 caracteres. Un cambio que no cumple MUST revertirse completo: la versión vigente y
 las secciones no cambian, y el motivo nombra la regla sin copiar el texto (R14).
 
 Fase que lo implementa: ninguna (trabajo fuera de fase, `odd/tasks/estilo-en-secciones.md`)

@@ -6,6 +6,11 @@
 > **Aceptada el 2026-10-01.** El dueño pidió poder cambiar el comportamiento del bot «a voluntad» sin
 > desplegar (P45), eligió clave/valor en `parametro` y aprobó la versión completa (copia en memoria con versión
 > en Redis), el tope de 4.000 caracteres y las 10 versiones de historial.
+>
+> **Enmienda 2026-10-07.** El tope sube de 4.000 a **10.000 caracteres** (`MAX_CARACTERES_ESTILO`). No lo impone
+> ningún límite técnico: 10.000 caracteres son unos 2.500 tokens, lejos del contexto del modelo, y su costo se
+> mide en `uso_llm`. Sigue siendo una baranda contra un descuido y contra un estilo que compita con las reglas;
+> la calidad la miden los evals reales (`EVALS_ESTILO`), no el número. Donde este ADR dice 4.000, rige 10.000.
 
 ## Resumen
 
