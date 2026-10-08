@@ -1,16 +1,29 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+  TemplateRef,
+  viewChild,
+} from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
-import { MatChip, MatChipSet } from '@angular/material/chips';
+import { MatDialog, MatDialogActions, MatDialogClose, MatDialogContent, type MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
+import { MatTooltip } from '@angular/material/tooltip';
 import { AvisoComponent } from '../../../compartido/aviso.component';
+import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
+import { RejillaComponent } from '../../../compartido/rejilla.component';
+import { TarjetaElementoComponent, type TonoDeTarjeta } from '../../../compartido/tarjeta-elemento.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { CasosServicio, type Caso, type CategoriaDeCasos, type FiltrosDeCasos } from './casos.servicio';
 
@@ -21,6 +34,10 @@ const MAXIMO_DESCRIPCION_EVENTO = 1000;
 const MAXIMO_TEXTO = 1200;
 const RETARDO_BUSQUEDA_MS = 300;
 const LARGO_EXTRACTO = 160;
+/** Cuántos títulos de vista previa muestra la ficha de una categoría. */
+const TITULOS_EN_FICHA = 3;
+const AYUDA =
+  'Aquí se editan las respuestas del bot por situación. Cómo habla el bot se edita en «Estilo del bot».';
 
 type Tipo = '' | 'evento' | 'intencion';
 type Modo = 'literal' | 'guia';
@@ -31,23 +48,31 @@ interface Grupo {
   readonly casos: readonly Caso[];
 }
 
-/** SHL10: los casos del asistente por categoría, con buscador, filtros, ventana de edición y gestión de categorías. */
+/**
+ * SHL10: los casos del asistente. La vista principal es una rejilla de categorías; una categoría abre una ventana
+ * con las tarjetas de sus casos, un caso abre su lectura completa y desde ahí se edita (ventana de edición
+ * anidada). Las fichas de categoría se reordenan arrastrándolas (sin búsqueda ni filtros); la gestión de
+ * categorías vive en una ventana propia que abre el botón «Categorías» de la cabecera. Los casos de una categoría
+ * no se reordenan: el servidor no guarda ese orden.
+ */
 @Component({
   selector: 'app-casos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [CasosServicio],
   imports: [
     AvisoComponent,
+    CabeceraPaginaComponent,
+    CdkDrag,
+    CdkDragHandle,
+    CdkDropList,
     ConfirmacionComponent,
     DialogoEdicionComponent,
     EditorConContadorComponent,
     MatButton,
-    MatCard,
-    MatCardContent,
-    MatCardHeader,
-    MatCardTitle,
-    MatChip,
-    MatChipSet,
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogContent,
+    MatDialogTitle,
     MatFormField,
     MatHint,
     MatIcon,
@@ -57,17 +82,26 @@ interface Grupo {
     MatOption,
     MatSelect,
     MatSlideToggle,
+    MatTooltip,
+    RejillaComponent,
+    TarjetaElementoComponent,
   ],
   template: `
-    <h1>Casos de uso</h1>
-    <app-aviso tipo="info">
-      Aquí se editan las respuestas del bot por situación. Cómo habla el bot se edita en «Estilo del bot».
-    </app-aviso>
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error">{{ texto }}</app-aviso>
-    }
+    <app-cabecera-pagina titulo="Casos de uso" [ayuda]="ayuda">
+      <button mat-icon-button type="button" class="crear" data-accion="nuevo-caso" aria-label="Crear nuevo caso"
+              matTooltip="Crear nuevo caso" (click)="nuevoCaso()">
+        <mat-icon fontIcon="add" aria-hidden="true" />
+      </button>
+      <button mat-icon-button type="button" data-accion="categorias" aria-label="Categorías" matTooltip="Categorías"
+              (click)="abrirGestor()">
+        <mat-icon fontIcon="category" aria-hidden="true" />
+      </button>
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+    </app-cabecera-pagina>
 
-    <div class="barra">
+    <div class="barra luxe-filtros">
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">
         <mat-label>Buscar</mat-label>
         <input matInput type="search" data-campo="buscar" [value]="busqueda()"
@@ -90,42 +124,50 @@ interface Grupo {
           <mat-option value="intencion">Por intención</mat-option>
         </mat-select>
       </mat-form-field>
-      <button mat-flat-button type="button" (click)="nuevoCaso()">
-        <mat-icon fontIcon="add" aria-hidden="true" />Nuevo caso
-      </button>
     </div>
 
     @if (servicio.casos().length === 0) {
-      <mat-card appearance="outlined" data-vacio>
-        <mat-card-content class="vacio">
-          @if (hayFiltros()) {
-            <p>Ningún caso coincide con la búsqueda.</p>
-          } @else {
-            <p>No hay casos todavía. Crea el primero para que el bot sepa qué responder.</p>
-            <button mat-flat-button type="button" (click)="nuevoCaso()">
-              <mat-icon fontIcon="add" aria-hidden="true" />Nuevo caso
-            </button>
-          }
-        </mat-card-content>
-      </mat-card>
+      <div class="vacio" data-vacio>
+        @if (hayFiltros()) {
+          <p>Ningún caso coincide con la búsqueda.</p>
+        } @else {
+          <p>No hay casos todavía. Crea el primero para que el bot sepa qué responder.</p>
+          <button mat-flat-button type="button" (click)="nuevoCaso()">
+            <mat-icon fontIcon="add" aria-hidden="true" />Nuevo caso
+          </button>
+        }
+      </div>
     }
 
-    @for (grupo of grupos(); track grupo.id) {
-      <mat-card appearance="outlined" data-categoria>
-        <mat-card-header>
-          <mat-card-title><h2 class="titulo-tarjeta">{{ grupo.nombre }} ({{ grupo.casos.length }})</h2></mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="casos">
-          @for (caso of grupo.casos; track caso.id) {
-            <div class="caso" data-caso [class.inactivo]="!caso.activo">
-              <div class="cabecera">
-                <strong>{{ caso.titulo }}</strong>
-                <mat-chip-set aria-label="Etiquetas del caso">
-                  @if (esDelSistema(caso)) { <mat-chip>Sistema</mat-chip> }
-                  @if (!caso.activo) { <mat-chip>Inactivo</mat-chip> }
-                  @if (caso.modo === 'guia') { <mat-chip>Guía</mat-chip> }
-                </mat-chip-set>
-                <span class="acciones-fila">
+    <app-rejilla cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="soltarCategoria($event)">
+      @for (grupo of grupos(); track grupo.id) {
+        <app-tarjeta-elemento data-categoria variante="categoria" tono="primario" [titulo]="grupo.nombre" [conteo]="grupo.casos.length"
+          [titulos]="titulosDe(grupo)" [etiquetas]="grupo.casos.some(inactivo) ? ['Con inactivos'] : []" [clicable]="true"
+          cdkDrag [cdkDragDisabled]="reordenDeshabilitado()" [attr.data-arrastre]="reordenDeshabilitado() ? 'apagado' : 'activo'"
+          (abrir)="abrirCategoria(grupo.id)">
+          <span acciones class="luxe-compacto">
+            <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
+              <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
+            </span>
+          </span>
+        </app-tarjeta-elemento>
+      }
+    </app-rejilla>
+
+    <ng-template #plantillaCategoria>
+      @if (categoriaAbierta(); as grupo) {
+        <h2 mat-dialog-title>{{ grupo.nombre }} ({{ grupo.casos.length }})</h2>
+        <mat-dialog-content>
+          @if (grupo.casos.length === 0) {
+            <p>Esta categoría no tiene casos todavía.</p>
+          }
+          <app-rejilla minimo="19rem">
+            @for (caso of grupo.casos; track caso.id) {
+              <app-tarjeta-elemento data-caso [titulo]="caso.titulo" [etiquetas]="etiquetasDe(caso)"
+                [vista]="caso.cuandoAplica" [atenuada]="!caso.activo" [tono]="tonoDe(caso)" [clicable]="true"
+                (abrir)="leer(caso)">
+                <p class="extracto">{{ extracto(caso.texto) }}</p>
+                <span acciones class="luxe-compacto">
                   <button mat-icon-button type="button" [attr.aria-label]="'Editar ' + caso.titulo" (click)="editarCaso(caso)">
                     <mat-icon fontIcon="edit" aria-hidden="true" />
                   </button>
@@ -135,50 +177,76 @@ interface Grupo {
                     </button>
                   }
                 </span>
-              </div>
-              <p class="cuando">{{ caso.cuandoAplica }}</p>
-              <p class="texto">{{ extracto(caso.texto) }}</p>
+              </app-tarjeta-elemento>
+            }
+          </app-rejilla>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+          <button mat-button type="button" mat-dialog-close>Cerrar</button>
+        </mat-dialog-actions>
+      }
+    </ng-template>
+
+    <ng-template #plantillaLectura>
+      @if (casoLeido(); as caso) {
+        <h2 mat-dialog-title>{{ caso.titulo }}</h2>
+        <mat-dialog-content>
+          <div class="lectura" data-lectura>
+            <p class="etiquetas-lectura">{{ etiquetasDe(caso).join(' · ') }}</p>
+            <h3>Cuándo aplica</h3>
+            <p>{{ caso.cuandoAplica }}</p>
+            <h3>Texto</h3>
+            <p class="texto">{{ caso.texto }}</p>
+          </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+          <button mat-button type="button" mat-dialog-close>Cerrar</button>
+          <button mat-flat-button type="button" (click)="editarCaso(caso)">
+            <mat-icon fontIcon="edit" aria-hidden="true" />Editar
+          </button>
+        </mat-dialog-actions>
+      }
+    </ng-template>
+
+    <ng-template #plantillaGestor>
+      <h2 mat-dialog-title>Categorías</h2>
+      <mat-dialog-content>
+        @if (motivo(); as texto) {
+          <app-aviso tipo="error">{{ texto }}</app-aviso>
+        }
+        <div class="categorias" data-categorias>
+          @for (categoria of servicio.categorias(); track categoria.id; let primera = $first; let ultima = $last) {
+            <div class="categoria">
+              <span class="nombre">{{ categoria.nombre }} <span class="cuenta">({{ categoria.totalCasos }})</span></span>
+              <span class="acciones-fila">
+                <button mat-icon-button type="button" [disabled]="primera || ocupado()"
+                        [attr.aria-label]="'Subir categoría ' + categoria.nombre" (click)="mover(categoria, -1)">
+                  <mat-icon fontIcon="arrow_upward" aria-hidden="true" />
+                </button>
+                <button mat-icon-button type="button" [disabled]="ultima || ocupado()"
+                        [attr.aria-label]="'Bajar categoría ' + categoria.nombre" (click)="mover(categoria, 1)">
+                  <mat-icon fontIcon="arrow_downward" aria-hidden="true" />
+                </button>
+                <button mat-icon-button type="button" [attr.aria-label]="'Renombrar categoría ' + categoria.nombre"
+                        (click)="renombrarCategoria(categoria)">
+                  <mat-icon fontIcon="edit" aria-hidden="true" />
+                </button>
+                <button mat-icon-button type="button" [attr.aria-label]="'Borrar categoría ' + categoria.nombre"
+                        (click)="borrandoCategoria.set(categoria)">
+                  <mat-icon fontIcon="delete" aria-hidden="true" />
+                </button>
+              </span>
             </div>
           }
-        </mat-card-content>
-      </mat-card>
-    }
-
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title><h2 class="titulo-tarjeta">Categorías</h2></mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="categorias" data-categorias>
-        @for (categoria of servicio.categorias(); track categoria.id; let primera = $first; let ultima = $last) {
-          <div class="categoria">
-            <span class="nombre">{{ categoria.nombre }} <span class="cuenta">({{ categoria.totalCasos }})</span></span>
-            <span class="acciones-fila">
-              <button mat-icon-button type="button" [disabled]="primera || ocupado()"
-                      [attr.aria-label]="'Subir categoría ' + categoria.nombre" (click)="mover(categoria, -1)">
-                <mat-icon fontIcon="arrow_upward" aria-hidden="true" />
-              </button>
-              <button mat-icon-button type="button" [disabled]="ultima || ocupado()"
-                      [attr.aria-label]="'Bajar categoría ' + categoria.nombre" (click)="mover(categoria, 1)">
-                <mat-icon fontIcon="arrow_downward" aria-hidden="true" />
-              </button>
-              <button mat-icon-button type="button" [attr.aria-label]="'Renombrar categoría ' + categoria.nombre"
-                      (click)="renombrarCategoria(categoria)">
-                <mat-icon fontIcon="edit" aria-hidden="true" />
-              </button>
-              <button mat-icon-button type="button" [attr.aria-label]="'Borrar categoría ' + categoria.nombre"
-                      (click)="borrandoCategoria.set(categoria)">
-                <mat-icon fontIcon="delete" aria-hidden="true" />
-              </button>
-            </span>
-          </div>
-        }
-        <div class="acciones">
-          <button mat-stroked-button type="button" (click)="nuevaCategoria()">
-            <mat-icon fontIcon="create_new_folder" aria-hidden="true" />Nueva categoría
-          </button>
         </div>
-      </mat-card-content>
-    </mat-card>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" mat-dialog-close>Cerrar</button>
+        <button mat-stroked-button type="button" (click)="nuevaCategoria()">
+          <mat-icon fontIcon="create_new_folder" aria-hidden="true" />Nueva categoría
+        </button>
+      </mat-dialog-actions>
+    </ng-template>
 
     <app-dialogo-edicion [titulo]="editandoId() === null ? 'Nuevo caso' : 'Editar caso'" [(abierta)]="editandoCaso"
                          [hayCambios]="true" [alGuardar]="guardarCaso" [mensajeDeError]="motivoDe">
@@ -240,85 +308,98 @@ interface Grupo {
     :host {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-    }
-    h1,
-    .titulo-tarjeta {
-      margin: 0;
-    }
-    .titulo-tarjeta {
-      font-size: inherit;
-    }
-    .barra {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: center;
+      gap: var(--luxe-espacio-m);
     }
     .buscador {
       flex: 1 1 14rem;
+      max-width: 24rem;
+    }
+    .crear {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+    }
+    .asa {
+      display: inline-flex;
+      align-items: center;
+      color: var(--mat-sys-on-surface-variant);
+      cursor: grab;
+    }
+    [data-arrastre='apagado'] .asa {
+      visibility: hidden;
+    }
+    .cdk-drag-preview {
+      border-radius: var(--luxe-radio-tarjeta);
+      box-shadow: var(--mat-sys-level3);
+    }
+    .cdk-drag-placeholder {
+      opacity: 0.3;
+    }
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
     }
     .vacio {
       display: flex;
       flex-direction: column;
       gap: 1rem;
       align-items: flex-start;
+      padding: var(--luxe-espacio-m);
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: var(--luxe-radio-tarjeta);
     }
     .vacio p {
       margin: 0;
     }
-    .casos,
-    .categorias {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .caso {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      padding-block: 0.5rem;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-    }
-    .caso.inactivo {
-      opacity: 0.6;
-    }
-    .cabecera {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .acciones-fila {
-      display: flex;
-      gap: 0.25rem;
-      margin-inline-start: auto;
-    }
-    .cuando {
+    .extracto {
       margin: 0;
+      color: var(--mat-sys-on-surface);
+      font: var(--mat-sys-body-small);
+      overflow-wrap: anywhere;
+    }
+    .lectura h3 {
+      margin: var(--luxe-espacio-m) 0 var(--luxe-espacio-xs);
+      font: var(--mat-sys-title-small);
+    }
+    .lectura p {
+      margin: 0;
+    }
+    .etiquetas-lectura {
       color: var(--mat-sys-on-surface-variant);
     }
     .texto {
-      margin: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+    }
+    .categorias {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
     .categoria {
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
+    .nombre {
+      flex: 1;
+    }
+    .acciones-fila {
+      display: flex;
+      gap: 0.25rem;
+    }
     .cuenta {
       color: var(--mat-sys-on-surface-variant);
-    }
-    .acciones {
-      display: flex;
-      justify-content: flex-end;
     }
   `,
 })
 export class CasosComponent {
   protected readonly servicio = inject(CasosServicio);
+  private readonly dialogos = inject(MatDialog);
+  private readonly plantillaCategoria = viewChild.required<TemplateRef<unknown>>('plantillaCategoria');
+  private readonly plantillaLectura = viewChild.required<TemplateRef<unknown>>('plantillaLectura');
+  private readonly plantillaGestor = viewChild.required<TemplateRef<unknown>>('plantillaGestor');
+  private readonly abiertos = new Set<MatDialogRef<unknown>>();
+
+  protected readonly ayuda = AYUDA;
   protected readonly maximoTitulo = MAXIMO_TITULO;
   protected readonly maximoTexto = MAXIMO_TEXTO;
 
@@ -330,21 +411,36 @@ export class CasosComponent {
   protected readonly hayFiltros = computed(
     () => this.busqueda().trim() !== '' || this.categoriaFiltro() !== '' || this.tipoFiltro() !== '',
   );
+  /** Con búsqueda o filtros no se ve el orden completo: arrastrar categorías queda apagado hasta limpiarlos. */
+  protected readonly reordenDeshabilitado = computed(() => this.ocupado() || this.hayFiltros());
 
-  /** Las categorías en su orden con sus casos; con filtros solo las que tienen casos que mostrar. */
+  /**
+   * Las categorías en su orden con sus casos. Con filtros, solo las que tienen casos que mostrar o cuyo nombre
+   * coincide con la búsqueda (el servidor filtra los casos; el nombre de la categoría se compara aquí).
+   */
   protected readonly grupos = computed<readonly Grupo[]>(() => {
     const casos = this.servicio.casos();
+    const consulta = this.busqueda().trim().toLowerCase();
+    const delFiltro = this.categoriaFiltro();
     const grupos = this.servicio
       .categorias()
       .map((categoria) => ({ id: categoria.id, nombre: categoria.nombre, casos: casos.filter((c) => c.categoriaId === categoria.id) }));
-    return this.hayFiltros() ? grupos.filter((grupo) => grupo.casos.length > 0) : grupos;
+    if (!this.hayFiltros()) return grupos;
+    return grupos.filter(
+      (grupo) =>
+        (delFiltro === '' || grupo.id === delFiltro) &&
+        (grupo.casos.length > 0 || (consulta !== '' && grupo.nombre.toLowerCase().includes(consulta))),
+    );
   });
+
+  protected readonly categoriaAbiertaId = signal<string | null>(null);
+  protected readonly categoriaAbierta = computed(() => this.grupos().find((g) => g.id === this.categoriaAbiertaId()) ?? null);
+  protected readonly casoLeidoId = signal<string | null>(null);
+  protected readonly casoLeido = computed(() => this.servicio.casos().find((c) => c.id === this.casoLeidoId()) ?? null);
 
   protected readonly editandoCaso = signal(false);
   protected readonly editandoId = signal<string | null>(null);
   private actualizadoDelCaso = '';
-  private claveDelCaso: string | null = null;
-  private eventoDelCaso = false;
   /** Los campos del formulario del caso; `categoriaId` y `modo` van como propiedad porque `mat-select` los enlaza en doble vía. */
   protected readonly formulario = {
     categoriaId: signal(''),
@@ -369,12 +465,35 @@ export class CasosComponent {
   private temporizador: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => clearTimeout(this.temporizador));
+    inject(DestroyRef).onDestroy(() => {
+      clearTimeout(this.temporizador);
+      for (const referencia of this.abiertos) referencia.close();
+    });
     void this.recargar();
   }
 
   protected esDelSistema(caso: Caso): boolean {
     return caso.claveSistema !== null || caso.disparador === 'evento';
+  }
+
+  protected readonly inactivo = (caso: Caso): boolean => !caso.activo;
+
+  protected etiquetasDe(caso: Caso): readonly string[] {
+    return [
+      ...(this.esDelSistema(caso) ? ['Sistema'] : []),
+      ...(caso.activo ? [] : ['Inactivo']),
+      ...(caso.modo === 'guia' ? ['Guía'] : []),
+    ];
+  }
+
+  /** Acento de la tarjeta: sistema, guía o literal. */
+  protected tonoDe(caso: Caso): TonoDeTarjeta {
+    if (this.esDelSistema(caso)) return 'terciario';
+    return caso.modo === 'guia' ? 'secundario' : 'primario';
+  }
+
+  protected titulosDe(grupo: Grupo): readonly string[] {
+    return grupo.casos.slice(0, TITULOS_EN_FICHA).map((caso) => caso.titulo);
   }
 
   protected extracto(texto: string): string {
@@ -385,6 +504,31 @@ export class CasosComponent {
     const problema = leerProblema(error);
     return problema.motivo ?? problema.titulo;
   };
+
+  // --- Ventanas de lectura (categoría, caso y gestión de categorías) ---
+
+  protected abrirCategoria(id: string): void {
+    this.categoriaAbiertaId.set(id);
+    this.abrirVentana(this.plantillaCategoria(), '64rem', () => this.categoriaAbiertaId.set(null));
+  }
+
+  protected leer(caso: Caso): void {
+    this.casoLeidoId.set(caso.id);
+    this.abrirVentana(this.plantillaLectura(), '44rem', () => this.casoLeidoId.set(null));
+  }
+
+  protected abrirGestor(): void {
+    this.abrirVentana(this.plantillaGestor(), '36rem');
+  }
+
+  private abrirVentana(plantilla: TemplateRef<unknown>, ancho: string, alCerrar?: () => void): void {
+    const referencia = this.dialogos.open(plantilla, { width: ancho, maxWidth: '94vw', autoFocus: 'first-tabbable' });
+    this.abiertos.add(referencia);
+    referencia.afterClosed().subscribe(() => {
+      this.abiertos.delete(referencia);
+      alCerrar?.();
+    });
+  }
 
   // --- Buscador y filtros: el servidor busca y filtra (CAS10) ---
 
@@ -449,10 +593,8 @@ export class CasosComponent {
   protected editarCaso(caso: Caso): void {
     this.editandoId.set(caso.id);
     this.actualizadoDelCaso = caso.actualizado;
-    this.claveDelCaso = caso.claveSistema;
-    this.eventoDelCaso = caso.disparador === 'evento';
     this.soloTexto.set(this.esDelSistema(caso));
-    this.eventoDelCasoSignal.set(this.eventoDelCaso);
+    this.eventoDelCasoSignal.set(caso.disparador === 'evento');
     this.formulario.categoriaId.set(caso.categoriaId);
     this.formulario.titulo.set(caso.titulo);
     this.formulario.cuandoAplica.set(caso.cuandoAplica);
@@ -535,6 +677,27 @@ export class CasosComponent {
     this.ocupado.set(true);
     try {
       await this.intentar(() => this.servicio.ordenarCategorias(ids));
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+
+  /**
+   * Suelta una ficha de categoría en otra posición: se ve el orden nuevo al instante y se manda el orden completo
+   * (CAS2). Si el servidor lo rechaza, la pantalla dice el motivo y vuelve a leer el orden real.
+   */
+  protected async soltarCategoria(evento: CdkDragDrop<unknown>): Promise<void> {
+    if (evento.previousIndex === evento.currentIndex || this.reordenDeshabilitado()) return;
+    const ids = this.servicio.categorias().map((c) => c.id);
+    moveItemInArray(ids, evento.previousIndex, evento.currentIndex);
+    this.servicio.aplicarOrdenCategorias(ids);
+    this.ocupado.set(true);
+    this.motivo.set(null);
+    try {
+      await this.servicio.ordenarCategorias(ids);
+    } catch (error) {
+      this.motivo.set(this.motivoDe(error));
+      await this.servicio.cargar(this.filtros()).catch(() => undefined);
     } finally {
       this.ocupado.set(false);
     }

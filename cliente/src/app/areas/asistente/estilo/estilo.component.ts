@@ -1,17 +1,22 @@
+import { CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal, TemplateRef, viewChild } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
 import { MatChip, MatChipSet } from '@angular/material/chips';
+import { MatDialog, MatDialogActions, MatDialogClose, MatDialogContent, type MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltip } from '@angular/material/tooltip';
 import { AvisoComponent } from '../../../compartido/aviso.component';
+import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { ConfirmacionComponent } from '../../../compartido/confirmacion.component';
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
 import { EditorConContadorComponent } from '../../../compartido/editor-con-contador.component';
+import { RejillaComponent } from '../../../compartido/rejilla.component';
+import { TarjetaElementoComponent } from '../../../compartido/tarjeta-elemento.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { EstiloServicio, type SeccionDelEstilo } from './estilo.servicio';
 
@@ -20,30 +25,41 @@ const MAXIMO_TITULO = 100;
 /** Desde esta fracción del tope compuesto la pantalla avisa que el estilo está cerca de llenarse. */
 const FRACCION_DE_AVISO = 0.9;
 const LARGO_EXTRACTO = 80;
-const LARGO_EXTRACTO_SECCION = 160;
+const AYUDA =
+  'Aquí se edita cómo habla el bot, en secciones que se ordenan arrastrándolas y se pueden apagar. ' +
+  'Lo que responde en cada situación se edita en «Casos de uso».';
 
 interface Restauracion {
   readonly version: number;
 }
 
-/** SHL9: el estilo del bot en secciones (crear, editar, ordenar, apagar) con su historial y restauración. */
+/**
+ * SHL9: el estilo del bot en secciones (crear, editar, ordenar, apagar). Las secciones son tarjetas de una
+ * rejilla que se reordenan arrastrando (en la ventana de edición hay un campo «Posición» para hacerlo con
+ * teclado); una tarjeta abre su lectura y desde ahí se edita, como en «Casos de uso». El buscador va bajo la
+ * cabecera; el historial y la restauración viven en una ventana que abre el botón «Historial».
+ */
 @Component({
   selector: 'app-estilo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [EstiloServicio],
   imports: [
     AvisoComponent,
+    CabeceraPaginaComponent,
+    CdkDrag,
+    CdkDragHandle,
+    CdkDropList,
     ConfirmacionComponent,
     DatePipe,
     DialogoEdicionComponent,
     EditorConContadorComponent,
     MatButton,
-    MatCard,
-    MatCardContent,
-    MatCardHeader,
-    MatCardTitle,
     MatChip,
     MatChipSet,
+    MatDialogActions,
+    MatDialogClose,
+    MatDialogContent,
+    MatDialogTitle,
     MatFormField,
     MatHint,
     MatIcon,
@@ -52,123 +68,153 @@ interface Restauracion {
     MatLabel,
     MatSlideToggle,
     MatTableModule,
+    MatTooltip,
+    RejillaComponent,
+    TarjetaElementoComponent,
   ],
   template: `
-    <h1>Estilo del bot</h1>
-    <app-aviso tipo="info">
-      Aquí se edita cómo habla el bot, en secciones que se ordenan y se pueden apagar. Lo que responde en cada
-      situación se edita en «Casos de uso».
-    </app-aviso>
-    @if (recordatorioEvals()) {
-      <app-aviso tipo="info">
-        Un estilo nuevo exige correr las evals reales antes de llegar a clientes
-        (<code>EVALS_MODO=real npm run evals</code>).
-      </app-aviso>
-    }
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error">{{ texto }}</app-aviso>
-    }
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>
-          @if (servicio.vigente(); as vigente) {
-            <span class="vigente">
-              @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
-              · origen: {{ vigente.origen }}
-              @if (vigente.origen === 'base') { · publicado por {{ vigente.publicadoPor?.nombre ?? 'Comando' }} }
-            </span>
-          }
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="secciones">
-        <div class="barra">
-          <span data-contador-global [class.excedido]="cercaDelTope()">
-            {{ servicio.caracteresCompuestos() }} / {{ servicio.maximo() }} caracteres en total
-          </span>
-          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="nuevaSeccion()">
-            <mat-icon fontIcon="add" aria-hidden="true" />Nueva sección
-          </button>
-        </div>
-        @if (cercaDelTope()) {
-          <app-aviso tipo="info">
-            <span data-aviso-tope>El estilo está cerca del tope: solo cuentan las secciones activas.</span>
-          </app-aviso>
-        }
-        @for (seccion of servicio.secciones(); track seccion.id; let primera = $first; let ultima = $last) {
-          <div class="seccion" data-seccion [class.apagada]="!seccion.activo">
-            <div class="cabecera">
-              <strong>{{ seccion.titulo }}</strong>
-              <span class="cuenta">{{ seccion.texto.length }} caracteres</span>
-              @if (!seccion.activo) { <span class="cuenta">Apagada</span> }
-              <span class="acciones-seccion">
-                <mat-slide-toggle [checked]="seccion.activo" [disabled]="ocupado()"
-                                  [attr.aria-label]="'Activar ' + seccion.titulo"
-                                  (change)="alternar(seccion, $event.checked, $event.source)" />
-                <button mat-icon-button type="button" [disabled]="primera || ocupado()"
-                        [attr.aria-label]="'Subir ' + seccion.titulo" (click)="mover(seccion, -1)">
-                  <mat-icon fontIcon="arrow_upward" aria-hidden="true" />
-                </button>
-                <button mat-icon-button type="button" [disabled]="ultima || ocupado()"
-                        [attr.aria-label]="'Bajar ' + seccion.titulo" (click)="mover(seccion, 1)">
-                  <mat-icon fontIcon="arrow_downward" aria-hidden="true" />
-                </button>
-                <button mat-icon-button type="button" [disabled]="ocupado()"
-                        [attr.aria-label]="'Editar ' + seccion.titulo" (click)="editarSeccion(seccion)">
-                  <mat-icon fontIcon="edit" aria-hidden="true" />
-                </button>
-              </span>
-            </div>
-            <p class="texto-seccion">{{ extracto(seccion.texto, largoSeccion) }}</p>
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
+    <app-cabecera-pagina titulo="Estilo del bot" [ayuda]="ayuda">
+      <span class="medidor" data-contador-global [class.cerca]="cercaDelTope()" [class.excedido]="excedido()">
+        <span class="cifras">{{ servicio.caracteresCompuestos() }} / {{ servicio.maximo() }} caracteres en total</span>
+        <span class="barra-medidor" role="meter" aria-label="Caracteres usados" aria-valuemin="0"
+              [attr.aria-valuemax]="servicio.maximo()" [attr.aria-valuenow]="servicio.caracteresCompuestos()">
+          <span class="relleno" [style.width.%]="porcentaje()"></span>
+        </span>
+      </span>
+      <button mat-icon-button type="button" class="crear" data-accion="nueva-seccion" aria-label="Crear nueva sección"
+              matTooltip="Crear nueva sección" [disabled]="ocupado()" (click)="nuevaSeccion()">
+        <mat-icon fontIcon="add" aria-hidden="true" />
+      </button>
+      <button mat-icon-button type="button" data-accion="historial" aria-label="Historial" matTooltip="Historial"
+              (click)="abrirHistorial()">
+        <mat-icon fontIcon="history" aria-hidden="true" />
+      </button>
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+      @if (recordatorioEvals()) {
+        <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="recordatorioEvals.set(false)">
+          Un estilo nuevo exige correr las evals reales antes de llegar a clientes
+          (<code>EVALS_MODO=real npm run evals</code>).
+        </app-aviso>
+      }
+      @if (cercaDelTope()) {
+        <app-aviso tipo="info" [flotante]="true">
+          <span data-aviso-tope>El estilo está cerca del tope: solo cuentan las secciones activas.</span>
+        </app-aviso>
+      }
+    </app-cabecera-pagina>
 
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title><h2 class="titulo-tarjeta">Historial</h2></mat-card-title>
-      </mat-card-header>
-      <mat-card-content class="desplazable">
-        <table mat-table [dataSource]="servicio.historial()" class="tabla">
-          <ng-container matColumnDef="version">
-            <th mat-header-cell *matHeaderCellDef>Versión</th>
-            <td mat-cell *matCellDef="let version">
-              <mat-chip-set><mat-chip>Versión {{ version.version }}</mat-chip></mat-chip-set>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="fecha">
-            <th mat-header-cell *matHeaderCellDef>Fecha</th>
-            <td mat-cell *matCellDef="let version" class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="autor">
-            <th mat-header-cell *matHeaderCellDef>Publicó</th>
-            <td mat-cell *matCellDef="let version">{{ version.publicadoPor?.nombre ?? 'Comando' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="texto">
-            <th mat-header-cell *matHeaderCellDef>Texto</th>
-            <td mat-cell *matCellDef="let version" class="texto">
-              {{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="acciones">
-            <th mat-header-cell *matHeaderCellDef><span class="oculto">Acciones</span></th>
-            <td mat-cell *matCellDef="let version">
-              <div class="acciones-fila">
-                <button mat-button type="button" (click)="alternarTexto(version.version)">
-                  {{ versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto' }}
-                </button>
-                <button mat-stroked-button type="button" [disabled]="ocupado()"
-                        (click)="restauracion.set({ version: version.version })">
-                  <mat-icon fontIcon="history" aria-hidden="true" />Restaurar
-                </button>
-              </div>
-            </td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-          <tr mat-row *matRowDef="let version; columns: columnas"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
+    <div class="luxe-filtros">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="buscador">
+        <mat-label>Buscar sección</mat-label>
+        <input matInput type="search" data-campo="buscar-seccion" [value]="busqueda()"
+               (input)="busqueda.set($any($event.target).value)" />
+      </mat-form-field>
+    </div>
+
+    @if (servicio.vigente(); as vigente) {
+      <p class="vigente">
+        @if (vigente.version !== null) { <strong>Versión {{ vigente.version }}</strong> } @else { <strong>Sin versión publicada</strong> }
+        · origen: {{ vigente.origen }}
+        @if (vigente.origen === 'base') { · publicado por {{ vigente.publicadoPor?.nombre ?? 'Comando' }} }
+      </p>
+    }
+
+    @if (visibles().length === 0 && busqueda().trim() !== '') {
+      <p data-sin-resultados>Ninguna sección coincide con la búsqueda.</p>
+    }
+    <app-rejilla cdkDropList cdkDropListOrientation="mixed" (cdkDropListDropped)="soltar($event)">
+      @for (seccion of visibles(); track seccion.id) {
+        <app-tarjeta-elemento data-seccion cdkDrag [cdkDragDisabled]="reordenDeshabilitado()" [titulo]="seccion.titulo"
+          [etiquetas]="etiquetasDe(seccion)" [vista]="seccion.texto" [atenuada]="!seccion.activo"
+          [tono]="seccion.activo ? 'primario' : 'neutro'" [clicable]="true"
+          (abrir)="leer(seccion)">
+          <mat-slide-toggle esquina class="luxe-interruptor-mini" hideIcon [checked]="seccion.activo"
+                            [disabled]="ocupado()" [attr.aria-label]="'Activar ' + seccion.titulo"
+                            (change)="alternar(seccion, $event.checked, $event.source)" />
+          <span acciones class="luxe-compacto">
+            <button mat-icon-button type="button" [disabled]="ocupado()"
+                    [attr.aria-label]="'Editar ' + seccion.titulo" (click)="editarSeccion(seccion)">
+              <mat-icon fontIcon="edit" aria-hidden="true" />
+            </button>
+            <span class="asa" cdkDragHandle aria-hidden="true" title="Arrastrar para reordenar">
+              <mat-icon fontIcon="drag_indicator" aria-hidden="true" />
+            </span>
+          </span>
+        </app-tarjeta-elemento>
+      }
+    </app-rejilla>
+
+    <ng-template #plantillaLectura>
+      @if (seccionLeida(); as seccion) {
+        <h2 mat-dialog-title>{{ seccion.titulo }}</h2>
+        <mat-dialog-content>
+          <div class="lectura" data-lectura-seccion>
+            <p class="meta">
+              <span>{{ seccion.texto.length }} caracteres</span>
+              <span class="estado" [class.apagada]="!seccion.activo">{{ seccion.activo ? 'Activa' : 'Apagada' }}</span>
+            </p>
+            <p class="texto">{{ seccion.texto }}</p>
+          </div>
+        </mat-dialog-content>
+        <mat-dialog-actions align="end">
+          <button mat-button type="button" mat-dialog-close>Cerrar</button>
+          <button mat-flat-button type="button" [disabled]="ocupado()" (click)="editarSeccion(seccion)">
+            <mat-icon fontIcon="edit" aria-hidden="true" />Editar
+          </button>
+        </mat-dialog-actions>
+      }
+    </ng-template>
+
+    <ng-template #plantillaHistorial>
+      <h2 mat-dialog-title>Historial</h2>
+      <mat-dialog-content>
+        <div class="desplazable">
+          <table mat-table [dataSource]="servicio.historial()" class="tabla">
+            <ng-container matColumnDef="version">
+              <th mat-header-cell *matHeaderCellDef>Versión</th>
+              <td mat-cell *matCellDef="let version">
+                <mat-chip-set><mat-chip>Versión {{ version.version }}</mat-chip></mat-chip-set>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="fecha">
+              <th mat-header-cell *matHeaderCellDef>Fecha</th>
+              <td mat-cell *matCellDef="let version" class="fecha">{{ version.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="autor">
+              <th mat-header-cell *matHeaderCellDef>Publicó</th>
+              <td mat-cell *matCellDef="let version">{{ version.publicadoPor?.nombre ?? 'Comando' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="texto">
+              <th mat-header-cell *matHeaderCellDef>Texto</th>
+              <td mat-cell *matCellDef="let version" class="texto">
+                {{ versionAbierta() === version.version ? version.texto : extracto(version.texto) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef><span class="oculto">Acciones</span></th>
+              <td mat-cell *matCellDef="let version">
+                <div class="acciones-fila">
+                  <button mat-button type="button" (click)="alternarTexto(version.version)">
+                    {{ versionAbierta() === version.version ? 'Ocultar texto' : 'Ver texto' }}
+                  </button>
+                  <button mat-stroked-button type="button" [disabled]="ocupado()"
+                          (click)="restauracion.set({ version: version.version })">
+                    <mat-icon fontIcon="history" aria-hidden="true" />Restaurar
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+            <tr mat-row *matRowDef="let version; columns: columnas"></tr>
+          </table>
+        </div>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button type="button" mat-dialog-close>Cerrar</button>
+      </mat-dialog-actions>
+    </ng-template>
 
     <app-dialogo-edicion [titulo]="editandoId() === null ? 'Nueva sección' : 'Editar sección'" [(abierta)]="editando"
                          [hayCambios]="true" [alGuardar]="guardar" [mensajeDeError]="motivoDe">
@@ -179,6 +225,14 @@ interface Restauracion {
       </mat-form-field>
       <app-editor-con-contador etiqueta="Texto de la sección" campo="texto" [filas]="8" [maximo]="servicio.maximo()"
                                [(texto)]="texto" />
+      @if (editandoId() !== null) {
+        <mat-form-field appearance="outline">
+          <mat-label>Posición</mat-label>
+          <input matInput type="number" min="1" [attr.max]="servicio.secciones().length" data-campo="posicion"
+                 [value]="posicion()" (input)="posicion.set($any($event.target).value)" />
+          <mat-hint>De 1 a {{ servicio.secciones().length }}. También puedes arrastrar la sección en la rejilla.</mat-hint>
+        </mat-form-field>
+      }
     </app-dialogo-edicion>
     <app-confirmacion titulo="Restaurar estilo" [mensaje]="mensajeRestauracion()"
                       [abierta]="restauracion() !== null" (abiertaChange)="cerrarConfirmacion($event)"
@@ -188,60 +242,89 @@ interface Restauracion {
     :host {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--luxe-espacio-m);
     }
-    h1,
-    .titulo-tarjeta {
-      margin: 0;
+    .buscador {
+      width: min(100%, 20rem);
     }
-    .titulo-tarjeta {
-      font-size: inherit;
-    }
-    .secciones {
+    .lectura .meta {
       display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .barra {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
+      gap: var(--luxe-espacio-s);
       align-items: center;
-      justify-content: space-between;
+      margin: 0 0 var(--luxe-espacio-m);
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-label-large);
     }
-    [data-contador-global].excedido {
+    .estado {
+      padding: 0.0625rem 0.5rem;
+      border-radius: var(--mat-sys-corner-full);
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+    .estado.apagada {
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .lectura .texto {
+      margin: 0;
+      color: var(--mat-sys-on-surface);
+    }
+    .crear {
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+    }
+    .crear:disabled {
+      opacity: 0.5;
+    }
+    .vigente {
+      margin: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .medidor {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      min-width: 11rem;
+      font: var(--mat-sys-label-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .barra-medidor {
+      display: block;
+      height: 0.375rem;
+      border-radius: var(--mat-sys-corner-full);
+      background: var(--mat-sys-surface-container-highest);
+      overflow: hidden;
+    }
+    .relleno {
+      display: block;
+      height: 100%;
+      background: var(--mat-sys-primary);
+    }
+    .medidor.cerca .relleno {
+      background: var(--mat-sys-tertiary);
+    }
+    .medidor.excedido {
       color: var(--mat-sys-error);
       font-weight: 600;
     }
-    .seccion {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      padding-block: 0.5rem;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    .medidor.excedido .relleno {
+      background: var(--mat-sys-error);
     }
-    .seccion.apagada {
-      opacity: 0.6;
-    }
-    .cabecera {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+    .asa {
+      display: inline-flex;
       align-items: center;
-    }
-    .cuenta {
       color: var(--mat-sys-on-surface-variant);
+      cursor: grab;
     }
-    .acciones-seccion {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      margin-inline-start: auto;
+    .cdk-drag-preview {
+      border-radius: var(--luxe-radio-tarjeta);
+      box-shadow: var(--mat-sys-level3);
     }
-    .texto-seccion {
-      margin: 0;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+    .cdk-drag-placeholder {
+      opacity: 0.3;
+    }
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
     }
     .desplazable {
       overflow-x: auto;
@@ -273,8 +356,14 @@ interface Restauracion {
 })
 export class EstiloComponent {
   protected readonly servicio = inject(EstiloServicio);
+  private readonly dialogos = inject(MatDialog);
+  private readonly plantillaHistorial = viewChild.required<TemplateRef<unknown>>('plantillaHistorial');
+  private readonly plantillaLectura = viewChild.required<TemplateRef<unknown>>('plantillaLectura');
+  private referenciaHistorial: MatDialogRef<unknown> | null = null;
+  private referenciaLectura: MatDialogRef<unknown> | null = null;
+
+  protected readonly ayuda = AYUDA;
   protected readonly maximoTitulo = MAXIMO_TITULO;
-  protected readonly largoSeccion = LARGO_EXTRACTO_SECCION;
   protected readonly columnas = ['version', 'fecha', 'autor', 'texto', 'acciones'];
 
   protected readonly motivo = signal<string | null>(null);
@@ -282,22 +371,53 @@ export class EstiloComponent {
   protected readonly ocupado = signal(false);
   protected readonly restauracion = signal<Restauracion | null>(null);
   protected readonly versionAbierta = signal<number | null>(null);
+  protected readonly busqueda = signal('');
   protected readonly cercaDelTope = computed(
     () => this.servicio.caracteresCompuestos() >= this.servicio.maximo() * FRACCION_DE_AVISO,
   );
+  protected readonly excedido = computed(() => this.servicio.caracteresCompuestos() > this.servicio.maximo());
+  protected readonly porcentaje = computed(() =>
+    Math.min(100, (this.servicio.caracteresCompuestos() / Math.max(1, this.servicio.maximo())) * 100),
+  );
+
+  /** Las secciones que coinciden con la búsqueda por título o por texto. */
+  protected readonly visibles = computed(() => {
+    const consulta = this.busqueda().trim().toLowerCase();
+    const secciones = this.servicio.secciones();
+    if (consulta === '') return secciones;
+    return secciones.filter((s) => s.titulo.toLowerCase().includes(consulta) || s.texto.toLowerCase().includes(consulta));
+  });
+  /** Con una lista filtrada el orden completo no se ve: arrastrar queda apagado hasta limpiar la búsqueda. */
+  protected readonly reordenDeshabilitado = computed(() => this.ocupado() || this.busqueda().trim() !== '');
+
+  /** La sección abierta en la ventana de lectura; se lee de la lista para ver siempre lo último del servidor. */
+  protected readonly seccionLeidaId = signal<string | null>(null);
+  protected readonly seccionLeida = computed(() => this.servicio.secciones().find((s) => s.id === this.seccionLeidaId()) ?? null);
 
   protected readonly editando = signal(false);
   protected readonly editandoId = signal<string | null>(null);
   protected readonly titulo = signal('');
   protected readonly texto = signal('');
+  protected readonly posicion = signal('');
   private actualizadoDeLaSeccion = '';
+  private tituloOriginal = '';
+  private textoOriginal = '';
+  private posicionOriginal = 0;
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.referenciaHistorial?.close();
+      this.referenciaLectura?.close();
+    });
     void this.cargar();
   }
 
   protected extracto(texto: string, largo = LARGO_EXTRACTO): string {
     return texto.length > largo ? `${texto.slice(0, largo)}…` : texto;
+  }
+
+  protected etiquetasDe(seccion: SeccionDelEstilo): readonly string[] {
+    return [`${seccion.texto.length} caracteres`, ...(seccion.activo ? [] : ['Apagada'])];
   }
 
   protected alternarTexto(version: number): void {
@@ -315,6 +435,19 @@ export class EstiloComponent {
 
   // --- Secciones ---
 
+  /** Abre la lectura de la sección (texto completo, largo y estado); desde ahí «Editar» abre la edición. */
+  protected leer(seccion: SeccionDelEstilo): void {
+    this.referenciaLectura?.close();
+    this.seccionLeidaId.set(seccion.id);
+    const referencia = this.dialogos.open(this.plantillaLectura(), { width: '44rem', maxWidth: '94vw', autoFocus: 'first-tabbable' });
+    this.referenciaLectura = referencia;
+    referencia.afterClosed().subscribe(() => {
+      if (this.referenciaLectura !== referencia) return;
+      this.referenciaLectura = null;
+      this.seccionLeidaId.set(null);
+    });
+  }
+
   protected nuevaSeccion(): void {
     this.editandoId.set(null);
     this.titulo.set('');
@@ -325,8 +458,12 @@ export class EstiloComponent {
   protected editarSeccion(seccion: SeccionDelEstilo): void {
     this.editandoId.set(seccion.id);
     this.actualizadoDeLaSeccion = seccion.actualizado;
+    this.tituloOriginal = seccion.titulo;
+    this.textoOriginal = seccion.texto;
+    this.posicionOriginal = this.servicio.secciones().findIndex((s) => s.id === seccion.id) + 1;
     this.titulo.set(seccion.titulo);
     this.texto.set(seccion.texto);
+    this.posicion.set(String(this.posicionOriginal));
     this.editando.set(true);
   }
 
@@ -335,7 +472,7 @@ export class EstiloComponent {
     const id = this.editandoId();
     try {
       if (id === null) await this.servicio.crear({ titulo: this.titulo(), texto: this.texto(), activo: true });
-      else await this.servicio.editar(id, { actualizado: this.actualizadoDeLaSeccion, titulo: this.titulo(), texto: this.texto() });
+      else await this.guardarCambios(id);
     } catch (error) {
       if (id !== null && leerProblema(error).codigo === 'seccion-modificada') await this.alCambiarPorOtro(id);
       throw error;
@@ -343,6 +480,28 @@ export class EstiloComponent {
     this.recordatorioEvals.set(true);
     await this.cargar();
   };
+
+  /** Edita el contenido solo si cambió y mueve la sección solo si cambió su posición. */
+  private async guardarCambios(id: string): Promise<void> {
+    if (this.titulo() !== this.tituloOriginal || this.texto() !== this.textoOriginal) {
+      const guardada = await this.servicio.editar(id, {
+        actualizado: this.actualizadoDeLaSeccion,
+        titulo: this.titulo(),
+        texto: this.texto(),
+      });
+      // Si mover la sección falla, reintentar reenvía el contenido con la marca nueva y no choca consigo mismo.
+      this.actualizadoDeLaSeccion = guardada.actualizado;
+      this.tituloOriginal = this.titulo();
+      this.textoOriginal = this.texto();
+    }
+    const ids = this.servicio.secciones().map((s) => s.id);
+    const destino = Math.min(ids.length, Math.max(1, Math.trunc(Number(this.posicion()) || this.posicionOriginal)));
+    if (destino !== this.posicionOriginal) {
+      moveItemInArray(ids, this.posicionOriginal - 1, destino - 1);
+      await this.servicio.ordenar(ids);
+      this.posicionOriginal = destino;
+    }
+  }
 
   /** Recarga la lista y toma la marca nueva de la sección: reintentar queda como decisión de quien edita. */
   private async alCambiarPorOtro(id: string): Promise<void> {
@@ -367,15 +526,20 @@ export class EstiloComponent {
     });
   }
 
-  /** Mueve la sección una posición y manda el orden completo. */
-  protected async mover(seccion: SeccionDelEstilo, sentido: -1 | 1): Promise<void> {
+  /** Suelta una tarjeta en otra posición: se ve el orden nuevo al instante y se manda el orden completo. */
+  protected async soltar(evento: CdkDragDrop<unknown>): Promise<void> {
+    if (evento.previousIndex === evento.currentIndex || this.reordenDeshabilitado()) return;
     const ids = this.servicio.secciones().map((s) => s.id);
-    const desde = ids.indexOf(seccion.id);
-    const hacia = desde + sentido;
-    if (hacia < 0 || hacia >= ids.length) return;
-    [ids[desde], ids[hacia]] = [ids[hacia]!, ids[desde]!];
+    moveItemInArray(ids, evento.previousIndex, evento.currentIndex);
+    this.servicio.aplicarOrden(ids);
     await this.mutar(async () => {
-      await this.servicio.ordenar(ids);
+      try {
+        await this.servicio.ordenar(ids);
+      } catch (error) {
+        // La lista vuelve al orden del servidor sin retrasar el motivo del rechazo.
+        void this.cargar();
+        throw error;
+      }
       this.recordatorioEvals.set(true);
       // Reordenar publica una versión nueva: se relee también la vigente y el historial.
       await this.cargar();
@@ -396,6 +560,16 @@ export class EstiloComponent {
 
   // --- Historial ---
 
+  protected abrirHistorial(): void {
+    if (this.referenciaHistorial !== null) return;
+    const referencia = this.dialogos.open(this.plantillaHistorial(), { width: '58rem', maxWidth: '94vw', autoFocus: 'first-tabbable' });
+    this.referenciaHistorial = referencia;
+    referencia.afterClosed().subscribe(() => {
+      if (this.referenciaHistorial === referencia) this.referenciaHistorial = null;
+      this.versionAbierta.set(null);
+    });
+  }
+
   protected mensajeRestauracion(): string {
     return `¿Restaurar la versión ${this.restauracion()?.version}? Reemplazará las secciones actuales del bot.`;
   }
@@ -412,6 +586,7 @@ export class EstiloComponent {
       await this.servicio.restaurar(restauracion.version);
       this.recordatorioEvals.set(true);
       await this.cargar();
+      this.referenciaHistorial?.close();
     });
   }
 

@@ -75,6 +75,7 @@ describe('SHL11 — Pantalla «Gasto del LLM»', () => {
 
     expect(el.querySelector('[data-techo]')!.textContent).toContain('30');
     expect(el.textContent).toContain('siguiente mensaje');
+    expect(el.querySelector('app-aviso.flotante')!.textContent).toContain('siguiente mensaje');
   });
 
   it('SHL11 — Un techo inválido muestra su motivo en la ventana y conserva lo escrito', async () => {
@@ -99,5 +100,23 @@ describe('SHL11 — Pantalla «Gasto del LLM»', () => {
     const { el } = await abrir({ techoMensualUsd: null, estado: null, gastoMesUsd: null, actualizado: null });
 
     expect(el.querySelector('[data-techo]')!.textContent).toContain('entorno');
+  });
+
+  it('SHL11 — Usa la cabecera de página: el título es el h1 y la explicación va en la ayuda, no en un aviso fijo', async () => {
+    const { fixture, el } = await abrir();
+
+    expect(el.textContent).not.toContain('El techo limita');
+    el.querySelector<HTMLButtonElement>('button[data-accion="ayuda-avisos"]')!.click();
+    await fixture.whenStable();
+    const ayuda = el.querySelector('[data-ayuda]')!.textContent;
+    expect(el.querySelector('app-cabecera-pagina h1')!.textContent).toBe('Gasto del LLM');
+    expect(ayuda).toContain('El techo limita');
+    expect(el.querySelectorAll('app-aviso:not(.flotante)')).toHaveLength(0);
+  });
+
+  it('SHL11 — Los bloques son tarjetas de una rejilla', async () => {
+    const { el } = await abrir();
+
+    expect(el.querySelectorAll('app-rejilla > mat-card')).toHaveLength(2);
   });
 });

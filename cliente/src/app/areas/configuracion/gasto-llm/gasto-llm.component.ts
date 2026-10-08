@@ -5,24 +5,47 @@ import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { AvisoComponent } from '../../../compartido/aviso.component';
+import { CabeceraPaginaComponent } from '../../../compartido/cabecera-pagina.component';
 import { DialogoEdicionComponent } from '../../../compartido/dialogo-edicion.component';
+import { RejillaComponent } from '../../../compartido/rejilla.component';
 import { leerProblema } from '../../../nucleo/problema';
 import { GastoLlmServicio } from './gasto-llm.servicio';
+
+const AYUDA = 'El techo limita lo que el bot puede gastar en el LLM cada mes. El estado y el gasto del mes solo se leen.';
 
 /** SHL11: el techo mensual del LLM es editable; su estado y el gasto del mes solo se leen. */
 @Component({
   selector: 'app-gasto-llm',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [GastoLlmServicio],
-  imports: [AvisoComponent, DialogoEdicionComponent, MatButton, MatCard, MatCardContent, MatCardHeader, MatCardTitle, MatFormField, MatHint, MatIcon, MatInput, MatLabel],
+  imports: [
+    AvisoComponent,
+    CabeceraPaginaComponent,
+    DialogoEdicionComponent,
+    MatButton,
+    MatCard,
+    MatCardContent,
+    MatCardHeader,
+    MatCardTitle,
+    MatFormField,
+    MatHint,
+    MatIcon,
+    MatInput,
+    MatLabel,
+    RejillaComponent,
+  ],
   template: `
-    <h1>Gasto del LLM</h1>
-    @if (guardado()) {
-      <app-aviso tipo="info">Guardado: el techo rige desde el siguiente mensaje del cliente.</app-aviso>
-    }
-    @if (motivo(); as texto) {
-      <app-aviso tipo="error">{{ texto }}</app-aviso>
-    }
+    <app-cabecera-pagina titulo="Gasto del LLM" [ayuda]="ayuda">
+      @if (guardado()) {
+        <app-aviso tipo="info" [flotante]="true" [descartable]="true" (descartar)="guardado.set(false)">
+          Guardado: el techo rige desde el siguiente mensaje del cliente.
+        </app-aviso>
+      }
+      @if (motivo(); as texto) {
+        <app-aviso tipo="error" [flotante]="true" [descartable]="true" (descartar)="motivo.set(null)">{{ texto }}</app-aviso>
+      }
+    </app-cabecera-pagina>
+    <app-rejilla minimo="26rem">
     <mat-card appearance="outlined">
       <mat-card-header>
         <mat-card-title><h2 class="titulo-tarjeta">Techo mensual</h2></mat-card-title>
@@ -64,6 +87,7 @@ import { GastoLlmServicio } from './gasto-llm.servicio';
         </p>
       </mat-card-content>
     </mat-card>
+    </app-rejilla>
 
     <app-dialogo-edicion titulo="Editar techo mensual" [(abierta)]="editando" [hayCambios]="true" [alGuardar]="guardar"
                          [mensajeDeError]="motivoDe">
@@ -79,9 +103,8 @@ import { GastoLlmServicio } from './gasto-llm.servicio';
     :host {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--luxe-espacio-m);
     }
-    h1,
     .titulo-tarjeta,
     .valor {
       margin: 0;
@@ -101,6 +124,7 @@ import { GastoLlmServicio } from './gasto-llm.servicio';
   `,
 })
 export class GastoLlmComponent {
+  protected readonly ayuda = AYUDA;
   protected readonly servicio = inject(GastoLlmServicio);
   protected readonly motivo = signal<string | null>(null);
   protected readonly guardado = signal(false);

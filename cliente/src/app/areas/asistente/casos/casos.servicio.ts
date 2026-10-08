@@ -80,6 +80,14 @@ export class CasosServicio {
     this.categorias.set((await this.api.invoke(ordenarCategoriasCaso, { body: { ids: [...ids] } })).categorias);
   }
 
+  /** Muestra al instante el orden que se va a mandar; si el servidor lo rechaza, `cargar` devuelve el real. */
+  aplicarOrdenCategorias(ids: readonly string[]): void {
+    const posicion = new Map(ids.map((id, indice) => [id, indice]));
+    this.categorias.update((categorias) =>
+      [...categorias].sort((a, b) => (posicion.get(a.id) ?? a.orden) - (posicion.get(b.id) ?? b.orden)),
+    );
+  }
+
   async borrarCategoria(id: string): Promise<void> {
     await this.api.invoke(borrarCategoriaCaso, { id });
   }

@@ -2,8 +2,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { MatTooltip } from '@angular/material/tooltip';
 import { provideRouter, Router } from '@angular/router';
 import { AREAS_REGISTRADAS } from '../nucleo/areas.token';
 import type { DefinicionArea } from '../nucleo/definicion-area';
@@ -196,46 +194,100 @@ describe('SHL3 — El menú oculta lo que el rol no puede usar, también en los 
   });
 });
 
-describe('SHL4 — El menú tiene modo compacto', () => {
-  it('SHL4 — El modo compacto muestra solo íconos', async () => {
-    const { fixture, el, pulsar } = await preparar(ADMIN, [PRUEBA]);
-    expect(el.querySelector('a[data-entrada]')!.textContent).toContain('Pantalla de prueba');
-
-    await pulsar('button[data-accion="compactar"]');
-
-    expect(el.querySelector('nav')!.getAttribute('data-compacto')).toBe('true');
-    expect(el.querySelector('a[data-entrada]')!.textContent).not.toContain('Pantalla de prueba');
-    const ayudas = fixture.debugElement
-      .queryAll(By.directive(MatTooltip))
-      .map((nodo) => nodo.injector.get(MatTooltip))
-      .filter((ayuda) => !ayuda.disabled)
-      .map((ayuda) => ayuda.message);
-    expect(ayudas).toContain('Pantalla de prueba');
-    expect(el.querySelector('a[data-entrada]')!.getAttribute('aria-label')).toBe('Pantalla de prueba');
-  });
-
-  it('SHL4 — La preferencia se recuerda', async () => {
-    const primera = await preparar(ADMIN, [PRUEBA]);
-    await primera.pulsar('button[data-accion="compactar"]');
-    TestBed.resetTestingModule();
-
-    const { el } = await preparar(ADMIN, [PRUEBA]);
-
-    expect(el.querySelector('nav')!.getAttribute('data-compacto')).toBe('true');
-  });
-
-  it('SHL4 — Sin almacenamiento local el menú sigue funcionando', async () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('bloqueado');
-    });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('bloqueado');
-    });
+describe('SHL4 — El menú es un riel que se expande al pasar el mouse', () => {
+  it('SHL4 — No hay botón de compactar ni preferencia guardada', async () => {
     const { el, pulsar } = await preparar(ADMIN, [PRUEBA]);
 
-    await pulsar('button[data-accion="compactar"]');
+    expect(el.querySelector('button[data-accion="compactar"]')).toBeNull();
+    expect(el.textContent).not.toContain('Compactar menú');
+    expect(el.querySelector('nav')!.hasAttribute('data-compacto')).toBe(false);
+    await pulsar('a[data-entrada]');
+    expect(localStorage.getItem('luxe.menu.compacto')).toBeNull();
+  });
 
-    expect(el.querySelector('nav')!.getAttribute('data-compacto')).toBe('true');
+  it('SHL4 — Cada entrada lleva su nombre accesible aunque el riel solo muestre el ícono', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA]);
+
+    const entrada = el.querySelector('a[data-entrada]')!;
+    expect(entrada.getAttribute('aria-label')).toBe('Pantalla de prueba');
+    expect(entrada.textContent).toContain('Pantalla de prueba');
+  });
+
+  it('SHL4 — En un escritorio el riel se marca para que el CSS lo expanda al hover y al foco', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA]);
+
+    expect(el.querySelector('app-menu-lateral')!.classList).toContain('riel');
+  });
+
+  it('SHL4 — El logo está al tope del menú y lleva al inicio', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA]);
+
+    const marca = el.querySelector<HTMLAnchorElement>('app-menu-lateral a.marca')!;
+    expect(marca.textContent).toContain('LuxeBoreal');
+    expect(marca.getAttribute('href')).toBe('/');
+  });
+
+  it('SHL4 — En un escritorio no hay barra superior', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA]);
+
+    expect(el.querySelector('mat-toolbar')).toBeNull();
+  });
+});
+
+describe('SHL4 — El riel plegado muestra solo íconos y nunca desborda a lo ancho', () => {
+  const riel = (el: HTMLElement) => el.querySelector<HTMLElement>('app-menu-lateral')!;
+  const iconos = (contenedor: Element) =>
+    Array.from(contenedor.querySelectorAll('mat-icon.icono')).map((icono) => icono.getAttribute('fontIcon'));
+
+  it('SHL4 — Plegado: el logo, los grupos, las entradas y cerrar sesión llevan su ícono fijo (no se encoge)', async () => {
+    const { el } = await preparar(ADMIN, [ASISTENTE, CONFIGURACION, PRUEBA]);
+
+    expect(riel(el).getAttribute('data-riel')).toBe('plegado');
+    expect(iconos(el.querySelector('app-menu-lateral a.marca')!)).toEqual(['auto_awesome']);
+    expect(iconos(el.querySelector(grupo('Asistente'))!)).toEqual(['forum']);
+    expect(iconos(el.querySelector(grupo('Configuración'))!)).toEqual(['settings']);
+    expect(iconos(el.querySelector('a[data-entrada="/prueba/uno"]')!)).toEqual(['star']);
+    expect(iconos(el.querySelector('button[data-accion="cerrar-sesion"]')!)).toEqual(['logout']);
+  });
+
+  it('SHL4 — Plegado: cada texto va en una etiqueta que el CSS oculta, y el ícono queda fuera de ella', async () => {
+    const { el } = await preparar(ADMIN, [ASISTENTE, PRUEBA]);
+
+    for (const item of Array.from(el.querySelectorAll('app-menu-lateral .item, app-menu-lateral .marca'))) {
+      const etiqueta = item.querySelector('.titulo')!;
+      expect(etiqueta.textContent.trim()).not.toBe('');
+      expect(etiqueta.querySelector('mat-icon')).toBeNull();
+    }
+  });
+
+  it('SHL4 — El mouse y el foco expanden el riel; al salir vuelve a plegarse', async () => {
+    const { fixture, el } = await preparar(ADMIN, [PRUEBA]);
+    const menu = riel(el);
+
+    menu.dispatchEvent(new MouseEvent('mouseenter'));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('expandido');
+    expect(menu.classList).toContain('expandido');
+
+    menu.dispatchEvent(new MouseEvent('mouseleave'));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('plegado');
+
+    el.querySelector<HTMLElement>('a[data-entrada]')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('expandido');
+
+    el.querySelector<HTMLElement>('a[data-entrada]')!.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }),
+    );
+    await fixture.whenStable();
+    expect(menu.getAttribute('data-riel')).toBe('plegado');
+  });
+
+  it('SHL4 — En un teléfono el menú no es riel y no lleva estado de pliegue', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA], { telefono: true });
+
+    expect(riel(el).hasAttribute('data-riel')).toBe(false);
   });
 });
 
@@ -245,6 +297,16 @@ describe('SHL5 — En un teléfono el menú es un cajón', () => {
 
     expect(el.querySelector('mat-sidenav')!.classList).not.toContain('mat-drawer-opened');
     expect(el.querySelector('button[data-accion="abrir-menu"]')).not.toBeNull();
+  });
+
+  it('SHL5 — En un teléfono queda una barra mínima con hamburguesa y logo, y el menú no es riel', async () => {
+    const { el } = await preparar(ADMIN, [PRUEBA], { telefono: true });
+
+    const barra = el.querySelector('mat-toolbar')!;
+    expect(barra.querySelector('button[data-accion="abrir-menu"]')).not.toBeNull();
+    expect(barra.querySelector('a.marca')!.textContent).toContain('LuxeBoreal');
+    expect(el.querySelector('app-menu-lateral')!.classList).not.toContain('riel');
+    expect(el.querySelector('app-menu-lateral a.marca')).toBeNull();
   });
 
   it('SHL5 — En un escritorio el menú está abierto y no hay botón de cajón', async () => {

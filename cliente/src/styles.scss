@@ -14,9 +14,33 @@ html {
         plain-family: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
         brand-family: (system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif),
       ),
-      density: 0,
+      density: -1,
     )
   );
+}
+
+/*
+ * Tokens propios del back office (`--luxe-*`): lo que Material no trae (radios, espacios y medidas de la
+ * rejilla). Las pantallas los leen igual que los `--mat-sys-*`; ninguno fija un color. La densidad -1 de
+ * `mat.theme` baja botones y campos de formulario alrededor de un 10 %.
+ */
+:root {
+  --luxe-radio-tarjeta: 1rem;
+  --luxe-radio-control: 0.75rem;
+  --luxe-espacio-xs: 0.25rem;
+  --luxe-espacio-s: 0.5rem;
+  --luxe-espacio-m: 1rem;
+  --luxe-espacio-l: 1.5rem;
+  --luxe-rejilla-min: 17rem;
+  --luxe-rejilla-hueco: 1rem;
+  --luxe-control-alto: 2.5rem;
+  --luxe-riel-ancho: 4.5rem;
+  --luxe-menu-ancho: 16rem;
+  --luxe-pagina-ancho: 90rem;
+  /* Títulos de módulo y de tarjeta: Manrope variable, alojada con la app (@fontsource-variable/manrope). */
+  --luxe-fuente-titulo: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --luxe-titulo-pagina-tamano: clamp(1.5rem, 1.25rem + 0.8vw, 2rem);
+  --luxe-titulo-tarjeta-tamano: 1.05rem;
 }
 
 *,
@@ -36,4 +60,59 @@ body {
   line-height: 1.5;
   background: var(--mat-sys-surface-container-low);
   color: var(--mat-sys-on-surface);
+}
+
+/*
+ * Controles compactos (~15 % menos que la densidad -1 del tema). Barras de filtros (`.luxe-filtros`): densidad -3,
+ * campos de 44 px con el texto en body-medium; los campos `outline` conservan su etiqueta flotante. Acciones de la
+ * cabecera (`.luxe-compacto`): densidad -2, botones de ícono de 32 px.
+ */
+.luxe-filtros {
+  @include mat.theme((density: -3));
+}
+
+.luxe-compacto {
+  @include mat.theme((density: -2));
+}
+
+.luxe-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--luxe-espacio-s);
+  @include mat.form-field-overrides(
+    (
+      container-text-size: var(--mat-sys-body-medium-size),
+      outlined-label-text-size: var(--mat-sys-body-medium-size),
+    )
+  );
+  @include mat.select-overrides((trigger-text-size: var(--mat-sys-body-medium-size)));
+}
+
+.luxe-filtros .mat-mdc-form-field {
+  min-width: 10rem;
+}
+
+/*
+ * Interruptor mini (32 × 18 px) para las tarjetas, con `hideIcon`. El margen de la perilla es el ancho de la pista
+ * menos la perilla menos el hueco vertical, como en los valores por defecto de Material (52 × 32).
+ */
+.luxe-interruptor-mini {
+  @include mat.slide-toggle-overrides(
+    (
+      track-width: 32px,
+      track-height: 18px,
+      track-outline-width: 1.5px,
+      selected-track-outline-width: 1.5px,
+      unselected-handle-size: 10px,
+      unselected-handle-horizontal-margin: 0 4px,
+      selected-handle-size: 14px,
+      selected-handle-horizontal-margin: 0 16px,
+      pressed-handle-size: 16px,
+      unselected-pressed-handle-horizontal-margin: 0 1px,
+      selected-pressed-handle-horizontal-margin: 0 15px,
+      state-layer-size: 28px,
+      touch-target-display: none,
+    )
+  );
 }

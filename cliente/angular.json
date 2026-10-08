@@ -24,7 +24,11 @@
                 "input": "public"
               }
             ],
-            "styles": ["node_modules/material-symbols/outlined.css", "src/styles.scss"]
+            "styles": [
+              "node_modules/material-symbols/outlined.css",
+              "node_modules/@fontsource-variable/manrope/index.css",
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
