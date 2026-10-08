@@ -54,7 +54,7 @@ describe('AdministrarSeccionesEstilo (EST-S4)', () => {
   it('EST-S4 — Un rechazo del repositorio (modificado, duplicada, inválido el compuesto) se devuelve y no sube la versión', async () => {
     const { repositorio, compartida, caso } = armar();
     repositorio.editar.mockResolvedValueOnce({ ok: false, razon: 'modificado' });
-    repositorio.reordenar.mockResolvedValueOnce({ ok: false, razon: 'invalido', motivo: 'el estilo supera 4000 caracteres' });
+    repositorio.reordenar.mockResolvedValueOnce({ ok: false, razon: 'invalido', motivo: 'el estilo supera 10000 caracteres' });
 
     await expect(caso.editar('a', { titulo: 'Saludo', texto: 'Hola.', activo: true }, AHORA)).resolves.toEqual({ ok: false, razon: 'modificado' });
     await expect(caso.reordenar(['a'])).resolves.toMatchObject({ ok: false, razon: 'invalido' });

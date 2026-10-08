@@ -232,7 +232,7 @@
               "schema": {
                 "properties": {
                   "texto": {
-                    "maxLength": 4000,
+                    "maxLength": 10000,
                     "minLength": 1,
                     "type": "string"
                   }
@@ -1306,7 +1306,7 @@
                     "type": "boolean"
                   },
                   "texto": {
-                    "maxLength": 8000,
+                    "maxLength": 20000,
                     "type": "string"
                   },
                   "titulo": {
@@ -2073,7 +2073,7 @@
                     "type": "string"
                   },
                   "texto": {
-                    "maxLength": 8000,
+                    "maxLength": 20000,
                     "type": "string"
                   },
                   "titulo": {

@@ -143,7 +143,7 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
     const admin = await iniciarSesionComo(ctx.servidor, ctx.prisma, 'admin');
 
     const vacio = await publicar(ctx, admin, '');
-    const largo = await publicar(ctx, admin, 'a'.repeat(4001));
+    const largo = await publicar(ctx, admin, 'a'.repeat(10001));
     const sinTexto = await request(ctx.servidor).put(RUTA).set(CSRF).set('cookie', admin.cookie).send({});
     const versionMala = await request(ctx.servidor)
       .post(`${RUTA}/restauraciones`)
@@ -312,7 +312,7 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
       expect(dos.body).toMatchObject({ titulo: 'Cierre', orden: 1, activo: false });
       const cuerpo = lista.body as { secciones: { titulo: string }[]; caracteresCompuestos: number; maximo: number };
       expect(cuerpo.secciones.map((s) => s.titulo)).toEqual(['Saludo', 'Cierre']);
-      expect(cuerpo.maximo).toBe(4000);
+      expect(cuerpo.maximo).toBe(10000);
       expect(cuerpo.caracteresCompuestos).toBe('# Saludo\n\nHola, soy Luna.'.length);
       expect(vigente.body).toMatchObject({ origen: 'base', texto: '# Saludo\n\nHola, soy Luna.' });
     });
@@ -359,7 +359,7 @@ describe('Estilo del bot por la API (T2, e2e)', () => {
       await crearSeccion(ctx, admin, { titulo: 'Saludo', texto: 'Hola.' });
 
       const precio = await crearSeccion(ctx, admin, { titulo: 'Precios', texto: 'Cuesta $ 389.000' });
-      const grande = await crearSeccion(ctx, admin, { titulo: 'Largo', texto: 'a'.repeat(4000) });
+      const grande = await crearSeccion(ctx, admin, { titulo: 'Largo', texto: 'a'.repeat(10000) });
       const lista = await request(ctx.servidor).get(SECCIONES).set('cookie', admin.cookie);
 
       for (const respuesta of [precio, grande]) {

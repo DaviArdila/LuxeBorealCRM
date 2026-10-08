@@ -195,7 +195,7 @@ describe('EstiloController (AGT23)', () => {
         { id: ID_B, titulo: 'Cierre', texto: 'Quedo atenta.', orden: 2, activo: false, actualizado: ACTUALIZADO },
       ]);
       expect(respuesta.caracteresCompuestos).toBe('# Saludo\n\nHola, soy Luna.'.length);
-      expect(respuesta.maximo).toBe(4000);
+      expect(respuesta.maximo).toBe(10000);
     });
 
     it('EST-API — Crear entrega la sección con autor de la sesión y activa por defecto', async () => {
@@ -235,11 +235,11 @@ describe('EstiloController (AGT23)', () => {
     });
 
     it('EST-API — Una sección o un compuesto inválido responde estilo-invalido con el motivo', async () => {
-      const { controlador } = crear({ cambio: { ok: false, razon: 'invalido', motivo: 'el estilo supera 4000 caracteres' } });
+      const { controlador } = crear({ cambio: { ok: false, razon: 'invalido', motivo: 'el estilo supera 10000 caracteres' } });
 
       await expect(controlador.crearSeccionEstilo({ titulo: 'Tono', texto: 'x' }, admin)).rejects.toMatchObject({
         codigo: 'estilo-invalido',
-        detalle: 'el estilo supera 4000 caracteres',
+        detalle: 'el estilo supera 10000 caracteres',
       });
     });
 

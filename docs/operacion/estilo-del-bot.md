@@ -33,11 +33,11 @@ Una sección es un trozo del estilo con **título** (una línea, hasta 100 carac
 | Cambiar una | Editarla en la ventana; si otro admin la cambió antes, la pantalla avisa y recarga la lista |
 | Cambiar el orden | Botones de subir y bajar |
 | Quitarla del bot | Apagarla. No hay borrado: se enciende de nuevo cuando haga falta |
-| Ver el largo | El contador global muestra el total sobre 4.000 y avisa al llegar al 90 % |
+| Ver el largo | El contador global muestra el total sobre 10.000 y avisa al llegar al 90 % |
 | Volver a una versión | «Restaurar» en el historial: **reemplaza todas las secciones** por las de esa versión |
 
 Cada cambio que altera el estilo compuesto guarda una **versión** (foto del compuesto) en el historial; un cambio que lo
-deja igual no crea versión. El tope de **4.000 caracteres** se cuenta sobre el compuesto completo, no por sección. Un
+deja igual no crea versión. El tope de **10.000 caracteres** se cuenta sobre el compuesto completo, no por sección. Un
 texto de sección no puede tener líneas que empiecen por `# ` (partirían la sección). Las demás reglas están en
 «Qué rechaza el comando».
 
@@ -111,7 +111,7 @@ La migración copió el estilo y su historial desde `parametro` conservando los 
 | Motivo | Por qué |
 |---|---|
 | Vacío | El bot no puede quedarse sin estilo |
-| Más de 4.000 caracteres | Viaja en cada mensaje y no debe competir con las reglas |
+| Más de 10.000 caracteres | Viaja en cada mensaje y no debe competir con las reglas |
 | Un valor en pesos (`$389.000`) | El dinero solo sale de las herramientas (R1, R2) |
 | Un SKU (`SKU-GL001`) | El SKU es interno y el cliente no lo ve |
 | Marcadores `{{...}}` | Son de la plantilla del turno |

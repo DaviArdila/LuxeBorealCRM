@@ -6,7 +6,7 @@ import { contieneMarcadorDePlantilla, contieneSku, contieneValorEnPesos } from '
  * El tope de caracteres es una constante de código (ADR-0020): atrapa un descuido y evita que el estilo
  * compita con las reglas; subirlo después no invalida nada.
  */
-export const MAX_CARACTERES_ESTILO = 4000;
+export const MAX_CARACTERES_ESTILO = 10000;
 
 /** Largo máximo del título de una sección (EST-S2). */
 export const MAX_CARACTERES_TITULO_SECCION = 100;

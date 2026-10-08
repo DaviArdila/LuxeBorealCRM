@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MAX_CARACTERES_ESTILO } from '../dominio/validar-estilo.js';
 
 /**
- * `PUT /api/v1/agente/estilo` (AGT23): el esquema solo cubre la forma (texto entre 1 y 4000 caracteres, el mismo tope
+ * `PUT /api/v1/agente/estilo` (AGT23): el esquema solo cubre la forma (texto entre 1 y 10000 caracteres, el mismo tope
  * de AGT20); las reglas de negocio (pesos, SKU, plantillas) las decide `validarEstilo` y responden `422`.
  */
 export const esquemaPublicarEstilo = z.object({ texto: z.string().min(1).max(MAX_CARACTERES_ESTILO) });

@@ -24,7 +24,7 @@ export class EstiloServicio {
   readonly secciones = signal<readonly SeccionDelEstilo[]>([]);
   /** Largo del texto compuesto con las secciones activas, y el tope que hace cumplir el servidor. */
   readonly caracteresCompuestos = signal(0);
-  readonly maximo = signal(4000);
+  readonly maximo = signal(10000);
 
   async cargar(): Promise<void> {
     const [vigente, historial, secciones] = await Promise.all([
