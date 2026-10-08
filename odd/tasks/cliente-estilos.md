@@ -46,5 +46,10 @@ Ruta: un escritor delegado (más de 2 archivos no triviales). El hash de cada ta
 - Pendiente fuera del alcance de esta ronda: `openspec/specs/cliente/spec.md` (SHL4 aún dice «modo compacto»;
   SHL9/SHL10 no describen tarjetas, lectura ni arrastre). Se actualiza con T7 o en una tarea propia.
 
+## Entrega
+Un solo PR a `main` por decisión del usuario (2026-10-07). Es una excepción al presupuesto de ~400 líneas por PR:
+son ~2.500 líneas, todas del cliente, y el rediseño visual se revisó en el navegador como una sola pieza.
+El T7 (filosofía + ADR) y la actualización de `openspec/specs/cliente/spec.md` quedan para una tarea aparte.
+
 ## Siguiente paso
 Revisión visual del usuario de la ronda 2 en el navegador; con su visto bueno, T7.
