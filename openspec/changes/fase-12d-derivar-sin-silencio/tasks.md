@@ -48,8 +48,8 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 
 ## Checklist
 
-- [ ] T0 — Spec del change, ADR-0027 y preguntas abiertas (documentación; puerta de aprobación del dueño)
-- [ ] T1 — Efecto `avisar-asesor`: aviso por Telegram sin cambiar de estado, marca «asesor avisado» por motivo y motivo `pide-asesor`
+- [x] T0 — Spec del change, ADR-0027 y preguntas abiertas (documentación; puerta de aprobación del dueño)
+- [x] T1 — Efecto `avisar-asesor`: aviso por Telegram sin cambiar de estado, marca «asesor avisado» por motivo y motivo `pide-asesor`
 - [ ] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
 - [ ] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
 - [ ] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
@@ -271,8 +271,8 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 
 | Tarea | Ruta (inline / delegada) y evidencia | Commit | PR | Tier de review y resultado |
 |---|---|---|---|---|
-| T0 | pendiente | — | — | — |
-| T1 | pendiente | — | — | — |
+| T0 | inline (documentación, sin código). Hook `pre-push` en verde con Docker; el CI cayó en `auditoria:cliente` por un aviso crítico de `handlebars` ajeno al cambio y se corrigió aparte | `fe4a818` | #117 (fusionado `ba014f9`); arreglo de CI en #118 (`08e3714`) | passive: revisión estructural |
+| T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T2 | pendiente | — | — | — |
 | T3 | pendiente | — | — | — |
 | T4 | pendiente | — | — | — |
@@ -281,6 +281,26 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T7 | pendiente | — | — | — |
 | T8 | pendiente | — | — | — |
 | T9 | pendiente | — | — | — |
+
+## Notas de ejecución
+
+### T1 (commit `bc0b433`)
+- **Tamaño real:** 1727 líneas agregadas en 31 archivos; **432 de producción** (la estimación era ~450), 1278 de pruebas y
+  fakes (50 escenarios en tres niveles: unitario, integración con Redis real y e2e por webhook) y 17 de documentación.
+  Cae dentro de la `size:exception` anticipada; la excepción vale por las pruebas, no por lógica.
+- **Se deja para T3 (deliberado, fuera de las superficies de T1):**
+  - `MotivoHandoff` conserva `audio-repetido`, `lead-caliente` y `pide-persona` como transitorios: las políticas del
+    agente y `leads` todavía los emiten. CNV8 («solo cinco motivos») se cumple al cerrar T3.
+  - Nada consume aún un aviso `lead-caliente`: el observador de `leads` es de T3. El caso «un lead caliente después de
+    pedir un asesor genera un segundo aviso» se probó en e2e con `audio-repetido` como segundo motivo.
+  - `ContenidoLlm` traduce `avisar-asesor` a `aviso` sin prioridad entre efectos (D2 es de T3).
+  - El agente consumirá el puerto de lectura `ASESOR_AVISADO` (CNV15) para AGT28 en T3.
+- **Decisiones del writer a revisar:**
+  - TTL de respaldo de la marca: constante de 24 h en el adaptador, sin variable `ASESOR_AVISADO_TTL_H` (la
+    configuración quedó fuera de las superficies). Es resiliencia técnica, no un dato del negocio.
+  - Se creó `AvisoAsesorModule` dentro de `conversaciones.module.ts`; conviene moverlo a su propio archivo cuando se
+    toque ese módulo en T3.
+  - `openspec/specs/conversaciones/spec.md` no se tocó: los deltas se fusionan al archivar (T9).
 
 ## Mapeo de escenarios por tarea
 
