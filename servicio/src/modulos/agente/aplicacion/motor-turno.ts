@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { GeneradorRespuesta, RespuestaTurno, SolicitudTurno } from '../../conversaciones/index.js';
 import { anteponerAviso } from '../dominio/aviso-datos.js';
-import { POLITICAS_TURNO, type PoliticaTurno } from '../dominio/politica-turno.js';
+import { elegirAviso } from '../dominio/prioridad-aviso.js';
+import { POLITICAS_TURNO, type EstadoTurno, type PoliticaTurno } from '../dominio/politica-turno.js';
 import { CONTADORES_SESION, type ClaveSesion, type ContadoresSesion } from '../puertos/contadores-sesion.js';
 import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 
@@ -10,6 +11,8 @@ import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js
  * AGT1): recorre las políticas en el orden en que el módulo las declara y se detiene en la primera
  * que responde. Un turno que ninguna responde termina sin pasos, que `conversaciones` no envía
  * (CNV8). No transiciona la conversación: el `handoff` que trae la respuesta lo ejecuta ella (R6).
+ * Una política que deja pasar puede pedir un aviso al asesor en el {@link EstadoTurno}: el motor lo suma a la
+ * respuesta final (AGT1, D2 de la Fase 12d), con un solo aviso por turno y sin avisar si la respuesta pide handoff.
  *
  * Sobre la respuesta que sale de cualquier política, el motor decide en un solo lugar dos cosas de
  * la sesión (D8): si es la primera respuesta de la conversación antepone el aviso de datos (AGT2,
@@ -26,10 +29,11 @@ export class MotorTurno implements GeneradorRespuesta {
   async generar(solicitud: SolicitudTurno): Promise<RespuestaTurno> {
     const { conversacionId, version } = solicitud.contexto;
     const sesion = { conversacionId, version };
+    const turno: EstadoTurno = {};
     for (const politica of this.politicas) {
-      const decision = await politica.evaluar(solicitud);
+      const decision = await politica.evaluar(solicitud, turno);
       if (decision.decision === 'responder') {
-        const respuesta = await this.conAviso(decision.respuesta, sesion);
+        const respuesta = await this.conAviso(this.conAvisoAlAsesor(decision.respuesta, turno), sesion);
         if (decision.cuentaTurno) {
           await this.contadores.registrarTurno(sesion);
         }
@@ -37,6 +41,15 @@ export class MotorTurno implements GeneradorRespuesta {
       }
     }
     return { pasos: [] };
+  }
+
+  /** D2 de la Fase 12d: suma el aviso que pidió una política al que ya trae la respuesta y deja el de mayor prioridad. */
+  private conAvisoAlAsesor(respuesta: RespuestaTurno, turno: EstadoTurno): RespuestaTurno {
+    if (respuesta.handoff !== undefined) {
+      return respuesta;
+    }
+    const motivo = elegirAviso([respuesta.aviso?.motivo, turno.avisoPedido]);
+    return motivo === undefined ? respuesta : { ...respuesta, aviso: { motivo } };
   }
 
   /** Primer turno de la conversación = versión 0 y ningún turno respondido (D8). */

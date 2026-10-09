@@ -1,10 +1,9 @@
-import type { SolicitudTurno } from '../../conversaciones/index.js';
-import type { DecisionPolitica, PoliticaTurno } from '../dominio/politica-turno.js';
+import type { MotivoAviso, SolicitudTurno } from '../../conversaciones/index.js';
+import type { DecisionPolitica, EstadoTurno, PoliticaTurno } from '../dominio/politica-turno.js';
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
 import { MotorTurno } from './motor-turno.js';
 import { PoliticaNoTextuales } from './politicas/politica-no-textuales.js';
-import { TextoHandoff } from './texto-handoff.js';
 import { PoliticaEco } from '../../../../test/fakes/politica-eco.js';
 
 const AVISO = 'Soy un asistente automatizado.';
@@ -37,6 +36,16 @@ class PoliticaEspia implements PoliticaTurno {
   evaluar(): Promise<DecisionPolitica> {
     this.consultas += 1;
     return Promise.resolve(this.decision);
+  }
+}
+
+/** Deja pasar pidiendo un aviso, como `PoliticaPidePersona` (D6 de la Fase 12d). */
+class PoliticaQueAvisa implements PoliticaTurno {
+  constructor(private readonly motivo: MotivoAviso) {}
+
+  evaluar(_solicitud: SolicitudTurno, turno: EstadoTurno): Promise<DecisionPolitica> {
+    turno.avisoPedido = this.motivo;
+    return Promise.resolve({ decision: 'seguir' });
   }
 }
 
@@ -76,11 +85,7 @@ describe('MotorTurno', () => {
 
   it('AGT1 — Una política que responde corta el resto del pipeline', async () => {
     const parametros = new TextosAsistenteEnMemoria();
-    const noTextuales = new PoliticaNoTextuales(
-      new ContadoresSesionEnMemoria(),
-      parametros,
-      new TextoHandoff({ estaDentroDeHorario: () => Promise.resolve(true) }, parametros),
-    );
+    const noTextuales = new PoliticaNoTextuales(new ContadoresSesionEnMemoria(), parametros);
     const tope = new PoliticaEspia({ decision: 'seguir' });
     const contenido = new PoliticaEspia({ decision: 'seguir' });
     const { motor } = crearMotor([noTextuales, tope, contenido]);
@@ -103,6 +108,51 @@ describe('MotorTurno', () => {
     const respuesta = await motor.generar(solicitudDeTexto('hola'));
 
     expect(respuesta).toEqual({ pasos: [] });
+  });
+
+  it('AGT1 — Una política que deja pasar con aviso lo suma a la respuesta final', async () => {
+    const { motor } = crearMotor([new PoliticaQueAvisa('pide-persona'), new PoliticaEco()]);
+
+    const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
+
+    expect(respuesta.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'hola' }]);
+    expect(respuesta.aviso).toEqual({ motivo: 'pide-persona' });
+    expect(respuesta.handoff).toBeUndefined();
+  });
+
+  it('AGT1 — Con dos avisos en el turno gana el de mayor prioridad (lead-caliente sobre pide-persona)', async () => {
+    const conLead: DecisionPolitica = {
+      decision: 'responder',
+      respuesta: { pasos: [], aviso: { motivo: 'lead-caliente' } },
+      cuentaTurno: true,
+    };
+    const { motor } = crearMotor([new PoliticaQueAvisa('pide-persona'), new PoliticaEspia(conLead)]);
+
+    const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
+
+    expect(respuesta.aviso).toEqual({ motivo: 'lead-caliente' });
+  });
+
+  it('AGT1 — Un turno sin aviso pedido no lleva aviso', async () => {
+    const { motor } = crearMotor([new PoliticaEco()]);
+
+    const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
+
+    expect(respuesta).not.toHaveProperty('aviso');
+  });
+
+  it('AGT1 — Si la respuesta pide handoff el aviso pedido se descarta (CNV11)', async () => {
+    const pide: DecisionPolitica = {
+      decision: 'responder',
+      respuesta: { pasos: [], handoff: { motivo: 'tope-turnos' } },
+      cuentaTurno: false,
+    };
+    const { motor } = crearMotor([new PoliticaQueAvisa('pide-persona'), new PoliticaEspia(pide)]);
+
+    const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
+
+    expect(respuesta.handoff).toEqual({ motivo: 'tope-turnos' });
+    expect(respuesta).not.toHaveProperty('aviso');
   });
 
   it('conserva el handoff que pide la política que responde', async () => {

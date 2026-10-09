@@ -1,7 +1,6 @@
 import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
-import { TextoHandoff } from '../texto-handoff.js';
 import { PoliticaTopeTurnos } from './politica-tope-turnos.js';
 
 const TOPE = 3;
@@ -19,16 +18,11 @@ function turnoDeTexto(version: number): SolicitudTurno {
   };
 }
 
-function crear(dentroDeHorario = true) {
+function crear() {
   const contadores = new ContadoresSesionEnMemoria();
   const parametros = new TextosAsistenteEnMemoria();
-  const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
-  const politica = new PoliticaTopeTurnos(
-    contadores,
-    { AGENTE_TOPE_TURNOS: TOPE },
-    new TextoHandoff(horario, parametros),
-  );
-  return { politica, contadores };
+  const politica = new PoliticaTopeTurnos(contadores, { AGENTE_TOPE_TURNOS: TOPE }, parametros);
+  return { politica, contadores, parametros };
 }
 
 async function responderTurnos(contadores: ContadoresSesionEnMemoria, version: number, cuantos: number) {
@@ -47,7 +41,7 @@ describe('PoliticaTopeTurnos', () => {
     expect(decision).toEqual({
       decision: 'responder',
       respuesta: {
-        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: '[mensaje_handoff]' }],
+        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: '[mensaje_espera_handoff]' }],
         handoff: { motivo: 'tope-turnos' },
       },
       cuentaTurno: false,
@@ -72,15 +66,16 @@ describe('PoliticaTopeTurnos', () => {
     expect(await contadores.turnos({ conversacionId: 'conv-1', version: 2 })).toBe(0);
   });
 
-  it('AGT3 — Fuera de horario el handoff usa su propio texto', async () => {
-    const { politica, contadores } = crear(false);
+  it('AGT3 — El tope de turnos responde con el texto de espera configurado, el mismo dentro y fuera de horario', async () => {
+    const { politica, contadores, parametros } = crear();
+    parametros.textos.set('mensaje_espera_handoff', 'Un asesor te atenderá en cuanto pueda.');
     await responderTurnos(contadores, 0, TOPE);
 
     const decision = await politica.evaluar(turnoDeTexto(0));
 
     expect(decision).toMatchObject({
       respuesta: {
-        pasos: [{ texto: '[mensaje_handoff_fuera_horario]' }],
+        pasos: [{ texto: 'Un asesor te atenderá en cuanto pueda.' }],
         handoff: { motivo: 'tope-turnos' },
       },
     });

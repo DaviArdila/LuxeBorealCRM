@@ -19,9 +19,9 @@ describe('decidirNoTextuales (tabla de D6)', () => {
 });
 
 describe('decidirAudio', () => {
-  it('el primer audio de la sesión pide texto y el segundo deriva', () => {
+  it('el primer audio de la sesión pide texto y el segundo avisa', () => {
     expect(decidirAudio(1)).toBe('pedir-texto');
-    expect(decidirAudio(2)).toBe('derivar');
-    expect(decidirAudio(5)).toBe('derivar');
+    expect(decidirAudio(2)).toBe('avisar');
+    expect(decidirAudio(5)).toBe('avisar');
   });
 });

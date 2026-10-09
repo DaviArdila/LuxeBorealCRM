@@ -15,7 +15,5 @@ export type EfectoTurno =
   | { readonly tipo: 'sin-cobertura'; readonly mensaje: string }
   | { readonly tipo: 'datos-contacto-guardados' }
   | { readonly tipo: 'lead-propuesto'; readonly temperatura: 'tibio' | 'caliente' }
-  /** La escala confirmó y hay que derivar dentro de horario (D4 de la Fase 08): `ContenidoLlm` lo vuelve handoff. */
-  | { readonly tipo: 'lead-derivado'; readonly leadId: string }
   /** Avisar al asesor sin traspasar (CNV13): `ContenidoLlm` lo vuelve el `aviso` de la respuesta y el bot sigue. */
   | { readonly tipo: 'avisar-asesor'; readonly motivo: MotivoAvisoEfecto };

@@ -1,7 +1,6 @@
 import { ContadoresSesionEnMemoria } from '../../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { MensajeTurno, SolicitudTurno, TipoContenidoTurno } from '../../../conversaciones/index.js';
-import { TextoHandoff } from '../texto-handoff.js';
 import { PoliticaNoTextuales } from './politica-no-textuales.js';
 
 const SESION = { conversacionId: 'conv-1', version: 3 };
@@ -24,11 +23,10 @@ function turno(...tipos: TipoContenidoTurno[]): SolicitudTurno {
   };
 }
 
-function crear(dentroDeHorario = true) {
+function crear() {
   const contadores = new ContadoresSesionEnMemoria();
   const parametros = new TextosAsistenteEnMemoria();
-  const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
-  const politica = new PoliticaNoTextuales(contadores, parametros, new TextoHandoff(horario, parametros));
+  const politica = new PoliticaNoTextuales(contadores, parametros);
   return { politica, contadores, parametros };
 }
 
@@ -49,7 +47,7 @@ describe('PoliticaNoTextuales', () => {
     });
   });
 
-  it('R12 — Segundo audio consecutivo', async () => {
+  it('R12 — Segundo audio consecutivo avisa al asesor y sigue pidiendo texto', async () => {
     const { politica } = crear();
     await politica.evaluar(turno('audio'));
 
@@ -57,23 +55,21 @@ describe('PoliticaNoTextuales', () => {
 
     expect(decision).toEqual({
       decision: 'responder',
-      respuesta: { ...unTexto('[mensaje_handoff]'), handoff: { motivo: 'audio-repetido' } },
+      respuesta: { ...unTexto('[mensaje_pedir_texto_audio]'), aviso: { motivo: 'audio-repetido' } },
       cuentaTurno: true,
     });
+    expect(decision).not.toHaveProperty('respuesta.handoff');
   });
 
-  it('R12 — Segundo audio consecutivo fuera de horario usa el texto de handoff fuera de horario', async () => {
-    const { politica } = crear(false);
-    await politica.evaluar(turno('audio'));
+  it('R12 — El primer audio no lleva aviso', async () => {
+    const { politica } = crear();
 
     const decision = await politica.evaluar(turno('audio'));
 
-    expect(decision).toMatchObject({
-      respuesta: { ...unTexto('[mensaje_handoff_fuera_horario]'), handoff: { motivo: 'audio-repetido' } },
-    });
+    expect(decision).not.toHaveProperty('respuesta.aviso');
   });
 
-  it('R12 — Un texto entre dos audios reinicia la cuenta', async () => {
+  it('R12 — Un texto entre dos audios reinicia la cuenta y la respuesta no lleva aviso', async () => {
     const { politica } = crear();
     await politica.evaluar(turno('audio'));
     expect(await politica.evaluar(turno('texto'))).toEqual({ decision: 'seguir' });
@@ -85,6 +81,7 @@ describe('PoliticaNoTextuales', () => {
       respuesta: unTexto('[mensaje_pedir_texto_audio]'),
       cuentaTurno: true,
     });
+    expect(decision).not.toHaveProperty('respuesta.aviso');
   });
 
   it('R12 — Imagen entrante', async () => {

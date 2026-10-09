@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ObtenerFichaProducto } from '../../catalogo/index.js';
+import { ASESOR_AVISADO, type ConsultaAsesorAvisado, type MotivoAviso } from '../../conversaciones/index.js';
 import type { SesionHerramienta } from '../dominio/herramienta.js';
 import { CONTADORES_SESION, type ContadoresSesion } from '../puertos/contadores-sesion.js';
 import { CAPTURA_LEAD, type CapturaLead } from '../puertos/captura-lead.js';
@@ -15,13 +16,17 @@ export interface EntradaContextoInicial {
   readonly sesion: SesionHerramienta;
   readonly contactoId: string;
   readonly textoCliente: string;
+  /** Aviso que una política acaba de pedir en este turno y que todavía no tiene marca (AGT14, AGT28). */
+  readonly avisoPedido?: MotivoAviso;
 }
 
 /**
  * Contexto inicial del turno (D7 de la Fase 07b, AGT12; SPEC del prototipo §3.3 y §3.7): instrucciones
  * de texto para la parte variable del prompt. En el primer turno de la conversación, un SKU activo en
  * el mensaje se informa como un hecho (el producto de entrada); si el contacto ya tiene nombre, también como un hecho. El
- * contexto no ordena qué hacer con ellos: eso lo definen los casos de uso del dueño (AGT12, D13 de la Fase 12d). Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
+ * contexto no ordena qué hacer con ellos: eso lo definen los casos de uso del dueño (AGT12, D13 de la Fase 12d). Con el asesor ya
+ * avisado (CNV15) agrega un hecho y un límite (AGT28): puede seguir informando pero no confirma pagos, apartados ni
+ * descuentos. Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
  * leer el catálogo o el contacto degrada al caso genérico en vez de romper el turno.
  */
 @Injectable()
@@ -32,6 +37,7 @@ export class ArmarContextoInicial {
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
     @Inject(CAPTURA_LEAD) private readonly captura: CapturaLead,
     @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
+    @Inject(ASESOR_AVISADO) private readonly asesorAvisado: ConsultaAsesorAvisado,
   ) {}
 
   async ejecutar(entrada: EntradaContextoInicial): Promise<readonly string[]> {
@@ -48,7 +54,34 @@ export class ArmarContextoInicial {
     if (capturaPendiente !== null) {
       instrucciones.push(capturaPendiente);
     }
+    instrucciones.push(...(await this.instruccionesDelAviso(entrada)));
     return instrucciones;
+  }
+
+  /**
+   * AGT28, AGT14: un hecho y un límite, no un guion. El hecho viene de la marca de `conversaciones` (CNV15) o del aviso
+   * que una política acaba de pedir; si la lectura falla el turno sigue sin la instrucción.
+   */
+  private async instruccionesDelAviso({ sesion, avisoPedido }: EntradaContextoInicial): Promise<readonly string[]> {
+    const instrucciones: string[] = [];
+    if (avisoPedido === 'pide-persona') {
+      instrucciones.push('El cliente pidió hablar con una persona y el asesor ya fue avisado.');
+    }
+    if (avisoPedido !== undefined || (await this.yaAvisado(sesion.conversacionId))) {
+      instrucciones.push(
+        'El asesor ya fue avisado. Puedes seguir informando productos, precios, envíos y políticas, pero no ' +
+          'confirmes pagos, apartados ni descuentos: di que el asesor lo confirma.',
+      );
+    }
+    return instrucciones;
+  }
+
+  private async yaAvisado(conversacionId: string): Promise<boolean> {
+    try {
+      return await this.asesorAvisado.estaAvisado(conversacionId);
+    } catch {
+      return false;
+    }
   }
 
   /**

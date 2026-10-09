@@ -1,17 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
+import type { MotivoAviso, PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
 import { ObtenerMensajeTechoGasto } from '../../../llm/index.js';
 import { asegurarMensajeLiteral } from '../../dominio/asegurar-mensaje-literal.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
-import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
+import { elegirAviso } from '../../dominio/prioridad-aviso.js';
+import type { DecisionPolitica, EstadoTurno, PoliticaTurno } from '../../dominio/politica-turno.js';
 import { textoDelCliente } from '../../dominio/texto-del-cliente.js';
 import { HISTORIAL_CONVERSACION, type HistorialConversacion } from '../../puertos/historial-conversacion.js';
 import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../../asistente/index.js';
 import { BucleHerramientas, type MotivoDerivacionBucle } from '../bucle-herramientas.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
-import { TextoHandoff } from '../texto-handoff.js';
 
 function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
   const pasos: PasoRespuesta[] = [];
@@ -28,21 +28,22 @@ function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
   return pasos;
 }
 
-/** El aviso al asesor que pidió el turno, si alguna herramienta lo pidió (CNV13): no cambia el texto ni el estado. */
+/**
+ * El aviso al asesor que pidió el turno, si alguna herramienta lo pidió (CNV13): no cambia el texto ni el estado. Con
+ * varios gana el de mayor prioridad (D2 de la Fase 12d).
+ */
 function avisoDeEfectos(efectos: readonly EfectoTurno[]): RespuestaTurno['aviso'] {
-  for (const efecto of efectos) {
-    if (efecto.tipo === 'avisar-asesor') {
-      return { motivo: efecto.motivo };
-    }
-  }
-  return undefined;
+  const motivos: MotivoAviso[] = efectos.flatMap((efecto) => (efecto.tipo === 'avisar-asesor' ? [efecto.motivo] : []));
+  const motivo = elegirAviso(motivos);
+  return motivo === undefined ? undefined : { motivo };
 }
 
 /**
  * Última política del pipeline (D1 de la Fase 07b, reemplaza al eco de la 07a): arma el prompt,
  * delega en el bucle de herramientas y traduce su resultado a pasos de respuesta. Un texto final
  * consume turno; cualquier derivación (fallo, techo, argumentos inválidos, plazo) responde con el
- * texto de cortesía del negocio (R15) y pide el handoff, que `conversaciones` ejecuta (R6).
+ * texto de cortesía del negocio (R15) y pide el handoff, que `conversaciones` ejecuta (R6). Un lead confirmado, una
+ * petición de persona o un audio repetido ya no lo reemplazan: avisan al asesor y el texto del modelo sale (D2 de la Fase 12d).
  */
 @Injectable()
 export class ContenidoLlm implements PoliticaTurno {
@@ -56,10 +57,9 @@ export class ContenidoLlm implements PoliticaTurno {
     private readonly mensajeTechoGasto: ObtenerMensajeTechoGasto,
     @Inject(HISTORIAL_CONVERSACION) private readonly historial: HistorialConversacion,
     @Inject(CONFIGURACION) private readonly configuracion: Pick<Configuracion, 'AGENTE_HISTORIAL_TURNOS'>,
-    private readonly textoHandoff: TextoHandoff,
   ) {}
 
-  async evaluar(solicitud: SolicitudTurno): Promise<DecisionPolitica> {
+  async evaluar(solicitud: SolicitudTurno, turno: EstadoTurno = {}): Promise<DecisionPolitica> {
     const textoCliente = textoDelCliente(solicitud.mensajes);
     if (textoCliente.length === 0) {
       return { decision: 'responder', respuesta: { pasos: [] }, cuentaTurno: false };
@@ -68,7 +68,12 @@ export class ContenidoLlm implements PoliticaTurno {
     const { conversacionId, contactoId, version } = solicitud.contexto;
     const sesion = { conversacionId, version };
     const prompt = await this.prompt.ensamblar({
-      instruccionesTurno: await this.contextoInicial.ejecutar({ sesion, contactoId, textoCliente }),
+      instruccionesTurno: await this.contextoInicial.ejecutar({
+        sesion,
+        contactoId,
+        textoCliente,
+        ...(turno.avisoPedido === undefined ? {} : { avisoPedido: turno.avisoPedido }),
+      }),
     });
     // AGT13: solo las versiones del prompt y del estilo al log, nunca su contenido (R14).
     this.logger.log({ evento: 'agente.prompt', version: prompt.version, versionEstilo: prompt.versionEstilo });
@@ -92,19 +97,6 @@ export class ContenidoLlm implements PoliticaTurno {
       };
     }
 
-    // D4 de la Fase 08: la escala confirmó y hay asesores disponibles → el turno termina en handoff con el
-    // texto del negocio, no con lo que escribió el modelo (que no conoce el estado). Un turno derivado no
-    // entra al historial: tras el handoff la sesión bot termina.
-    if (resultado.efectos.some((efecto) => efecto.tipo === 'lead-derivado')) {
-      return {
-        decision: 'responder',
-        respuesta: {
-          pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: await this.textoHandoff.obtener() }],
-          handoff: { motivo: 'lead-caliente' },
-        },
-        cuentaTurno: false,
-      };
-    }
     // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
     // R2: el mensaje de «sin cobertura» sale literal desde el backend, no parafraseado por el modelo.
     const texto = resultado.efectos.reduce(

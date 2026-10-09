@@ -27,7 +27,7 @@ import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../soporte/configuracion-agente-
 import { CONFIGURACION_AUTH_DE_PRUEBA } from '../soporte/configuracion-auth-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../soporte/infraestructura.js';
-import { fijarTextosDelSistema, limpiarCasos } from '../soporte/textos-asistente.js';
+import { limpiarCasos } from '../soporte/textos-asistente.js';
 
 const SECRETO = 'secreto-e2e-leads';
 const RUTA_WEBHOOK = '/api/v1/webhooks/chatwoot';
@@ -253,31 +253,31 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     return { idConversacion, idContacto };
   }
 
-  it('LDS3 — Petición explícita de hablar con una persona: deriva sin llamar al LLM', async () => {
+  it('LDS3 — Petición explícita de hablar con una persona: avisa, el LLM responde y la conversación sigue en bot', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'TE-PASO-CON-UN-ASESOR' });
+    llm.encolar({ respuesta: { texto: 'Claro, ya avisé a un asesor. Mientras tanto, cuéntame qué buscas.' } });
 
     const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor');
 
     const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
-    expect(contenido(unico)).toContain('TE-PASO-CON-UN-ASESOR');
-    expect(llm.solicitudes).toHaveLength(0);
-    await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
-      timeout: 15_000,
-      interval: 100,
-    });
+    expect(contenido(unico)).toContain('ya avisé a un asesor');
+    // El LLM responde en el mismo turno y recibe el hecho y el límite (AGT14, AGT28).
+    expect(llm.solicitudes).toHaveLength(1);
+    expect(llm.solicitudes[0]?.systemPrompt).toContain('El cliente pidió hablar con una persona y el asesor ya fue avisado.');
+    expect(llm.solicitudes[0]?.systemPrompt).toContain('no confirmes pagos, apartados ni descuentos');
     const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
-    expect(conversacion.estado).toBe('handoff_pendiente');
+    expect(conversacion.estado).toBe('bot');
+    expect(estadosEspejados(chatwootFalso, idConversacion)).not.toContain('open');
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
     await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({
       derivado: true,
       senales: ['pide_persona'],
       temperatura: 'caliente',
     });
-    // NTF1/NTF3: el aviso sale tras confirmar el handoff, al grupo configurado y sin datos del contacto.
+    // NTF8: el aviso sale tras encolar la respuesta, al grupo configurado y sin datos del contacto.
     const [aviso] = await esperarAvisos(1);
-    expect(aviso).toContain('caliente');
+    expect(aviso).toContain('Aviso: el cliente pidió hablar con una persona.');
     expect(aviso).not.toContain(String(idContacto));
     // NTF5: el aviso lleva el enlace que abre la conversación en Chatwoot, en una línea propia.
     const lineaAtender = aviso.split('\n').find((linea) => linea.startsWith('Atender: '));
@@ -297,10 +297,9 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
   }, 40_000);
 
-  it('AGT11 — La propuesta confirmada por la escala deriva: handoff, etiqueta y lead derivado', async () => {
+  it('AGT11 — La propuesta confirmada por la escala avisa: texto del modelo, etiqueta, lead derivado y la conversación sigue en bot', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'TE-PASO-CON-UN-ASESOR' });
     llm.encolar(
       llamada('c1', 'marcar_lead_caliente', {
         temperatura: 'caliente',
@@ -314,19 +313,15 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya, ¿cómo lo hago?');
 
     const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
-    // El texto que sale es el de handoff del negocio, no lo que escribió el modelo.
-    expect(contenido(unico)).toContain('TE-PASO-CON-UN-ASESOR');
-    expect(contenido(unico)).not.toContain('sigo contigo');
-    await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
-      timeout: 15_000,
-      interval: 100,
-    });
+    // R11: el texto que sale es el que escribió el modelo; el lead ya no lo reemplaza.
+    expect(contenido(unico)).toContain('sigo contigo');
     await vi.waitFor(() => expect(etiquetasPuestas(chatwootFalso, idConversacion)).toContain('lead-caliente'), {
       timeout: 15_000,
       interval: 100,
     });
     const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
-    expect(conversacion.estado).toBe('handoff_pendiente');
+    expect(conversacion.estado).toBe('bot');
+    expect(estadosEspejados(chatwootFalso, idConversacion)).toEqual([]);
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
     await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({
       derivado: true,
@@ -420,13 +415,22 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     }
   }, 60_000);
 
-  it('NTF2 — Ventana de 24 horas por contacto: dos conversaciones del mismo contacto avisan una vez', async () => {
+  it('NTF2 — Ventana de 24 horas por contacto: dos conversaciones del mismo contacto avisan el lead una vez', async () => {
     const aplicacion = await arrancar();
     const { idConversacion: primera, idContacto } = nuevaConversacion();
     const { idConversacion: segunda } = nuevaConversacion();
     for (const idConversacion of [primera, segunda]) {
+      llm.encolar(
+        llamada(`c-${String(idConversacion)}`, 'marcar_lead_caliente', {
+          temperatura: 'caliente',
+          senales: ['pide_pagar'],
+          resumen: 'Quiere pagar ya',
+          id_producto: null,
+        }),
+        { respuesta: { texto: 'Perfecto, sigo contigo' } },
+      );
       const idMensaje = nuevoIdMensaje();
-      chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, 'Quiero hablar con un asesor');
+      chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, 'Quiero pagar ya');
       await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje });
       await esperarMensajes(chatwootFalso, idConversacion, 1);
     }
@@ -440,6 +444,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
   it('NTF4 — Reintento ante fallo de entrega: Telegram responde 500 y luego 200', async () => {
     const aplicacion = await arrancar();
     telegramFalso.programarRespuesta({ status: 500 });
+    llm.encolar({ respuesta: { texto: 'Claro, ya avisé a un asesor.' } });
 
     await turno(aplicacion, 'Quiero hablar con un asesor');
 
@@ -454,6 +459,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
     telegramFalso.programarRespuesta({ status: 401, cuerpo: { ok: false } });
+    llm.encolar({ respuesta: { texto: 'Claro, ya avisé a un asesor.' } });
 
     const { idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor');
 
@@ -516,7 +522,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const idSegundo = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), idSegundo, '¿Tienen regaderas?');
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: idSegundo });
-    await esperarMensajes(chatwootFalso, idConversacion, 2); // el texto de traspaso al cliente
+    await esperarMensajes(chatwootFalso, idConversacion, 2); // el texto de espera al cliente
 
     const [aviso] = await esperarAvisos(1);
     expect(aviso.startsWith('Traspaso:')).toBe(true);

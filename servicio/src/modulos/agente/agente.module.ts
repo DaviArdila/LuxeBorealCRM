@@ -3,7 +3,7 @@ import { CONFIGURACION, type Configuracion } from '../../plataforma/config/index
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { RedisModule } from '../../plataforma/redis/index.js';
 import { AsistenteModule, CONSULTA_CASOS, type ConsultaCasos } from '../asistente/index.js';
-import { GENERADOR_RESPUESTA } from '../conversaciones/index.js';
+import { AvisoAsesorModule, GENERADOR_RESPUESTA } from '../conversaciones/index.js';
 import {
   BuscarProductos,
   CatalogoModule,
@@ -32,7 +32,6 @@ import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuale
 import { PoliticaPidePersona } from './aplicacion/politicas/politica-pide-persona.js';
 import { PoliticaTopeTurnos } from './aplicacion/politicas/politica-tope-turnos.js';
 import { RegistroHerramientas } from './aplicacion/registro-herramientas.js';
-import { TextoHandoff } from './aplicacion/texto-handoff.js';
 import { HERRAMIENTAS_AGENTE, type Herramienta } from './dominio/herramienta.js';
 import { POLITICAS_TURNO } from './dominio/politica-turno.js';
 import { CapturaLeadDeLeads } from './infraestructura/leads/captura-lead-de-leads.js';
@@ -59,12 +58,13 @@ const TOTAL_HERRAMIENTAS = 8;
  * pasos y handoff, y `conversaciones` los ejecuta.
  *
  * El orden de `POLITICAS_TURNO` es el del pipeline (AGT1): mensajes no textuales (R12), tope de
- * turnos (R13), petición de persona (Fase 08, R9) y, al final, `ContenidoLlm` (Fase 07b): el bucle de herramientas sobre `LLM_PORT`. `HorarioModule` aporta `HORARIO` para elegir
- * el texto de handoff (AGT3); el motor aplica el aviso de datos y registra el turno (AGT2, D8).
+ * turnos (R13), petición de persona (Fase 08, R9) y, al final, `ContenidoLlm` (Fase 07b): el bucle de herramientas sobre `LLM_PORT`.
+ * `HorarioModule` aporta `HORARIO` al prompt; `AvisoAsesorModule` aporta la lectura `ASESOR_AVISADO` (CNV15, AGT28). El
+ * motor aplica el aviso de datos, suma el aviso al asesor que pidió una política y registra el turno (AGT2, D8, D2 de la 12d).
  */
 @Module({
   // Fase 08c: `EstiloModule` aporta `CargadorPrompts` y el estilo editable (`ProveedorEstilo`).
-  imports: [PrismaModule, RedisModule, AsistenteModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule, EstiloModule],
+  imports: [PrismaModule, RedisModule, AsistenteModule, CatalogoModule, HorarioModule, LeadsModule, LlmModule, EstiloModule, AvisoAsesorModule],
   providers: [
     { provide: CONTADORES_SESION, useClass: ContadoresSesionRedis },
     { provide: HISTORIAL_CONVERSACION, useClass: HistorialRedis },
@@ -73,7 +73,6 @@ const TOTAL_HERRAMIENTAS = 8;
     { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadDeLeads },
     { provide: CAPTURA_LEAD, useClass: CapturaLeadDeLeads },
     ArmarContextoInicial,
-    TextoHandoff,
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
     PoliticaPidePersona,

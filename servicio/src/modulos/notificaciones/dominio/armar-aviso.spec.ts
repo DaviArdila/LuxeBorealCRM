@@ -96,7 +96,6 @@ describe('armarAviso — 08d: traspaso sin lead (NTF6)', () => {
     'tope-turnos',
     'fallo-llm',
     'techo-gasto',
-    'audio-repetido',
     'argumentos-invalidos',
     'plazo-agotado',
   ] as const;

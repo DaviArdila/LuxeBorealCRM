@@ -1000,10 +1000,10 @@ describe('cargarConfiguracion', () => {
       throw new Error('La configuración se aceptó y debía rechazarse');
     }
 
-    it('usa el tope del prototipo (12 turnos) y 168 h de vida de sesión por defecto', () => {
+    it('AGT3 — usa un tope de 20 turnos (P65) y 168 h de vida de sesión por defecto', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
-      expect(configuracion.AGENTE_TOPE_TURNOS).toBe(12);
+      expect(configuracion.AGENTE_TOPE_TURNOS).toBe(20);
       expect(configuracion.AGENTE_SESION_TTL_H).toBe(168);
     });
 

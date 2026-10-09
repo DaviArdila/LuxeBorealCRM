@@ -1,6 +1,6 @@
 {
   "id": "pide-persona",
-  "titulo": "R9 — caso: pedir hablar con una persona traspasa sin llamar al modelo",
+  "titulo": "LDS3 — caso: pedir hablar con una persona avisa al asesor y el bot sigue respondiendo",
   "origen": "sintetico",
   "turnos": [
     {
@@ -12,17 +12,17 @@
       ],
       "guion": [
         {
-          "texto": "Este texto no debería salir: el turno se traspasa sin llamar al modelo."
+          "texto": "Claro, ya avisé a un asesor para que te contacte. Mientras tanto, cuéntame qué estás buscando."
         }
       ],
       "aserciones": {
-        "handoff": "esperado",
-        "textoAusente": [
-          "no debería salir"
+        "handoff": "prohibido",
+        "aviso": "esperado",
+        "menciona": [
+          "asesor"
         ],
         "herramientasProhibidas": [
-          "marcar_lead_caliente",
-          "buscar_producto"
+          "marcar_lead_caliente"
         ],
         "sinSku": true
       }

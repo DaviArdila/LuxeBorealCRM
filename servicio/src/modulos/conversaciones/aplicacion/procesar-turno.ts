@@ -3,7 +3,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { SALIDA_CANAL, type SalidaCanal } from '../../canales/index.js';
 import { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../infraestructura/redis/lock-turno.js';
-import type { OrigenTransicion } from '../dominio/maquina-estados.js';
 import {
   GENERADOR_RESPUESTA,
   type ContextoTurno,
@@ -34,14 +33,6 @@ import { ETIQUETA_LEAD_CALIENTE, TransicionarConversacion } from './transicionar
 function leerMensajeDelBuffer(crudo: string): MensajeTurno {
   const mensaje = JSON.parse(crudo) as Omit<MensajeTurno, 'tipoContenido'> & Partial<Pick<MensajeTurno, 'tipoContenido'>>;
   return { ...mensaje, tipoContenido: mensaje.tipoContenido ?? 'texto' };
-}
-
-/**
- * CNV8, CNV11: `lead-caliente` es el único motivo con origen propio; el resto (audio repetido, tope de
- * turnos, `pide-persona`…) es una regla de handoff explícita.
- */
-function origenDelHandoff(motivo: MotivoHandoff): OrigenTransicion {
-  return motivo === 'lead-caliente' ? 'lead_caliente' : 'regla_handoff_explicita';
 }
 
 /**
@@ -218,7 +209,7 @@ export class ProcesarTurno {
   private async ejecutarHandoff(idConversacion: string, motivo: MotivoHandoff): Promise<void> {
     const fresca = await this.repositorio.obtenerPorId(idConversacion);
     if (fresca !== null && fresca.estado === 'bot') {
-      await this.transicionarConversacion.ejecutar(fresca, 'handoff_pendiente', origenDelHandoff(motivo));
+      await this.transicionarConversacion.ejecutar(fresca, 'handoff_pendiente', 'regla_handoff_explicita');
       // NTF3: los observadores (p. ej. el aviso del lead) corren solo tras confirmar la transición.
       await this.observadoresHandoff.notificar({
         conversacionId: fresca.id,

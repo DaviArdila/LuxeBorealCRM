@@ -1,6 +1,6 @@
 {
   "id": "lead-escala-confirmada",
-  "titulo": "R9 — caso: una señal fuerte confirma el lead caliente y se traspasa a un asesor",
+  "titulo": "R9 — caso: una señal fuerte confirma el lead caliente y se avisa al asesor sin traspasar",
   "origen": "sintetico",
   "turnos": [
     {
@@ -27,17 +27,18 @@
           ]
         },
         {
-          "texto": "Perfecto, te paso con un asesor."
+          "texto": "Perfecto, ya avisé a un asesor. Mientras tanto te cuento cómo pagar."
         }
       ],
       "aserciones": {
-        "handoff": "esperado",
+        "handoff": "prohibido",
         "herramientasEsperadas": [
           {
             "nombre": "marcar_lead_caliente"
           }
         ],
-        "sinSku": true
+        "sinSku": true,
+        "aviso": "esperado"
       }
     }
   ]

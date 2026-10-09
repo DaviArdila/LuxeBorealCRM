@@ -22,13 +22,11 @@ dirección ni el nombre del cliente. Decisión de fondo: [`fase-08d`](../../open
 | Aviso | Cuándo sale | Título que verás |
 |---|---|---|
 | Lead caliente | Una señal fuerte de compra, o dos débiles | `Lead caliente: un cliente necesita un asesor.` |
-| Pidió una persona | El cliente pide hablar con alguien | `Lead caliente: un cliente necesita un asesor.` |
 | Lead capturado fuera de horario | El cliente dejó sus datos fuera de horario | Añade `Dejó sus datos fuera de horario…` |
 | Lead sin atender | Un lead derivado sigue en `nuevo` pasados 30 min | `Lead caliente sin atender: nadie lo ha recogido todavía.` |
-| Traspaso por tope de turnos | La sesión llegó al tope de turnos (12 por defecto) | `Traspaso: el bot llegó al tope de turnos con un cliente.` |
+| Traspaso por tope de turnos | La sesión llegó al tope de turnos (20 por defecto) | `Traspaso: el bot llegó al tope de turnos con un cliente.` |
 | Traspaso por falla del LLM | El modelo falló | `Traspaso: el bot no pudo responder por una falla técnica.` |
 | Traspaso por techo de gasto | Se agotó el techo mensual del LLM | `Traspaso: el bot dejó de responder por el techo de gasto.` |
-| Traspaso por audios | El cliente insiste con audios | `Traspaso: el cliente insiste con audios y el bot no los procesa.` |
 | Traspaso por consulta o plazo | Argumentos inválidos o plazo agotado | `Traspaso: el bot no pudo completar una consulta.` / `…se quedó sin tiempo para responder.` |
 | Cliente esperando | Escribió con la conversación en manos humanas y nadie respondió en 10 min | `Cliente esperando: escribió hace 11 min y nadie ha respondido.` |
 
@@ -44,7 +42,8 @@ y tú entras cuando quieras desde el enlace; en cuanto escribes en Chatwoot, la 
 | Audios repetidos | `Aviso: el cliente insiste con audios y el bot no los procesa.` |
 
 Los tres llevan debajo `El bot sigue atendiendo la conversación.` y la línea `Atender:`. El aviso de lead caliente sigue
-su propio camino (ventana de 24 h por contacto) y, sin traspaso, solo etiqueta la conversación con `lead-caliente`.
+su propio camino (ventana de 24 h por contacto): llega con el producto, las señales y el resumen, la conversación queda en `bot`,
+se etiqueta con `lead-caliente` y el texto que ve el cliente es el del modelo.
 
 Un aviso de lead trae además el **producto de interés** (por su nombre, nunca el SKU), las **señales** y un **resumen**.
 

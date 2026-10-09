@@ -443,7 +443,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
     it('CNV8 — El generador pide handoff y la conversación queda esperando a un asesor', async () => {
       const { procesar, buffer, generador, salida, transicionar, orden } = armar({
         pasos: [PASO],
-        handoff: { motivo: 'audio-repetido' },
+        handoff: { motivo: 'tope-turnos' },
       });
 
       await procesar.ejecutar('conv-1', 'job-1');
@@ -464,25 +464,14 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       expect(await buffer.tamano()).toBe(0);
     });
 
-    it('(transitorio hasta la T3 de 12d) CNV11 — Petición de persona pasa a handoff pendiente', async () => {
-      const { procesar, transicionar, salida } = armar({ pasos: [PASO], handoff: { motivo: 'pide-persona' } });
-
-      await procesar.ejecutar('conv-1', 'job-1');
-
-      expect(salida.llamadas[0].conHandoff).toBe(true);
-      expect(transicionar.llamadas.map((l) => [l.destino, l.origen])).toEqual([
-        ['handoff_pendiente', 'regla_handoff_explicita'],
-      ]);
-    });
-
-    it('(transitorio hasta la T3 de 12d) CNV11 — El aviso solo se encola tras confirmar la transición: los observadores corren después', async () => {
-      const { procesar, orden, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'lead-caliente' } });
+    it('CNV8 — El aviso solo se encola tras confirmar la transición: los observadores corren después', async () => {
+      const { procesar, orden, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'fallo-llm' } });
 
       await procesar.ejecutar('conv-1', 'job-1');
 
       expect(orden).toEqual(['enviar', 'transicionar', 'observar']);
       expect(eventos).toEqual([
-        { conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'lead-caliente', version: 0 },
+        { conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'fallo-llm', version: 0 },
       ]);
     });
 
@@ -503,16 +492,16 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       expect(eventos).toEqual([]);
     });
 
-    it('(transitorio hasta la T3 de 12d) CNV11 — Si la conversación ya no está en bot la transición no ocurre y no se avisa a nadie', async () => {
-      const { procesar, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'lead-caliente' } }, 'humano');
+    it('CNV8 — Si la conversación ya no está en bot la transición no ocurre y no se avisa a nadie', async () => {
+      const { procesar, eventos } = armar({ pasos: [PASO], handoff: { motivo: 'techo-gasto' } }, 'humano');
 
       await procesar.ejecutar('conv-1', 'job-1');
 
       expect(eventos).toEqual([]);
     });
 
-    it('(transitorio hasta la T3 de 12d) CNV11 — Un observador que falla no revierte el handoff ni el vaciado del buffer', async () => {
-      const { procesar, transicionar, buffer, observadores } = armar({ pasos: [], handoff: { motivo: 'lead-caliente' } });
+    it('CNV8 — Un observador que falla no revierte el handoff ni el vaciado del buffer', async () => {
+      const { procesar, transicionar, buffer, observadores } = armar({ pasos: [], handoff: { motivo: 'tope-turnos' } });
       observadores.registrar({ alConfirmarHandoff: () => Promise.reject(new Error('fallo')) });
 
       await expect(procesar.ejecutar('conv-1', 'job-1')).resolves.toBeDefined();
@@ -521,13 +510,18 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
       expect(await buffer.tamano()).toBe(0);
     });
 
-    it('(transitorio hasta la T3 de 12d) CNV8 — El motivo lead-caliente transiciona con origen lead_caliente', async () => {
-      const { procesar, transicionar } = armar({ pasos: [], handoff: { motivo: 'lead-caliente' } });
+    it.each(['tope-turnos', 'fallo-llm', 'techo-gasto', 'argumentos-invalidos', 'plazo-agotado'] as const)(
+      'CNV8 — El motivo %s transiciona a handoff_pendiente con origen regla_handoff_explicita',
+      async (motivo) => {
+        const { procesar, transicionar } = armar({ pasos: [], handoff: { motivo } });
 
-      await procesar.ejecutar('conv-1', 'job-1');
+        await procesar.ejecutar('conv-1', 'job-1');
 
-      expect(transicionar.llamadas.map((l) => l.origen)).toEqual(['lead_caliente']);
-    });
+        expect(transicionar.llamadas.map((l) => [l.destino, l.origen])).toEqual([
+          ['handoff_pendiente', 'regla_handoff_explicita'],
+        ]);
+      },
+    );
 
     it('CNV8 — Tras el handoff el turno sale del bucle aunque el buffer se haya llenado durante la generación', async () => {
       const { procesar, buffer, generador, transicionar } = armar({ pasos: [], handoff: { motivo: 'tope-turnos' } });
@@ -548,7 +542,7 @@ describe('modulos/conversaciones/aplicacion — ProcesarTurno', () => {
     it('CNV8 — Si la conversación ya salió de bot mientras se generaba, el handoff no la pisa', async () => {
       const { procesar, generador, repositorio, transicionar, buffer } = armar({
         pasos: [],
-        handoff: { motivo: 'audio-repetido' },
+        handoff: { motivo: 'plazo-agotado' },
       });
       const generarOriginal = generador.generar.bind(generador);
       generador.generar = (solicitud) => {
