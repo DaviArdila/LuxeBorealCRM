@@ -47,5 +47,8 @@
   },
   "engines": {
     "node": ">=24.15.0"
+  },
+  "overrides": {
+    "handlebars": "4.7.10"
   }
 }
