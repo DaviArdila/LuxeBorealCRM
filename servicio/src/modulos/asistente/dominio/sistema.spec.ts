@@ -4,20 +4,30 @@ import { CASOS_DEL_SISTEMA, textoDeRespaldo, type ClaveSistema } from './sistema
 
 // CAS4 (Fase 12, T4): la lista cerrada de casos del sistema es la única fuente de los textos de respaldo.
 
-const OCHO_MENSAJES = [
+const CINCO_MENSAJES = [
   'mensaje_pedir_texto_audio',
   'mensaje_imagen_no_procesada',
-  'aviso_datos',
-  'mensaje_handoff',
-  'mensaje_handoff_fuera_horario',
   'mensaje_error_llm',
   'mensaje_espera_handoff',
   'mensaje_techo_gasto',
 ];
 
 describe('CASOS_DEL_SISTEMA (CAS4)', () => {
-  it('CAS4 — Contiene los ocho mensajes fijos que quedan hasta T7 (12d)', () => {
-    expect(CASOS_DEL_SISTEMA.map((c) => c.clave).sort()).toEqual([...OCHO_MENSAJES].sort());
+  it('CAS4 — Contiene exactamente los cinco mensajes fijos de la lista cerrada', () => {
+    expect(CASOS_DEL_SISTEMA).toHaveLength(5);
+    expect(CASOS_DEL_SISTEMA.map((c) => c.clave).sort()).toEqual([...CINCO_MENSAJES].sort());
+  });
+
+  it('CAS4 — Las claves retiradas ya no son claves del sistema', () => {
+    const claves: readonly string[] = CASOS_DEL_SISTEMA.map((c) => c.clave);
+
+    expect(claves).not.toContain('aviso_datos');
+    expect(claves).not.toContain('mensaje_handoff');
+    expect(claves).not.toContain('mensaje_handoff_fuera_horario');
+  });
+
+  it('CAS4 — «Espera del asesor» es el título de respaldo de mensaje_espera_handoff', () => {
+    expect(CASOS_DEL_SISTEMA.find((c) => c.clave === 'mensaje_espera_handoff')?.titulo).toBe('Espera del asesor');
   });
 
   it('CAS14 — contra_entrega, mensaje_fuera_cobertura y mensaje_captura_completa ya no son claves del sistema', () => {
@@ -49,7 +59,7 @@ describe('CASOS_DEL_SISTEMA (CAS4)', () => {
   });
 
   it('CAS7 — El respaldo de cada clave sale de la lista', () => {
-    const clave: ClaveSistema = 'mensaje_handoff';
+    const clave: ClaveSistema = 'mensaje_espera_handoff';
 
     expect(textoDeRespaldo(clave)).toBe(CASOS_DEL_SISTEMA.find((c) => c.clave === clave)?.textoRespaldo);
   });

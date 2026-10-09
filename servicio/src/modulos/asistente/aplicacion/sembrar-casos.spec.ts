@@ -16,10 +16,10 @@ class RepositorioSemillaFalso implements RepositorioSemilla {
   constructor(
     private readonly filas: Record<string, unknown>,
     private readonly insertados: number,
-    private readonly delSistema: Record<string, unknown> = {},
+    private readonly legado: unknown = null,
   ) {}
-  leerTextosDeCasosDelSistema(): Promise<ReadonlyMap<string, unknown>> {
-    return Promise.resolve(new Map(Object.entries(this.delSistema)));
+  leerTextoLegadoDelAviso(): Promise<unknown> {
+    return Promise.resolve(this.legado);
   }
   leerParametrosDeTexto(): Promise<ReadonlyMap<string, unknown>> {
     return Promise.resolve(new Map(Object.entries(this.filas)));
@@ -43,8 +43,8 @@ class VersionFalsa implements VersionAsistente {
   }
 }
 
-function crear(filas: Record<string, unknown>, insertados: number, delSistema: Record<string, unknown> = {}) {
-  const repositorio = new RepositorioSemillaFalso(filas, insertados, delSistema);
+function crear(filas: Record<string, unknown>, insertados: number, legado: unknown = null) {
+  const repositorio = new RepositorioSemillaFalso(filas, insertados, legado);
   const version = new VersionFalsa();
   return { sembrar: new SembrarCasos(repositorio, version, new ClockFalso(new Date('2026-10-06T12:00:00Z'))), repositorio, version };
 }
@@ -70,7 +70,7 @@ describe('asistente/aplicacion — SembrarCasos (CAS6)', () => {
   });
 
   it('CAS13 — Informa con qué texto se planificó «Tratamiento de datos», solo en cantidades', async () => {
-    const delCaso = crear({}, 1, { aviso_datos: 'TEXTO-DEL-DUEÑO ¿Aceptas?' });
+    const delCaso = crear({}, 1, 'TEXTO-DEL-DUEÑO ¿Aceptas?');
     const deParametro = crear({ aviso_datos: 'TEXTO-DE-PARAMETRO ¿Aceptas?' }, 1);
     const deRespaldo = crear({}, 1);
 

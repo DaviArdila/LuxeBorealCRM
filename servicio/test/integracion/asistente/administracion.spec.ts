@@ -184,7 +184,7 @@ describe('Casos contra Postgres (Fase 12, T7, integración)', () => {
         tituloNormalizado: 'traspaso a un asesor',
         cuandoAplica: 'Cuando el bot pasa la conversación a un asesor.',
         disparador: 'evento',
-        claveSistema: 'mensaje_handoff',
+        claveSistema: 'mensaje_espera_handoff',
         texto: 'Te paso con un asesor.',
         busquedaNormalizada: 'x',
         creado: ahora,
@@ -195,7 +195,7 @@ describe('Casos contra Postgres (Fase 12, T7, integración)', () => {
     expect(await casos.borrar(fila.id)).toEqual({ ok: false, razon: 'del-sistema' });
     expect(await casos.editar(fila.id, { actualizado: fila.actualizado, activo: false })).toEqual({ ok: false, razon: 'del-sistema' });
     const editado = await casos.editar(fila.id, { actualizado: fila.actualizado, texto: 'Un asesor te escribe ya.' });
-    expect(editado).toMatchObject({ ok: true, caso: { claveSistema: 'mensaje_handoff', disparador: 'evento', activo: true } });
+    expect(editado).toMatchObject({ ok: true, caso: { claveSistema: 'mensaje_espera_handoff', disparador: 'evento', activo: true } });
   });
 
   async function sembrarVarios() {

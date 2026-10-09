@@ -50,10 +50,10 @@ describe('Textos fijos del agente desde el asistente (T5, integración)', () => 
 
   it('un valor en blanco cae al respaldo sin lanzar', async () => {
     const { textos, prisma } = await crearTextos();
-    await fijarTextosDelSistema(prisma, { mensaje_pedir_texto_audio: '   ', aviso_datos: '\n' });
+    await fijarTextosDelSistema(prisma, { mensaje_pedir_texto_audio: '   ', mensaje_techo_gasto: '\n' });
 
     expect(await textos.textoDelSistema('mensaje_pedir_texto_audio')).toContain('texto');
-    expect(await textos.textoDelSistema('aviso_datos')).toContain('asistente automatizado');
+    expect(await textos.textoDelSistema('mensaje_techo_gasto')).toContain('asesor');
   });
 
   it('todas las claves tienen un respaldo no vacío', async () => {
@@ -62,9 +62,9 @@ describe('Textos fijos del agente desde el asistente (T5, integración)', () => 
     for (const clave of [
       'mensaje_pedir_texto_audio',
       'mensaje_imagen_no_procesada',
-      'aviso_datos',
-      'mensaje_handoff',
-      'mensaje_handoff_fuera_horario',
+      'mensaje_error_llm',
+      'mensaje_espera_handoff',
+      'mensaje_techo_gasto',
     ] as const) {
       expect((await textos.textoDelSistema(clave)).trim().length).toBeGreaterThan(0);
     }

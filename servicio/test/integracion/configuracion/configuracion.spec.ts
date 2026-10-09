@@ -178,11 +178,11 @@ describe('R15 — Horario, textos y parámetros son datos (Fase 12, T11, integra
     const { prisma } = await contexto();
     await limpiarCasos(prisma);
     const textos = textosSinCopia(prisma);
-    expect(await textos.textoDelSistema('mensaje_handoff')).toBe(textoDeRespaldo('mensaje_handoff'));
+    expect(await textos.textoDelSistema('mensaje_espera_handoff')).toBe(textoDeRespaldo('mensaje_espera_handoff'));
 
-    await fijarTextosDelSistema(prisma, { mensaje_handoff: 'Un asesor te escribe en unos minutos.' });
+    await fijarTextosDelSistema(prisma, { mensaje_espera_handoff: 'Un asesor te escribe en unos minutos.' });
 
-    expect(await textos.textoDelSistema('mensaje_handoff')).toBe('Un asesor te escribe en unos minutos.');
+    expect(await textos.textoDelSistema('mensaje_espera_handoff')).toBe('Un asesor te escribe en unos minutos.');
     await limpiarCasos(prisma);
   });
 

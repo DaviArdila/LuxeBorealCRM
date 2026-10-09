@@ -90,10 +90,10 @@ describe('asistente/aplicacion — AdministrarCasos (crear, CAS3 y CAS5)', () =>
     expect(version.incrementos).toBe(0);
   });
 
-  it('CAS4 — La API no crea casos con una clave del sistema', async () => {
+  it('CAS4 — La API no crea casos con clave del sistema', async () => {
     const { admin, politicas, repositorio } = crear();
 
-    const resultado = await admin.crear({ categoriaId: politicas.id, ...NUEVO, claveSistema: 'mensaje_handoff' });
+    const resultado = await admin.crear({ categoriaId: politicas.id, ...NUEVO, claveSistema: 'mensaje_espera_handoff' });
 
     expect(resultado).toEqual({ ok: false, razon: 'invalido', motivo: 'los casos del sistema no se crean desde la API (CAS4)' });
     expect(repositorio.casos).toHaveLength(0);
@@ -161,20 +161,49 @@ describe('asistente/aplicacion — AdministrarCasos (editar y borrar)', () => {
     const { admin, repositorio, sistema } = crear();
     const caso = repositorio.sembrarCaso({
       categoriaId: sistema.id,
-      titulo: 'Traspaso a un asesor',
+      titulo: 'Espera del asesor',
       disparador: 'evento',
-      claveSistema: 'mensaje_handoff',
+      claveSistema: 'mensaje_espera_handoff',
       actualizado: LEIDO,
     });
 
     const resultado = await admin.editar(caso.id, { actualizado: LEIDO, texto: 'Te paso con un asesor.' });
 
-    expect(resultado).toMatchObject({ ok: true, caso: { texto: 'Te paso con un asesor.', claveSistema: 'mensaje_handoff', disparador: 'evento' } });
+    expect(resultado).toMatchObject({ ok: true, caso: { texto: 'Te paso con un asesor.', claveSistema: 'mensaje_espera_handoff', disparador: 'evento' } });
+  });
+
+  it('CAS4 — Las claves retiradas ya no son claves del sistema', async () => {
+    const { admin, politicas, repositorio } = crear();
+
+    const resultado = await admin.crear({ categoriaId: politicas.id, ...NUEVO, claveSistema: 'mensaje_handoff' });
+
+    expect(resultado).toEqual({ ok: false, razon: 'invalido', motivo: 'los casos del sistema no se crean desde la API (CAS4)' });
+    expect(repositorio.casos).toHaveLength(0);
+  });
+
+  it('CAS4 — El título de un caso del sistema se edita', async () => {
+    const { admin, repositorio, sistema } = crear();
+    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Audio recibido', disparador: 'evento', claveSistema: 'mensaje_pedir_texto_audio', actualizado: LEIDO });
+
+    const resultado = await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'Audios' });
+
+    expect(resultado).toMatchObject({ ok: true, caso: { titulo: 'Audios', claveSistema: 'mensaje_pedir_texto_audio', disparador: 'evento' } });
+  });
+
+  it('CAS4 — El título editado no puede repetir el de otro caso', async () => {
+    const { admin, repositorio, politicas, sistema } = crear();
+    repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Tratamiento de datos' });
+    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Audio recibido', disparador: 'evento', claveSistema: 'mensaje_pedir_texto_audio', actualizado: LEIDO });
+
+    const resultado = await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'tratamiento de datos' });
+
+    expect(resultado).toEqual({ ok: false, razon: 'duplicado' });
+    expect((await admin.obtener(caso.id))?.titulo).toBe('Audio recibido');
   });
 
   it('CAS4 — Un caso del sistema no se desactiva', async () => {
     const { admin, repositorio, sistema, version } = crear();
-    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Aviso de datos', disparador: 'evento', claveSistema: 'aviso_datos', actualizado: LEIDO });
+    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Techo de gasto alcanzado', disparador: 'evento', claveSistema: 'mensaje_techo_gasto', actualizado: LEIDO });
 
     expect(await admin.editar(caso.id, { actualizado: LEIDO, activo: false })).toEqual({ ok: false, razon: 'del-sistema' });
     expect(repositorio.casos[0]?.activo).toBe(true);
@@ -196,7 +225,7 @@ describe('asistente/aplicacion — AdministrarCasos (editar y borrar)', () => {
     const { admin, repositorio, politicas } = crear();
     const caso = repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Garantía', actualizado: LEIDO });
 
-    expect(await admin.editar(caso.id, { actualizado: LEIDO, claveSistema: 'mensaje_handoff' })).toEqual({
+    expect(await admin.editar(caso.id, { actualizado: LEIDO, claveSistema: 'mensaje_espera_handoff' })).toEqual({
       ok: false,
       razon: 'invalido',
       motivo: 'la clave del sistema de un caso no se cambia desde la API (CAS4)',
@@ -214,7 +243,7 @@ describe('asistente/aplicacion — AdministrarCasos (editar y borrar)', () => {
 
   it('CAS4 — Un caso del sistema no se borra; uno inexistente responde inexistente', async () => {
     const { admin, repositorio, sistema, version } = crear();
-    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Traspaso', disparador: 'evento', claveSistema: 'mensaje_handoff' });
+    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Espera del asesor', disparador: 'evento', claveSistema: 'mensaje_espera_handoff' });
 
     expect(await admin.borrar(caso.id)).toEqual({ ok: false, razon: 'del-sistema' });
     expect(await admin.borrar('no-existe')).toEqual({ ok: false, razon: 'inexistente' });
@@ -246,7 +275,7 @@ describe('asistente/aplicacion — AdministrarCasos (listar, CAS10)', () => {
     const { admin, repositorio, politicas, sistema } = crear();
     repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'a-intencion' });
     repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'b-inactivo', activo: false });
-    repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'c-evento', disparador: 'evento', claveSistema: 'aviso_datos' });
+    repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'c-evento', disparador: 'evento', claveSistema: 'mensaje_techo_gasto' });
 
     expect((await admin.listar({ categoriaId: politicas.id, disparador: 'intencion' })).items.map((c) => c.titulo)).toEqual(['a-intencion', 'b-inactivo']);
     expect((await admin.listar({ activo: false })).items.map((c) => c.titulo)).toEqual(['b-inactivo']);
