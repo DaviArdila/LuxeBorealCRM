@@ -19,7 +19,7 @@ const esquema = z.object({
 export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
   return definirHerramienta(
     'cotizar_envio',
-    'Cotiza el envío de un producto a un destino: rango aproximado de costo, días de entrega y si hay contra entrega. Si no hay cobertura lo indica.',
+    'Cotiza el envío de un producto a un destino. Devuelve el rango de costo, los días de entrega y si hay contra entrega; si no hay cobertura, lo indica.',
     esquema,
     async ({ id_producto, departamento, ciudad }) => {
       const cotizacion = await cotizar.ejecutar(id_producto, { departamento, ciudad: ciudad ?? null });

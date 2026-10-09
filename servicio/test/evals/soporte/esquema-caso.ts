@@ -9,10 +9,10 @@ export const NOMBRES_ASERCION = [
   'dineroConRastro',
   'recargoSinPorcentaje',
   'handoff',
+  'aviso',
   'textoLiteral',
   'textoAusente',
   'menciona',
-  'sinEmojis',
   'sinSku',
 ] as const;
 export type NombreAsercion = (typeof NOMBRES_ASERCION)[number];
@@ -48,10 +48,11 @@ const aserciones = z
     dineroConRastro: z.boolean().optional(),
     recargoSinPorcentaje: z.boolean().optional(),
     handoff: z.enum(['esperado', 'prohibido']).optional(),
+    /** El turno trae (o no) un aviso al asesor sin traspaso (AGT24). */
+    aviso: z.enum(['esperado', 'prohibido']).optional(),
     textoLiteral: z.array(z.object({ herramienta: z.string().min(1), campo: z.string().min(1) }).strict()).optional(),
     textoAusente: z.array(z.string().min(1)).optional(),
     menciona: z.array(z.string().min(1)).optional(),
-    sinEmojis: z.boolean().optional(),
     sinSku: z.boolean().optional(),
   })
   .strict();

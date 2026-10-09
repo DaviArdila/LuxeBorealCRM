@@ -1,0 +1,34 @@
+{
+  "id": "caso-pide-aviso",
+  "titulo": "AGT24 — Un caso de uso del dueño puede pedir el aviso al asesor",
+  "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Compras al por mayor",
+        "cuandoAplica": "Cuando el cliente pregunta por comprar al por mayor.",
+        "texto": "Avisa a un asesor con derivar_a_asesor y dile al cliente que un asesor lo contactará.",
+        "modo": "guia"
+      }
+    ]
+  },
+  "turnos": [
+    {
+      "mensajes": [{ "tipoContenido": "texto", "texto": "¿Venden al por mayor? Quiero comprar cincuenta unidades." }],
+      "guion": [
+        { "llamadas": [{ "nombre": "consultar_caso", "argumentos": { "titulo": "Compras al por mayor" } }] },
+        { "llamadas": [{ "nombre": "derivar_a_asesor", "argumentos": { "motivo": "Compra al por mayor" } }] },
+        { "texto": "Ya avisé a un asesor para que te contacte por tu compra al por mayor." }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "aviso": "esperado",
+        "herramientasEsperadas": [
+          { "nombre": "consultar_caso", "argumentos": { "titulo": "Compras al por mayor" } },
+          { "nombre": "derivar_a_asesor" }
+        ],
+        "sinSku": true
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import { ErrorPasarelaLlm, ObtenerMensajeTechoGasto } from '../../../llm/index.j
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import type { Herramienta } from '../../dominio/herramienta.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
+import { crearDerivarAAsesor } from '../herramientas/derivar-a-asesor.js';
 import { crearGuardarDatosContacto } from '../herramientas/guardar-datos-contacto.js';
 import { CargadorPrompts } from '../../infraestructura/prompts/cargador-prompts.js';
 import { BucleHerramientas } from '../bucle-herramientas.js';
@@ -153,6 +154,65 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     });
     // La conversación sigue en bot: el turno sí entra al historial.
     await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toHaveLength(2);
+  });
+
+  it('AGT4 — El efecto avisar-asesor se vuelve el aviso de la respuesta', async () => {
+    const { llm, politica } = crear([crearDerivarAAsesor()]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'derivar_a_asesor', argumentos: { motivo: 'Pide un asesor' } }] } },
+      { respuesta: { texto: 'Ya avisé a un asesor' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toEqual({
+      decision: 'responder',
+      respuesta: { pasos: [{ paso: 'llm-1', tipo: 'texto', texto: 'Ya avisé a un asesor' }], aviso: { motivo: 'pide-asesor' } },
+      cuentaTurno: true,
+    });
+    expect((decision as { respuesta: object }).respuesta).not.toHaveProperty('handoff');
+  });
+
+  it('AGT4 — Dos efectos avisar-asesor en un turno dan un solo aviso', async () => {
+    const lead = herramienta('marcar_lead_caliente', { derivado: true }, [{ tipo: 'avisar-asesor', motivo: 'lead-caliente' }]);
+    const { llm, politica } = crear([crearDerivarAAsesor(), lead]);
+    llm.encolar(
+      {
+        respuesta: {
+          llamadasHerramienta: [
+            { id: 'c1', nombre: 'derivar_a_asesor', argumentos: { motivo: 'Pide un asesor' } },
+            { id: 'c2', nombre: 'marcar_lead_caliente', argumentos: {} },
+          ],
+        },
+      },
+      { respuesta: { texto: 'Listo' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    const respuesta = (decision as { respuesta: { aviso?: unknown } }).respuesta;
+    expect(Array.isArray(respuesta.aviso)).toBe(false);
+    expect(respuesta.aviso).toEqual({ motivo: 'pide-asesor' });
+  });
+
+  it('AGT24 — El motivo escrito por el modelo no queda en ningún lado', async () => {
+    const registros: unknown[][] = [];
+    for (const nivel of ['log', 'warn', 'error', 'debug', 'verbose', 'fatal'] as const) {
+      vi.spyOn(Logger.prototype, nivel).mockImplementation((...args: unknown[]) => {
+        registros.push(args);
+      });
+    }
+    const { llm, politica, historial } = crear([crearDerivarAAsesor()]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'derivar_a_asesor', argumentos: { motivo: 'Laura Gómez pide un descuento' } }] } },
+      { respuesta: { texto: 'Ya avisé a un asesor' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(JSON.stringify(registros)).not.toContain('Laura');
+    expect(JSON.stringify(decision)).not.toContain('Laura');
+    expect(JSON.stringify(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6))).not.toContain('Laura');
   });
 
   it('CNV13 — Sin efecto avisar-asesor la respuesta no trae aviso', async () => {
@@ -370,7 +430,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v4', versionEstilo: 3 });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v5', versionEstilo: 3 });
     // R14: ningún registro del turno lleva el texto del estilo.
     expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });

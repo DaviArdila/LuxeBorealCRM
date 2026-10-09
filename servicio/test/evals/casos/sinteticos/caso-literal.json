@@ -50,7 +50,6 @@
             "campo": "texto"
           }
         ],
-        "sinEmojis": true,
         "sinSku": true
       }
     }

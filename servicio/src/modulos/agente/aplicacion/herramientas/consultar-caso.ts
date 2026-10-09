@@ -16,7 +16,7 @@ const esquema = z.object({
 export function crearConsultarCaso(casos: ConsultaCasos): Herramienta {
   return definirHerramienta(
     'consultar_caso',
-    'Devuelve el texto de un caso de uso del negocio (devoluciones, contra entrega, medios de pago, etc.) y su modo: literal se cita palabra por palabra; guía es base para redactar. Solo para casos del índice. Si el título no existe, lista los disponibles.',
+    'Devuelve el texto y el modo (literal o guía) de un caso de uso del índice. Si el título no existe, lista los disponibles.',
     esquema,
     async ({ titulo }) => ({ paraElModelo: casoParaElModelo(await casos.consultar(titulo)), efectos: [] }),
   );

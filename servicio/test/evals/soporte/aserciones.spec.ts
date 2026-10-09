@@ -4,7 +4,7 @@ import { evaluarAserciones, type GrabacionTurno } from './aserciones.js';
 // una negativa por cada aserción (D4).
 
 function grabacion(sobrescribir: Partial<GrabacionTurno> = {}): GrabacionTurno {
-  return { llamadas: [], resultados: [], textoFinal: 'Hola', handoff: null, ...sobrescribir };
+  return { llamadas: [], resultados: [], textoFinal: 'Hola', handoff: null, aviso: null, ...sobrescribir };
 }
 
 function unica(g: GrabacionTurno, aserciones: Parameters<typeof evaluarAserciones>[1]) {
@@ -79,28 +79,18 @@ describe('test/evals — evaluarAserciones', () => {
     expect(unica(grabacion({ textoFinal: 'Es de oro' }), { textoAusente: ['contra entrega'] }).ok).toBe(true);
   });
 
+  it('AGT24 — La aserción aviso distingue la respuesta con aviso al asesor de la que no lo trae', () => {
+    const conAviso = grabacion({ aviso: 'pide-asesor' });
+
+    expect(unica(conAviso, { aviso: 'esperado' })).toMatchObject({ nombre: 'aviso', ok: true, critica: false });
+    expect(unica(grabacion(), { aviso: 'esperado' })).toMatchObject({ ok: false, detalle: 'faltó el aviso esperado' });
+    expect(unica(conAviso, { aviso: 'prohibido' }).ok).toBe(false);
+    expect(unica(grabacion(), { aviso: 'prohibido' }).ok).toBe(true);
+  });
+
   it('menciona ignora tildes y mayúsculas', () => {
     expect(unica(grabacion({ textoFinal: '¿En qué CIUDAD estás?' }), { menciona: ['ciudad'] }).ok).toBe(true);
     expect(unica(grabacion({ textoFinal: 'Hola' }), { menciona: ['ciudad'] }).ok).toBe(false);
-  });
-
-  it('AGT15 — Una respuesta con emoji falla la aserción', () => {
-    const r = unica(grabacion({ textoFinal: 'Hola, bienvenida 😊 ¿en qué te ayudo?' }), { sinEmojis: true });
-
-    expect(r).toMatchObject({ nombre: 'sinEmojis', ok: false, critica: false });
-    expect(r.detalle).not.toContain('bienvenida');
-  });
-
-  it('AGT15 — Una respuesta sin emojis pasa la aserción', () => {
-    const texto = '¡Hola! Cuesta $389.000 (IVA incl.) © 2026 ™ — 50 % más rápido: sí.';
-
-    expect(unica(grabacion({ textoFinal: texto }), { sinEmojis: true }).ok).toBe(true);
-  });
-
-  it('sinEmojis detecta pictogramas con y sin selector de variación', () => {
-    expect(unica(grabacion({ textoFinal: 'Gracias ❤️' }), { sinEmojis: true }).ok).toBe(false);
-    expect(unica(grabacion({ textoFinal: 'Listo ✅' }), { sinEmojis: true }).ok).toBe(false);
-    expect(unica(grabacion({ textoFinal: 'Un grifo 🚿' }), { sinEmojis: true }).ok).toBe(false);
   });
 
   it('AGT16 — Una respuesta con SKU falla la aserción', () => {
@@ -116,8 +106,8 @@ describe('test/evals — evaluarAserciones', () => {
   });
 
   it('devuelve un resultado por aserción declarada, en un orden fijo', () => {
-    const r = evaluarAserciones(grabacion(), { sinSku: true, menciona: ['hola'], handoff: 'prohibido', dineroConRastro: true, sinEmojis: true });
+    const r = evaluarAserciones(grabacion(), { sinSku: true, menciona: ['hola'], handoff: 'prohibido', dineroConRastro: true });
 
-    expect(r.map((x) => x.nombre)).toEqual(['dineroConRastro', 'handoff', 'menciona', 'sinEmojis', 'sinSku']);
+    expect(r.map((x) => x.nombre)).toEqual(['dineroConRastro', 'handoff', 'menciona', 'sinSku']);
   });
 });

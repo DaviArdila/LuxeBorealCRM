@@ -39,7 +39,6 @@
             "campo": "precio_texto"
           }
         ],
-        "sinEmojis": true,
         "sinSku": true
       }
     }

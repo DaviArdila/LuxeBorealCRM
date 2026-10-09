@@ -21,6 +21,13 @@ describe('test/evals — esquema de casos (D3)', () => {
     expect(parsearCaso(CASO_VALIDO, 'saludo.json').id).toBe('saludo');
   });
 
+  it('AGT15 — La aserción sinEmojis ya no existe: un caso que la declara se rechaza', () => {
+    const conEmojis = { ...CASO_VALIDO, turnos: [{ ...CASO_VALIDO.turnos[0], aserciones: { sinEmojis: true } }] };
+
+    expect(() => parsearCaso(conEmojis, 'saludo.json')).toThrow(/saludo\.json.*sinEmojis/s);
+    expect(() => parsearCaso({ ...CASO_VALIDO, esperaFallo: 'sinEmojis' }, 'neg.json')).toThrow(/esperaFallo/);
+  });
+
   it('un caso sintético sin guion se rechaza nombrando el archivo y el turno', () => {
     const sinGuion = { ...CASO_VALIDO, turnos: [{ ...CASO_VALIDO.turnos[0], guion: undefined }] };
 

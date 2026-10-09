@@ -25,7 +25,7 @@ export interface ResultadoHerramientaAgente {
 }
 
 /**
- * Una de las siete herramientas del agente (R1). Envuelve un caso de uso de otro módulo; el bucle
+ * Una de las ocho herramientas del agente (R1). Envuelve un caso de uso de otro módulo; el bucle
  * solo la conoce por su `definicion.nombre`.
  */
 export interface Herramienta {

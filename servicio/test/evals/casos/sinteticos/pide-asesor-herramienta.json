@@ -1,0 +1,40 @@
+{
+  "id": "pide-asesor-herramienta",
+  "titulo": "AGT24 — El cliente pide un asesor y el modelo llama derivar_a_asesor",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Necesito orientación para una compra grande para mi hotel, ¿me ayudan con eso?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "derivar_a_asesor",
+              "argumentos": {
+                "motivo": "Consulta por una compra grande"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Ya avisé a un asesor para que te contacte. Mientras tanto, cuéntame qué productos te interesan."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "aviso": "esperado",
+        "herramientasEsperadas": [
+          {
+            "nombre": "derivar_a_asesor"
+          }
+        ],
+        "sinSku": true
+      }
+    }
+  ]
+}

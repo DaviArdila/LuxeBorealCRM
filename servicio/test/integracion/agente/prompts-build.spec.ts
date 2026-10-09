@@ -16,19 +16,19 @@ describe('Prompts versionados en el build (T8, D8)', () => {
     execFileSync(process.execPath, [cliNest, 'build'], { cwd: RAIZ, stdio: 'pipe' });
 
     const carpeta = path.join(RAIZ, 'dist', 'modulos', 'agente', 'prompts');
-    expect(existsSync(path.join(carpeta, 'reglas.v4.md'))).toBe(true);
-    expect(existsSync(path.join(carpeta, 'estilo.v3.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'seguridad.v1.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'estilo.v4.md'))).toBe(true);
     expect(existsSync(path.join(carpeta, 'turno.v3.md'))).toBe(true);
 
     const modulo = (await import(
       pathToFileURL(path.join(RAIZ, 'dist', 'modulos', 'agente', 'infraestructura', 'prompts', 'cargador-prompts.js')).href
-    )) as { CargadorPrompts: new () => { onModuleInit(): void; reglas: string; estilo: string; turno: string; version: string } };
+    )) as { CargadorPrompts: new () => { onModuleInit(): void; seguridad: string; estilo: string; turno: string; version: string } };
     const cargador = new modulo.CargadorPrompts();
     cargador.onModuleInit();
 
-    expect(cargador.reglas.length).toBeGreaterThan(100);
-    expect(cargador.estilo.length).toBeGreaterThan(100);
+    expect(cargador.seguridad.length).toBeGreaterThan(100);
+    expect(cargador.estilo.length).toBeGreaterThan(20);
     expect(cargador.turno).toContain('{{instrucciones}}');
-    expect(cargador.version).toBe('v4');
+    expect(cargador.version).toBe('v5');
   }, 180_000);
 });

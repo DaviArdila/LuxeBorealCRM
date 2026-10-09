@@ -56,7 +56,7 @@ describe('secciones del estilo (EST-S1)', () => {
   it('EST-S1 — Dividir el estilo inicial y componerlo devuelve el mismo texto', () => {
     const secciones = dividirEstilo(ESTILO_INICIAL);
 
-    expect(secciones.map((s) => s.titulo)).toContain('Cómo presentas un producto');
+    expect(secciones.map((s) => s.titulo)).toContain('Estilo');
     expect(componerEstilo(secciones.map((s, orden) => ({ ...s, orden, activo: true })))).toBe(ESTILO_INICIAL.trimEnd());
   });
 });

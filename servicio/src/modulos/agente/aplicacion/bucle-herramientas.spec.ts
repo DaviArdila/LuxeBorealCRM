@@ -11,7 +11,7 @@ import { RegistroHerramientas } from './registro-herramientas.js';
 
 // Escenarios AGT4, AGT5 y AGT6 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`
 // y R1 «El LLM necesita datos de un producto». El bucle se prueba con nombres inventados: no conoce
-// ninguna de las siete herramientas reales (A4).
+// ninguna de las ocho herramientas reales (A4).
 
 const INICIO = new Date('2026-09-30T12:00:00.000Z');
 const CONFIG = { LOCK_TURNO_TTL_S: 30, AGENTE_MAX_VUELTAS: 5 };
@@ -183,7 +183,7 @@ describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
     await expect(bucle.ejecutar(ENTRADA)).resolves.toEqual({ tipo: 'derivar', motivo: 'fallo-llm' });
   });
 
-  it('el bucle no contiene el nombre de ninguna de las siete herramientas (A4)', () => {
+  it('el bucle no contiene el nombre de ninguna de las ocho herramientas (A4)', () => {
     const fuente = readFileSync(new URL('./bucle-herramientas.ts', import.meta.url), 'utf8');
     for (const nombre of [
       'buscar_producto',

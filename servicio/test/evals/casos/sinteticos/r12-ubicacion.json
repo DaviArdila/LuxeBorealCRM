@@ -1,7 +1,17 @@
 {
   "id": "r12-ubicacion",
-  "titulo": "R12 — Ubicación entrante",
+  "titulo": "R12 — Ubicación entrante, según el caso «Ubicación compartida» del dueño",
   "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Ubicación compartida",
+        "cuandoAplica": "Cuando el cliente comparte su ubicación.",
+        "texto": "Pídele la ciudad y el departamento en texto para poder cotizar el envío.",
+        "modo": "guia"
+      }
+    ]
+  },
   "turnos": [
     {
       "mensajes": [
@@ -12,11 +22,29 @@
       ],
       "guion": [
         {
+          "llamadas": [
+            {
+              "nombre": "consultar_caso",
+              "argumentos": {
+                "titulo": "Ubicación compartida"
+              }
+            }
+          ]
+        },
+        {
           "texto": "Gracias por compartir tu ubicación. ¿Me dices la ciudad y el departamento para cotizar el envío?"
         }
       ],
       "aserciones": {
         "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "consultar_caso",
+            "argumentos": {
+              "titulo": "Ubicación compartida"
+            }
+          }
+        ],
         "herramientasProhibidas": [
           "cotizar_envio"
         ],
@@ -24,7 +52,6 @@
           "ciudad",
           "departamento"
         ],
-        "sinEmojis": true,
         "sinSku": true
       }
     }

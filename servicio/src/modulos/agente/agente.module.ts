@@ -17,6 +17,7 @@ import { LlmModule } from '../llm/index.js';
 import { crearBuscarProducto } from './aplicacion/herramientas/buscar-producto.js';
 import { crearConsultarCaso } from './aplicacion/herramientas/consultar-caso.js';
 import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
+import { crearDerivarAAsesor } from './aplicacion/herramientas/derivar-a-asesor.js';
 import { crearGuardarDatosContacto } from './aplicacion/herramientas/guardar-datos-contacto.js';
 import { crearMarcarLeadCaliente } from './aplicacion/herramientas/marcar-lead-caliente.js';
 import { crearEnviarFotos } from './aplicacion/herramientas/enviar-fotos.js';
@@ -48,8 +49,8 @@ import {
   type RepositorioContactoAgente,
 } from './puertos/repositorio-contacto-agente.js';
 
-/** R1: el LLM solo dispone de estas siete herramientas. */
-const TOTAL_HERRAMIENTAS = 7;
+/** R1: el LLM solo dispone de estas ocho herramientas. */
+const TOTAL_HERRAMIENTAS = 8;
 
 /**
  * Módulo del agente (Fases 07a y 07b, ADR-0016): implementa el puerto `GENERADOR_RESPUESTA` que define
@@ -79,7 +80,7 @@ const TOTAL_HERRAMIENTAS = 7;
     EnsamblarPrompt,
     BucleHerramientas,
     ContenidoLlm,
-    // R1: exactamente siete herramientas; el arranque falla si falta o sobra alguna.
+    // R1: exactamente ocho herramientas; el arranque falla si falta o sobra alguna.
     {
       provide: HERRAMIENTAS_AGENTE,
       useFactory: (
@@ -101,6 +102,7 @@ const TOTAL_HERRAMIENTAS = 7;
         crearEnviarFotos(fotos, contadores, configuracion),
         crearGuardarDatosContacto(contactos, captura),
         crearMarcarLeadCaliente(evaluador),
+        crearDerivarAAsesor(),
       ],
       inject: [
         BuscarProductos,

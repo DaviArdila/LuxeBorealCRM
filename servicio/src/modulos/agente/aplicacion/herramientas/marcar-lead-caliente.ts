@@ -23,7 +23,7 @@ const esquema = z.object({
 export function crearMarcarLeadCaliente(evaluador: EvaluadorLead): Herramienta {
   return definirHerramienta(
     'marcar_lead_caliente',
-    'Propone marcar al cliente como lead cuando muestra intención de compra (pide pagar, apartar, cerrar el pedido). La decisión final la toma el sistema; usa lo que devuelva.',
+    'Propone marcar al cliente como lead, con su temperatura y señales de un vocabulario cerrado. La decisión final la toma el sistema y se devuelve.',
     esquema,
     async ({ temperatura, senales, resumen, id_producto }, ctx) => {
       if (ctx.efectosPrevios.some((efecto) => efecto.tipo === 'sin-cobertura')) {

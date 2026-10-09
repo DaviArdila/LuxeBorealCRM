@@ -66,7 +66,7 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma, versionC
     };
     const respuesta = await generador.generar(solicitud);
     const texto = respuesta.pasos.flatMap((paso) => (paso.tipo === 'texto' ? [paso.texto] : [])).join('\n');
-    const grabacion = grabador.grabacion(texto, respuesta.handoff?.motivo ?? null);
+    const grabacion = grabador.grabacion(texto, respuesta.handoff?.motivo ?? null, respuesta.aviso?.motivo ?? null);
     resultados.push(...evaluarAserciones(grabacion, turno.aserciones));
   }
   return resultados;

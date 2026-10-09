@@ -26,7 +26,7 @@ const esquema = z.object({
 export function crearGuardarDatosContacto(contactos: RepositorioContactoAgente, captura: CapturaLead): Herramienta {
   return definirHerramienta(
     'guardar_datos_contacto',
-    'Guarda los datos de despacho que el cliente dio: nombre completo, teléfono de contacto, dirección y localidad. Úsala solo cuando el cliente ya los dio todos.',
+    'Guarda los datos de despacho del cliente: nombre completo, teléfono de contacto, dirección y localidad.',
     esquema,
     async ({ nombre_completo, telefono_contacto, direccion, localidad }, ctx) => {
       const digitos = telefono_contacto.replace(/\D/g, '');

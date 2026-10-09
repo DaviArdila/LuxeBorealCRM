@@ -54,8 +54,8 @@ describe('Semilla del estilo inicial (EST-D6, integración)', () => {
     const texto = await readFile(ARCHIVO_ESTILO_INICIAL, 'utf8');
 
     expect(validarEstilo(texto)).toEqual({ valido: true });
-    expect(texto).toMatch(/grifos/i);
-    expect(texto).toMatch(/lavaplatos/i);
+    expect(texto).toContain('Eres un asistente de atención por chat.');
+    expect(texto).not.toMatch(/(nunca|jamás)/i);
   });
 
   it('EST-D6 — Una tabla vacía queda con el estilo inicial como versión 1 vigente y sin autor', async () => {
