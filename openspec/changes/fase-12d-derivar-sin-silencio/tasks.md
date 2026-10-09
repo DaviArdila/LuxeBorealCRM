@@ -51,7 +51,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T0 — Spec del change, ADR-0027 y preguntas abiertas (documentación; puerta de aprobación del dueño)
 - [x] T1 — Efecto `avisar-asesor`: aviso por Telegram sin cambiar de estado, marca «asesor avisado» por motivo y motivo `pide-asesor`
 - [x] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
-- [ ] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
+- [x] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
 - [ ] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
 - [ ] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
 - [ ] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
@@ -274,7 +274,7 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T0 | inline (documentación, sin código). Hook `pre-push` en verde con Docker; el CI cayó en `auditoria:cliente` por un aviso crítico de `handlebars` ajeno al cambio y se corrigió aparte | `fe4a818` | #117 (fusionado `ba014f9`); arreglo de CI en #118 (`08e3714`) | passive: revisión estructural |
 | T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T3 | pendiente | — | — | — |
+| T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
 | T4 | pendiente | — | — | — |
 | T5 | pendiente | — | — | — |
 | T6 | pendiente | — | — | — |
@@ -317,6 +317,27 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 - **Entorno local:** `npm run test:e2e` en paralelo da fallos distintos en cada corrida (5, 16, 19, 11) con tiempos de
   20 s agotados y `/health` 503; en serie (`--no-file-parallelism`) pasan las 114. Es carga de la máquina, no código;
   el CI de GitHub es la referencia.
+
+### T3 (commit `85083df`)
+- **Tamaño real:** 348 líneas de producción (cambiadas), 597 de pruebas y fakes, 58 de JSON de evals y 7 de documentación.
+- **Resultado:** pedir persona, audio repetido y lead caliente avisan y el bot sigue en `bot`; el lead caliente ya no
+  reemplaza el texto del modelo; con el asesor avisado el contexto indica no confirmar pagos, apartados ni descuentos
+  (AGT28); `MotivoHandoff` queda en cinco motivos; el tope por defecto es 20; `TextoHandoff` ya no existe.
+- **Pendiente del dueño:** `servicio/.env.example` (línea ~149) todavía dice `AGENTE_TOPE_TURNOS=12`; la regla de
+  permisos impide que el writer lo edite y no se rodea. El valor por defecto del esquema ya es 20, así que el archivo
+  de ejemplo solo queda desactualizado.
+- **Decisiones del writer:**
+  - `notificaciones` deja de tener `audio-repetido` como motivo de traspaso (NTF6): el audio repetido ya no traspasa.
+  - El observador de `leads` pasa de `AvisoLeadEnHandoff` a `AvisoLeadEnAviso` (ventana de 24 h por contacto, R11);
+    LDS5 queda intacto.
+  - `configuracion-agente-de-prueba.ts` sigue en 12: ningún test depende del valor.
+  - AGT28 se evalúa en un solo turno: las evals llaman al generador sin pasar por `ProcesarTurno`, así que la marca no se
+    adquiere; `test/evals/agente.evals.ts` queda fuera de la superficie. La corrida real (EVL3) es `[manual]`.
+- **Observaciones de la revisión nativa (no bloquean):**
+  - `politica-pide-persona.ts:26-27`: si `registrarPidePersona` lanza, el turno se pierde. Ya ocurría antes del cambio;
+    ahora sería viable un respaldo de mejor esfuerzo y falta la prueba de ese camino.
+  - `armar-contexto-inicial.ts:67-77`: si una política pide un aviso que la marca después deduplica, el contexto igual
+    dice «asesor ya avisado». Es inofensivo; falta la prueba del cruce entre un pedido de política y un efecto de herramienta.
 
 ## Mapeo de escenarios por tarea
 
