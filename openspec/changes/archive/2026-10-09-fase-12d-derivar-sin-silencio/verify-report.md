@@ -122,6 +122,16 @@ T9 es solo documentación y especificaciones: no cambió código ni evals, así 
 - Si el dueño renombra o borra «Tratamiento de datos» y corre `casos:sembrar`, la semilla lo vuelve a crear (comportamiento
   heredado de la 12; dicho en la guía).
 - Tarea fuera de fase: `odd/tasks/medidas-en-ficha.md` (P74).
+- **Observaciones de la revisión nativa del cierre sobre el texto de las specs** (no bloquean; el código ya hace lo que
+  dice `design.md` D2 y queda por aclarar la redacción en una próxima pasada):
+  - `agente` AGT4 (`openspec/specs/agente/spec.md`): el escenario de un turno que llama a `derivar_a_asesor` y a un
+    `marcar_lead_caliente` confirmado dice que la respuesta lleva **un solo** aviso, y eso parece chocar con CNV14 y NTF8
+    («un motivo distinto avisa»). El código elige un aviso por turno por prioridad (`prioridad-aviso.ts`) y el otro motivo
+    queda sin marca, de modo que puede avisar en un turno posterior. Falta decirlo en la spec.
+  - `conversaciones` CNV11: el escenario «un aviso junto con un traspaso: gana el traspaso y se descarta el aviso» solo
+    cubre `pide-persona` con `fallo-llm`. La regla general también alcanza al aviso `lead-caliente` (un lead confirmado y,
+    en el mismo turno, un traspaso por `fallo-llm` o `plazo-agotado`): el lead se guarda pero ese aviso se descarta.
+    Conviene un escenario que lo cubra y confirmar con el dueño si ese aviso debe reintentarse.
 
 ## Pendientes `[manual]` del dueño
 
