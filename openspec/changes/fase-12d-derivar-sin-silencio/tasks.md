@@ -52,7 +52,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T1 — Efecto `avisar-asesor`: aviso por Telegram sin cambiar de estado, marca «asesor avisado» por motivo y motivo `pide-asesor`
 - [x] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
 - [x] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
-- [ ] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
+- [x] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
 - [ ] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
 - [ ] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
 - [ ] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
@@ -275,7 +275,7 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
-| T4 | pendiente | — | — | — |
+| T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T5 | pendiente | — | — | — |
 | T6 | pendiente | — | — | — |
 | T7 | pendiente | — | — | — |
@@ -338,6 +338,27 @@ Máximo del change: 10 tareas (T0-T9 = 10).
     ahora sería viable un respaldo de mejor esfuerzo y falta la prueba de ese camino.
   - `armar-contexto-inicial.ts:67-77`: si una política pide un aviso que la marca después deduplica, el contexto igual
     dice «asesor ya avisado». Es inofensivo; falta la prueba del cruce entre un pedido de política y un efecto de herramienta.
+
+### T4 (commit `d5571ea`)
+- **Tamaño real:** 205 líneas de producción (cambiadas), 685 de pruebas y fakes, 129 de JSON de evals y 77 de
+  esquema, migración y documentación. Queda bajo ~400 de producción; no necesita la `size:exception` anticipada.
+- **Esquema (decidido el 2026-10-09):** `consentimiento_datos_en` y `consentimiento_rechazado_en` en `contacto`, con el
+  CHECK `contacto_consentimiento_excluyente_check` hecho a mano (migración `20261009120000_consentimiento_datos`);
+  `acepta_contacto` no se toca. `MODELO_DATOS.md` y `prisma/README.md` (tabla de objetos `[manual]`) quedan al día y el
+  registro PER9 de marcas manuales lo incluye.
+- **Puerta en código (AGT26):** `conConsentimiento` envuelve por nombre `guardar_datos_contacto` y `marcar_lead_caliente`;
+  sin aceptación, con rechazo o si la consulta falla responde `requiereConsentimiento` sin escribir ni emitir efectos
+  (falla cerrada). El contacto sale del contexto del turno, nunca de los argumentos. Una herramienta nueva que escriba
+  datos del cliente debe agregarse a `HERRAMIENTAS_QUE_ESCRIBEN_DATOS`.
+- **Decisiones del writer a tener presentes:**
+  - `registrarConsentimiento(contactoId, acepta)` no recibe `instante`: el adaptador lee el `Clock` inyectado. Repetir la
+    misma respuesta conserva la fecha original (un `UPDATE` con `COALESCE`). Difiere de la firma que nombra `design.md` D7.
+  - LDS3 se protege en `PoliticaPidePersona`: sin aceptación no se crea el lead y el aviso `pide-persona` sí sale.
+    `RegistrarPidePersona` en `leads` no tiene puerta propia.
+  - Pedir el consentimiento al cliente lo hará el caso «Tratamiento de datos» (T5); hasta entonces el bot no lo pide y
+    por tanto no guarda datos de contacto.
+  - El e2e de AGT25 verifica la fila del contacto y el resultado `guardado`, porque `FakePuertoLlm.solicitudes`
+    comparte los arreglos de mensajes entre peticiones.
 
 ## Mapeo de escenarios por tarea
 

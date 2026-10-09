@@ -7,6 +7,9 @@ export interface DatosCapturados {
   readonly localidad: string;
 }
 
+/** Respuesta del contacto al tratamiento de datos (PRV1): sin respuesta, aceptó o rechazó. */
+export type EstadoConsentimiento = 'pendiente' | 'aceptado' | 'rechazado';
+
 /** Token de inyección del puerto {@link RepositorioContactoAgente}. */
 export const REPOSITORIO_CONTACTO_AGENTE = Symbol('REPOSITORIO_CONTACTO_AGENTE');
 
@@ -19,4 +22,11 @@ export interface RepositorioContactoAgente {
   /** Nombre guardado del contacto, o `null` si aún no se conoce (AGT12). */
   leerNombre(contactoId: string): Promise<string | null>;
   guardarDatosCapturados(contactoId: string, datos: DatosCapturados): Promise<void>;
+  /** Estado del consentimiento de datos del contacto (PRV1); un contacto nuevo está `pendiente`. */
+  consentimientoDe(contactoId: string): Promise<EstadoConsentimiento>;
+  /**
+   * Registra la respuesta del cliente con la fecha del `Clock` (PRV1). Aceptar borra el rechazo y rechazar borra la
+   * aceptación; repetir la misma respuesta conserva la fecha original.
+   */
+  registrarConsentimiento(contactoId: string, acepta: boolean): Promise<void>;
 }

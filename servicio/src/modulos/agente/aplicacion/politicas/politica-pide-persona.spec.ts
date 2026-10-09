@@ -1,4 +1,5 @@
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
+import { RepositorioContactoAgenteEnMemoria } from '../../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import type { RegistrarPidePersona } from '../../../leads/index.js';
 import type { EstadoTurno } from '../../dominio/politica-turno.js';
 import { PoliticaPidePersona } from './politica-pide-persona.js';
@@ -18,7 +19,8 @@ function turno(...textos: string[]): SolicitudTurno {
   };
 }
 
-function crear(accion: 'derivar' | 'capturar' = 'derivar') {
+/** `consentimiento`: el contacto de la solicitud ya aceptó (por defecto) o no respondió (LDS3). */
+function crear(accion: 'derivar' | 'capturar' = 'derivar', consentimiento: 'aceptado' | 'pendiente' = 'aceptado') {
   const registros: { conversacionId: string; contactoId: string }[] = [];
   const registrar = {
     ejecutar: (entrada: { conversacionId: string; contactoId: string }) => {
@@ -26,7 +28,9 @@ function crear(accion: 'derivar' | 'capturar' = 'derivar') {
       return Promise.resolve({ accion, leadId: 'lead-1' });
     },
   } as unknown as RegistrarPidePersona;
-  return { politica: new PoliticaPidePersona(registrar), registros };
+  const contactos = new RepositorioContactoAgenteEnMemoria();
+  if (consentimiento === 'aceptado') contactos.aceptar('contacto-1');
+  return { politica: new PoliticaPidePersona(registrar, contactos), registros, contactos };
 }
 
 describe('modulos/agente/aplicacion/politicas — PoliticaPidePersona (AGT14, D6)', () => {
@@ -123,5 +127,27 @@ describe('modulos/agente/aplicacion/politicas — PoliticaPidePersona (AGT14, D6
     expect(decision).toEqual({ decision: 'seguir' });
     expect(estado.avisoPedido).toBe('pide-persona');
     expect(registros).toHaveLength(1);
+  });
+
+  it('LDS3 — Sin consentimiento el aviso sale y el lead no se registra', async () => {
+    const { politica, registros } = crear('derivar', 'pendiente');
+    const estado: EstadoTurno = {};
+
+    const decision = await politica.evaluar(turno('quiero hablar con un asesor'), estado);
+
+    expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBe('pide-persona');
+    expect(registros).toEqual([]);
+  });
+
+  it('LDS3 — Si falla la lectura del consentimiento el aviso sale y el lead no se registra', async () => {
+    const { politica, registros, contactos } = crear();
+    contactos.fallo = new Error('base caída');
+    const estado: EstadoTurno = {};
+
+    await politica.evaluar(turno('pásame con un humano'), estado);
+
+    expect(estado.avisoPedido).toBe('pide-persona');
+    expect(registros).toEqual([]);
   });
 });

@@ -33,7 +33,12 @@ let secuencia = 0;
 export async function ejecutarCaso({ caso, generador, grabador, prisma, versionCasos, llmReal, alCrearConversacion }: EntradaEjecucion): Promise<readonly ResultadoAsercion[]> {
   secuencia += 1;
   const contacto = await prisma.contacto.create({
-    data: { chatwootContactId: 800_000 + secuencia * 7 + Math.floor(Math.random() * 5), nombre: caso.contacto?.nombre ?? null },
+    data: {
+      chatwootContactId: 800_000 + secuencia * 7 + Math.floor(Math.random() * 5),
+      nombre: caso.contacto?.nombre ?? null,
+      ...(caso.contacto?.consentimiento === 'aceptado' ? { consentimientoDatosEn: new Date('2026-10-09T10:00:00.000Z') } : {}),
+      ...(caso.contacto?.consentimiento === 'rechazado' ? { consentimientoRechazadoEn: new Date('2026-10-09T10:00:00.000Z') } : {}),
+    },
   });
   const conversacion = await prisma.conversacion.create({
     data: { contactoId: contacto.id, chatwootConversationId: 900_000 + secuencia * 7 + Math.floor(Math.random() * 5), canal: 'whatsapp', estado: 'bot' },

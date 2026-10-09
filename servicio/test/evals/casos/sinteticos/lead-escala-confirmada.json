@@ -2,6 +2,9 @@
   "id": "lead-escala-confirmada",
   "titulo": "R9 — caso: una señal fuerte confirma el lead caliente y se avisa al asesor sin traspasar",
   "origen": "sintetico",
+  "contacto": {
+    "consentimiento": "aceptado"
+  },
   "turnos": [
     {
       "mensajes": [

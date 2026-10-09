@@ -6,6 +6,7 @@ import { z } from 'zod';
 export const NOMBRES_ASERCION = [
   'herramientasEsperadas',
   'herramientasProhibidas',
+  'resultadosEsperados',
   'dineroConRastro',
   'recargoSinPorcentaje',
   'handoff',
@@ -45,6 +46,10 @@ const aserciones = z
       .array(z.object({ nombre: z.string().min(1), argumentos: z.record(z.string(), z.unknown()).optional() }).strict())
       .optional(),
     herramientasProhibidas: z.array(z.string().min(1)).optional(),
+    /** Campos que la herramienta devolvió al modelo (coincidencia parcial), p. ej. `requiereConsentimiento` (AGT26). */
+    resultadosEsperados: z
+      .array(z.object({ herramienta: z.string().min(1), resultado: z.record(z.string(), z.unknown()) }).strict())
+      .optional(),
     dineroConRastro: z.boolean().optional(),
     recargoSinPorcentaje: z.boolean().optional(),
     handoff: z.enum(['esperado', 'prohibido']).optional(),
@@ -104,7 +109,14 @@ const caso = z
       })
       .strict()
       .optional(),
-    contacto: z.object({ nombre: z.string().min(1).optional() }).strict().optional(),
+    contacto: z
+      .object({
+        nombre: z.string().min(1).optional(),
+        /** Respuesta previa del contacto al tratamiento de datos (PRV1); sin ella nace sin respuesta. */
+        consentimiento: z.enum(['aceptado', 'rechazado']).optional(),
+      })
+      .strict()
+      .optional(),
     turnos: z.array(turno).min(1),
     esperaFallo: z.enum(NOMBRES_ASERCION).optional(),
     /**

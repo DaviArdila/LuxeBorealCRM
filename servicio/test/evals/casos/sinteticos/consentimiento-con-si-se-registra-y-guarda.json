@@ -1,0 +1,73 @@
+{
+  "id": "consentimiento-con-si-se-registra-y-guarda",
+  "titulo": "AGT25 — caso: con un sí el consentimiento se registra y luego se guardan los datos",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Sí, acepto. Soy Laura Gómez Pérez, calle 45 # 12-34 apto 301, Chapinero"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "registrar_consentimiento",
+              "argumentos": {
+                "acepta": true
+              }
+            }
+          ]
+        },
+        {
+          "llamadas": [
+            {
+              "nombre": "guardar_datos_contacto",
+              "argumentos": {
+                "nombre_completo": "Laura Gómez Pérez",
+                "telefono_contacto": "3001234567",
+                "direccion": "Calle 45 # 12-34 apto 301",
+                "localidad": "Chapinero"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Listo Laura, ya tengo tus datos."
+        }
+      ],
+      "aserciones": {
+        "herramientasEsperadas": [
+          {
+            "nombre": "registrar_consentimiento",
+            "argumentos": {
+              "acepta": true
+            }
+          },
+          {
+            "nombre": "guardar_datos_contacto"
+          }
+        ],
+        "handoff": "prohibido",
+        "sinSku": true,
+        "resultadosEsperados": [
+          {
+            "herramienta": "registrar_consentimiento",
+            "resultado": {
+              "registrado": true,
+              "acepta": true
+            }
+          },
+          {
+            "herramienta": "guardar_datos_contacto",
+            "resultado": {
+              "guardado": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

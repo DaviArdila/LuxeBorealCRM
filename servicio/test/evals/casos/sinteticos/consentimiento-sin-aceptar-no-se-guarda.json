@@ -1,0 +1,50 @@
+{
+  "id": "consentimiento-sin-aceptar-no-se-guarda",
+  "titulo": "AGT26 — caso: sin aceptar el tratamiento de datos no se guarda nada",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34 apto 301, Chapinero"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "guardar_datos_contacto",
+              "argumentos": {
+                "nombre_completo": "Laura Gómez Pérez",
+                "telefono_contacto": "3001234567",
+                "direccion": "Calle 45 # 12-34 apto 301",
+                "localidad": "Chapinero"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Antes de guardar tus datos necesito que aceptes el tratamiento de datos. ¿Aceptas?"
+        }
+      ],
+      "aserciones": {
+        "herramientasEsperadas": [
+          {
+            "nombre": "guardar_datos_contacto"
+          }
+        ],
+        "handoff": "prohibido",
+        "sinSku": true,
+        "resultadosEsperados": [
+          {
+            "herramienta": "guardar_datos_contacto",
+            "resultado": {
+              "requiereConsentimiento": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

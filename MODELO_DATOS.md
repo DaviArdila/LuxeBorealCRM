@@ -294,7 +294,16 @@ decidir si ampliar la cobertura.
 | `ciudad_id` | text | sí | FK → `ciudad`, si el backend pudo traducirlo |
 | `ultimo_producto_id` | uuid | sí | FK → `producto`, set null |
 | `acepta_contacto` | bool | no | default false (opt-in para campañas futuras) |
+| `consentimiento_datos_en` | timestamptz | sí | cuándo aceptó el tratamiento de datos (Fase 12d, P68); nulo = no ha aceptado. Sale del `Clock` |
+| `consentimiento_rechazado_en` | timestamptz | sí | cuándo lo rechazó (Fase 12d, P68); nulo = no lo ha rechazado. Sale del `Clock` |
 | `creado`, `actualizado` | timestamptz | no | |
+
+**Consentimiento de datos (Fase 12d, decidido por el dueño el 2026-10-09: P68, P69).** Las dos columnas dan tres estados:
+ambas nulas = sin respuesta (todo contacto nuevo), solo `consentimiento_datos_en` = aceptó, solo `consentimiento_rechazado_en`
+= rechazó. Una restricción `CHECK` `[manual]` (`contacto_consentimiento_excluyente_check`) impide que las dos tengan valor a
+la vez: aceptar borra el rechazo y rechazar borra la aceptación. Solo se guarda el último estado, sin historial. El valor
+vale para todas las conversaciones del contacto. `acepta_contacto` **no se toca**: es el opt-in de campañas futuras, no tiene
+fecha y su `false` por defecto no distingue «rechazó» de «no respondió».
 
 ### `conversacion` — reemplaza a `estado_conversacion`
 Una fila por **conversación de Chatwoot** (sesión), no por cliente. Sin mensajes.

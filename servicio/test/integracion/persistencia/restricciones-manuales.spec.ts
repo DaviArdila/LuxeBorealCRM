@@ -16,6 +16,7 @@ const NOMBRE_CHECK_USUARIO = 'movimiento_inventario_usuario_si_origen_usuario_ch
 const NOMBRE_INDICE_ESTILO_VIGENTE = 'version_estilo_vigente_key';
 const NOMBRE_CHECK_EVENTO = 'caso_asistente_evento_requiere_sistema_check';
 const NOMBRE_CHECK_SISTEMA_ACTIVO = 'caso_asistente_sistema_activo_check';
+const NOMBRE_CHECK_CONSENTIMIENTO = 'contacto_consentimiento_excluyente_check';
 
 async function conTransaccion<T>(accion: (cliente: Client) => Promise<T>): Promise<T> {
   const cliente = new Client({ connectionString: urlPostgresDePrueba() });
@@ -172,6 +173,7 @@ describe('Restricciones manuales de esquema (T2, integración)', () => {
           NOMBRE_INDICE_ESTILO_VIGENTE,
           NOMBRE_CHECK_EVENTO,
           NOMBRE_CHECK_SISTEMA_ACTIVO,
+          NOMBRE_CHECK_CONSENTIMIENTO,
         ].sort(),
       );
 

@@ -58,6 +58,15 @@ describe('test/evals — evaluarAserciones', () => {
     expect(unica(grabacion(), { herramientasProhibidas: ['marcar_lead_caliente'] }).ok).toBe(true);
   });
 
+  it('resultadosEsperados exige que la herramienta haya devuelto esos campos (AGT26)', () => {
+    const resultado = { nombre: 'guardar_datos_contacto', resultado: { requiereConsentimiento: true }, esError: false };
+    const esperado = { resultadosEsperados: [{ herramienta: 'guardar_datos_contacto', resultado: { requiereConsentimiento: true } }] };
+
+    expect(unica(grabacion({ resultados: [resultado] }), esperado)).toMatchObject({ nombre: 'resultadosEsperados', ok: true, critica: false });
+    expect(unica(grabacion({ resultados: [{ ...resultado, resultado: { guardado: true } }] }), esperado).ok).toBe(false);
+    expect(unica(grabacion(), esperado).ok).toBe(false);
+  });
+
   it('herramientasEsperadas exige la herramienta y, si se declaran, los argumentos parciales', () => {
     const g = grabacion({ llamadas: [{ nombre: 'enviar_fotos', argumentos: { id_producto: 'X', angulo: 'detalle' } }] });
 
