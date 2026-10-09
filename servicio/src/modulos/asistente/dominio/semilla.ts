@@ -17,12 +17,35 @@ export interface CasoPlan {
   readonly categoria: string;
   readonly texto: string;
   readonly claveParametro: string | null;
+  /** De dónde salió el texto de un caso inicial (CAS13); solo lo informa el resumen de la semilla, como cantidades. */
+  readonly origenTexto?: 'caso-del-sistema' | 'parametro' | 'respaldo';
 }
 
 export interface PlanSemilla {
   readonly categorias: readonly CategoriaPlan[];
   readonly casos: readonly CasoPlan[];
 }
+
+/** Un caso de intención con el que nace el asistente; `claveParametro` es la fila de `parametro` que lo alimenta si existe. */
+export type CasoInicial = Omit<CasoPlan, 'claveSistema' | 'disparador' | 'claveParametro'> & { readonly claveParametro: string };
+
+/**
+ * Los casos de intención que la semilla crea (CAS13): uno solo, «Tratamiento de datos». Es la parte de R14 que el dueño
+ * puede reescribir: presenta al bot como asistente automatizado (P71) y pide la aceptación; la puerta de AGT26 vive en
+ * código y no depende de que este caso exista. Si el dueño ya editó `aviso_datos` (caso del sistema o, antes, `parametro`), la semilla conserva ese texto sin tocar el caso del sistema.
+ */
+export const CASOS_INICIALES_DE_INTENCION: readonly CasoInicial[] = [
+  {
+    titulo: 'Tratamiento de datos',
+    cuandoAplica:
+      'Cuando el bot va a tomar datos de despacho o a registrar el interés de compra y el cliente aún no aceptó el tratamiento de datos (consentimiento pendiente).',
+    modo: 'guia',
+    categoria: 'Políticas',
+    texto:
+      'Soy un asistente automatizado. Uso tus datos de contacto y de entrega solo para gestionar tu pedido. ¿Aceptas el tratamiento de tus datos para continuar?',
+    claveParametro: 'aviso_datos',
+  },
+];
 
 const PREFIJO_POLITICA = 'politica_';
 const PATRON_TEMA = /^[a-z0-9_]+$/;
@@ -46,10 +69,14 @@ function tituloDeTema(tema: string): string {
 
 /**
  * Decide qué casos crea la semilla (CAS6) a partir de las filas de texto que ya hay en `parametro`: los once casos del
- * sistema (con el texto guardado si es válido y, si no, el de respaldo) y un caso de intención por cada fila
- * `politica_<tema>` (salvo `contra_entrega`, que ya es un caso del sistema). Función pura: no toca la base.
+ * sistema (con el texto guardado si es válido y, si no, el de respaldo), «Tratamiento de datos» (CAS13) y un caso de
+ * intención por cada fila `politica_<tema>` (salvo `contra_entrega`, que ya es un caso del sistema). Función pura: no toca la base.
  */
-export function planificarSemilla(filas: ReadonlyMap<string, unknown>, archivo?: CasosDeArchivo): PlanSemilla {
+export function planificarSemilla(
+  filas: ReadonlyMap<string, unknown>,
+  archivo?: CasosDeArchivo,
+  textosDeCasosDelSistema: ReadonlyMap<string, unknown> = new Map(),
+): PlanSemilla {
   const delSistema: CasoPlan[] = CASOS_DEL_SISTEMA.map((definicion) => {
     const claveParametro = claveParametroLegada(definicion.clave);
     const guardado = textoValido(filas.get(claveParametro));
@@ -62,6 +89,27 @@ export function planificarSemilla(filas: ReadonlyMap<string, unknown>, archivo?:
       categoria: definicion.categoriaInicial,
       texto: guardado ?? definicion.textoRespaldo,
       claveParametro: guardado === null ? null : claveParametro,
+    };
+  });
+
+  const iniciales: CasoPlan[] = CASOS_INICIALES_DE_INTENCION.map((inicial) => {
+    const esValido = (texto: string | null): texto is string =>
+      texto !== null &&
+      validarCaso({ titulo: inicial.titulo, cuandoAplica: inicial.cuandoAplica, texto, modo: inicial.modo, disparador: 'intencion', claveSistema: null }).valido;
+    // CAS13: el texto que el dueño ya editó manda: primero el caso del sistema, luego `parametro`, al final el respaldo.
+    const delCasoDelSistema = textoValido(textosDeCasosDelSistema.get(inicial.claveParametro));
+    const deParametro = textoValido(filas.get(inicial.claveParametro));
+    const origenTexto = esValido(delCasoDelSistema) ? 'caso-del-sistema' : esValido(deParametro) ? 'parametro' : 'respaldo';
+    return {
+      claveSistema: null,
+      titulo: inicial.titulo,
+      cuandoAplica: inicial.cuandoAplica,
+      disparador: 'intencion',
+      modo: inicial.modo,
+      categoria: inicial.categoria,
+      texto: origenTexto === 'caso-del-sistema' ? (delCasoDelSistema ?? inicial.texto) : origenTexto === 'parametro' ? (deParametro ?? inicial.texto) : inicial.texto,
+      claveParametro: origenTexto === 'parametro' ? inicial.claveParametro : null,
+      origenTexto,
     };
   });
 
@@ -89,7 +137,7 @@ export function planificarSemilla(filas: ReadonlyMap<string, unknown>, archivo?:
     });
 
   const categoriasNuevas = (archivo?.categorias ?? []).map((categoria, indice) => ({ nombre: categoria.nombre, orden: CATEGORIAS_INICIALES.length + indice }));
-  return { categorias: [...CATEGORIAS_INICIALES, ...categoriasNuevas], casos: [...delSistema, ...politicas, ...(archivo?.casos ?? [])] };
+  return { categorias: [...CATEGORIAS_INICIALES, ...categoriasNuevas], casos: [...delSistema, ...iniciales, ...politicas, ...(archivo?.casos ?? [])] };
 }
 
 /** Los casos de intención de un archivo de datos de desarrollo, ya validados, y las categorías que traen y aún no existen. */

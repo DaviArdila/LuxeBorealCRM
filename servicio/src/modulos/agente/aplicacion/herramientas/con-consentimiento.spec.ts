@@ -51,6 +51,33 @@ describe('modulos/agente/aplicacion/herramientas — puerta de consentimiento', 
     expect(resultado.efectos).toEqual([]);
   });
 
+  it('R14 — Sin aceptar no se guardan datos personales', async () => {
+    const repositorio = new RepositorioContactoAgenteEnMemoria();
+
+    const resultado = await conConsentimiento(crearGuardarDatosContacto(repositorio, SIN_CAPTURA), repositorio).ejecutar(DATOS, CONTEXTO);
+
+    expect(repositorio.guardados.size).toBe(0);
+    expect(resultado.paraElModelo).toEqual({ requiereConsentimiento: true });
+  });
+
+  it('R14 — Con la aceptación los datos se guardan', async () => {
+    const repositorio = new RepositorioContactoAgenteEnMemoria().aceptar('contacto-7');
+
+    await conConsentimiento(crearGuardarDatosContacto(repositorio, SIN_CAPTURA), repositorio).ejecutar(DATOS, CONTEXTO);
+
+    expect(repositorio.guardados.get('contacto-7')?.nombre).toBe('Laura Gómez Pérez');
+  });
+
+  it('CAS13 — Borrar el caso no abre la puerta de los datos (la puerta no consulta casos, solo el consentimiento)', async () => {
+    // Sin ningún caso en el asistente y sin respuesta de consentimiento: la herramienta se envuelve solo con el repositorio de contactos.
+    const repositorio = new RepositorioContactoAgenteEnMemoria();
+
+    const resultado = await conConsentimiento(crearGuardarDatosContacto(repositorio, SIN_CAPTURA), repositorio).ejecutar(DATOS, CONTEXTO);
+
+    expect(resultado.paraElModelo).toEqual({ requiereConsentimiento: true });
+    expect(repositorio.guardados.size).toBe(0);
+  });
+
   it('AGT10 — Sin consentimiento los datos no se guardan y la captura pendiente no se completa', async () => {
     const repositorio = new RepositorioContactoAgenteEnMemoria();
     const completadas: string[] = [];

@@ -38,8 +38,11 @@ funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 Después de cambiar, ordenar o restaurar el estilo, la pantalla te recuerda correr las evals reales antes de que llegue a
 clientes: [cómo se hace](estilo-del-bot.md). Un caso editado rige en el siguiente mensaje del bot, sin reiniciar; cómo se escribe uno bueno está en [casos del asistente](casos-del-asistente.md). Lo que guardas en «Configuración» rige desde el siguiente mensaje y la pantalla lo dice: [qué cambia cuándo](configuracion-del-negocio.md).
 
-`aviso_datos` es el aviso de asistente automatizado que exige la política de privacidad (R14): es un caso del sistema, se
-puede editar, pero no lo dejes vacío ni le quites que habla con un asistente automatizado.
+El primer mensaje del bot ya no lleva un aviso fijo pegado. El bot se presenta como asistente automatizado y pide la
+aceptación del tratamiento de datos con el caso de uso «Tratamiento de datos» ([casos del asistente](casos-del-asistente.md)):
+puedes reescribirlo, pero conserva que habla un asistente automatizado y que termina pidiendo la aceptación. Hasta que el
+cliente acepte, el sistema no guarda sus datos aunque el caso no exista. `aviso_datos` sigue en la lista de casos del
+sistema hasta que la Fase 12d lo retire.
 
 ## Si algo no sale como esperabas
 

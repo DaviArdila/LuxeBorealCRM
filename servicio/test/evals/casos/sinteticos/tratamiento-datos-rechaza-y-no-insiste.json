@@ -1,0 +1,45 @@
+{
+  "id": "tratamiento-datos-rechaza-y-no-insiste",
+  "titulo": "AGT27 — caso: con el no el rechazo se registra, no se guarda nada y el bot no vuelve a pedir la aceptación en ese turno",
+  "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Tratamiento de datos",
+        "cuandoAplica": "Cuando el bot va a tomar datos de despacho o a registrar el interés de compra y el cliente aún no aceptó el tratamiento de datos (consentimiento pendiente).",
+        "texto": "Soy un asistente automatizado. Uso tus datos de contacto y de entrega solo para gestionar tu pedido. ¿Aceptas el tratamiento de tus datos para continuar?",
+        "modo": "guia"
+      }
+    ]
+  },
+  "turnos": [
+    {
+      "mensajes": [{ "tipoContenido": "texto", "texto": "Quiero comprar el anillo, ¿cómo hago el pedido?" }],
+      "guion": [
+        { "llamadas": [{ "nombre": "consultar_caso", "argumentos": { "titulo": "Tratamiento de datos" } }] },
+        { "texto": "Soy un asistente automatizado. Uso tus datos de contacto y de entrega solo para gestionar tu pedido. ¿Aceptas el tratamiento de tus datos para continuar?" }
+      ],
+      "aserciones": {
+        "herramientasEsperadas": [{ "nombre": "consultar_caso", "argumentos": { "titulo": "Tratamiento de datos" } }],
+        "herramientasProhibidas": ["guardar_datos_contacto", "registrar_consentimiento"],
+        "handoff": "prohibido",
+        "sinSku": true
+      }
+    },
+    {
+      "mensajes": [{ "tipoContenido": "texto", "texto": "No acepto" }],
+      "guion": [
+        { "llamadas": [{ "nombre": "registrar_consentimiento", "argumentos": { "acepta": false } }] },
+        { "texto": "Entendido. Sin tu aceptación no puedo tomar el pedido, pero sigo aquí para resolver tus dudas sobre los productos." }
+      ],
+      "aserciones": {
+        "herramientasEsperadas": [{ "nombre": "registrar_consentimiento", "argumentos": { "acepta": false } }],
+        "herramientasProhibidas": ["guardar_datos_contacto", "consultar_caso"],
+        "resultadosEsperados": [{ "herramienta": "registrar_consentimiento", "resultado": { "registrado": true, "acepta": false } }],
+        "textoAusente": ["¿Aceptas"],
+        "handoff": "prohibido",
+        "sinSku": true
+      }
+    }
+  ]
+}

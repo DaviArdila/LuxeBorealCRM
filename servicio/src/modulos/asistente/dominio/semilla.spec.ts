@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CASOS_DEL_SISTEMA, textoDeRespaldo } from './sistema.js';
-import { leerArchivoDeCasos, planificarSemilla } from './semilla.js';
+import { CASOS_INICIALES_DE_INTENCION, leerArchivoDeCasos, planificarSemilla } from './semilla.js';
+import { validarCaso } from './validar-caso.js';
 
 // CAS6 (Fase 12, T4): qué casos crea la semilla a partir de lo que ya hay en `parametro` y del código.
 
@@ -11,14 +12,14 @@ function filas(objeto: Record<string, unknown>): ReadonlyMap<string, unknown> {
 }
 
 describe('planificarSemilla (CAS6)', () => {
-  it('sin nada en parametro: once casos del sistema con su respaldo, en las categorías Sistema y Políticas', () => {
+  it('sin nada en parametro: once casos del sistema con su respaldo y el caso inicial de intención, en las categorías Sistema y Políticas', () => {
     const plan = planificarSemilla(filas({}));
 
     expect(plan.categorias.map((c) => [c.nombre, c.orden])).toEqual([
       ['Sistema', 0],
       ['Políticas', 1],
     ]);
-    expect(plan.casos).toHaveLength(11);
+    expect(plan.casos).toHaveLength(12);
     for (const definicion of CASOS_DEL_SISTEMA) {
       const caso = plan.casos.find((c) => c.claveSistema === definicion.clave);
       expect(caso?.texto, definicion.clave).toBe(textoDeRespaldo(definicion.clave));
@@ -70,7 +71,7 @@ describe('planificarSemilla (CAS6)', () => {
       }),
     );
 
-    const politicas = plan.casos.filter((c) => c.claveSistema === null);
+    const politicas = plan.casos.filter((c) => c.claveSistema === null && c.titulo !== TRATAMIENTO_DE_DATOS);
     expect(politicas.map((c) => [c.titulo, c.categoria, c.disparador, c.modo, c.claveParametro])).toEqual([
       ['Devoluciones', 'Políticas', 'intencion', 'literal', 'politica_devoluciones'],
       ['Garantía', 'Políticas', 'intencion', 'literal', 'politica_garantia'],
@@ -91,7 +92,88 @@ describe('planificarSemilla (CAS6)', () => {
   it('una política con valor en blanco o que no es texto no crea un caso', () => {
     const plan = planificarSemilla(filas({ politica_vacia: ' ', politica_numero: 3 }));
 
-    expect(plan.casos.filter((c) => c.claveSistema === null)).toEqual([]);
+    expect(plan.casos.filter((c) => c.claveSistema === null).map((c) => c.titulo)).toEqual([TRATAMIENTO_DE_DATOS]);
+  });
+});
+
+const TRATAMIENTO_DE_DATOS = 'Tratamiento de datos';
+
+describe('«Tratamiento de datos», el único caso de uso que se siembra (CAS13)', () => {
+  it('CAS13 — Una base nueva tiene un solo caso de uso inicial', () => {
+    const plan = planificarSemilla(filas({}));
+
+    expect(CASOS_INICIALES_DE_INTENCION).toHaveLength(1);
+    const deIntencionSinClave = plan.casos.filter((c) => c.claveSistema === null);
+    expect(deIntencionSinClave).toHaveLength(1);
+    expect(deIntencionSinClave[0]).toMatchObject({
+      titulo: TRATAMIENTO_DE_DATOS,
+      categoria: 'Políticas',
+      disparador: 'intencion',
+      modo: 'guia',
+      claveParametro: null,
+    });
+  });
+
+  it('CAS13 — Su «cuándo aplica» nombra la señal: tomar datos o registrar el interés con el consentimiento pendiente', () => {
+    const [caso] = CASOS_INICIALES_DE_INTENCION;
+
+    expect(caso?.cuandoAplica).toMatch(/datos de despacho/);
+    expect(caso?.cuandoAplica).toMatch(/inter[eé]s de compra/);
+    expect(caso?.cuandoAplica).toMatch(/consentimiento/);
+  });
+
+  it('CAS13 — El texto inicial cumple la validación de casos', () => {
+    const [caso] = CASOS_INICIALES_DE_INTENCION;
+
+    expect(caso).toBeDefined();
+    expect(validarCaso({ titulo: caso?.titulo ?? '', cuandoAplica: caso?.cuandoAplica ?? '', texto: caso?.texto ?? '', modo: 'guia', disparador: 'intencion', claveSistema: null })).toEqual({ valido: true });
+  });
+
+  it('CAS13 — El texto inicial se presenta como asistente y pide la aceptación', () => {
+    const [caso] = CASOS_INICIALES_DE_INTENCION;
+    const texto = caso?.texto ?? '';
+
+    expect(texto).toMatch(/asistente automatizado/i);
+    expect(texto.trim().endsWith('?')).toBe(true);
+    expect(texto).toMatch(/acept/i);
+  });
+
+  it('CAS13 — Si parametro todavía guarda el texto de aviso_datos, el caso lo conserva y lo retira', () => {
+    const plan = planificarSemilla(filas({ aviso_datos: '  Texto aprobado por el negocio.  ' }));
+
+    expect(plan.casos.find((c) => c.titulo === TRATAMIENTO_DE_DATOS)).toMatchObject({
+      texto: 'Texto aprobado por el negocio.',
+      claveParametro: 'aviso_datos',
+    });
+  });
+
+  describe('prioridad del texto: caso del sistema aviso_datos, luego parametro, luego respaldo', () => {
+    const SISTEMA = (texto: unknown) => new Map<string, unknown>([['aviso_datos', texto]]);
+    const tratamiento = (plan: ReturnType<typeof planificarSemilla>) => plan.casos.find((c) => c.titulo === TRATAMIENTO_DE_DATOS);
+
+    it('CAS13 — Con el caso del sistema aviso_datos editado, «Tratamiento de datos» nace con ese texto', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: 'Texto viejo de parametro.' }), undefined, SISTEMA('  Texto del dueño. ¿Aceptas?  '));
+
+      expect(tratamiento(plan)).toMatchObject({ texto: 'Texto del dueño. ¿Aceptas?', origenTexto: 'caso-del-sistema', claveParametro: null });
+    });
+
+    it('CAS13 — Un texto del caso del sistema que no cumple CAS5 cae al parametro', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: 'Texto de parametro. ¿Aceptas?' }), undefined, SISTEMA('Cuesta $50.000, ¿aceptas?'));
+
+      expect(tratamiento(plan)).toMatchObject({ texto: 'Texto de parametro. ¿Aceptas?', origenTexto: 'parametro', claveParametro: 'aviso_datos' });
+    });
+
+    it('CAS13 — Si tampoco hay un parametro válido rige el texto de respaldo', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: '   ' }), undefined, SISTEMA('{{marcador}}'));
+
+      expect(tratamiento(plan)).toMatchObject({ texto: CASOS_INICIALES_DE_INTENCION[0]?.texto, origenTexto: 'respaldo', claveParametro: null });
+    });
+
+    it('CAS13 — El caso del sistema no se modifica: el plan sigue trayendo su propio caso con su texto de siempre', () => {
+      const plan = planificarSemilla(filas({}), undefined, SISTEMA('Texto del dueño. ¿Aceptas?'));
+
+      expect(plan.casos.find((c) => c.claveSistema === 'aviso_datos')?.texto).toBe(textoDeRespaldo('aviso_datos'));
+    });
   });
 });
 

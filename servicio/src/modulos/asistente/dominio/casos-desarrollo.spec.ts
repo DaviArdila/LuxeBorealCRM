@@ -3,7 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { normalizarNombre } from './normalizar.js';
 import { CASOS_DEL_SISTEMA } from './sistema.js';
-import { leerArchivoDeCasos, planificarSemilla } from './semilla.js';
+import { CASOS_INICIALES_DE_INTENCION, leerArchivoDeCasos, planificarSemilla } from './semilla.js';
 
 // Los casos de ejemplo del segmento (grifería, accesorios de baño y lavaplatos) viajan en un JSON de desarrollo que
 // `npm run casos:sembrar -- --archivo` carga con las mismas reglas que la API (CAS5). Este test lo valida sin infraestructura.
@@ -52,7 +52,7 @@ describe('Casos de desarrollo del segmento', () => {
 
     const plan = planificarSemilla(new Map(), lectura);
 
-    expect(plan.casos).toHaveLength(CASOS_DEL_SISTEMA.length + lectura.casos.length);
+    expect(plan.casos).toHaveLength(CASOS_DEL_SISTEMA.length + CASOS_INICIALES_DE_INTENCION.length + lectura.casos.length);
     expect(plan.categorias.map((categoria) => categoria.nombre)).toEqual(expect.arrayContaining(CATEGORIAS_NUEVAS));
   });
 });

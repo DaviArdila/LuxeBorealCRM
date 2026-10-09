@@ -6,8 +6,6 @@ import { MotorTurno } from './motor-turno.js';
 import { PoliticaNoTextuales } from './politicas/politica-no-textuales.js';
 import { PoliticaEco } from '../../../../test/fakes/politica-eco.js';
 
-const AVISO = 'Soy un asistente automatizado.';
-
 function solicitudDeTexto(texto: string, version = 0): SolicitudTurno {
   return {
     contexto: {
@@ -57,9 +55,7 @@ const RESPUESTA_PREVIA: DecisionPolitica = {
 
 function crearMotor(politicas: readonly PoliticaTurno[]) {
   const contadores = new ContadoresSesionEnMemoria();
-  const parametros = new TextosAsistenteEnMemoria();
-  parametros.textos.set('aviso_datos', AVISO);
-  return { motor: new MotorTurno(politicas, contadores, parametros), contadores, parametros };
+  return { motor: new MotorTurno(politicas, contadores), contadores };
 }
 
 describe('MotorTurno', () => {
@@ -168,43 +164,26 @@ describe('MotorTurno', () => {
     expect(respuesta.handoff).toEqual({ motivo: 'tope-turnos' });
   });
 
-  describe('aviso de datos (AGT2, R14) y registro del turno', () => {
+  describe('sin aviso fijo (R14) y registro del turno', () => {
     const SESION = { conversacionId: 'conv-1', version: 0 };
 
-    it('AGT2 — La primera respuesta de la conversación lleva el aviso en el mismo mensaje', async () => {
+    it('R14 — El primer mensaje ya no lleva un aviso pegado por el código', async () => {
       const { motor } = crearMotor([new PoliticaEco()]);
 
       const respuesta = await motor.generar(solicitudDeTexto('hola'));
 
-      expect(respuesta.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: `${AVISO}\n\nhola` }]);
+      expect(respuesta.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'hola' }]);
     });
 
-    it('AGT2 — La segunda respuesta no repite el aviso', async () => {
-      const { motor } = crearMotor([new PoliticaEco()]);
-      await motor.generar(solicitudDeTexto('hola'));
-
-      const respuesta = await motor.generar(solicitudDeTexto('sigo aquí'));
-
-      expect(respuesta.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'sigo aquí' }]);
-    });
-
-    it('AGT2 — Una respuesta vacía no genera un mensaje solo para el aviso', async () => {
+    it('R14 — Una respuesta vacía en el primer turno sigue sin pasos', async () => {
       const { motor, contadores } = crearMotor([new PoliticaEco()]);
 
       const ignorado = await motor.generar(solicitudDeSticker());
       const primeraReal = await motor.generar(solicitudDeTexto('hola'));
 
       expect(ignorado.pasos).toEqual([]);
-      expect(primeraReal.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: `${AVISO}\n\nhola` }]);
+      expect(primeraReal.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'hola' }]);
       expect(await contadores.turnos(SESION)).toBe(1);
-    });
-
-    it('una sesión posterior de la misma conversación no repite el aviso aunque no tenga turnos', async () => {
-      const { motor } = crearMotor([new PoliticaEco()]);
-
-      const respuesta = await motor.generar(solicitudDeTexto('hola', 1));
-
-      expect(respuesta.pasos).toEqual([{ paso: 'eco-1', tipo: 'texto', texto: 'hola' }]);
     });
 
     it('registra el turno solo cuando la política que responde lo cuenta', async () => {

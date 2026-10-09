@@ -53,7 +53,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
 - [x] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
 - [x] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
-- [ ] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
+- [x] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
 - [ ] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
 - [ ] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
 - [ ] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
@@ -276,7 +276,7 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
 | T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T5 | pendiente | — | — | — |
+| T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
 | T6 | pendiente | — | — | — |
 | T7 | pendiente | — | — | — |
 | T8 | pendiente | — | — | — |
@@ -359,6 +359,29 @@ Máximo del change: 10 tareas (T0-T9 = 10).
     por tanto no guarda datos de contacto.
   - El e2e de AGT25 verifica la fila del contacto y el resultado `guardado`, porque `FakePuertoLlm.solicitudes`
     comparte los arreglos de mensajes entre peticiones.
+
+### T5 (commit `92f28b6`)
+- **Tamaño real:** 164 líneas de producción (cambiadas), 316 de pruebas y fakes, 111 de JSON de evals y 15 de documentación.
+- **Resultado:** el primer mensaje ya no lleva el aviso pegado por el código (`conAviso` y `agente/dominio/aviso-datos.ts`
+  eliminados); «Tratamiento de datos» es el único caso de intención que se siembra y pide la aceptación; borrar el caso no
+  abre la puerta, que sigue en código. Con T4 y T5 el circuito del consentimiento queda completo.
+- **El texto del dueño no se pierde (decisión tomada antes del commit):** en una base migrada el texto editado vive en la
+  fila de sistema `aviso_datos` de `caso_asistente`, y la migración de T7 la borra cuando «Tratamiento de datos» ya existe.
+  Por eso la semilla toma el texto en este orden: fila de sistema `aviso_datos` (si cumple CAS5), fila de `parametro`, texto
+  de respaldo. Nunca modifica ni borra la fila de sistema; eso es de T7.
+- **LDS4:** con consentimiento distinto de `aceptado`, o si la lectura falla, la instrucción de captura fuera de horario no
+  ordena guardar datos ni lleva el texto de cierre. La reescritura completa de esa instrucción sigue siendo de T6.
+- **Observaciones de la revisión nativa y del writer (no bloquean):**
+  - `ResultadoSemilla.origenesDeTexto` cuenta sobre el plan, no sobre lo insertado: si «Tratamiento de datos» ya existía
+    y se inserta otro caso, el comando igual informa un origen que no se aplicó. Arreglarlo exige que `aplicar()` reporte
+    qué títulos insertó. Queda para T9 o una mejora puntual.
+  - Pregunta del revisor sin respuesta: si el dueño renombra o borra «Tratamiento de datos» y vuelve a correr
+    `casos:sembrar`, la semilla lo vuelve a crear. Es el comportamiento heredado de la Fase 12 para los casos sembrados;
+    la guía de operación (T9) debe decirlo.
+- **Entorno local:** `CAN1` de `test/integracion/canales/webhook.spec.ts` (responde en menos de 500 ms) falla de forma
+  intermitente bajo carga en esta máquina y pasa aislado; T5 no toca `canales`. El CI de GitHub es la referencia.
+- **Pendientes de documentos fuera de la superficie del writer:** `MODELO_DATOS.md` (línea ~128) y `docs/PREGUNTAS_ABIERTAS.md`
+  todavía mencionan el aviso fijo; se corrigen en T9.
 
 ## Mapeo de escenarios por tarea
 

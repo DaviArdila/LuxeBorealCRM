@@ -7,6 +7,8 @@ export const REPOSITORIO_SEMILLA = Symbol('REPOSITORIO_SEMILLA');
 export interface RepositorioSemilla {
   /** Las filas de `parametro` de texto: las claves de los casos del sistema y toda `politica_<tema>`, con su valor crudo. */
   leerParametrosDeTexto(): Promise<ReadonlyMap<string, unknown>>;
+  /** El texto guardado de los casos del sistema, por clave (`caso_asistente.clave_sistema`), solo lectura (CAS13). */
+  leerTextosDeCasosDelSistema(): Promise<ReadonlyMap<string, unknown>>;
   /**
    * Crea las categorías y los casos del plan que aún no existen (sin pisar ninguno) y retira de `parametro` las filas de
    * las que copió un texto, todo en una sola transacción: si algo falla no queda nada a medias. Devuelve cuántos casos

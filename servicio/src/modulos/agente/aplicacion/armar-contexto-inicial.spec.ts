@@ -111,8 +111,9 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
   });
 
   it('LDS4 — Handoff fuera de horario dispara la captura de datos: las instrucciones piden los cuatro datos y el cierre', async () => {
-    const { caso, captura } = crear();
+    const { caso, captura, contactos } = crear();
     captura.pendiente = true;
+    contactos.aceptar('k');
 
     const instrucciones = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' })).join('\n');
 
@@ -122,6 +123,31 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     expect(instrucciones).toMatch(/localidad/i);
     expect(instrucciones).toContain('guardar_datos_contacto');
     expect(instrucciones).toContain('TEXTO-CIERRE-CAPTURA');
+  });
+
+  it('LDS4 — Sin consentimiento el contexto informa también el consentimiento pendiente', async () => {
+    const { caso, captura } = crear();
+    captura.pendiente = true;
+
+    const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' });
+
+    const texto = instrucciones.join('\n');
+    expect(instrucciones).toContain(HECHO_PENDIENTE);
+    expect(texto).toMatch(/fuera del horario/i);
+    expect(texto).toMatch(/intención de compra/i);
+    expect(texto).not.toContain('guardar_datos_contacto');
+    expect(texto).not.toContain('TEXTO-CIERRE-CAPTURA');
+  });
+
+  it('LDS4 — Si no se puede leer el consentimiento la captura tampoco ordena guardar datos', async () => {
+    const { caso, captura, contactos } = crear();
+    captura.pendiente = true;
+    contactos.fallo = new Error('base caída');
+
+    const texto = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' })).join('\n');
+
+    expect(texto).toMatch(/intención de compra/i);
+    expect(texto).not.toContain('guardar_datos_contacto');
   });
 
   it('sin captura pendiente no agrega instrucciones de captura', async () => {

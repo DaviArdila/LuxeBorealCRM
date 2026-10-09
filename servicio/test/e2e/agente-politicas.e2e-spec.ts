@@ -3,8 +3,8 @@
  * (`AppModule`), BullMQ consumiendo de verdad y Postgres + Redis reales de Testcontainers. Cada
  * escenario entra por un webhook firmado de Chatwoot → inbox → turno (debounce + lock) → agente →
  * outbox → `ChatwootFalso` por HTTP, y confirma con el MISMO título el escenario que ya cubren los
- * unitarios de `modulos/agente`: R12 (audio, segundo audio, imagen, tipo no manejado), AGT2 (aviso
- * de datos) y R13 (tope de turnos).
+ * unitarios de `modulos/agente`: R12 (audio, segundo audio, imagen, tipo no manejado), R14 (el primer
+ * mensaje ya no lleva aviso pegado) y R13 (tope de turnos).
  */
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -298,7 +298,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     expect(await estadoDe(idConversacion)).toBe('bot');
   }, 30_000);
 
-  it('AGT2 — La primera respuesta de la conversación lleva el aviso en el mismo mensaje', async () => {
+  it('R14 — El primer mensaje ya no lleva un aviso pegado por el código', async () => {
     const aplicacion = await arrancar();
     llm.encolar({ respuesta: { texto: 'Claro, ¿de qué material?' } }, { respuesta: { texto: 'Perfecto, oro.' } });
     const { idConversacion, idContacto } = nuevaConversacion();
@@ -312,7 +312,8 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
-    expect(mensajes[0]).toBe(`${TEXTOS.aviso_datos}\n\nClaro, ¿de qué material?`);
+    expect(mensajes[0]).toBe('Claro, ¿de qué material?');
+    expect(mensajes[0]).not.toContain(TEXTOS.aviso_datos);
     expect(mensajes[1]).toBe('Perfecto, oro.');
   }, 40_000);
 

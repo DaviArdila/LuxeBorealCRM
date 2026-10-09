@@ -57,11 +57,11 @@ export class ArmarContextoInicial {
     if (nombre !== null) {
       instrucciones.push(`El cliente se llama ${nombre}.`);
     }
-    const consentimiento = await this.hechoDelConsentimiento(entrada.contactoId);
+    const consentimiento = await this.estadoDelConsentimiento(entrada.contactoId);
     if (consentimiento !== null) {
-      instrucciones.push(consentimiento);
+      instrucciones.push(HECHOS_CONSENTIMIENTO[consentimiento]);
     }
-    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
+    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId, consentimiento === 'aceptado');
     if (capturaPendiente !== null) {
       instrucciones.push(capturaPendiente);
     }
@@ -97,20 +97,24 @@ export class ArmarContextoInicial {
 
   /**
    * R10, LDS4: con un lead confirmado fuera de horario el bot sigue atendiendo y pide los datos antes de
-   * avisar. El texto de cierre es un parámetro del negocio (R15, P34). Un fallo degrada al caso genérico.
+   * avisar. El texto de cierre es un parámetro del negocio (R15, P34). Un fallo degrada al caso genérico. Sin la aceptación
+   * del tratamiento de datos (R14, LDS4) no ordena guardar nada ni cerrar la captura: la puerta de AGT26 lo impediría y
+   * pedir la aceptación es del caso «Tratamiento de datos» (AGT27).
    */
-  private async instruccionDeCaptura(conversacionId: string): Promise<string | null> {
+  private async instruccionDeCaptura(conversacionId: string, consentimientoAceptado: boolean): Promise<string | null> {
     try {
       if (!(await this.captura.pendiente(conversacionId))) {
         return null;
       }
-      const cierre = await this.textos.textoDelSistema('mensaje_captura_completa');
-      return (
+      const faltantes =
         'Fuera del horario de atención: el cliente ya mostró intención de compra. Sigue atendiéndolo con ' +
         'normalidad y pídele, uno a uno si hace falta, su nombre completo, un teléfono de contacto, la ' +
-        'dirección de entrega y la localidad. Cuando los tenga todos, guárdalos con guardar_datos_contacto ' +
-        `y despídete con este texto exacto: "${cierre}"`
-      );
+        'dirección de entrega y la localidad.';
+      if (!consentimientoAceptado) {
+        return faltantes;
+      }
+      const cierre = await this.textos.textoDelSistema('mensaje_captura_completa');
+      return `${faltantes} Cuando los tenga todos, guárdalos con guardar_datos_contacto y despídete con este texto exacto: "${cierre}"`;
     } catch {
       return null;
     }
@@ -135,11 +139,10 @@ export class ArmarContextoInicial {
     }
   }
 
-  /** AGT27: el estado del consentimiento como un hecho, sin guion; si la lectura falla el turno sigue sin él. */
-  private async hechoDelConsentimiento(contactoId: string): Promise<string | null> {
+  /** AGT27: el estado del consentimiento; si la lectura falla el turno sigue sin su hecho. */
+  private async estadoDelConsentimiento(contactoId: string): Promise<EstadoConsentimiento | null> {
     try {
-      const estado = await this.contactos.consentimientoDe(contactoId);
-      return HECHOS_CONSENTIMIENTO[estado];
+      return await this.contactos.consentimientoDe(contactoId);
     } catch {
       return null;
     }
