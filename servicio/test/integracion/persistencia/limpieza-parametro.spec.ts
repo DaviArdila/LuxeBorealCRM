@@ -66,7 +66,7 @@ describe('Limpieza de parametro (Fase 12, T11, integración)', () => {
     await limpiarCasos(prisma);
     await prisma.parametro.createMany({
       data: [
-        { clave: 'mensaje_handoff', valor: 'Texto viejo del traspaso.' },
+        { clave: 'mensaje_techo_gasto', valor: 'Texto viejo del techo de gasto.' },
         { clave: 'politica_garantia', valor: 'Un año de garantía.' },
         { clave: 'aviso_datos', valor: 'Soy un asistente automatizado.' },
       ],
@@ -77,7 +77,7 @@ describe('Limpieza de parametro (Fase 12, T11, integración)', () => {
     await new SembrarCasos(new RepositorioSemillaPrisma(prisma), version, new ClockSistema()).ejecutar();
 
     // Solo las filas que este test sembró: otros archivos de integración comparten la base y pueden escribir las suyas.
-    const quedan = await prisma.parametro.findMany({ where: { clave: { in: ['mensaje_handoff', 'politica_garantia', 'aviso_datos'] } } });
+    const quedan = await prisma.parametro.findMany({ where: { clave: { in: ['mensaje_techo_gasto', 'politica_garantia', 'aviso_datos'] } } });
     expect(quedan).toEqual([]);
     expect(await prisma.casoAsistente.count({ where: { titulo: 'Garantía' } })).toBe(1);
   });

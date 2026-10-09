@@ -26,9 +26,9 @@ async function crearContexto() {
     .useValue(configuracion)
     .compile();
   const prisma = modulo.get(PrismaService);
-  const contacto = await prisma.contacto.create({ data: { chatwootContactId: 920_000 + Math.floor(Math.random() * 90_000) } });
+  const contacto = await prisma.contacto.create({ data: { chatwootContactId: Math.floor(Math.random() * 1_000_000_000) } });
   const conversacion = await prisma.conversacion.create({
-    data: { contactoId: contacto.id, chatwootConversationId: 930_000 + Math.floor(Math.random() * 90_000), canal: 'whatsapp', estado: 'bot' },
+    data: { contactoId: contacto.id, chatwootConversationId: Math.floor(Math.random() * 1_000_000_000), canal: 'whatsapp', estado: 'bot' },
   });
   const repositorio = new RepositorioLeadPrisma(prisma, new ClockFalso(new Date('2026-09-30T15:00:00.000Z')));
   return { repositorio, prisma, contacto, conversacion };

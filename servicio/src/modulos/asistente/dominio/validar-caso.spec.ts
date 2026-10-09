@@ -49,7 +49,7 @@ describe('validarCaso (CAS5)', () => {
   });
 
   it('CAS5 — Un caso del sistema por evento admite una descripción más larga de cuándo se envía', () => {
-    const evento = { ...BASE, disparador: 'evento' as const, claveSistema: 'aviso_datos', cuandoAplica: 'a'.repeat(300) };
+    const evento = { ...BASE, disparador: 'evento' as const, claveSistema: 'mensaje_techo_gasto', cuandoAplica: 'a'.repeat(300) };
 
     expect(validarCaso(evento)).toEqual({ valido: true });
     expect(validarCaso({ ...evento, cuandoAplica: 'a'.repeat(1001) })).toEqual({

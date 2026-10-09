@@ -139,7 +139,7 @@ describe('AsistenteController — casos (CAS9)', () => {
       categoriaId: sistema.id,
       titulo: 'Aviso de datos',
       disparador: 'evento',
-      claveSistema: 'aviso_datos',
+      claveSistema: 'mensaje_techo_gasto',
       actualizado: new Date('2026-10-06T10:00:00Z'),
     });
 
@@ -155,7 +155,7 @@ describe('AsistenteController — casos (CAS9)', () => {
     const { controlador, repositorio } = crear();
     const politicas = repositorio.sembrarCategoria('Políticas');
     const libre = repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Garantía' });
-    const sistema = repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Traspaso', disparador: 'evento', claveSistema: 'mensaje_handoff' });
+    const sistema = repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Traspaso', disparador: 'evento', claveSistema: 'mensaje_espera_handoff' });
 
     await expect(controlador.borrarCaso(libre.id, admin)).resolves.toBeUndefined();
     await expect(controlador.borrarCaso(sistema.id, admin)).rejects.toMatchObject({ codigo: 'caso-del-sistema' });

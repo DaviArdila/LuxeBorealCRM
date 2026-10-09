@@ -45,6 +45,37 @@ describe('CAS7 — Ningún otro módulo lee un texto desde parametro', () => {
   });
 });
 
+/** Lo que un módulo importa o usa para pedir un texto al cliente por el puerto de `asistente` (CAS7). */
+const PIDE_UN_TEXTO = /TEXTOS_ASISTENTE|TextosAsistente|textoDelSistema|ClaveSistema|CASOS_DEL_SISTEMA/;
+
+describe('CAS7 — Catálogo no pide ningún texto al puerto', () => {
+  it('CAS7 — el detector marca el puerto de textos y sus claves', () => {
+    expect(PIDE_UN_TEXTO.test("@Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente")).toBe(true);
+    expect(PIDE_UN_TEXTO.test('await textos.textoDelSistema(clave)')).toBe(true);
+    expect(PIDE_UN_TEXTO.test('const cobertura = await repositorio.consultarCobertura()')).toBe(false);
+  });
+
+  it('CAS7 — Catálogo no pide ningún texto al puerto', () => {
+    const infractores = fuentes(path.join(MODULOS, 'catalogo'))
+      .filter((archivo) => PIDE_UN_TEXTO.test(readFileSync(archivo, 'utf8')))
+      .map((archivo) => path.relative(MODULOS, archivo).split(path.sep).join('/'));
+
+    expect(infractores).toEqual([]);
+  });
+});
+
+describe('CAS8 — consultar_politica ya no existe', () => {
+  it('CAS8 — consultar_politica ya no existe', () => {
+    const modulo = readFileSync(path.join(MODULOS, 'agente', 'agente.module.ts'), 'utf8');
+    const herramientas = readdirSync(path.join(MODULOS, 'agente', 'aplicacion', 'herramientas'));
+
+    expect(modulo).toContain('crearConsultarCaso');
+    expect(modulo).not.toContain('consultar_politica');
+    expect(herramientas.filter((nombre) => nombre.includes('consultar-politica'))).toEqual([]);
+    expect(herramientas).toContain('consultar-caso.ts');
+  });
+});
+
 /** Nombres del sistema retirado en la Fase 12: ninguno debe sobrevivir en el código de producción (CFG6). */
 const SISTEMA_VIEJO = /mensajes-fijos|consultar_politica|TEXTOS_FIJOS|mensajes:sembrar|MensajesFijos/;
 const RAIZ = path.resolve(import.meta.dirname, '..', '..');

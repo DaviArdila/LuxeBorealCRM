@@ -41,8 +41,8 @@ clientes: [cómo se hace](estilo-del-bot.md). Un caso editado rige en el siguien
 El primer mensaje del bot ya no lleva un aviso fijo pegado. El bot se presenta como asistente automatizado y pide la
 aceptación del tratamiento de datos con el caso de uso «Tratamiento de datos» ([casos del asistente](casos-del-asistente.md)):
 puedes reescribirlo, pero conserva que habla un asistente automatizado y que termina pidiendo la aceptación. Hasta que el
-cliente acepte, el sistema no guarda sus datos aunque el caso no exista. `aviso_datos` sigue en la lista de casos del
-sistema hasta que la Fase 12d lo retire.
+cliente acepte, el sistema no guarda sus datos aunque el caso no exista. El antiguo caso del sistema `aviso_datos` ya no
+existe: la migración de la Fase 12d lo convirtió en este caso conservando tu texto.
 
 ## Si algo no sale como esperabas
 

@@ -1,6 +1,6 @@
 {
   "id": "caso-guia",
-  "titulo": "CAS8 — Un caso en modo guía se usa como base sin agregar datos",
+  "titulo": "CAS8 — Un caso en modo guía no agrega datos",
   "origen": "sintetico",
   "semilla": {
     "casos": [

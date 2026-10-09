@@ -55,7 +55,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
 - [x] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
 - [x] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
-- [ ] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
+- [x] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
 - [x] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
 - [ ] T9 — Evals, guías de operación (con los casos de ejemplo), `verify-report` y archivo del change
 
@@ -277,8 +277,8 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | #121 (fusionado) | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
 | T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | #122 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | #123 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
-| T6 | delegada: un writer, apilada sobre T5 mientras el CI estaba bloqueado por Docker Hub. RED observado en `sistema`, `cotizar-envio`, `contenido-llm` y la migración; sin RED para el hecho de captura (spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1709 (repetidos por el padre en el hook), integración 481, e2e 119 en serie y evals 49 + 1 omitida | `10e8a4c` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 bloqueantes, 1 advertencia descartada y 1 sugerencia, autoridad quemada |
-| T7 | pendiente | — | — | — |
+| T6 | delegada: un writer, apilada sobre T5 mientras el CI estaba bloqueado por Docker Hub. RED observado en `sistema`, `cotizar-envio`, `contenido-llm` y la migración; sin RED para el hecho de captura (spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1709 (repetidos por el padre en el hook), integración 481, e2e 119 en serie y evals 49 + 1 omitida | `10e8a4c` | #125 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 bloqueantes, 1 advertencia descartada y 1 sugerencia, autoridad quemada |
+| T7 | delegada: un writer y una segunda pasada para cerrar un riesgo de pérdida del texto del dueño que el padre detectó antes del commit. RED observado en `sistema.spec` y en las 8 pruebas de la migración; sin RED separado para la prueba de integración del orden semilla-migración. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1719, integración 492, e2e 119 en serie y evals 49 + 1 omitida | `855eef3` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T8 | delegada: un writer, spec primero (RED por compilación: faltaban las constantes exportadas; después un selector mal elegido en el propio spec). Verificación: `npm --prefix cliente run ci` repetido por el padre: lint, 201 + 22 pruebas, build y `api:deriva` (35 archivos) | `4116d98` | pendiente | medio pero `under_budget`: la evaluación nativa no pide revisión (la porción queda pendiente hasta alcanzar el presupuesto) |
 | T9 | pendiente | — | — | — |
 
@@ -406,6 +406,23 @@ Máximo del change: 10 tareas (T0-T9 = 10).
   (1) el hook `pre-push` revisa el árbol de trabajo, no la rama empujada, y `secretos --arbol` revienta (`ENOENT`) si un
   archivo registrado en git falta en el disco; (2) correr el hook o la integración desde un worktree escribió commits de
   fixture en esa rama y dejó `core.bare=true`: no se empuja ni se commitea desde worktrees hasta corregir esas pruebas.
+
+### T7 (commit `855eef3`)
+- **Tamaño real:** 77 líneas de producción (cambiadas), 632 de pruebas y fakes, 4 de JSON de evals y 70 de SQL y documentación.
+- **Resultado:** `CASOS_DEL_SISTEMA` queda en cinco claves (audio, imagen, falla del modelo, techo de gasto y espera del
+  asesor); `ClaveSistema` se deriva de la lista. En las bases nuevas el caso de espera nace como «Espera del asesor»; las
+  bases existentes conservan su título (la migración no renombra).
+- **Migración de datos** `20261009140000_casos_del_sistema_minimos` (pasos 2 y 3 de D10, idempotente, clave y
+  disparador cambian en la misma sentencia): si «Tratamiento de datos» ya existe se borra la fila `aviso_datos`; si no, se
+  convierte con el mismo modo y «cuándo aplica» que da la semilla de T5 y el texto del dueño intacto; se borran
+  `mensaje_handoff` y `mensaje_handoff_fuera_horario`.
+- **El texto del dueño no se pierde en ningún orden.** El padre detectó, antes del commit, que el writer había quitado la
+  lectura de la fila histórica `aviso_datos` de la semilla: con `casos:sembrar` antes de la migración, el caso nuevo
+  nacía con el texto de respaldo y la migración borraba después la única copia editada. Se restauró como lectura de solo
+  lectura por la clave histórica `CLAVE_LEGADA_AVISO_DATOS` (fuera de `CASOS_DEL_SISTEMA`); prioridad: fila histórica,
+  `parametro`, respaldo. Una prueba de integración recorre el camino exacto (semilla y luego migración).
+- **Decisión:** las filas viejas `mensaje_handoff*`, `mensaje_fuera_cobertura` y `mensaje_captura_completa` de `parametro`
+  no se borran: es texto del dueño que ya no tiene adónde ir. Si el dueño quiere retirarlas, se hace aparte.
 
 ### T8 (commit `4116d98`)
 - **Tamaño real:** 2 archivos, +255/−7: `casos.component.ts` (+90) y su spec (+172). No toca el servidor, la API ni `openapi/`.

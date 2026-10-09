@@ -12,25 +12,25 @@ const LEER_ESTILO = () => Promise.resolve('# Cómo escribes\n');
 describe('scripts/sembrar-casos (CAS6)', () => {
   it('CAS6 — Informa cuántos casos insertó y cuántos ya existían, sin imprimir ningún texto', async () => {
     const resultado = await ejecutarSembrarCasos({
-      sembrar: { ejecutar: () => Promise.resolve({ insertados: 11, existentes: 0 }) },
+      sembrar: { ejecutar: () => Promise.resolve({ insertados: 6, existentes: 0 }) },
       sembrarEstilo: ESTILO_NUEVO,
       leerEstiloInicial: LEER_ESTILO,
     });
 
     expect(resultado).toEqual({
       limpio: true,
-      mensaje: 'casos:sembrar: 11 insertados, 0 ya existían.\nestilo: sembrado v1',
+      mensaje: 'casos:sembrar: 6 insertados, 0 ya existían.\nestilo: sembrado v1',
     });
   });
 
   it('CAS6 — Una base ya sembrada informa 0 insertados', async () => {
     const resultado = await ejecutarSembrarCasos({
-      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 14 }) },
+      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 6 }) },
       sembrarEstilo: ESTILO_EXISTENTE,
       leerEstiloInicial: LEER_ESTILO,
     });
 
-    expect(resultado.mensaje).toBe('casos:sembrar: 0 insertados, 14 ya existían.\nestilo: ya existía');
+    expect(resultado.mensaje).toBe('casos:sembrar: 0 insertados, 6 ya existían.\nestilo: ya existía');
   });
 
   it('un fallo de la base termina con error y lo dice sin copiar datos', async () => {
@@ -47,7 +47,7 @@ describe('scripts/sembrar-casos (CAS6)', () => {
     let recibido: unknown;
     const resultado = await ejecutarSembrarCasos(
       {
-        sembrar: { ejecutar: (contenido) => ((recibido = contenido), Promise.resolve({ insertados: 14, existentes: 0 })) },
+        sembrar: { ejecutar: (contenido) => ((recibido = contenido), Promise.resolve({ insertados: 6, existentes: 0 })) },
         leerArchivo: (ruta) => Promise.resolve(ruta === 'casos.json' ? '{"casos":[]}' : ''),
         sembrarEstilo: ESTILO_EXISTENTE,
         leerEstiloInicial: LEER_ESTILO,
@@ -58,7 +58,7 @@ describe('scripts/sembrar-casos (CAS6)', () => {
     expect(recibido).toEqual({ casos: [] });
     expect(resultado).toEqual({
       limpio: true,
-      mensaje: 'casos:sembrar: 14 insertados, 0 ya existían.\nestilo: ya existía',
+      mensaje: 'casos:sembrar: 6 insertados, 0 ya existían.\nestilo: ya existía',
     });
   });
 
@@ -93,7 +93,7 @@ describe('scripts/sembrar-casos (CAS6)', () => {
   it('EST-D6 — Siembra el texto del archivo de estilo inicial y no lo imprime', async () => {
     let recibido = '';
     const resultado = await ejecutarSembrarCasos({
-      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 14 }) },
+      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 6 }) },
       sembrarEstilo: { ejecutar: (texto) => ((recibido = texto), Promise.resolve({ sembrado: true, version: 1 })) },
       leerEstiloInicial: () => Promise.resolve('# Texto del estilo\n'),
     });
@@ -116,7 +116,7 @@ describe('scripts/sembrar-casos (CAS6)', () => {
 
   it('EST-D6 — Un archivo de estilo inicial ilegible termina con error', async () => {
     const resultado = await ejecutarSembrarCasos({
-      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 14 }) },
+      sembrar: { ejecutar: () => Promise.resolve({ insertados: 0, existentes: 6 }) },
       sembrarEstilo: ESTILO_NUEVO,
       leerEstiloInicial: () => Promise.reject(new Error('ENOENT')),
     });

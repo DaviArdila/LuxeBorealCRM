@@ -34,7 +34,7 @@ describe('modulos/agente/aplicacion/herramientas — consultar_caso', () => {
     expect(resultado.paraElModelo).toMatchObject({ modo: 'guia' });
   });
 
-  it('CAS8 — Un caso inexistente devuelve los títulos disponibles y nada más', async () => {
+  it('CAS8 — Un caso inexistente lista los disponibles', async () => {
     const { consulta } = casos({ encontrado: false, titulosDisponibles: ['Contra entrega', 'Devoluciones'] });
 
     const resultado = await crearConsultarCaso(consulta).ejecutar({ titulo: 'Garantía' }, CONTEXTO);

@@ -2,7 +2,7 @@
 
 **Resumen.** Todo lo que el bot le dice al cliente es un **caso de uso**: un texto con un título, una categoría y una
 regla de cuándo se usa. Los casos de intención los consulta el LLM cuando el cliente pregunta algo («Garantía», «Medios
-de pago»); los casos del sistema los envía el código solo («Traspaso a un asesor», «Audio recibido»). Se editan sin
+de pago»); los casos del sistema los envía el código solo («Espera del asesor», «Audio recibido»). Se editan sin
 desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../adr/0024-casos-del-asistente.md).
 
 > Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
@@ -13,7 +13,7 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
 | **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
-| **Caso del sistema** | Un texto que el código envía en una situación fija (audio, imagen, traspaso, error, techo de gasto…) | Tú lo editas; la lista es cerrada y no se crean ni se borran |
+| **Caso del sistema** | Un texto que el código envía en una situación fija. Son cinco: audio, imagen, falla técnica del modelo, techo de gasto y espera del asesor | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
@@ -21,15 +21,16 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 
 ## Cargar los casos de hoy (una vez)
 
-`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los casos del sistema que quedan (con el texto que ya
+`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los cinco casos del sistema (con el texto que ya
 hubiera en `parametro` o, si no, el de respaldo), el caso de uso «Tratamiento de datos» y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
 
 «Tratamiento de datos» es el único caso de uso que se siembra solo: es donde el bot se presenta como asistente automatizado,
 explica cómo usa los datos y pide que el cliente acepte, antes de guardar su nombre o su dirección. Lo puedes reescribir o
 borrar: borrarlo **no** abre la puerta, porque sin la aceptación del cliente el sistema no guarda ningún dato. Si lo borras, el
-bot deja de pedir la aceptación con tu texto y no podrá tomar pedidos. Si `parametro` todavía guarda un `aviso_datos`, el caso
-nace con ese texto.
+bot deja de pedir la aceptación con tu texto y no podrá tomar pedidos. El caso nace con el texto que ya hubieras editado: primero el
+del antiguo caso del sistema `aviso_datos` (si todavía existe, porque `casos:sembrar` corrió antes que la migración), luego el de
+`parametro` y, si no hay ninguno válido, el de respaldo. `casos:sembrar` solo lee esa fila antigua: nunca la modifica ni la borra.
 
 **Contra entrega, sin cobertura y la captura fuera de horario ya no son casos del sistema** (Fase 12d). El código no los
 siembra ni los lee: son casos de uso tuyos. En una base que ya los tenía, la migración los dejó como casos de intención
@@ -38,6 +39,18 @@ crees; mientras no existan, el bot no tiene esa conducta y, si el cliente pregun
 asesor. La cotización de envío (`cotizar_envio`) devuelve solo datos (rango, días, si hay contra entrega, o que no hay
 cobertura) y el bot consulta tu caso con `consultar_caso`. Si tu caso de contra entrega o de cobertura sigue ahí, nada cambia
 para el cliente salvo que ahora lo cita el bot en vez de pegarlo el código.
+
+**Qué pasó con el aviso de datos y los traspasos** (Fase 12d). La lista de casos del sistema bajó de once a cinco. En una base
+que ya existía, la migración `20261009140000_casos_del_sistema_minimos` hizo esto, una sola vez y sin perder tu texto:
+
+| Antes | Ahora |
+|---|---|
+| «Aviso de datos» (`aviso_datos`) | Pasa a ser el caso de uso «Tratamiento de datos», en modo `guia`, con **tu texto**. Si ya existía un «Tratamiento de datos» (lo crea `casos:sembrar`), se borra el aviso y ese caso queda intacto |
+| «Traspaso a un asesor» y «Traspaso fuera de horario» | Se borran: el cliente ya no recibe un texto fijo al traspasar, el asesor recibe el aviso ([avisos al asesor](avisos-al-asesor.md)) |
+| «Espera del traspaso» (`mensaje_espera_handoff`) | Sigue igual, con el título que tenía guardado. En una base nueva se llama «Espera del asesor» |
+
+El texto del dueño nunca se pierde: si el aviso tenía un texto editado y no había «Tratamiento de datos», la migración lo
+convierte conservando ese texto; si ya existían los dos, el caso que ya estaba gana y solo se retira la fila del sistema.
 
 Para una base de desarrollo, `npm run casos:sembrar -- --archivo datos-desarrollo/asistente/casos.json` suma además los casos
 de ese archivo (`{ "casos": [{ "categoria", "titulo", "cuandoAplica", "texto", "modo" }] }`). Se valida entero con las reglas

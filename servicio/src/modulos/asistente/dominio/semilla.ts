@@ -32,8 +32,15 @@ export type CasoInicial = Omit<CasoPlan, 'claveSistema' | 'disparador' | 'claveP
 /**
  * Los casos de intención que la semilla crea (CAS13): uno solo, «Tratamiento de datos». Es la parte de R14 que el dueño
  * puede reescribir: presenta al bot como asistente automatizado (P71) y pide la aceptación; la puerta de AGT26 vive en
- * código y no depende de que este caso exista. Si el dueño ya editó `aviso_datos` (caso del sistema o, antes, `parametro`), la semilla conserva ese texto sin tocar el caso del sistema.
+ * código y no depende de que este caso exista. El texto que el dueño ya editó manda: primero la fila de sistema legada
+ * `aviso_datos` (solo lectura; la migración `casos_del_sistema_minimos` la convierte o la borra, CAS14), luego `parametro` y al final el respaldo.
  */
+/**
+ * Clave del sistema que `aviso_datos` tuvo hasta la Fase 12d. Ya no está en `CASOS_DEL_SISTEMA`: la semilla solo la lee para
+ * no perder el texto del dueño si corre antes de la migración, que borra esa fila cuando «Tratamiento de datos» ya existe.
+ */
+export const CLAVE_LEGADA_AVISO_DATOS = 'aviso_datos';
+
 export const CASOS_INICIALES_DE_INTENCION: readonly CasoInicial[] = [
   {
     titulo: 'Tratamiento de datos',
@@ -76,7 +83,7 @@ function tituloDeTema(tema: string): string {
 export function planificarSemilla(
   filas: ReadonlyMap<string, unknown>,
   archivo?: CasosDeArchivo,
-  textosDeCasosDelSistema: ReadonlyMap<string, unknown> = new Map(),
+  textoLegadoDelAviso: unknown = null,
 ): PlanSemilla {
   const delSistema: CasoPlan[] = CASOS_DEL_SISTEMA.map((definicion) => {
     const claveParametro = definicion.clave;
@@ -97,10 +104,10 @@ export function planificarSemilla(
     const esValido = (texto: string | null): texto is string =>
       texto !== null &&
       validarCaso({ titulo: inicial.titulo, cuandoAplica: inicial.cuandoAplica, texto, modo: inicial.modo, disparador: 'intencion', claveSistema: null }).valido;
-    // CAS13: el texto que el dueño ya editó manda: primero el caso del sistema, luego `parametro`, al final el respaldo.
-    const delCasoDelSistema = textoValido(textosDeCasosDelSistema.get(inicial.claveParametro));
+    // CAS13: el texto que el dueño ya editó manda: primero la fila de sistema legada, luego `parametro`, al final el respaldo.
+    const delCasoLegado = textoValido(textoLegadoDelAviso);
     const deParametro = textoValido(filas.get(inicial.claveParametro));
-    const origenTexto = esValido(delCasoDelSistema) ? 'caso-del-sistema' : esValido(deParametro) ? 'parametro' : 'respaldo';
+    const origenTexto = esValido(delCasoLegado) ? 'caso-del-sistema' : esValido(deParametro) ? 'parametro' : 'respaldo';
     return {
       claveSistema: null,
       titulo: inicial.titulo,
@@ -108,7 +115,7 @@ export function planificarSemilla(
       disparador: 'intencion',
       modo: inicial.modo,
       categoria: inicial.categoria,
-      texto: origenTexto === 'caso-del-sistema' ? (delCasoDelSistema ?? inicial.texto) : origenTexto === 'parametro' ? (deParametro ?? inicial.texto) : inicial.texto,
+      texto: origenTexto === 'caso-del-sistema' ? (delCasoLegado ?? inicial.texto) : origenTexto === 'parametro' ? (deParametro ?? inicial.texto) : inicial.texto,
       claveParametro: origenTexto === 'parametro' ? inicial.claveParametro : null,
       origenTexto,
     };

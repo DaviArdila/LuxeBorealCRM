@@ -1,7 +1,9 @@
 /**
  * La lista cerrada de casos del sistema (CAS4, D2 de la Fase 12): los textos que el **código** envía solo, sin pasar
- * por el LLM. «Contra entrega», «Sin cobertura de envío» y la captura completa dejaron de serlo en la Fase 12d (CAS14):
- * son casos de uso del dueño y el código ya no los lee. Es la única
+ * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco: «Contra entrega», «Sin cobertura de envío» y la captura completa
+ * son casos de uso del dueño; el aviso de datos es el caso «Tratamiento de datos»; los dos traspasos los reemplaza el aviso
+ * al asesor. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
+ * conserva el que tiene guardado. Es la única
  * lista que el código necesita: una situación nueva exige código que la detecte, así que no se crea desde la API. Los
  * demás módulos importan la clave de aquí; el texto de respaldo (el del prototipo, P31, o el aprobado por el negocio)
  * rige mientras no haya un caso guardado, así el bot nunca se queda sin texto que enviar.
@@ -34,31 +36,6 @@ export const CASOS_DEL_SISTEMA = [
     textoRespaldo: 'No puedo ver la imagen todavía — ¿me cuentas en texto qué producto buscas, o me das el SKU?',
   },
   {
-    clave: 'aviso_datos',
-    titulo: 'Aviso de datos',
-    descripcion:
-      'Aviso de asistente automatizado y del uso de sus datos, que el cliente ve al inicio de cada conversación. Es el aviso que exige la política de privacidad (R14): no lo dejes vacío ni le quites que habla con un asistente automatizado.',
-    categoriaInicial: 'Sistema',
-    disparador: 'evento',
-    textoRespaldo: 'Soy un asistente automatizado. Tus datos se usan solo para gestionar tu pedido.',
-  },
-  {
-    clave: 'mensaje_handoff',
-    titulo: 'Traspaso a un asesor',
-    descripcion: 'Cuando el bot pasa la conversación a un asesor dentro del horario de atención.',
-    categoriaInicial: 'Sistema',
-    disparador: 'evento',
-    textoRespaldo: 'Te paso con un asesor para cerrar los detalles — te escribe en un momento.',
-  },
-  {
-    clave: 'mensaje_handoff_fuera_horario',
-    titulo: 'Traspaso fuera de horario',
-    descripcion: 'Cuando el bot pasa la conversación a un asesor fuera del horario de atención.',
-    categoriaInicial: 'Sistema',
-    disparador: 'evento',
-    textoRespaldo: 'En este momento no hay un asesor disponible; apenas abramos te escribimos para cerrar los detalles.',
-  },
-  {
     // P31: el texto del prototipo, que ya está en uso real.
     clave: 'mensaje_error_llm',
     titulo: 'Falla técnica del modelo',
@@ -69,9 +46,9 @@ export const CASOS_DEL_SISTEMA = [
   },
   {
     clave: 'mensaje_espera_handoff',
-    titulo: 'Espera del traspaso',
+    titulo: 'Espera del asesor',
     descripcion:
-      'Aviso único cuando el cliente vuelve a escribir mientras espera que un asesor lo atienda: lo tranquiliza y le dice que ya viene alguien.',
+      'Aviso único cuando el cliente vuelve a escribir mientras la conversación espera a un asesor tras una falla técnica, el techo de gasto o el tope de turnos: lo tranquiliza y le dice que ya viene alguien.',
     categoriaInicial: 'Sistema',
     disparador: 'evento',
     textoRespaldo: 'Seguimos aquí. Un asesor te va a atender en breve, gracias por tu paciencia.',

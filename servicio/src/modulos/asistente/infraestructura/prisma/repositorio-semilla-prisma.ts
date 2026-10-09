@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
 import { CASOS_DEL_SISTEMA } from '../../dominio/sistema.js';
 import { normalizarNombre, textoDeBusqueda } from '../../dominio/normalizar.js';
-import type { PlanSemilla } from '../../dominio/semilla.js';
+import { CASOS_INICIALES_DE_INTENCION, CLAVE_LEGADA_AVISO_DATOS, type PlanSemilla } from '../../dominio/semilla.js';
 import type { RepositorioSemilla } from '../../puertos/repositorio-semilla.js';
 
 const PREFIJO_POLITICA = 'politica_';
@@ -16,19 +16,16 @@ export class RepositorioSemillaPrisma implements RepositorioSemilla {
   constructor(private readonly prisma: PrismaService) {}
 
   async leerParametrosDeTexto(): Promise<ReadonlyMap<string, unknown>> {
-    const claves = CASOS_DEL_SISTEMA.map((caso) => caso.clave);
+    const claves = [...CASOS_DEL_SISTEMA.map((caso) => caso.clave), ...CASOS_INICIALES_DE_INTENCION.map((caso) => caso.claveParametro)];
     const filas = await this.prisma.parametro.findMany({
       where: { OR: [{ clave: { in: claves } }, { clave: { startsWith: PREFIJO_POLITICA } }] },
     });
     return new Map(filas.map((fila) => [fila.clave, fila.valor]));
   }
 
-  async leerTextosDeCasosDelSistema(): Promise<ReadonlyMap<string, unknown>> {
-    const filas = await this.prisma.casoAsistente.findMany({
-      where: { claveSistema: { in: CASOS_DEL_SISTEMA.map((caso) => caso.clave) } },
-      select: { claveSistema: true, texto: true },
-    });
-    return new Map(filas.flatMap((fila) => (fila.claveSistema === null ? [] : [[fila.claveSistema, fila.texto] as const])));
+  async leerTextoLegadoDelAviso(): Promise<unknown> {
+    const fila = await this.prisma.casoAsistente.findUnique({ where: { claveSistema: CLAVE_LEGADA_AVISO_DATOS }, select: { texto: true } });
+    return fila?.texto ?? null;
   }
 
   async aplicar(plan: PlanSemilla, ahora: Date): Promise<number> {

@@ -35,7 +35,6 @@ const DEBOUNCE_MS = 200;
 const TEXTOS = {
   mensaje_pedir_texto_audio: 'PEDIR-TEXTO-AUDIO',
   mensaje_imagen_no_procesada: 'IMAGEN-NO-PROCESADA',
-  aviso_datos: 'AVISO-DE-DATOS',
   mensaje_espera_handoff: 'ESPERA-DEL-ASESOR',
 } as const;
 
@@ -313,7 +312,6 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
     expect(mensajes[0]).toBe('Claro, ¿de qué material?');
-    expect(mensajes[0]).not.toContain(TEXTOS.aviso_datos);
     expect(mensajes[1]).toBe('Perfecto, oro.');
   }, 40_000);
 
