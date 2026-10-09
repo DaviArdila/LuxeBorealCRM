@@ -133,6 +133,38 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     });
   });
 
+  it('CNV13 — El efecto avisar-asesor sale como aviso del turno y no reemplaza el texto del modelo', async () => {
+    const derivar = herramienta('derivar', { derivado: true }, [{ tipo: 'avisar-asesor', motivo: 'pide-asesor' }]);
+    const { llm, politica, historial } = crear([derivar]);
+    llm.encolar(
+      { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'derivar', argumentos: {} }] } },
+      { respuesta: { texto: 'Ya avisé a un asesor; mientras tanto te sigo ayudando' } },
+    );
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toEqual({
+      decision: 'responder',
+      respuesta: {
+        pasos: [{ paso: 'llm-1', tipo: 'texto', texto: 'Ya avisé a un asesor; mientras tanto te sigo ayudando' }],
+        aviso: { motivo: 'pide-asesor' },
+      },
+      cuentaTurno: true,
+    });
+    // La conversación sigue en bot: el turno sí entra al historial.
+    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toHaveLength(2);
+  });
+
+  it('CNV13 — Sin efecto avisar-asesor la respuesta no trae aviso', async () => {
+    const { llm, politica } = crear();
+    llm.encolar({ respuesta: { texto: 'Hola' } });
+
+    const decision = await politica.evaluar(turno(HOLA));
+
+    expect(decision).toMatchObject({ respuesta: { pasos: [{ tipo: 'texto' }] } });
+    expect('aviso' in (decision as { respuesta: object }).respuesta).toBe(false);
+  });
+
   it('R1 — la cifra que escribió el cliente en la ráfaga del turno no cuenta como dinero sin rastro', async () => {
     const { llm, politica } = crear();
     llm.encolar({ respuesta: { texto: 'Con tus $300.000 buscamos algo bonito' } });

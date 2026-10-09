@@ -35,22 +35,37 @@ export interface SolicitudTurno {
   readonly mensajes: readonly MensajeTurno[];
 }
 
+/**
+ * Motivos por los que el bot no puede seguir y la conversación pasa a `handoff_pendiente` (CNV8). Los tres últimos
+ * son **transitorios**: hoy los siguen emitiendo las políticas de `agente` y se retiran en la T3 de la Fase 12d,
+ * cuando esas políticas pasan a pedir un {@link MotivoAviso}.
+ */
 export type MotivoHandoff =
-  | 'audio-repetido'
   | 'tope-turnos'
   | 'fallo-llm'
   | 'techo-gasto'
   | 'argumentos-invalidos'
   | 'plazo-agotado'
+  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
+  | 'audio-repetido'
+  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
   | 'lead-caliente'
-  /** El cliente pidió hablar con una persona (Fase 08, LDS3): se deriva sin pasar por el LLM. */
+  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
   | 'pide-persona';
+
+/**
+ * Motivos para avisar al asesor sin traspasar (CNV11, D1 de la Fase 12d): la conversación sigue en `bot`. Va aparte
+ * de {@link MotivoHandoff} para que el compilador impida traspasar por un motivo de aviso.
+ */
+export type MotivoAviso = 'pide-persona' | 'pide-asesor' | 'lead-caliente' | 'audio-repetido';
 
 export interface RespuestaTurno {
   /** Vacío = no enviar nada (CNV8). */
   readonly pasos: readonly PasoRespuesta[];
   /** Lo ejecuta `conversaciones` después de enviar los pasos (CNV8); el generador nunca transiciona (R6). */
   readonly handoff?: { readonly motivo: MotivoHandoff };
+  /** Avisa al asesor sin cambiar el estado (CNV13). Si la respuesta trae también `handoff`, gana el handoff (CNV11). */
+  readonly aviso?: { readonly motivo: MotivoAviso };
 }
 
 /** Token de inyección del puerto {@link GeneradorRespuesta} (D9 de `design.md`). */

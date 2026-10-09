@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { SALIDA_CANAL, type SalidaCanal } from '../../canales/index.js';
 import { BufferTurno } from '../infraestructura/redis/buffer-turno.js';
 import { LockTurno } from '../infraestructura/redis/lock-turno.js';
 import type { OrigenTransicion } from '../dominio/maquina-estados.js';
@@ -8,16 +9,23 @@ import {
   type ContextoTurno,
   type GeneradorRespuesta,
   type MensajeTurno,
+  type MotivoAviso,
   type MotivoHandoff,
 } from '../puertos/generador-respuesta.js';
+import {
+  MARCA_ASESOR_AVISADO,
+  motivoDeMarca,
+  type MarcaAsesorAvisado,
+} from '../puertos/marca-asesor-avisado.js';
 import {
   REPOSITORIO_CONVERSACION,
   type RepositorioConversacion,
 } from '../puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO, type EnviarRespuestaTurno } from '../puertos/salida-conversacion.js';
 import { capacidadesTurno } from './capacidades-turno.js';
+import { RegistroObservadoresAviso } from './registro-observadores-aviso.js';
 import { RegistroObservadoresHandoff } from './registro-observadores-handoff.js';
-import { TransicionarConversacion } from './transicionar-conversacion.js';
+import { ETIQUETA_LEAD_CALIENTE, TransicionarConversacion } from './transicionar-conversacion.js';
 
 /**
  * Un mensaje del buffer escrito antes de la 07a (Redis durante un despliegue) no trae
@@ -60,13 +68,16 @@ export interface ResultadoProcesarTurno {
  * enviar los pasos (CNV8, D3 de la 07a: el punto único de salida exige `bot`, así que el propio
  * mensaje de handoff saldría bloqueado si se transicionara antes) y termina el turno. No cancela el
  * job diferido: `ColaTurno` depende de este caso de uso (ciclo) y el único job posible es un
- * respaldo que, al correr, ve `estado !== 'bot'` y vacía el buffer. Libera el lock siempre, incluso si el generador o el envío lanzan. No conoce BullMQ: la
+ * respaldo que, al correr, ve `estado !== 'bot'` y vacía el buffer. Si la respuesta pide `aviso` (sin handoff), avisa a los
+ * observadores tras enviar los pasos, con una marca por motivo, y deja la conversación en `bot` (CNV13, CNV14). Libera el lock siempre, incluso si el generador o el envío lanzan. No conoce BullMQ: la
  * decisión de *cuándo* correr y de reencolar cuando el lock está ocupado es de `ColaTurno`
  * (infraestructura), que llama a {@link ejecutar} y actúa sobre el resultado — así se evita un
  * ciclo `aplicacion → infraestructura → aplicacion`.
  */
 @Injectable()
 export class ProcesarTurno {
+  private readonly logger = new Logger(ProcesarTurno.name);
+
   constructor(
     private readonly lock: LockTurno,
     private readonly buffer: BufferTurno,
@@ -75,6 +86,9 @@ export class ProcesarTurno {
     @Inject(ENVIAR_RESPUESTA_TURNO) private readonly enviarRespuestaTurno: EnviarRespuestaTurno,
     private readonly transicionarConversacion: TransicionarConversacion,
     private readonly observadoresHandoff: RegistroObservadoresHandoff,
+    private readonly observadoresAviso: RegistroObservadoresAviso,
+    @Inject(MARCA_ASESOR_AVISADO) private readonly marcaAsesorAvisado: MarcaAsesorAvisado,
+    @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
   ) {}
 
   async ejecutar(idConversacion: string, idRespuesta: string): Promise<ResultadoProcesarTurno> {
@@ -123,9 +137,76 @@ export class ProcesarTurno {
         );
       }
       if (respuesta.handoff !== undefined) {
+        // CNV11: si la respuesta trae handoff y aviso, gana el handoff y el aviso se descarta.
         await this.ejecutarHandoff(idConversacion, respuesta.handoff.motivo);
         return;
       }
+      if (respuesta.aviso !== undefined) {
+        // CNV13: avisar no cambia el estado; el bucle sigue y el siguiente mensaje se atiende con normalidad.
+        await this.ejecutarAviso(idConversacion, respuesta.aviso.motivo);
+      }
+    }
+  }
+
+  /**
+   * CNV13, CNV14: relee la conversación (si un asesor la tomó mientras el generador corría no se avisa), adquiere la
+   * marca del motivo de forma atómica y notifica a los observadores **después** de los pasos ya enviados. Si Redis
+   * falla se avisa sin marca (mejor un aviso repetido que uno perdido); si un observador falla se libera la marca.
+   */
+  private async ejecutarAviso(idConversacion: string, motivo: MotivoAviso): Promise<void> {
+    const fresca = await this.repositorio.obtenerPorId(idConversacion);
+    if (fresca === null || fresca.estado !== 'bot') return;
+
+    const motivoMarca = motivoDeMarca(motivo);
+    let marcada = false;
+    try {
+      if (!(await this.marcaAsesorAvisado.adquirir(idConversacion, motivoMarca))) return;
+      marcada = true;
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.asesor-avisado-marca-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
+    }
+
+    if (motivo === 'lead-caliente') {
+      await this.etiquetarLeadCaliente(fresca.chatwootConversationId, fresca.version);
+    }
+    const bien = await this.observadoresAviso.notificar({
+      conversacionId: fresca.id,
+      contactoId: fresca.contactoId,
+      motivo,
+      version: fresca.version,
+    });
+    if (!bien && marcada) {
+      await this.liberarMarca(idConversacion, motivoMarca);
+    }
+  }
+
+  /** CNV11: el asesor distingue el lead en la bandeja aunque no haya traspaso. Es de apoyo: un fallo solo deja un `warn`. */
+  private async etiquetarLeadCaliente(chatwootConversationId: number, version: number): Promise<void> {
+    try {
+      await this.salidaCanal.agregarEtiquetas({
+        idConversacion: String(chatwootConversationId),
+        idOperacion: `etiqueta-lead-v${String(version)}`,
+        etiquetas: [ETIQUETA_LEAD_CALIENTE],
+      });
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.etiqueta-lead-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
+    }
+  }
+
+  private async liberarMarca(idConversacion: string, motivo: Parameters<MarcaAsesorAvisado['liberar']>[1]): Promise<void> {
+    try {
+      await this.marcaAsesorAvisado.liberar(idConversacion, motivo);
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.asesor-avisado-liberacion-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
     }
   }
 

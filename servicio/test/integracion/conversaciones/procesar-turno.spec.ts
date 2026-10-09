@@ -6,6 +6,9 @@ import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente
 import { SALIDA_CANAL, type SalidaCanal, type SolicitudCambioEstado } from '../../../src/modulos/canales/index.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
 import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
+import { RegistroObservadoresAviso } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-aviso.js';
+import { MarcaAsesorAvisadoRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-asesor-avisado-redis.js';
+import { MARCA_ASESOR_AVISADO } from '../../../src/modulos/conversaciones/puertos/marca-asesor-avisado.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
 import { MARCA_ESPERA_CLIENTE } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
@@ -138,6 +141,8 @@ async function crearAplicacion(
       LockTurno,
       ProcesarTurno,
       RegistroObservadoresHandoff,
+      RegistroObservadoresAviso,
+      { provide: MARCA_ASESOR_AVISADO, useClass: MarcaAsesorAvisadoRedis },
       ColaTurno,
     ],
   })

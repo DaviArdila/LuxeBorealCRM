@@ -7,6 +7,13 @@ export type MotivoTraspaso =
   | 'argumentos-invalidos'
   | 'plazo-agotado';
 
+/**
+ * Motivos que avisan al asesor sin traspasar (NTF8, Fase 12d): el cliente pide una persona (`pide-persona`, de la
+ * política) o el modelo lo pide con `derivar_a_asesor` (`pide-asesor`), o insiste con audios. `lead-caliente` sigue el
+ * camino de leads (NTF2).
+ */
+export type MotivoAvisoSinTraspaso = 'pide-persona' | 'pide-asesor' | 'audio-repetido';
+
 /** Lo que un aviso al asesor sabe de un lead (D9 de la Fase 08): nunca datos de contacto (R14). */
 export interface DatosAvisoLead {
   readonly tipo: 'lead' | 'recordatorio';
@@ -26,6 +33,13 @@ export interface DatosAvisoTraspaso {
   readonly enlace?: string;
 }
 
+/** El bot sigue atendiendo y avisa a un asesor (NTF8): solo se sabe el motivo, que nunca es texto del modelo. */
+export interface DatosAvisoSinTraspaso {
+  readonly tipo: 'aviso';
+  readonly motivo: MotivoAvisoSinTraspaso;
+  readonly enlace?: string;
+}
+
 /** Un cliente que escribió bajo control humano y no recibe respuesta (NTF7). */
 export interface DatosAvisoEspera {
   readonly tipo: 'espera';
@@ -33,7 +47,7 @@ export interface DatosAvisoEspera {
   readonly enlace?: string;
 }
 
-export type DatosAviso = DatosAvisoLead | DatosAvisoTraspaso | DatosAvisoEspera;
+export type DatosAviso = DatosAvisoLead | DatosAvisoTraspaso | DatosAvisoSinTraspaso | DatosAvisoEspera;
 
 const OMITIDO = '[dato omitido]';
 const LARGO_MAXIMO_RESUMEN = 400;
@@ -65,6 +79,12 @@ const TITULO_TRASPASO: Readonly<Record<MotivoTraspaso, string>> = {
   'audio-repetido': 'el cliente insiste con audios y el bot no los procesa.',
   'argumentos-invalidos': 'el bot no pudo completar una consulta.',
   'plazo-agotado': 'el bot se quedó sin tiempo para responder.',
+};
+
+const TITULO_AVISO: Readonly<Record<MotivoAvisoSinTraspaso, string>> = {
+  'pide-persona': 'el cliente pidió hablar con una persona.',
+  'pide-asesor': 'el bot pidió que un asesor intervenga en esta conversación.',
+  'audio-repetido': 'el cliente insiste con audios y el bot no los procesa.',
 };
 
 function lineaAtender(enlace: string | undefined): string[] {
@@ -103,6 +123,13 @@ export function armarAviso(datos: DatosAviso): string {
     return [
       `Traspaso: ${TITULO_TRASPASO[datos.motivo]}`,
       'Un asesor debe continuar la conversación.',
+      ...lineaAtender(datos.enlace),
+    ].join('\n');
+  }
+  if (datos.tipo === 'aviso') {
+    return [
+      `Aviso: ${TITULO_AVISO[datos.motivo]}`,
+      'El bot sigue atendiendo la conversación.',
       ...lineaAtender(datos.enlace),
     ].join('\n');
   }

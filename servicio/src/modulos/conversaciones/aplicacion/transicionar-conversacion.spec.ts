@@ -1,6 +1,7 @@
 import type { SalidaCanal, SolicitudCambioEstado, SolicitudEtiquetas } from '../../canales/index.js';
 import type { Configuracion } from '../../../plataforma/config/index.js';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
+import { MarcaAsesorAvisadoEnMemoria } from '../../../../test/fakes/marca-asesor-avisado-en-memoria.js';
 import { MarcaEsperaClienteEnMemoria } from '../../../../test/fakes/marca-espera-cliente-en-memoria.js';
 import { TransicionInvalida } from '../dominio/maquina-estados.js';
 import type { Conversacion, RepositorioConversacion } from '../puertos/repositorio-conversacion.js';
@@ -79,8 +80,9 @@ function crearCasoDeUso(
   clock: ClockFalso,
   salida: SalidaCanal = new SalidaCanalFalsa(),
   marcaEspera = new MarcaEsperaClienteEnMemoria(),
+  marcaAsesor = new MarcaAsesorAvisadoEnMemoria(),
 ) {
-  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA, salida, marcaEspera);
+  return new TransicionarConversacion(repositorio, clock, CONFIGURACION_DE_PRUEBA, salida, marcaEspera, marcaAsesor);
 }
 
 describe('modulos/conversaciones/aplicacion — TransicionarConversacion', () => {
@@ -258,6 +260,68 @@ describe('TransicionarConversacion — 08d: la espera del cliente se cierra (CNV
     const actualizada = conversacionDePrueba({ estado: 'bot', version: 2 });
     repositorio.programarRespuestas(actualizada);
     const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(AHORA), new SalidaCanalFalsa(), marca);
+
+    await expect(casoDeUso.ejecutar(conversacionDePrueba(), 'bot', 'ttl')).resolves.toEqual(actualizada);
+  });
+});
+
+describe('TransicionarConversacion — 12d: las marcas de «asesor avisado» se borran (CNV14)', () => {
+  const AHORA = new Date('2026-10-09T10:00:00Z');
+
+  async function transicionarA(
+    destino: Parameters<TransicionarConversacion['ejecutar']>[1],
+    origen: Parameters<TransicionarConversacion['ejecutar']>[2],
+    marca = new MarcaAsesorAvisadoEnMemoria(),
+  ) {
+    await marca.adquirir('conv-1', 'pide-persona');
+    await marca.adquirir('conv-1', 'audio-repetido');
+    await marca.adquirir('conv-otra', 'pide-persona');
+    const repositorio = new RepositorioConversacionFalso();
+    repositorio.programarRespuestas(conversacionDePrueba({ estado: destino, version: 2 }));
+    const casoDeUso = crearCasoDeUso(
+      repositorio,
+      new ClockFalso(AHORA),
+      new SalidaCanalFalsa(),
+      new MarcaEsperaClienteEnMemoria(),
+      marca,
+    );
+    await casoDeUso.ejecutar(conversacionDePrueba({ estado: destino === 'humano' ? 'bot' : 'humano' }), destino, origen);
+    return marca;
+  }
+
+  it('CNV14 — El eco humano borra las marcas de todos los motivos', async () => {
+    const marca = await transicionarA('humano', 'eco_humano');
+
+    expect(await marca.estaAvisado('conv-1')).toBe(false);
+    expect(await marca.estaAvisado('conv-otra')).toBe(true); // las de otra conversación no se tocan
+  });
+
+  it('CNV14 — Volver a bot borra la marca y permite avisar otra vez', async () => {
+    const marca = await transicionarA('bot', 'ttl');
+
+    expect(await marca.estaAvisado('conv-1')).toBe(false);
+    await expect(marca.adquirir('conv-1', 'pide-persona')).resolves.toBe(true);
+  });
+
+  it('CNV14 — Volver a bot por Chatwoot (resuelta) también borra las marcas', async () => {
+    const marca = await transicionarA('bot', 'chatwoot_resolved');
+
+    expect(await marca.estaAvisado('conv-1')).toBe(false);
+  });
+
+  it('CNV14 — Pasar a handoff pendiente no borra las marcas', async () => {
+    const marca = await transicionarA('handoff_pendiente', 'regla_handoff_explicita');
+
+    expect(await marca.estaAvisado('conv-1')).toBe(true);
+  });
+
+  it('CNV14 — Un fallo al borrar las marcas no hace fallar la transición', async () => {
+    const marca = new MarcaAsesorAvisadoEnMemoria();
+    marca.fallar = true;
+    const repositorio = new RepositorioConversacionFalso();
+    const actualizada = conversacionDePrueba({ estado: 'bot', version: 2 });
+    repositorio.programarRespuestas(actualizada);
+    const casoDeUso = crearCasoDeUso(repositorio, new ClockFalso(AHORA), new SalidaCanalFalsa(), undefined, marca);
 
     await expect(casoDeUso.ejecutar(conversacionDePrueba(), 'bot', 'ttl')).resolves.toEqual(actualizada);
   });
