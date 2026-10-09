@@ -9,7 +9,9 @@ export type {
   DatosAviso,
   DatosAvisoEspera,
   DatosAvisoLead,
+  DatosAvisoSinTraspaso,
   DatosAvisoTraspaso,
+  MotivoAvisoSinTraspaso,
   MotivoTraspaso,
 } from './dominio/armar-aviso.js';
 export { construirEnlaceConversacion, type EntradaEnlaceConversacion } from './dominio/enlace-conversacion.js';

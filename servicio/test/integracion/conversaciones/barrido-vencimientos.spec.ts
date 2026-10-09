@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CanalesModule } from '../../../src/modulos/canales/index.js';
 import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente-eco.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
+import { MarcaAsesorAvisadoRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-asesor-avisado-redis.js';
+import { MARCA_ASESOR_AVISADO } from '../../../src/modulos/conversaciones/puertos/marca-asesor-avisado.js';
 import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
 import { MARCA_ESPERA_CLIENTE } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
 import {
@@ -110,6 +112,7 @@ async function crearContexto(): Promise<{
       { provide: GENERADOR_RESPUESTA, useClass: AgenteEco },
       { provide: ENVIAR_RESPUESTA_TURNO, useValue: espia },
       { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
+      { provide: MARCA_ASESOR_AVISADO, useClass: MarcaAsesorAvisadoRedis },
       TransicionarConversacion,
       BarridoVencimientos,
     ],

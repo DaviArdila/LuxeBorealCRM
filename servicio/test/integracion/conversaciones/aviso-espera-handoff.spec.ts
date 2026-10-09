@@ -6,6 +6,9 @@ import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente
 import { ConsumidorConversaciones } from '../../../src/modulos/conversaciones/aplicacion/consumidor-conversaciones.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
 import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
+import { RegistroObservadoresAviso } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-aviso.js';
+import { MarcaAsesorAvisadoRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-asesor-avisado-redis.js';
+import { MARCA_ASESOR_AVISADO, type MarcaAsesorAvisado } from '../../../src/modulos/conversaciones/puertos/marca-asesor-avisado.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { ColaTurno, NOMBRE_COLA_TURNO } from '../../../src/modulos/conversaciones/infraestructura/colas/cola-turno.js';
 import { MarcaEsperaHandoff } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-handoff.js';
@@ -153,6 +156,8 @@ async function crearAplicacion(): Promise<{
       ColaTurno,
       ProcesarTurno,
       RegistroObservadoresHandoff,
+      RegistroObservadoresAviso,
+      { provide: MARCA_ASESOR_AVISADO, useClass: MarcaAsesorAvisadoRedis },
       { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       ConsumidorConversaciones,
@@ -249,6 +254,24 @@ describe('Aviso único de espera en handoff_pendiente (T8, integración, CNV3, D
     await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m2`));
 
     expect(contexto.salidaCanal.llamadas).toHaveLength(1);
+  });
+
+  it('CNV3 — Un asesor avisado con la conversación en bot no genera mensaje de espera', async () => {
+    const contexto = await crearAplicacion();
+    app = contexto.app;
+    const contacto = await contexto.prisma.contacto.create({ data: {} });
+    const chatwootConversationId = Math.floor(Math.random() * 1_000_000_000);
+    const conversacion = await contexto.prisma.conversacion.create({
+      data: { contactoId: contacto.id, chatwootConversationId, canal: 'whatsapp', estado: 'bot' },
+    });
+    await contexto.app.get<MarcaAsesorAvisado>(MARCA_ASESOR_AVISADO).adquirir(conversacion.id, 'pide-persona');
+    contexto.clock.avanzar(31 * 60_000); // pasados HANDOFF_ESPERA_MIN minutos
+
+    await contexto.consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, `${chatwootConversationId}-m1`));
+
+    expect(contexto.salidaCanal.llamadas).toHaveLength(0); // el bot atiende por el buffer; nadie envía «Espera del asesor»
+    const fresca = await contexto.prisma.conversacion.findUniqueOrThrow({ where: { id: conversacion.id } });
+    expect(fresca.estado).toBe('bot');
   });
 
   it('antes de HANDOFF_ESPERA_MIN, no envía ningún aviso', async () => {

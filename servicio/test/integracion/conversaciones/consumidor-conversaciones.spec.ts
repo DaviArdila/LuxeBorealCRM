@@ -6,6 +6,9 @@ import { AgenteEco } from '../../../src/modulos/conversaciones/aplicacion/agente
 import { ConsumidorConversaciones } from '../../../src/modulos/conversaciones/aplicacion/consumidor-conversaciones.js';
 import { ProcesarTurno } from '../../../src/modulos/conversaciones/aplicacion/procesar-turno.js';
 import { RegistroObservadoresHandoff } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-handoff.js';
+import { RegistroObservadoresAviso } from '../../../src/modulos/conversaciones/aplicacion/registro-observadores-aviso.js';
+import { MarcaAsesorAvisadoRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-asesor-avisado-redis.js';
+import { MARCA_ASESOR_AVISADO, type MarcaAsesorAvisado } from '../../../src/modulos/conversaciones/puertos/marca-asesor-avisado.js';
 import { TransicionarConversacion } from '../../../src/modulos/conversaciones/aplicacion/transicionar-conversacion.js';
 import { MarcaEsperaClienteRedis } from '../../../src/modulos/conversaciones/infraestructura/redis/marca-espera-cliente-redis.js';
 import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
@@ -218,6 +221,8 @@ async function crearAplicacion(
       ColaTurno,
       ProcesarTurno,
       RegistroObservadoresHandoff,
+      RegistroObservadoresAviso,
+      { provide: MARCA_ASESOR_AVISADO, useClass: MarcaAsesorAvisadoRedis },
       { provide: MARCA_ESPERA_CLIENTE, useClass: MarcaEsperaClienteRedis },
       TransicionarConversacion,
       ConsumidorConversaciones,
@@ -618,6 +623,16 @@ describe('ConsumidorConversaciones — 08d: cliente esperando (CNV12)', () => {
 
   it('CNV12 — una conversación en bot no abre espera', async () => {
     const { consumidor, id, chatwootConversationId } = await arrancar('bot');
+
+    await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
+
+    expect(await esperasDe(id)).toEqual([]);
+  });
+
+  it('CNV12 — Un asesor avisado con la conversación en bot tampoco abre espera', async () => {
+    const { consumidor, id, chatwootConversationId } = await arrancar('bot');
+    if (app === undefined) throw new Error('la aplicación no arrancó');
+    await app.get<MarcaAsesorAvisado>(MARCA_ASESOR_AVISADO).adquirir(id, 'pide-persona');
 
     await consumidor.consumir(eventoMensajeEntrante(chatwootConversationId, 'e1'));
 

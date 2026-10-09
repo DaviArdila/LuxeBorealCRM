@@ -14,8 +14,14 @@ export {
   type EventoEsperaCliente,
   type ObservadorEsperaCliente,
 } from './aplicacion/registro-observadores-espera.js';
+export {
+  RegistroObservadoresAviso,
+  type EventoAviso,
+  type ObservadorAviso,
+} from './aplicacion/registro-observadores-aviso.js';
+export { ASESOR_AVISADO, type ConsultaAsesorAvisado } from './puertos/marca-asesor-avisado.js';
 export { ObservadoresHandoffModule } from './observadores-handoff.module.js';
-export { ConversacionesModule } from './conversaciones.module.js';
+export { AvisoAsesorModule, ConversacionesModule } from './conversaciones.module.js';
 export {
   ObtenerReferenciaConversacion,
   type ReferenciaConversacion,
@@ -27,6 +33,7 @@ export {
   type ContextoTurno,
   type GeneradorRespuesta,
   type MensajeTurno,
+  type MotivoAviso,
   type MotivoHandoff,
   type RespuestaTurno,
   type SolicitudTurno,

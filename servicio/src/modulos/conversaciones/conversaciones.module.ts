@@ -5,6 +5,8 @@ import { RedisModule } from '../../plataforma/redis/index.js';
 import { AsistenteModule } from '../asistente/index.js';
 import { CanalesModule, RegistroConsumidorEventosCanal, RegistroGuardiaEnvioCanal } from '../canales/index.js';
 import { AgenteEco } from './aplicacion/agente-eco.js';
+import { LectorAsesorAvisado } from './aplicacion/lector-asesor-avisado.js';
+import { RegistroObservadoresAviso } from './aplicacion/registro-observadores-aviso.js';
 import { ConsumidorConversaciones } from './aplicacion/consumidor-conversaciones.js';
 import { EnviarRespuestaTurno } from './aplicacion/enviar-respuesta-turno.js';
 import { GuardiaEnvioConversaciones } from './aplicacion/guardia-envio-conversaciones.js';
@@ -23,14 +25,33 @@ import { BufferTurno } from './infraestructura/redis/buffer-turno.js';
 import { ContadorRateLimit } from './infraestructura/redis/contador-rate-limit.js';
 import { InterruptorGlobalRedis } from './infraestructura/redis/interruptor-global-redis.js';
 import { LockTurno } from './infraestructura/redis/lock-turno.js';
+import { MarcaAsesorAvisadoRedis } from './infraestructura/redis/marca-asesor-avisado-redis.js';
 import { MarcaEsperaClienteRedis } from './infraestructura/redis/marca-espera-cliente-redis.js';
 import { MarcaEsperaHandoff } from './infraestructura/redis/marca-espera-handoff.js';
 import { MarcaMensajeProcesado } from './infraestructura/redis/marca-mensaje-procesado.js';
 import { GENERADOR_RESPUESTA } from './puertos/generador-respuesta.js';
 import { INTERRUPTOR_GLOBAL } from './puertos/interruptor-global.js';
+import { ASESOR_AVISADO, MARCA_ASESOR_AVISADO } from './puertos/marca-asesor-avisado.js';
 import { MARCA_ESPERA_CLIENTE } from './puertos/marca-espera-cliente.js';
 import { REPOSITORIO_CONVERSACION } from './puertos/repositorio-conversacion.js';
 import { ENVIAR_RESPUESTA_TURNO } from './puertos/salida-conversacion.js';
+
+/**
+ * Módulo mínimo del aviso al asesor sin traspaso (Fase 12d, D3-D4, CNV13-CNV15). Va aparte de `ConversacionesModule`,
+ * igual que `ObservadoresHandoffModule`: aloja el registro de observadores de aviso (que `notificaciones` y `leads`
+ * importan para registrarse), la marca «asesor avisado» y su lectura para el agente, sin instanciar colas ni canales.
+ * Nest comparte el mismo singleton entre quien notifica (`ProcesarTurno`) y quien observa o consulta.
+ */
+@Module({
+  imports: [RedisModule],
+  providers: [
+    RegistroObservadoresAviso,
+    { provide: MARCA_ASESOR_AVISADO, useClass: MarcaAsesorAvisadoRedis },
+    { provide: ASESOR_AVISADO, useClass: LectorAsesorAvisado },
+  ],
+  exports: [RegistroObservadoresAviso, MARCA_ASESOR_AVISADO, ASESOR_AVISADO],
+})
+export class AvisoAsesorModule {}
 
 const IMPORTS = [
   PrismaModule,
@@ -41,6 +62,7 @@ const IMPORTS = [
   BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_VENCIMIENTOS }),
   BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_ESPERAS }),
   ObservadoresHandoffModule,
+  AvisoAsesorModule,
 ];
 
 // Todo menos el generador: `ConversacionesModule` le suma `AgenteEco` y `conGenerador` el que le pasen.

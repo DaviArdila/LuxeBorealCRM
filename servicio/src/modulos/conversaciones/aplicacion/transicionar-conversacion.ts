@@ -4,6 +4,7 @@ import { CONFIGURACION, type Configuracion } from '../../../plataforma/config/in
 import { CLOCK, type Clock } from '../../../plataforma/reloj/index.js';
 import { espejoEstadoCanal } from '../dominio/espejo-estado-canal.js';
 import { calcularTransicion, type EstadoAtencion, type OrigenTransicion } from '../dominio/maquina-estados.js';
+import { MARCA_ASESOR_AVISADO, type MarcaAsesorAvisado } from '../puertos/marca-asesor-avisado.js';
 import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../puertos/marca-espera-cliente.js';
 import {
   REPOSITORIO_CONVERSACION,
@@ -45,6 +46,7 @@ export class TransicionarConversacion {
     @Inject(CONFIGURACION) private readonly configuracion: Configuracion,
     @Inject(SALIDA_CANAL) private readonly salidaCanal: SalidaCanal,
     @Inject(MARCA_ESPERA_CLIENTE) private readonly marcaEspera: MarcaEsperaCliente,
+    @Inject(MARCA_ASESOR_AVISADO) private readonly marcaAsesorAvisado: MarcaAsesorAvisado,
   ) {}
 
   async ejecutar(
@@ -54,6 +56,7 @@ export class TransicionarConversacion {
   ): Promise<Conversacion> {
     const transicionada = await this.persistir(conversacion, destino, origen);
     await this.cerrarEspera(transicionada, origen);
+    await this.limpiarAvisos(transicionada);
     await this.espejar(transicionada, origen);
     return transicionada;
   }
@@ -70,6 +73,23 @@ export class TransicionarConversacion {
     } catch (error) {
       this.logger.warn({
         evento: 'conversaciones.espera-cliente-cierre-fallo',
+        error: error instanceof Error ? error.name : 'desconocido',
+      });
+    }
+  }
+
+  /**
+   * CNV14 (Fase 12d): las marcas de «asesor avisado» valen una sesión bot. Se borran cuando la conversación pasa a
+   * `humano` (eco humano u `open`) y cuando vuelve a `bot`; pasar a `handoff_pendiente` no las toca. Es de apoyo: si el
+   * almacén falla, la transición ya está confirmada y solo queda un `warn` (el TTL de respaldo las vence).
+   */
+  private async limpiarAvisos(transicionada: Conversacion): Promise<void> {
+    if (transicionada.estado !== 'bot' && transicionada.estado !== 'humano') return;
+    try {
+      await this.marcaAsesorAvisado.limpiar(transicionada.id);
+    } catch (error) {
+      this.logger.warn({
+        evento: 'conversaciones.asesor-avisado-limpieza-fallo',
         error: error instanceof Error ? error.name : 'desconocido',
       });
     }

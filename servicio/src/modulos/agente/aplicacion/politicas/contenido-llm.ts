@@ -28,6 +28,16 @@ function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
   return pasos;
 }
 
+/** El aviso al asesor que pidió el turno, si alguna herramienta lo pidió (CNV13): no cambia el texto ni el estado. */
+function avisoDeEfectos(efectos: readonly EfectoTurno[]): RespuestaTurno['aviso'] {
+  for (const efecto of efectos) {
+    if (efecto.tipo === 'avisar-asesor') {
+      return { motivo: efecto.motivo };
+    }
+  }
+  return undefined;
+}
+
 /**
  * Última política del pipeline (D1 de la Fase 07b, reemplaza al eco de la 07a): arma el prompt,
  * delega en el bucle de herramientas y traduce su resultado a pasos de respuesta. Un texto final
@@ -102,10 +112,12 @@ export class ContenidoLlm implements PoliticaTurno {
       resultado.texto,
     );
     await this.historial.agregar(sesion, textoCliente, texto);
+    const aviso = avisoDeEfectos(resultado.efectos);
     return {
       decision: 'responder',
       respuesta: {
         pasos: [{ paso: 'llm-1', tipo: 'texto', texto }, ...pasosDeImagen(resultado.efectos)],
+        ...(aviso === undefined ? {} : { aviso }),
       },
       cuentaTurno: true,
     };

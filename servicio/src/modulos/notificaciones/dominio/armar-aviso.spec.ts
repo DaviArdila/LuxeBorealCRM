@@ -141,3 +141,40 @@ describe('armarAviso — 08d: cliente esperando (NTF7)', () => {
     expect(armarAviso({ tipo: 'espera', esperaMin: -3 })).toContain('hace 0 min');
   });
 });
+
+describe('armarAviso — 12d: aviso sin traspaso (NTF8)', () => {
+  const ENLACE_AVISO = 'https://chat.ejemplo.co/app/accounts/1/conversations/7';
+
+  it('NTF8 — Pedir una persona avisa y el texto lo dice, con el enlace', () => {
+    const texto = armarAviso({ tipo: 'aviso', motivo: 'pide-persona', enlace: ENLACE_AVISO });
+
+    expect(texto).toContain('pidió hablar con una persona');
+    expect(texto).toContain(`Atender: ${ENLACE_AVISO}`);
+  });
+
+  it('NTF8 — La herramienta derivar_a_asesor tiene su propio texto, sin datos del cliente ni del modelo', () => {
+    const delModelo = armarAviso({ tipo: 'aviso', motivo: 'pide-asesor', enlace: ENLACE_AVISO });
+    const delCliente = armarAviso({ tipo: 'aviso', motivo: 'pide-persona', enlace: ENLACE_AVISO });
+
+    expect(delModelo).not.toBe(delCliente);
+    for (const texto of [delModelo, delCliente]) {
+      expect(texto).not.toMatch(/\d{7,}/);
+      expect(texto).not.toContain('@');
+    }
+  });
+
+  it('NTF8 — El audio repetido avisa sin traspasar: el texto dice que el cliente insiste con audios', () => {
+    const texto = armarAviso({ tipo: 'aviso', motivo: 'audio-repetido' });
+
+    expect(texto).toContain('insiste con audios');
+    expect(texto).not.toContain('Traspaso');
+  });
+
+  it('NTF8 — El aviso deja claro que el bot sigue atendiendo', () => {
+    expect(armarAviso({ tipo: 'aviso', motivo: 'pide-asesor' })).toContain('El bot sigue atendiendo');
+  });
+
+  it('NTF8 — Sin enlace el aviso sale igual, sin la línea de atender', () => {
+    expect(armarAviso({ tipo: 'aviso', motivo: 'pide-persona' })).not.toContain('Atender');
+  });
+});

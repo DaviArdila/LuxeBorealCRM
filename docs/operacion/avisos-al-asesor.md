@@ -32,6 +32,20 @@ dirección ni el nombre del cliente. Decisión de fondo: [`fase-08d`](../../open
 | Traspaso por consulta o plazo | Argumentos inválidos o plazo agotado | `Traspaso: el bot no pudo completar una consulta.` / `…se quedó sin tiempo para responder.` |
 | Cliente esperando | Escribió con la conversación en manos humanas y nadie respondió en 10 min | `Cliente esperando: escribió hace 11 min y nadie ha respondido.` |
 
+### Avisos sin traspaso (Fase 12d)
+
+Un aviso ya no implica que el bot se calle. En estos avisos la conversación **sigue en `bot`**, el bot responde al cliente
+y tú entras cuando quieras desde el enlace; en cuanto escribes en Chatwoot, la conversación pasa a `humano`.
+
+| Aviso | Título que verás |
+|---|---|
+| Pidió una persona | `Aviso: el cliente pidió hablar con una persona.` |
+| El bot pidió un asesor | `Aviso: el bot pidió que un asesor intervenga en esta conversación.` |
+| Audios repetidos | `Aviso: el cliente insiste con audios y el bot no los procesa.` |
+
+Los tres llevan debajo `El bot sigue atendiendo la conversación.` y la línea `Atender:`. El aviso de lead caliente sigue
+su propio camino (ventana de 24 h por contacto) y, sin traspaso, solo etiqueta la conversación con `lead-caliente`.
+
 Un aviso de lead trae además el **producto de interés** (por su nombre, nunca el SKU), las **señales** y un **resumen**.
 
 ## Un aviso de ejemplo
@@ -48,6 +62,7 @@ Atender: https://chat.tudominio.co/app/accounts/1/conversations/2
 |---|---|
 | De lead | Uno por contacto cada 24 h (`LEADS_VENTANA_NOTIFICACION_H`) y un solo recordatorio a los 30 min |
 | De traspaso | Uno por traspaso y motivo; otro motivo, o un traspaso posterior, avisa de nuevo |
+| Sin traspaso | Uno por conversación y motivo mientras el bot atiende; «pidió una persona» y «el bot pidió un asesor» cuentan como el mismo motivo. Al escribir un asesor, o al volver la conversación al bot, el motivo vuelve a avisar |
 | De cliente esperando | Uno por espera; se cancela si un asesor responde o la conversación vuelve al bot |
 
 ## Variables
@@ -73,6 +88,8 @@ Para apagar solo el aviso de cliente esperando, sube `ESPERA_CLIENTE_MIN` a un v
 
 ## Límites que conviene saber
 
+- **Las marcas de «asesor avisado» viven en Redis** (una por conversación y motivo, con vencimiento de respaldo de 24 h). Si
+  Redis falla o se reinicia, puede salir un aviso repetido; nunca uno perdido.
 - **La marca de «cliente esperando» vive en Redis.** Si Redis se reinicia, las esperas abiertas se pierden. Es un aviso de
   apoyo: el traspaso ya avisó.
 - **El aviso no interpreta el mensaje.** Un «gracias» del cliente también abre una espera; por eso es uno solo y con un
