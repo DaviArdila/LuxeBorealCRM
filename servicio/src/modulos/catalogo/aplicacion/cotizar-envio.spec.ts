@@ -1,5 +1,4 @@
 import { formatearDias, formatearRangoCop } from '../../../compartido/dinero/index.js';
-import { textoDeRespaldo, type ClaveSistema, type TextosAsistente } from '../../asistente/index.js';
 import type { CandidataExclusion, CandidataTarifa, DestinoEnvio } from '../dominio/envio.js';
 import type { Producto } from '../dominio/producto.js';
 import type { NuevoEventoFueraCobertura, RepositorioEnvio } from '../puertos/repositorio-envio.js';
@@ -44,20 +43,6 @@ class RepositorioParametroFalso implements RepositorioParametroCatalogo {
   }
 }
 
-/** Los textos salen del puerto del asistente; `claves` deja ver cuáles se pidieron. */
-class TextosFalsos implements TextosAsistente {
-  readonly claves: ClaveSistema[] = [];
-  constructor(
-    private readonly mensajeFueraCobertura: string,
-    private readonly configurados: Partial<Record<ClaveSistema, string>> = {},
-  ) {}
-  textoDelSistema(clave: ClaveSistema): Promise<string> {
-    this.claves.push(clave);
-    if (clave === 'mensaje_fuera_cobertura') return Promise.resolve(this.mensajeFueraCobertura);
-    return Promise.resolve(this.configurados[clave] ?? textoDeRespaldo(clave));
-  }
-}
-
 class RepositorioEnvioFalso implements RepositorioEnvio {
   eventoRegistrado: NuevoEventoFueraCobertura | undefined;
   constructor(
@@ -82,7 +67,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []), // sin exclusiones, sin ninguna tarifa que aplique
-      new TextosFalsos('sin cobertura'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -97,7 +81,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      new TextosFalsos('sin cobertura'),
     );
 
     await caso.ejecutar('SKU-1', DESTINO);
@@ -111,17 +94,17 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     });
   });
 
-  it('CAT11 — Sin cobertura se devuelve el mensaje del parámetro del negocio, sin ningún rango', async () => {
+  it('CAT11 — Sin cobertura se devuelve solo cobertura falsa, sin ningún rango', async () => {
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], []),
-      new TextosFalsos('Mensaje configurado del negocio'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
 
-    expect(resultado).toEqual({ cobertura: false, mensaje: 'Mensaje configurado del negocio' });
+    expect(resultado).toEqual({ cobertura: false });
+    expect(resultado).not.toHaveProperty('mensaje');
     expect(resultado).not.toHaveProperty('rangoTexto');
     expect(resultado).not.toHaveProperty('diasTexto');
     expect(resultado).not.toHaveProperty('contraentregaDisponible');
@@ -134,7 +117,6 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      new TextosFalsos('sin cobertura por exclusión'),
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
@@ -149,7 +131,7 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     });
   });
 
-  it('cotiza con cobertura cuando hay una tarifa que aplica, sin registrar ningún evento ni pedir el mensaje de fuera de cobertura', async () => {
+  it('cotiza con cobertura cuando hay una tarifa que aplica, sin registrar ningún evento', async () => {
     const tarifaQueAplica: CandidataTarifa = {
       id: 't1',
       departamentoNombre: 'Amazonas',
@@ -164,19 +146,16 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       creado: new Date('2026-01-01'),
     };
     const repositorioEnvio = new RepositorioEnvioFalso([], [tarifaQueAplica]);
-    const textos = new TextosFalsos('no debería usarse');
     const caso = new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       repositorioEnvio,
-      textos,
     );
 
     const resultado = await caso.ejecutar('SKU-1', DESTINO);
 
     expect(resultado.cobertura).toBe(true);
     expect(repositorioEnvio.eventoRegistrado).toBeUndefined();
-    expect(textos.claves).not.toContain('mensaje_fuera_cobertura');
   });
 
   const TARIFA_CON_CONTRAENTREGA: CandidataTarifa = {
@@ -193,12 +172,11 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
     creado: new Date('2026-01-01'),
   };
 
-  function cotizador(tarifa: CandidataTarifa, configuradas: Partial<Record<ClaveSistema, string>> = {}): CotizarEnvio {
+  function cotizador(tarifa: CandidataTarifa): CotizarEnvio {
     return new CotizarEnvio(
       new RepositorioProductoFalso(PRODUCTO),
       new RepositorioParametroFalso(4000),
       new RepositorioEnvioFalso([], [tarifa]),
-      new TextosFalsos('sin cobertura', configuradas),
     );
   }
 
@@ -210,31 +188,41 @@ describe('modulos/catalogo/aplicacion/CotizarEnvio', () => {
       rangoTexto: formatearRangoCop(30000, 40000),
       diasTexto: formatearDias(2, 4),
       contraentregaDisponible: true,
-      politicaContraentregaTexto: textoDeRespaldo('contra_entrega'),
     });
   });
 
-  it('CAT10 — Cotización con cobertura sin contra entrega no incluye la política', async () => {
-    const resultado = await cotizador({ ...TARIFA_CON_CONTRAENTREGA, contraentregaDisponible: false }).ejecutar('SKU-1', DESTINO);
+  it('CAT10 — La cotización con contra entrega no trae ningún texto de política', async () => {
+    const resultado = await cotizador(TARIFA_CON_CONTRAENTREGA).ejecutar('SKU-1', DESTINO);
 
-    expect(resultado.cobertura).toBe(true);
-    expect(resultado).toMatchObject({ contraentregaDisponible: false });
+    expect(resultado).toMatchObject({ contraentregaDisponible: true });
+    expect(Object.keys(resultado).sort()).toEqual(['cobertura', 'contraentregaDisponible', 'diasTexto', 'rangoTexto']);
     expect(resultado).not.toHaveProperty('politicaContraentregaTexto');
   });
 
-  it('CAT10 — La política de contra entrega configurada por el negocio reemplaza al texto de respaldo', async () => {
-    const resultado = await cotizador(TARIFA_CON_CONTRAENTREGA, { contra_entrega: 'Texto del negocio.' }).ejecutar('SKU-1', DESTINO);
+  it('CAT10 — Cotización con cobertura sin contra entrega', async () => {
+    const resultado = await cotizador({ ...TARIFA_CON_CONTRAENTREGA, contraentregaDisponible: false }).ejecutar('SKU-1', DESTINO);
 
-    expect(resultado).toMatchObject({ politicaContraentregaTexto: 'Texto del negocio.' });
+    expect(resultado).toMatchObject({ cobertura: true, contraentregaDisponible: false });
+    expect(Object.keys(resultado).sort()).toEqual(['cobertura', 'contraentregaDisponible', 'diasTexto', 'rangoTexto']);
   });
 
-  it('CAS11 — La cotización usa el caso contra_entrega editado y, sin caso, el respaldo aprobado', async () => {
-    const editado = await cotizador(TARIFA_CON_CONTRAENTREGA, { contra_entrega: 'Texto editado en el caso.' }).ejecutar('SKU-1', DESTINO);
-    const sinCaso = await cotizador(TARIFA_CON_CONTRAENTREGA).ejecutar('SKU-1', DESTINO);
+  it('CAT10 — Cotizar no consulta el puerto de textos del asistente', async () => {
+    // El constructor ya no recibe ningún puerto de textos: con y sin contra entrega la cotización se calcula.
+    expect(CotizarEnvio.length).toBe(3);
+    const con = await cotizador(TARIFA_CON_CONTRAENTREGA).ejecutar('SKU-1', DESTINO);
+    const sin = await cotizador({ ...TARIFA_CON_CONTRAENTREGA, contraentregaDisponible: false }).ejecutar('SKU-1', DESTINO);
 
-    expect(editado).toMatchObject({ politicaContraentregaTexto: 'Texto editado en el caso.' });
-    expect(sinCaso).toMatchObject({ politicaContraentregaTexto: textoDeRespaldo('contra_entrega') });
-    expect(textoDeRespaldo('contra_entrega')).not.toContain('%');
-    expect(textoDeRespaldo('contra_entrega')).toContain('se suma al total de tu compra');
+    expect(con.cobertura).toBe(true);
+    expect(sin.cobertura).toBe(true);
+  });
+
+  it('CAT11 — Un destino excluido de la cobertura tampoco trae mensaje y deja el evento registrado (CAT9)', async () => {
+    const repositorioEnvio = new RepositorioEnvioFalso([{ departamentoNombre: 'Amazonas', ciudadNombre: null }], []);
+    const caso = new CotizarEnvio(new RepositorioProductoFalso(PRODUCTO), new RepositorioParametroFalso(4000), repositorioEnvio);
+
+    const resultado = await caso.ejecutar('SKU-1', DESTINO);
+
+    expect(resultado).toEqual({ cobertura: false });
+    expect(repositorioEnvio.eventoRegistrado).toBeDefined();
   });
 });

@@ -8,16 +8,13 @@ import type { ResultadoCotizacion } from '../../../catalogo/index.js';
  */
 export function cotizacionParaElModelo(cotizacion: ResultadoCotizacion): Record<string, unknown> {
   if (!cotizacion.cobertura) {
-    return { cobertura: false, mensaje_sin_cobertura: cotizacion.mensaje };
+    return { cobertura: false };
   }
   return {
     cobertura: true,
     rango_texto: cotizacion.rangoTexto,
     dias_texto: cotizacion.diasTexto,
     contraentrega_disponible: cotizacion.contraentregaDisponible,
-    ...(cotizacion.politicaContraentregaTexto === undefined
-      ? {}
-      : { politica_contraentrega_texto: cotizacion.politicaContraentregaTexto }),
   };
 }
 

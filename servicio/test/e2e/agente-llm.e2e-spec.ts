@@ -332,28 +332,47 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ encontrado: false, titulos_disponibles: ['Garantía'] });
   }, 40_000);
 
-  it('CAS11 — La cotización con contra entrega usa el texto editado del caso contra_entrega', async () => {
+  it('CAS12 — Con contra entrega el modelo consulta el caso y cita su texto; la cotización no lo adjunta', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
     const producto = await sembrarProducto(prisma);
     await prisma.tarifaEstimada.create({
       data: { rangoMinCop: 12_000, rangoMaxCop: 18_000, diasMin: 2, diasMax: 4, contraentregaDisponible: true },
     });
-    await fijarTextosDelSistema(prisma, { contra_entrega: 'CONTRA-ENTREGA-EDITADA: pagas al recibir y el recargo se suma al total.' });
+    const texto = 'CONTRA-ENTREGA-DEL-DUENO: pagas al recibir y el recargo se suma al total.';
+    await crearCasoDeIntencion(prisma, { titulo: 'Contra entrega', cuandoAplica: 'Cuando preguntan cómo se paga.', texto });
+    await aplicacion.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }).incrementar();
     llm.encolar(
       llamada('c1', 'cotizar_envio', { id_producto: producto.sku, departamento: 'Antioquia', ciudad: 'Medellín' }),
-      { respuesta: { texto: 'Listo.' } },
+      llamada('c2', 'consultar_caso', { titulo: 'Contra entrega' }),
+      { respuesta: { texto } },
     );
 
-    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el envío a Medellín?');
+    const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el envío a Medellín y cómo se paga?');
 
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-    expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({
-      politica_contraentrega_texto: 'CONTRA-ENTREGA-EDITADA: pagas al recibir y el recargo se suma al total.',
-    });
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toBe(texto);
+    const [cotizacion] = resultadosDe(llm, 1);
+    const [caso] = resultadosDe(llm, 2);
+    expect(Object.keys(cotizacion?.resultado as object)).not.toContain('politica_contraentrega_texto');
+    expect(caso?.resultado).toEqual({ encontrado: true, titulo: 'Contra entrega', modo: 'literal', texto });
   }, 40_000);
 
-  it('CAT10 — La cotización con contra entrega llega con la política literal', async () => {
+  it('CAS12 — El caso editado rige en la siguiente consulta', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    await crearCasoDeIntencion(prisma, { titulo: 'Contra entrega', cuandoAplica: 'Cuando preguntan cómo se paga.', texto: 'Texto viejo.' });
+    await prisma.casoAsistente.updateMany({ where: { titulo: 'Contra entrega' }, data: { texto: 'Texto nuevo del dueño.' } });
+    await aplicacion.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }).incrementar();
+    llm.encolar(llamada('c1', 'consultar_caso', { titulo: 'Contra entrega' }), { respuesta: { texto: 'Texto nuevo del dueño.' } });
+
+    const { idConversacion } = await turno(aplicacion, 'Cómo se paga?');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ encontrado: true, texto: 'Texto nuevo del dueño.' });
+  }, 40_000);
+
+  it('CAT10 — La cotización con contra entrega devuelve solo datos, sin ningún texto de política', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
     const producto = await sembrarProducto(prisma);
@@ -374,18 +393,17 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       cobertura: true,
       contraentrega_disponible: true,
       rango_texto: expect.stringContaining('12.000') as unknown,
-      politica_contraentrega_texto: expect.stringContaining('contra entrega') as unknown,
     });
+    expect(Object.keys(cotizacion?.resultado as object)).not.toContain('politica_contraentrega_texto');
     // El recargo nunca se cita como porcentaje (R2, CAT12).
     expect(JSON.stringify(cotizacion?.resultado)).not.toMatch(/\d\s?%/);
   }, 40_000);
 
-  it('R2 — Un destino sin cobertura recibe el mensaje del negocio literal aunque el modelo lo parafrasee', async () => {
+  it('CAS12 — Un destino sin cobertura devuelve solo cobertura falsa y nada reemplaza el texto del modelo', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
     const producto = await sembrarProducto(prisma);
     await prisma.tarifaEstimada.deleteMany();
-    await fijarTextosDelSistema(prisma, { mensaje_fuera_cobertura: 'SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.' });
     llm.encolar(
       llamada('c1', 'cotizar_envio', { id_producto: producto.sku, departamento: 'Vaupés', ciudad: 'Mitú' }),
       { respuesta: { texto: 'Lo siento, por ahora no enviamos a Mitú. ¿Tienes otra dirección?' } },
@@ -394,8 +412,8 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     const { idConversacion } = await turno(aplicacion, 'Cuánto cuesta el envío a Mitú?');
 
     const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
-    expect(contenido(unico)).toContain('SIN-COBERTURA-LITERAL: aun no llegamos a ese destino.');
-    expect(contenido(unico)).toContain('¿Tienes otra dirección?');
+    expect(contenido(unico)).toBe('Lo siento, por ahora no enviamos a Mitú. ¿Tienes otra dirección?');
+    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ cobertura: false });
   }, 40_000);
 
   it('AGT9 — Sin ángulo llega una sola foto a Chatwoot como imagen después del texto, con su pie de foto', async () => {

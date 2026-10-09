@@ -81,7 +81,6 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
       contactos,
       new ContadoresSesionEnMemoria(),
       { pendiente: () => Promise.resolve(false), completar: () => Promise.resolve() },
-      parametros,
       { estaAvisado: () => Promise.resolve(asesorAvisado.valor) },
     ),
     parametros,
@@ -237,35 +236,24 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     expect(llm.solicitudes).toHaveLength(1);
   });
 
-  describe('R2 — mensaje_sin_cobertura sale literal desde el backend', () => {
-    const MENSAJE = 'Por ahora no llegamos a ese destino.';
-    const sinCobertura = () =>
-      herramienta('cotizar_envio', { cobertura: false, mensaje_sin_cobertura: MENSAJE }, [
-        { tipo: 'sin-cobertura', mensaje: MENSAJE },
-      ]);
+  describe('CAS12 — nada reemplaza el texto del modelo', () => {
+    const sinCobertura = () => herramienta('cotizar_envio', { cobertura: false }, [{ tipo: 'sin-cobertura' }]);
     const cotiza = { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'cotizar_envio', argumentos: {} }] } };
 
-    it('si el modelo no lo cita, el mensaje se añade literal tras su texto y entra al historial así', async () => {
+    it('CAS12 — Nada reemplaza el texto del modelo: tras una cotización sin cobertura el primer paso es su texto final', async () => {
       const { llm, politica, historial } = crear([sinCobertura()]);
       llm.encolar(cotiza, { respuesta: { texto: 'No enviamos allá, ¿tienes otra dirección?' } });
 
       const decision = await politica.evaluar(turno(HOLA));
 
-      const texto = `No enviamos allá, ¿tienes otra dirección?\n\n${MENSAJE}`;
-      expect(decision).toMatchObject({ respuesta: { pasos: [{ paso: 'llm-1', texto }] }, cuentaTurno: true });
+      expect(decision).toMatchObject({
+        respuesta: { pasos: [{ paso: 'llm-1', texto: 'No enviamos allá, ¿tienes otra dirección?' }] },
+        cuentaTurno: true,
+      });
       expect(await historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).toEqual([
         { rol: 'usuario', texto: 'hola' },
-        { rol: 'asistente', texto },
+        { rol: 'asistente', texto: 'No enviamos allá, ¿tienes otra dirección?' },
       ]);
-    });
-
-    it('si el modelo ya lo cita literal, no se duplica', async () => {
-      const { llm, politica } = crear([sinCobertura()]);
-      llm.encolar(cotiza, { respuesta: { texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` } });
-
-      const decision = await politica.evaluar(turno(HOLA));
-
-      expect(decision).toMatchObject({ respuesta: { pasos: [{ texto: `Lo siento. ${MENSAJE} ¿Otra dirección?` }] } });
     });
 
     it('sin el efecto sin-cobertura el texto del modelo no se toca', async () => {

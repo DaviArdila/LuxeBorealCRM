@@ -324,8 +324,18 @@ describe('catalogo/dominio/validar-catalogo', () => {
       expect(r.datos?.parametros[0]).toEqual({ clave: 'color_favorito', valor: 'azul' });
     });
 
-    it.each(['politica_devoluciones', 'mensaje_fuera_cobertura', 'aviso_datos', 'prompt_estilo', 'prompt_estilo_version'])(
-      'CFG6 — El importador rechaza la fila de texto «%s» y dice dónde se editan los textos',
+    it.each(['politica_devoluciones', 'mensaje_error_llm', 'aviso_datos', 'prompt_estilo'])(
+      'IMP7 — Una fila de texto se rechaza y dice dónde se editan los textos («%s»)',
+      (clave) => {
+        const r = validarCatalogoCompleto(crudo({ parametros: [{ clave, valor: 'Un texto del bot.' }] }), lugares(), HOY);
+
+        expect(errorEn(r, 'clave')?.mensaje).toContain('Casos de uso');
+        expect(r.datos).toBeNull();
+      },
+    );
+
+    it.each(['politica_devoluciones', 'mensaje_error_llm', 'aviso_datos', 'prompt_estilo', 'prompt_estilo_version'])(
+      'CFG6 — El importador rechaza una clave de texto («%s») y dice dónde se editan los textos',
       (clave) => {
         const r = validarCatalogoCompleto(crudo({ parametros: [{ clave, valor: 'Un texto del bot.' }] }), lugares(), HOY);
 

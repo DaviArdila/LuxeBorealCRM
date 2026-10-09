@@ -1,0 +1,46 @@
+{
+  "id": "cas12-sin-caso-cobertura",
+  "titulo": "CAS12 — Sin el caso de cobertura el modelo informa sin inventar condiciones",
+  "origen": "sintetico",
+  "semilla": {},
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Envíame el collar Luna a Mitú, Vaupés"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "cotizar_envio",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR",
+                "departamento": "Vaupés",
+                "ciudad": "Mitú"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "No tenemos cobertura de envío a ese destino."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "dineroConRastro": true,
+        "textoAusente": [
+          "entre $",
+          "días",
+          "te contactará"
+        ],
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ],
+        "sinSku": true
+      }
+    }
+  ]
+}

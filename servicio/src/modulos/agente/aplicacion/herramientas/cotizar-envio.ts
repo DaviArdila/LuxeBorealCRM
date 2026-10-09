@@ -12,9 +12,9 @@ const esquema = z.object({
 
 /**
  * `cotizar_envio` (AGT8): envuelve `CotizarEnvio`. Devuelve el rango aproximado y los días ya
- * formateados, si hay contra entrega y, en ese caso, la política literal (CAT10); sin cobertura
- * devuelve el mensaje del negocio y deja el efecto `sin-cobertura` con ese mensaje (`ContenidoLlm` lo hace salir literal, R2), que después desactiva la
- * evaluación del lead (AGT11).
+ * formateados y si hay contra entrega (CAT10); sin cobertura devuelve `cobertura: false` y deja el efecto
+ * `sin-cobertura`, que después desactiva la evaluación del lead (AGT11). Nunca devuelve un texto de política: el
+ * modelo consulta el caso que corresponda con `consultar_caso` (CAS12).
  */
 export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
   return definirHerramienta(
@@ -25,7 +25,7 @@ export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
       const cotizacion = await cotizar.ejecutar(id_producto, { departamento, ciudad: ciudad ?? null });
       return {
         paraElModelo: cotizacionParaElModelo(cotizacion),
-        efectos: cotizacion.cobertura ? [] : [{ tipo: 'sin-cobertura', mensaje: cotizacion.mensaje }],
+        efectos: cotizacion.cobertura ? [] : [{ tipo: 'sin-cobertura' }],
       };
     },
   );

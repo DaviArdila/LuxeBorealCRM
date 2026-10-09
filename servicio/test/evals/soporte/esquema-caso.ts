@@ -90,7 +90,7 @@ const caso = z
     fecha: z.string().min(1).optional(),
     semilla: z
       .object({
-        /** Casos de intención que el caso siembra (CAS8) además de `contra_entrega` y los casos base. */
+        /** Casos de intención que el caso siembra (CAS8) además de los casos base. */
         casos: z
           .array(
             z

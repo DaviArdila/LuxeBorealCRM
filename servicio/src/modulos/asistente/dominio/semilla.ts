@@ -1,4 +1,4 @@
-import { CASOS_DEL_SISTEMA, CATEGORIAS_INICIALES, claveParametroLegada } from './sistema.js';
+import { CASOS_DEL_SISTEMA, CATEGORIAS_INICIALES } from './sistema.js';
 import { validarCaso } from './validar-caso.js';
 
 /** Una categoría que la semilla garantiza (CAS6). */
@@ -68,9 +68,10 @@ function tituloDeTema(tema: string): string {
 }
 
 /**
- * Decide qué casos crea la semilla (CAS6) a partir de las filas de texto que ya hay en `parametro`: los once casos del
+ * Decide qué casos crea la semilla (CAS6) a partir de las filas de texto que ya hay en `parametro`: los casos del
  * sistema (con el texto guardado si es válido y, si no, el de respaldo), «Tratamiento de datos» (CAS13) y un caso de
- * intención por cada fila `politica_<tema>` (salvo `contra_entrega`, que ya es un caso del sistema). Función pura: no toca la base.
+ * intención por cada fila `politica_<tema>`. Ningún otro caso de negocio: contra entrega, cobertura y captura los crea el
+ * dueño (CAS6, 12d). Función pura: no toca la base.
  */
 export function planificarSemilla(
   filas: ReadonlyMap<string, unknown>,
@@ -78,7 +79,7 @@ export function planificarSemilla(
   textosDeCasosDelSistema: ReadonlyMap<string, unknown> = new Map(),
 ): PlanSemilla {
   const delSistema: CasoPlan[] = CASOS_DEL_SISTEMA.map((definicion) => {
-    const claveParametro = claveParametroLegada(definicion.clave);
+    const claveParametro = definicion.clave;
     const guardado = textoValido(filas.get(claveParametro));
     return {
       claveSistema: definicion.clave,
@@ -113,7 +114,7 @@ export function planificarSemilla(
     };
   });
 
-  const clavesDelSistema = new Set(CASOS_DEL_SISTEMA.map((definicion) => claveParametroLegada(definicion.clave)));
+  const clavesDelSistema = new Set<string>(CASOS_DEL_SISTEMA.map((definicion) => definicion.clave));
   const politicas: CasoPlan[] = [...filas.keys()]
     .filter((clave) => clave.startsWith(PREFIJO_POLITICA) && !clavesDelSistema.has(clave))
     .sort()

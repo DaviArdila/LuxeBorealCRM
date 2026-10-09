@@ -1,0 +1,47 @@
+{
+  "id": "cas12-sin-caso-contra-entrega",
+  "titulo": "CAS12 — Sin el caso de contra entrega el modelo no inventa la política",
+  "origen": "sintetico",
+  "semilla": {},
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Cómo funciona el pago contra entrega?"
+        }
+      ],
+      "guion": [
+        {
+          "llamadas": [
+            {
+              "nombre": "consultar_caso",
+              "argumentos": {
+                "titulo": "Contra entrega"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "No tengo información sobre cómo funciona el pago contra entrega. Si quieres, te paso con un asesor para que te la confirme."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "herramientasEsperadas": [
+          {
+            "nombre": "consultar_caso"
+          }
+        ],
+        "menciona": [
+          "asesor"
+        ],
+        "textoAusente": [
+          "pagas cuando lo recibes",
+          "abrirlo y revisarlo"
+        ],
+        "sinSku": true
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import { ASESOR_AVISADO, type ConsultaAsesorAvisado, type MotivoAviso } from '..
 import type { SesionHerramienta } from '../dominio/herramienta.js';
 import { CONTADORES_SESION, type ContadoresSesion } from '../puertos/contadores-sesion.js';
 import { CAPTURA_LEAD, type CapturaLead } from '../puertos/captura-lead.js';
-import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
+import { HECHO_CAPTURA_PENDIENTE } from '../../leads/index.js';
 import {
   REPOSITORIO_CONTACTO_AGENTE,
   type EstadoConsentimiento,
@@ -43,7 +43,6 @@ export class ArmarContextoInicial {
     @Inject(REPOSITORIO_CONTACTO_AGENTE) private readonly contactos: RepositorioContactoAgente,
     @Inject(CONTADORES_SESION) private readonly contadores: ContadoresSesion,
     @Inject(CAPTURA_LEAD) private readonly captura: CapturaLead,
-    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
     @Inject(ASESOR_AVISADO) private readonly asesorAvisado: ConsultaAsesorAvisado,
   ) {}
 
@@ -61,7 +60,7 @@ export class ArmarContextoInicial {
     if (consentimiento !== null) {
       instrucciones.push(HECHOS_CONSENTIMIENTO[consentimiento]);
     }
-    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId, consentimiento === 'aceptado');
+    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
     if (capturaPendiente !== null) {
       instrucciones.push(capturaPendiente);
     }
@@ -96,25 +95,14 @@ export class ArmarContextoInicial {
   }
 
   /**
-   * R10, LDS4: con un lead confirmado fuera de horario el bot sigue atendiendo y pide los datos antes de
-   * avisar. El texto de cierre es un parámetro del negocio (R15, P34). Un fallo degrada al caso genérico. Sin la aceptación
-   * del tratamiento de datos (R14, LDS4) no ordena guardar nada ni cerrar la captura: la puerta de AGT26 lo impediría y
-   * pedir la aceptación es del caso «Tratamiento de datos» (AGT27).
+   * R10, LDS4: con un lead confirmado fuera de horario el contexto informa un hecho —el mismo que dice
+   * `marcar_lead_caliente`— y no ordena qué pedir ni con qué texto despedirse: esa conducta es de un caso de uso del dueño.
+   * Con el consentimiento pendiente el hecho del consentimiento (AGT27) va aparte y la puerta de AGT26 impide guardar.
+   * Un fallo degrada al caso genérico.
    */
-  private async instruccionDeCaptura(conversacionId: string, consentimientoAceptado: boolean): Promise<string | null> {
+  private async instruccionDeCaptura(conversacionId: string): Promise<string | null> {
     try {
-      if (!(await this.captura.pendiente(conversacionId))) {
-        return null;
-      }
-      const faltantes =
-        'Fuera del horario de atención: el cliente ya mostró intención de compra. Sigue atendiéndolo con ' +
-        'normalidad y pídele, uno a uno si hace falta, su nombre completo, un teléfono de contacto, la ' +
-        'dirección de entrega y la localidad.';
-      if (!consentimientoAceptado) {
-        return faltantes;
-      }
-      const cierre = await this.textos.textoDelSistema('mensaje_captura_completa');
-      return `${faltantes} Cuando los tenga todos, guárdalos con guardar_datos_contacto y despídete con este texto exacto: "${cierre}"`;
+      return (await this.captura.pendiente(conversacionId)) ? HECHO_CAPTURA_PENDIENTE : null;
     } catch {
       return null;
     }

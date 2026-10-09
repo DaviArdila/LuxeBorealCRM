@@ -13,7 +13,7 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
 | **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
-| **Caso del sistema** | Un texto que el código envía en una situación fija (audio, imagen, traspaso, error, techo de gasto…). `contra_entrega` es del sistema **y** de intención | Tú lo editas; la lista es cerrada y no se crean ni se borran |
+| **Caso del sistema** | Un texto que el código envía en una situación fija (audio, imagen, traspaso, error, techo de gasto…) | Tú lo editas; la lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
@@ -21,7 +21,7 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 
 ## Cargar los casos de hoy (una vez)
 
-`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los once casos del sistema (con el texto que ya
+`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los casos del sistema que quedan (con el texto que ya
 hubiera en `parametro` o, si no, el de respaldo), el caso de uso «Tratamiento de datos» y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
 
@@ -30,6 +30,14 @@ explica cómo usa los datos y pide que el cliente acepte, antes de guardar su no
 borrar: borrarlo **no** abre la puerta, porque sin la aceptación del cliente el sistema no guarda ningún dato. Si lo borras, el
 bot deja de pedir la aceptación con tu texto y no podrá tomar pedidos. Si `parametro` todavía guarda un `aviso_datos`, el caso
 nace con ese texto.
+
+**Contra entrega, sin cobertura y la captura fuera de horario ya no son casos del sistema** (Fase 12d). El código no los
+siembra ni los lee: son casos de uso tuyos. En una base que ya los tenía, la migración los dejó como casos de intención
+normales, con tu título y tu texto, en «Políticas» y ahora editables y borrables. En una base nueva no existen hasta que los
+crees; mientras no existan, el bot no tiene esa conducta y, si el cliente pregunta, dice que no tiene el dato y ofrece un
+asesor. La cotización de envío (`cotizar_envio`) devuelve solo datos (rango, días, si hay contra entrega, o que no hay
+cobertura) y el bot consulta tu caso con `consultar_caso`. Si tu caso de contra entrega o de cobertura sigue ahí, nada cambia
+para el cliente salvo que ahora lo cita el bot en vez de pegarlo el código.
 
 Para una base de desarrollo, `npm run casos:sembrar -- --archivo datos-desarrollo/asistente/casos.json` suma además los casos
 de ese archivo (`{ "casos": [{ "categoria", "titulo", "cuandoAplica", "texto", "modo" }] }`). Se valida entero con las reglas

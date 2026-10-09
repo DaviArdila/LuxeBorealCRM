@@ -13,6 +13,7 @@ import { AppModule } from '../../src/app.module.js';
 import { configurarAplicacion, OPCIONES_APLICACION } from '../../src/configurar-aplicacion.js';
 import { BarridoEsperas } from '../../src/modulos/conversaciones/infraestructura/colas/barrido-esperas.js';
 import { MARCA_ESPERA_CLIENTE, type MarcaEsperaCliente } from '../../src/modulos/conversaciones/puertos/marca-espera-cliente.js';
+import { HECHO_CAPTURA_PENDIENTE } from '../../src/modulos/leads/index.js';
 import { LLM_PORT } from '../../src/modulos/llm/index.js';
 import { ALMACENAMIENTO } from '../../src/modulos/medios/index.js';
 import { CONFIGURACION, type Configuracion } from '../../src/plataforma/config/index.js';
@@ -422,9 +423,10 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
       await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
 
       await esperarMensajes(chatwootFalso, idConversacion, 2);
-      // Solo el segundo turno (tras crearse el lead pendiente) recibe las instrucciones de captura.
-      expect(llm.solicitudes[0]?.systemPrompt).not.toContain('ya mostró intención de compra');
-      expect(llm.solicitudes[2]?.systemPrompt).toContain('ya mostró intención de compra');
+      // Solo el segundo turno (tras crearse el lead pendiente) recibe el hecho de la captura (LDS4): sin guion ni cierre.
+      expect(llm.solicitudes[0]?.systemPrompt).not.toContain('faltan sus datos de contacto');
+      expect(llm.solicitudes[2]?.systemPrompt).toContain(HECHO_CAPTURA_PENDIENTE);
+      expect(llm.solicitudes[2]?.systemPrompt).not.toMatch(/despídete|texto exacto/);
       const lead = await prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } });
       expect(lead).toMatchObject({ derivado: true, capturadoFueraHorario: true });
       const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });

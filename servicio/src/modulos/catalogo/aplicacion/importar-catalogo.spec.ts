@@ -256,6 +256,25 @@ describe('catalogo/aplicacion/ImportarCatalogo', () => {
     });
   });
 
+  it('CFG6 — El importador rechaza una clave de texto, nombra la fila y no escribe nada', async () => {
+    const fuente = new FuenteCatalogoFalsa({
+      ...PESTANAS_VACIAS,
+      productos: [filaProducto({ activo: 'no', fotos: '' })],
+      parametros: [{ clave: 'politica_devoluciones', valor: 'Aceptamos devoluciones en ocho días.' }],
+    });
+    const repositorioImportacion = new RepositorioImportacionFalso();
+    const cacheCatalogo = new CacheCatalogoFalsa();
+    const orquestador = crearOrquestador({ fuente, repositorioImportacion, almacenamiento: new AlmacenamientoEnMemoria(), cacheCatalogo });
+
+    const reporte = await orquestador.ejecutar();
+
+    expect(reporte.valido).toBe(false);
+    const error = reporte.errores.find((e) => e.pestana === 'parametros');
+    expect(error?.mensaje).toContain('Casos de uso');
+    expect(repositorioImportacion.llamadasEscribir).toHaveLength(0);
+    expect(cacheCatalogo.invalidada).toBe(false);
+  });
+
   it('IMP12 — Una importación exitosa invalida la caché de catálogo compacto', async () => {
     const fuente = new FuenteCatalogoFalsa({ ...PESTANAS_VACIAS, productos: [filaProducto({ activo: 'no', fotos: '' })] });
     const repositorioImportacion = new RepositorioImportacionFalso();

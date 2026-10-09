@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../plataforma/prisma/index.js';
-import { CASOS_DEL_SISTEMA, claveParametroLegada } from '../../dominio/sistema.js';
+import { CASOS_DEL_SISTEMA } from '../../dominio/sistema.js';
 import { normalizarNombre, textoDeBusqueda } from '../../dominio/normalizar.js';
 import type { PlanSemilla } from '../../dominio/semilla.js';
 import type { RepositorioSemilla } from '../../puertos/repositorio-semilla.js';
@@ -16,7 +16,7 @@ export class RepositorioSemillaPrisma implements RepositorioSemilla {
   constructor(private readonly prisma: PrismaService) {}
 
   async leerParametrosDeTexto(): Promise<ReadonlyMap<string, unknown>> {
-    const claves = CASOS_DEL_SISTEMA.map((caso) => claveParametroLegada(caso.clave));
+    const claves = CASOS_DEL_SISTEMA.map((caso) => caso.clave);
     const filas = await this.prisma.parametro.findMany({
       where: { OR: [{ clave: { in: claves } }, { clave: { startsWith: PREFIJO_POLITICA } }] },
     });

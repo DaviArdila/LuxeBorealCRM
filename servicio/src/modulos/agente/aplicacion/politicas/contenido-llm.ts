@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { MotivoAviso, PasoRespuesta, RespuestaTurno, SolicitudTurno } from '../../../conversaciones/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../../plataforma/config/index.js';
 import { ObtenerMensajeTechoGasto } from '../../../llm/index.js';
-import { asegurarMensajeLiteral } from '../../dominio/asegurar-mensaje-literal.js';
 import type { EfectoTurno } from '../../dominio/efectos.js';
 import { elegirAviso } from '../../dominio/prioridad-aviso.js';
 import type { DecisionPolitica, EstadoTurno, PoliticaTurno } from '../../dominio/politica-turno.js';
@@ -98,11 +97,8 @@ export class ContenidoLlm implements PoliticaTurno {
     }
 
     // AGT7: solo un turno que terminó con texto final entra al historial, y solo los dos textos.
-    // R2: el mensaje de «sin cobertura» sale literal desde el backend, no parafraseado por el modelo.
-    const texto = resultado.efectos.reduce(
-      (acumulado, efecto) => (efecto.tipo === 'sin-cobertura' ? asegurarMensajeLiteral(acumulado, efecto.mensaje) : acumulado),
-      resultado.texto,
-    );
+    // CAS12: nada reemplaza ni completa el texto del modelo; la política de cobertura la consulta él como caso de uso.
+    const texto = resultado.texto;
     await this.historial.agregar(sesion, textoCliente, texto);
     const aviso = avisoDeEfectos(resultado.efectos);
     return {
