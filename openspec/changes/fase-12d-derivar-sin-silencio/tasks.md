@@ -50,7 +50,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 
 - [x] T0 — Spec del change, ADR-0027 y preguntas abiertas (documentación; puerta de aprobación del dueño)
 - [x] T1 — Efecto `avisar-asesor`: aviso por Telegram sin cambiar de estado, marca «asesor avisado» por motivo y motivo `pide-asesor`
-- [ ] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
+- [x] T2 — Herramienta `derivar_a_asesor`, `seguridad.v1.md`, `estilo.v4.md` y contexto con hechos
 - [ ] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
 - [ ] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
 - [ ] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
@@ -273,7 +273,7 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 |---|---|---|---|---|
 | T0 | inline (documentación, sin código). Hook `pre-push` en verde con Docker; el CI cayó en `auditoria:cliente` por un aviso crítico de `handlebars` ajeno al cambio y se corrigió aparte | `fe4a818` | #117 (fusionado `ba014f9`); arreglo de CI en #118 (`08e3714`) | passive: revisión estructural |
 | T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T2 | pendiente | — | — | — |
+| T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T3 | pendiente | — | — | — |
 | T4 | pendiente | — | — | — |
 | T5 | pendiente | — | — | — |
@@ -301,6 +301,22 @@ Máximo del change: 10 tareas (T0-T9 = 10).
   - Se creó `AvisoAsesorModule` dentro de `conversaciones.module.ts`; conviene moverlo a su propio archivo cuando se
     toque ese módulo en T3.
   - `openspec/specs/conversaciones/spec.md` no se tocó: los deltas se fusionan al archivar (T9).
+
+### T2 (commit `8d2e929`)
+- **Tamaño real:** 84 líneas de producción (cambiadas), 360 de pruebas y fakes, 173 de JSON de evals (casi todo es
+  quitar `sinEmojis`) y 124 de prompts y documentación. No usa la `size:exception` anticipada: queda bajo ~400.
+- **Decisiones del writer:**
+  - `estilo-inicial.md` lleva un único encabezado `# Estilo` con la frase mínima: sin encabezado, `dividirEstilo` crea la
+    sección «General» y `componerEstilo` ya no devuelve el texto original.
+  - La versión del prompt sube de `v4` a `v5` en `cargador-prompts.ts`.
+  - Aserción nueva y no crítica `aviso: esperado|prohibido` en las evals, para afirmar «hay aviso»; `GrabacionTurno` lleva `aviso`.
+  - Evals reescritas: `r13-una-foto` (siembra el caso «Fotos») y `r12-ubicacion` (siembra «Ubicación compartida»);
+    retirada: `neg-emojis`; nuevas: `pide-asesor-herramienta` y `caso-pide-aviso`.
+  - La eval de `derivar_a_asesor` evita frases como «hablar con alguien», que captura la política determinista de pide-persona.
+- **Lo que no se tocó (es de T6):** la instrucción de captura fuera de horario y `evaluar-propuesta-lead.ts`.
+- **Entorno local:** `npm run test:e2e` en paralelo da fallos distintos en cada corrida (5, 16, 19, 11) con tiempos de
+  20 s agotados y `/health` 503; en serie (`--no-file-parallelism`) pasan las 114. Es carga de la máquina, no código;
+  el CI de GitHub es la referencia.
 
 ## Mapeo de escenarios por tarea
 
