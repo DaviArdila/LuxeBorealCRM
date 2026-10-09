@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { Client } from 'pg';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ejecutarSembrarCasos } from '../../../scripts/sembrar-casos.js';
 import {
@@ -25,6 +28,8 @@ import { crearCasoDeIntencion } from '../../soporte/textos-asistente.js';
 import { VersionAsistenteDePrueba } from '../../soporte/version-asistente-de-prueba.js';
 
 // Fase 12, T4: el módulo `asistente` contra Postgres y Redis reales (CAS4, CAS6, CAS7).
+
+const MIGRACION_T7 = path.resolve(import.meta.dirname, '..', '..', '..', 'prisma', 'migrations', '20261009140000_casos_del_sistema_minimos', 'migration.sql');
 
 const instante = new Date('2026-10-06T15:00:00.000Z');
 const CLAVES_LEGADAS = [...CASOS_DEL_SISTEMA.map((c) => c.clave)];
@@ -103,21 +108,21 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     const casos = await prisma.casoAsistente.findMany({ where: { claveSistema: { not: null } }, include: { categoria: true } });
     expect(casos).toHaveLength(CASOS_DEL_SISTEMA.length);
     for (const caso of casos) {
-      expect(caso.texto, caso.claveSistema ?? '').toBe(textoDeRespaldo(caso.claveSistema as 'mensaje_handoff'));
+      expect(caso.texto, caso.claveSistema ?? '').toBe(textoDeRespaldo(caso.claveSistema as 'mensaje_espera_handoff'));
       expect(caso.activo).toBe(true);
       expect(caso.modo).toBe('literal');
     }
-    expect(casos.find((c) => c.claveSistema === 'mensaje_handoff')).toMatchObject({ disparador: 'evento', categoria: { nombre: 'Sistema' } });
+    expect(casos.find((c) => c.claveSistema === 'mensaje_espera_handoff')).toMatchObject({ disparador: 'evento', categoria: { nombre: 'Sistema' } });
     expect((await prisma.categoriaCaso.findMany({ orderBy: { orden: 'asc' } })).map((c) => c.nombre)).toEqual(['Sistema', 'Políticas']);
   });
 
   it('CAS6 — Sembrar copia los textos que ya estaban editados', async () => {
     const { sembrar, prisma } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'mensaje_handoff', valor: 'TEXTO-PROPIO-DEL-NEGOCIO', actualizado: instante } });
+    await prisma.parametro.create({ data: { clave: 'mensaje_espera_handoff', valor: 'TEXTO-PROPIO-DEL-NEGOCIO', actualizado: instante } });
 
     await sembrar.ejecutar();
 
-    const caso = await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_handoff' } });
+    const caso = await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_espera_handoff' } });
     expect(caso.texto).toBe('TEXTO-PROPIO-DEL-NEGOCIO');
   });
 
@@ -150,7 +155,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     const { sembrar, prisma } = await crearContexto();
     await prisma.parametro.createMany({
       data: [
-        { clave: 'mensaje_handoff', valor: 'Mi traspaso', actualizado: instante },
+        { clave: 'mensaje_espera_handoff', valor: 'Mi traspaso', actualizado: instante },
         { clave: 'politica_garantia', valor: 'Mi garantía', actualizado: instante },
         { clave: 'llm_techo_mensual_usd', valor: 50, actualizado: instante },
       ],
@@ -158,7 +163,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     await sembrar.ejecutar();
 
-    const restantes = await prisma.parametro.findMany({ where: { clave: { in: ['mensaje_handoff', 'politica_garantia', 'llm_techo_mensual_usd'] } } });
+    const restantes = await prisma.parametro.findMany({ where: { clave: { in: ['mensaje_espera_handoff', 'politica_garantia', 'llm_techo_mensual_usd'] } } });
     expect(restantes.map((f) => f.clave)).toEqual(['llm_techo_mensual_usd']);
     await prisma.parametro.delete({ where: { clave: 'llm_techo_mensual_usd' } });
   });
@@ -206,51 +211,82 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).toBeNull();
   });
 
-  it('CAS13 — Con el caso del sistema aviso_datos editado, «Tratamiento de datos» nace con ese texto y la semilla es idempotente', async () => {
+  it('CAS13 — La semilla es idempotente con «Tratamiento de datos» y no vuelve a crear el caso del sistema aviso_datos', async () => {
     const { sembrar, prisma } = await crearContexto();
-    await sembrar.ejecutar();
-    await prisma.casoAsistente.deleteMany({ where: { titulo: 'Tratamiento de datos' } });
-    await prisma.casoAsistente.update({ where: { claveSistema: 'aviso_datos' }, data: { texto: 'Texto editado por el dueño. ¿Aceptas?' } });
     await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Texto viejo de parametro. ¿Aceptas?', actualizado: instante } });
 
     const primera = await sembrar.ejecutar();
     const segunda = await sembrar.ejecutar();
 
-    const caso = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
-    expect(caso.texto).toBe('Texto editado por el dueño. ¿Aceptas?');
-    expect(primera).toMatchObject({ insertados: 1, origenesDeTexto: { casoDelSistema: 1, parametro: 0, respaldo: 0 } });
+    expect(primera).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length + 1, origenesDeTexto: { casoDelSistema: 0, parametro: 1, respaldo: 0 } });
     expect(segunda.insertados).toBe(0);
-    // El caso del sistema queda intacto (lo retira la migración de T7) y la fila de parametro no se copió, así que no se retira.
-    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe('Texto editado por el dueño. ¿Aceptas?');
-    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).not.toBeNull();
-    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe(caso.texto);
+    expect(await prisma.casoAsistente.count({ where: { claveSistema: 'aviso_datos' } })).toBe(0);
+    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe('Texto viejo de parametro. ¿Aceptas?');
+  });
+
+  it('CAS14 — La semilla antes de la migración no pierde el texto editado de aviso_datos', async () => {
+    const { sembrar, prisma } = await crearContexto();
+    const sistema = await prisma.categoriaCaso.create({ data: { nombre: 'Sistema', nombreNormalizado: 'sistema', orden: 0, creado: instante, actualizado: instante } });
+    const TEXTO = 'TEXTO-EDITADO-DEL-DUEÑO: soy un asistente automatizado, ¿aceptas el tratamiento de tus datos?';
+    await prisma.casoAsistente.create({
+      data: {
+        categoriaId: sistema.id,
+        titulo: 'Aviso de datos',
+        tituloNormalizado: 'aviso de datos',
+        cuandoAplica: 'Al inicio.',
+        disparador: 'evento',
+        claveSistema: 'aviso_datos',
+        texto: TEXTO,
+        busquedaNormalizada: 'x',
+        creado: instante,
+        actualizado: instante,
+      },
+    });
+
+    await sembrar.ejecutar();
+
+    const sembrado = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
+    expect(sembrado.texto).toBe(TEXTO);
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe(TEXTO);
+
+    const cliente = new Client({ connectionString: urlPostgresDePrueba() });
+    await cliente.connect();
+    try {
+      await cliente.query(readFileSync(MIGRACION_T7, 'utf8'));
+    } finally {
+      await cliente.end();
+    }
+
+    expect(await prisma.casoAsistente.count({ where: { claveSistema: 'aviso_datos' } })).toBe(0);
+    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe(TEXTO);
+    expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(1);
   });
 
   it('CAS6 — Sembrar dos veces no pisa una edición e informa que no insertó casos nuevos', async () => {
     const { sembrar, prisma } = await crearContexto();
     await sembrar.ejecutar();
-    await prisma.casoAsistente.update({ where: { claveSistema: 'aviso_datos' }, data: { texto: 'EDITADO-EN-LA-PANTALLA' } });
-    await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Reapareció en parametro', actualizado: instante } });
+    await prisma.casoAsistente.update({ where: { claveSistema: 'mensaje_techo_gasto' }, data: { texto: 'EDITADO-EN-LA-PANTALLA' } });
+    await prisma.parametro.create({ data: { clave: 'mensaje_techo_gasto', valor: 'Reapareció en parametro', actualizado: instante } });
 
     const resultado = await sembrar.ejecutar();
 
     expect(resultado).toMatchObject({ insertados: 0, existentes: CASOS_DEL_SISTEMA.length + 1 });
-    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe('EDITADO-EN-LA-PANTALLA');
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_techo_gasto' } })).texto).toBe('EDITADO-EN-LA-PANTALLA');
     // La fila que reapareció no se copió, así que no se retira.
-    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).not.toBeNull();
-    await prisma.parametro.delete({ where: { clave: 'aviso_datos' } });
+    expect(await prisma.parametro.findUnique({ where: { clave: 'mensaje_techo_gasto' } })).not.toBeNull();
+    await prisma.parametro.delete({ where: { clave: 'mensaje_techo_gasto' } });
   });
 
   it('CAS6 — Si la transacción falla no se crea ningún caso ni se retira ninguna fila', async () => {
     const { prisma, clock } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'mensaje_handoff', valor: 'Mi traspaso', actualizado: instante } });
+    await prisma.parametro.create({ data: { clave: 'mensaje_espera_handoff', valor: 'Mi traspaso', actualizado: instante } });
     const repositorio = new RepositorioSemillaPrisma(prisma);
 
     // El segundo caso es de evento sin clave del sistema: el CHECK [manual] lo rechaza a mitad de la transacción.
     const plan = {
       categorias: [{ nombre: 'Sistema', orden: 0 }],
       casos: [
-        { claveSistema: 'mensaje_handoff', titulo: 'Traspaso a un asesor', cuandoAplica: 'Cuando pasa.', disparador: 'evento' as const, modo: 'literal' as const, categoria: 'Sistema', texto: 'Mi traspaso', claveParametro: 'mensaje_handoff' },
+        { claveSistema: 'mensaje_espera_handoff', titulo: 'Espera del asesor', cuandoAplica: 'Cuando pasa.', disparador: 'evento' as const, modo: 'literal' as const, categoria: 'Sistema', texto: 'Mi traspaso', claveParametro: 'mensaje_espera_handoff' },
         { claveSistema: null, titulo: 'Roto', cuandoAplica: 'Nunca.', disparador: 'evento' as const, modo: 'literal' as const, categoria: 'Sistema', texto: 'Texto', claveParametro: null },
       ],
     };
@@ -259,12 +295,12 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     expect(await prisma.casoAsistente.count()).toBe(0);
     expect(await prisma.categoriaCaso.count()).toBe(0);
-    expect(await prisma.parametro.findUnique({ where: { clave: 'mensaje_handoff' } })).not.toBeNull();
+    expect(await prisma.parametro.findUnique({ where: { clave: 'mensaje_espera_handoff' } })).not.toBeNull();
   });
 
   it('CAS6 — La semilla no escribe textos: el reporte y los logs solo llevan cantidades', async () => {
     const { sembrar, prisma } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'mensaje_handoff', valor: 'TEXTO-CONFIDENCIAL-DEL-NEGOCIO', actualizado: instante } });
+    await prisma.parametro.create({ data: { clave: 'mensaje_espera_handoff', valor: 'TEXTO-CONFIDENCIAL-DEL-NEGOCIO', actualizado: instante } });
     const espiados = [vi.spyOn(Logger.prototype, 'log'), vi.spyOn(Logger.prototype, 'warn'), vi.spyOn(Logger.prototype, 'error')];
     const salida = vi.spyOn(process.stdout, 'write');
 
@@ -292,7 +328,7 @@ describe('TextosAsistente contra Postgres y Redis (Fase 12, T4, integración)', 
   it('CAS7 — Un caso sin fila usa el respaldo del código', async () => {
     const { textos } = await crearContexto();
 
-    expect(await textos.textoDelSistema('mensaje_handoff')).toBe(textoDeRespaldo('mensaje_handoff'));
+    expect(await textos.textoDelSistema('mensaje_espera_handoff')).toBe(textoDeRespaldo('mensaje_espera_handoff'));
   });
 
   it('CAS7 — Un caso sembrado entrega su texto, y editarlo con la versión subida rige en la siguiente lectura', async () => {
@@ -311,10 +347,10 @@ describe('TextosAsistente contra Postgres y Redis (Fase 12, T4, integración)', 
   it('CAS7 — Un caso en blanco o inactivo en la base cae al respaldo', async () => {
     const { textos, sembrar, prisma, version } = await crearContexto();
     await sembrar.ejecutar();
-    await prisma.casoAsistente.update({ where: { claveSistema: 'aviso_datos' }, data: { texto: '   ' } });
+    await prisma.casoAsistente.update({ where: { claveSistema: 'mensaje_techo_gasto' }, data: { texto: '   ' } });
     await version.incrementar();
 
-    expect(await textos.textoDelSistema('aviso_datos')).toBe(textoDeRespaldo('aviso_datos'));
+    expect(await textos.textoDelSistema('mensaje_techo_gasto')).toBe(textoDeRespaldo('mensaje_techo_gasto'));
   });
 });
 
@@ -331,6 +367,17 @@ describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', ()
     expect(indice.map((e) => e.titulo)).toEqual(['Garantía', 'Tratamiento de datos']);
     expect(indice[0]).toEqual({ titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.' });
     expect(JSON.stringify(indice)).not.toContain('Cubre ocho días');
+  });
+
+  it('CAS8 — Los casos del sistema no entran al índice', async () => {
+    const { casos, sembrar, version } = await crearContexto();
+    await sembrar.ejecutar();
+    await version.incrementar();
+
+    const indice = await casos.indice();
+
+    expect(indice.map((e) => e.titulo)).toEqual(['Tratamiento de datos']);
+    for (const definicion of CASOS_DEL_SISTEMA) expect(indice.map((e) => e.titulo)).not.toContain(definicion.titulo);
   });
 
   it('CAS8 — consultar_caso encuentra por título sin acentos ni mayúsculas, y lista los disponibles si no existe', async () => {

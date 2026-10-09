@@ -72,49 +72,49 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
   });
 
   it('el texto del caso guardado es el que se entrega', async () => {
-    const { proveedor } = crear({ mensaje_handoff: 'TEXTO-PROPIO-DEL-NEGOCIO' });
+    const { proveedor } = crear({ mensaje_espera_handoff: 'TEXTO-PROPIO-DEL-NEGOCIO' });
 
-    expect(await proveedor.textoDelSistema('mensaje_handoff')).toBe('TEXTO-PROPIO-DEL-NEGOCIO');
+    expect(await proveedor.textoDelSistema('mensaje_espera_handoff')).toBe('TEXTO-PROPIO-DEL-NEGOCIO');
   });
 
   it('CAS7 — Un caso sin fila usa el respaldo', async () => {
     const { proveedor } = crear({});
 
-    expect(await proveedor.textoDelSistema('mensaje_handoff')).toBe(textoDeRespaldo('mensaje_handoff'));
+    expect(await proveedor.textoDelSistema('mensaje_espera_handoff')).toBe(textoDeRespaldo('mensaje_espera_handoff'));
   });
 
   it('CAS7 — Un texto en blanco cae al respaldo', async () => {
-    const { proveedor } = crear({ aviso_datos: '  \n ' });
+    const { proveedor } = crear({ mensaje_techo_gasto: '  \n ' });
 
-    expect(await proveedor.textoDelSistema('aviso_datos')).toBe(textoDeRespaldo('aviso_datos'));
+    expect(await proveedor.textoDelSistema('mensaje_techo_gasto')).toBe(textoDeRespaldo('mensaje_techo_gasto'));
   });
 
-  it('CAS7 — Una base caída usa el respaldo, no rompe el turno y avisa sin contenido', async () => {
-    const { proveedor, repositorio } = crear({ mensaje_handoff: 'TEXTO-CONFIDENCIAL' });
+  it('CAS7 — Una base caída usa el respaldo y no rompe el turno', async () => {
+    const { proveedor, repositorio } = crear({ mensaje_espera_handoff: 'TEXTO-CONFIDENCIAL' });
     repositorio.falla = true;
 
-    await expect(proveedor.textoDelSistema('mensaje_handoff')).resolves.toBe(textoDeRespaldo('mensaje_handoff'));
+    await expect(proveedor.textoDelSistema('mensaje_espera_handoff')).resolves.toBe(textoDeRespaldo('mensaje_espera_handoff'));
 
     expect(avisos).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(avisos.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
   });
 
   it('CAS7 — Sin Redis se lee la base y no se guarda una copia en memoria', async () => {
-    const { proveedor, repositorio, version } = crear({ mensaje_handoff: 'T1' });
+    const { proveedor, repositorio, version } = crear({ mensaje_espera_handoff: 'T1' });
     version.falla = true;
 
-    expect(await proveedor.textoDelSistema('mensaje_handoff')).toBe('T1');
-    await proveedor.textoDelSistema('mensaje_handoff');
+    expect(await proveedor.textoDelSistema('mensaje_espera_handoff')).toBe('T1');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
 
     expect(repositorio.lecturas).toBe(2);
   });
 
   it('CAS7 — Una lectura repetida no consulta la base mientras la versión no cambia', async () => {
-    const { proveedor, repositorio } = crear({ mensaje_handoff: 'T1' });
+    const { proveedor, repositorio } = crear({ mensaje_espera_handoff: 'T1' });
 
-    await proveedor.textoDelSistema('mensaje_handoff');
-    await proveedor.textoDelSistema('aviso_datos');
-    await proveedor.textoDelSistema('mensaje_handoff');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
+    await proveedor.textoDelSistema('mensaje_techo_gasto');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
 
     expect(repositorio.lecturas).toBe(1);
   });
@@ -131,26 +131,26 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
   });
 
   it('la copia expira a los 5 minutos aunque la versión no haya cambiado', async () => {
-    const { proveedor, repositorio, clock } = crear({ mensaje_handoff: 'T1' });
-    await proveedor.textoDelSistema('mensaje_handoff');
+    const { proveedor, repositorio, clock } = crear({ mensaje_espera_handoff: 'T1' });
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
 
     clock.avanzar(5 * 60_000 - 1);
-    await proveedor.textoDelSistema('mensaje_handoff');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
     expect(repositorio.lecturas).toBe(1);
 
     clock.avanzar(2);
-    await proveedor.textoDelSistema('mensaje_handoff');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
     expect(repositorio.lecturas).toBe(2);
   });
 
   it('una lectura fallida no queda en la copia: la siguiente vuelve a intentar la base', async () => {
-    const { proveedor, repositorio } = crear({ mensaje_handoff: 'T1' });
+    const { proveedor, repositorio } = crear({ mensaje_espera_handoff: 'T1' });
     repositorio.falla = true;
-    await proveedor.textoDelSistema('mensaje_handoff');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
 
     repositorio.falla = false;
 
-    expect(await proveedor.textoDelSistema('mensaje_handoff')).toBe('T1');
+    expect(await proveedor.textoDelSistema('mensaje_espera_handoff')).toBe('T1');
   });
   it('CAS8 — El índice lista los casos de intención con su título y su «cuándo aplica»', async () => {
     const { proveedor } = crear({}, [caso('Garantía'), caso('Devoluciones')]);
@@ -159,6 +159,14 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
       { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por garantía.' },
       { titulo: 'Devoluciones', cuandoAplica: 'Cuando preguntan por devoluciones.' },
     ]);
+  });
+
+  it('CAS8 — Los casos del sistema no entran al índice', async () => {
+    const { proveedor } = crear({ mensaje_error_llm: 'Ya te respondemos.', mensaje_espera_handoff: 'Seguimos aquí.' }, [caso('Garantía')]);
+
+    const titulos = (await proveedor.indice()).map((entrada) => entrada.titulo);
+
+    expect(titulos).toEqual(['Garantía']);
   });
 
   it('CAS8 — consultar_caso devuelve el texto y el modo, sin distinguir mayúsculas ni acentos', async () => {
@@ -172,7 +180,7 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
     });
   });
 
-  it('CAS8 — Un caso inexistente devuelve la lista de títulos disponibles', async () => {
+  it('CAS8 — Un caso inexistente lista los disponibles', async () => {
     const { proveedor } = crear({}, [caso('Garantía'), caso('Devoluciones')]);
 
     expect(await proveedor.consultar('Medios de pago')).toEqual({
@@ -207,7 +215,7 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
 
     await proveedor.indice();
     await proveedor.consultar('Garantía');
-    await proveedor.textoDelSistema('mensaje_handoff');
+    await proveedor.textoDelSistema('mensaje_espera_handoff');
 
     expect(repositorio.lecturas).toBe(1);
   });

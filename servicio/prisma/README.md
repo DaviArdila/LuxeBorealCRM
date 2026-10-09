@@ -88,6 +88,7 @@ porque no deja ningún objeto que la guardia deba buscar en el catálogo. Se pru
 | Migración | Qué hace | Desde |
 |---|---|---|
 | `20261009130000_casos_a_intencion` | `contra_entrega`, `mensaje_fuera_cobertura` y `mensaje_captura_completa` pasan a casos de intención (clave y disparador en la misma sentencia por el CHECK `caso_asistente_evento_requiere_sistema_check`), a «Políticas» si existe; idempotente (CAS14, paso 1) | Fase 12d |
+| `20261009140000_casos_del_sistema_minimos` | `aviso_datos` pasa a «Tratamiento de datos» conservando el texto del dueño (o se borra si ese título ya existe) y se borran `mensaje_handoff` y `mensaje_handoff_fuera_horario`; clave y disparador en la misma sentencia por el CHECK; idempotente (CAS14, pasos 2 y 3) | Fase 12d |
 
 ## UUID v7: quién genera el id
 

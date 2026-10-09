@@ -201,7 +201,7 @@ calcular o decidir, es un parámetro del negocio.
 | `titulo_normalizado` | text | no | único; minúsculas y sin acentos |
 | `cuando_aplica` | text | no | cuándo se envía (caso del sistema) o cuándo usarlo (caso de intención) |
 | `disparador` | enum `disparador_caso` | no | `evento` (lo dispara el código) o `intencion` (lo consulta el LLM) |
-| `clave_sistema` | text | sí | único; clave de la lista cerrada del código (`mensaje_handoff`, `mensaje_error_llm`…) |
+| `clave_sistema` | text | sí | único; clave de la lista cerrada del código, cinco desde la Fase 12d (`mensaje_pedir_texto_audio`, `mensaje_imagen_no_procesada`, `mensaje_error_llm`, `mensaje_techo_gasto`, `mensaje_espera_handoff`) |
 | `modo` | enum `modo_caso` | no | `literal` (se cita palabra por palabra) o `guia` (base para redactar); por defecto `literal` |
 | `texto` | text | no | validado en código (CAS5): sin pesos, SKU ni marcadores `{{…}}`; nunca en logs (R14) |
 | `activo` | boolean | no | un caso inactivo no llega al bot |

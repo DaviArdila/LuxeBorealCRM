@@ -25,7 +25,7 @@ describe('planificarSemilla (CAS6)', () => {
       expect(caso?.texto, definicion.clave).toBe(textoDeRespaldo(definicion.clave));
       expect(caso?.claveParametro, definicion.clave).toBeNull();
     }
-    expect(plan.casos.find((c) => c.claveSistema === 'mensaje_handoff')).toMatchObject({
+    expect(plan.casos.find((c) => c.claveSistema === 'mensaje_espera_handoff')).toMatchObject({
       categoria: 'Sistema',
       disparador: 'evento',
       modo: 'literal',
@@ -53,17 +53,17 @@ describe('planificarSemilla (CAS6)', () => {
   });
 
   it('CAS6 — Sembrar copia los textos que ya estaban editados', () => {
-    const plan = planificarSemilla(filas({ mensaje_handoff: '  Texto propio del negocio.  ' }));
+    const plan = planificarSemilla(filas({ mensaje_espera_handoff: '  Texto propio del negocio.  ' }));
 
-    const caso = plan.casos.find((c) => c.claveSistema === 'mensaje_handoff');
-    expect(caso).toMatchObject({ texto: 'Texto propio del negocio.', claveParametro: 'mensaje_handoff' });
+    const caso = plan.casos.find((c) => c.claveSistema === 'mensaje_espera_handoff');
+    expect(caso).toMatchObject({ texto: 'Texto propio del negocio.', claveParametro: 'mensaje_espera_handoff' });
   });
 
   it('CAS6 — Un valor de parametro en blanco o que no es texto se ignora y rige el respaldo', () => {
-    const plan = planificarSemilla(filas({ aviso_datos: '   ', mensaje_error_llm: 42 }));
+    const plan = planificarSemilla(filas({ mensaje_techo_gasto: '   ', mensaje_error_llm: 42 }));
 
-    expect(plan.casos.find((c) => c.claveSistema === 'aviso_datos')).toMatchObject({
-      texto: textoDeRespaldo('aviso_datos'),
+    expect(plan.casos.find((c) => c.claveSistema === 'mensaje_techo_gasto')).toMatchObject({
+      texto: textoDeRespaldo('mensaje_techo_gasto'),
       claveParametro: null,
     });
     expect(plan.casos.find((c) => c.claveSistema === 'mensaje_error_llm')?.texto).toBe(textoDeRespaldo('mensaje_error_llm'));
@@ -166,32 +166,35 @@ describe('«Tratamiento de datos», el único caso de uso que se siembra (CAS13)
     });
   });
 
-  describe('prioridad del texto: caso del sistema aviso_datos, luego parametro, luego respaldo', () => {
-    const SISTEMA = (texto: unknown) => new Map<string, unknown>([['aviso_datos', texto]]);
+  describe('prioridad del texto: fila de sistema legada aviso_datos, luego parametro, luego respaldo', () => {
     const tratamiento = (plan: ReturnType<typeof planificarSemilla>) => plan.casos.find((c) => c.titulo === TRATAMIENTO_DE_DATOS);
 
-    it('CAS13 — Con el caso del sistema aviso_datos editado, «Tratamiento de datos» nace con ese texto', () => {
-      const plan = planificarSemilla(filas({ aviso_datos: 'Texto viejo de parametro.' }), undefined, SISTEMA('  Texto del dueño. ¿Aceptas?  '));
+    it('CAS13 — Con la fila de sistema legada aviso_datos editada, «Tratamiento de datos» nace con ese texto', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: 'Texto viejo de parametro. ¿Aceptas?' }), undefined, '  Texto del dueño. ¿Aceptas?  ');
 
       expect(tratamiento(plan)).toMatchObject({ texto: 'Texto del dueño. ¿Aceptas?', origenTexto: 'caso-del-sistema', claveParametro: null });
     });
 
-    it('CAS13 — Un texto del caso del sistema que no cumple CAS5 cae al parametro', () => {
-      const plan = planificarSemilla(filas({ aviso_datos: 'Texto de parametro. ¿Aceptas?' }), undefined, SISTEMA('Cuesta $50.000, ¿aceptas?'));
+    it('CAS13 — Un texto legado que no cumple CAS5 cae al parametro', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: 'Texto de parametro. ¿Aceptas?' }), undefined, 'Cuesta $50.000, ¿aceptas?');
 
       expect(tratamiento(plan)).toMatchObject({ texto: 'Texto de parametro. ¿Aceptas?', origenTexto: 'parametro', claveParametro: 'aviso_datos' });
     });
 
     it('CAS13 — Si tampoco hay un parametro válido rige el texto de respaldo', () => {
-      const plan = planificarSemilla(filas({ aviso_datos: '   ' }), undefined, SISTEMA('{{marcador}}'));
+      const plan = planificarSemilla(filas({ aviso_datos: '   ' }), undefined, '{{marcador}}');
 
       expect(tratamiento(plan)).toMatchObject({ texto: CASOS_INICIALES_DE_INTENCION[0]?.texto, origenTexto: 'respaldo', claveParametro: null });
     });
 
-    it('CAS13 — El caso del sistema no se modifica: el plan sigue trayendo su propio caso con su texto de siempre', () => {
-      const plan = planificarSemilla(filas({}), undefined, SISTEMA('Texto del dueño. ¿Aceptas?'));
+    it('CAS13 — Sin fila legada ni parametro rige el respaldo', () => {
+      expect(tratamiento(planificarSemilla(filas({}), undefined, null))).toMatchObject({ origenTexto: 'respaldo' });
+    });
 
-      expect(plan.casos.find((c) => c.claveSistema === 'aviso_datos')?.texto).toBe(textoDeRespaldo('aviso_datos'));
+    it('CAS4 — El plan no trae un caso del sistema aviso_datos: la lista queda en cinco', () => {
+      const plan = planificarSemilla(filas({ aviso_datos: 'Texto del dueño. ¿Aceptas?' }), undefined, 'Texto del dueño. ¿Aceptas?');
+
+      expect(plan.casos.map((c) => c.claveSistema)).not.toContain('aviso_datos');
     });
   });
 });

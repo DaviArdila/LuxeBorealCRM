@@ -275,11 +275,11 @@ describe('Categorías y casos del asistente por la API (T7, e2e)', () => {
     const fila = await ctx.prisma.casoAsistente.create({
       data: {
         categoriaId: categoria,
-        titulo: 'Traspaso a un asesor',
-        tituloNormalizado: 'traspaso a un asesor',
+        titulo: 'Espera del asesor',
+        tituloNormalizado: 'espera del asesor',
         cuandoAplica: 'Cuando el bot pasa la conversación a un asesor.',
         disparador: 'evento',
-        claveSistema: 'mensaje_handoff',
+        claveSistema: 'mensaje_espera_handoff',
         texto: 'Te paso con un asesor.',
         busquedaNormalizada: 'x',
         creado: ahora,
@@ -297,10 +297,10 @@ describe('Categorías y casos del asistente por la API (T7, e2e)', () => {
     const editado = await api.patch(`/casos/${caso.id}`, { actualizado: caso.actualizado, texto: 'Un asesor te escribe ya.' });
     const borrado = await api.delete(`/casos/${caso.id}`);
     const desactivado = await api.patch(`/casos/${caso.id}`, { actualizado: (editado.body as CasoApi).actualizado, activo: false });
-    const conClave = await api.post('/casos', { categoriaId: caso.categoriaId, ...NUEVO, claveSistema: 'mensaje_handoff' });
+    const conClave = await api.post('/casos', { categoriaId: caso.categoriaId, ...NUEVO, claveSistema: 'mensaje_espera_handoff' });
 
     expect(editado.status).toBe(200);
-    expect(editado.body).toMatchObject({ claveSistema: 'mensaje_handoff', disparador: 'evento' });
+    expect(editado.body).toMatchObject({ claveSistema: 'mensaje_espera_handoff', disparador: 'evento' });
     expect(borrado.status).toBe(409);
     expect(codigoDe(borrado)).toBe('caso-del-sistema');
     expect(desactivado.status).toBe(409);
