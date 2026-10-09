@@ -17,11 +17,24 @@ jobs:
   ci:
     name: npm run ci
     runs-on: ubuntu-latest
+    env:
+      # Solo una bandera: el token nunca entra al entorno de los demás pasos (instalación, `npm run ci`).
+      HAY_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
     steps:
       - name: Descargar el repositorio
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
+
+      # Los runners de GitHub comparten IP y Docker Hub limita las descargas anónimas (`toomanyrequests`): sin
+      # sesión, `gitleaks`, `oasdiff`, `actionlint` y las imágenes de Testcontainers fallan al azar. El login es
+      # opcional: sin los secretos (un fork, por ejemplo) el paso se salta y el CI sigue como antes.
+      - name: Iniciar sesión en Docker Hub
+        if: ${{ env.HAY_DOCKERHUB == 'true' }}
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Configurar Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
