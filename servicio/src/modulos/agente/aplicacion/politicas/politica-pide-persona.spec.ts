@@ -1,10 +1,9 @@
-import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { SolicitudTurno } from '../../../conversaciones/index.js';
 import type { RegistrarPidePersona } from '../../../leads/index.js';
-import { TextoHandoff } from '../texto-handoff.js';
+import type { EstadoTurno } from '../../dominio/politica-turno.js';
 import { PoliticaPidePersona } from './politica-pide-persona.js';
 
-// Escenarios AGT14 y LDS3 de `openspec/changes/archive/2026-09-30-fase-08-leads-handoff/specs/`.
+// Escenarios AGT14, LDS3 y LDS4 de `openspec/changes/fase-12d-derivar-sin-silencio/specs/` (T3).
 
 function turno(...textos: string[]): SolicitudTurno {
   return {
@@ -19,7 +18,7 @@ function turno(...textos: string[]): SolicitudTurno {
   };
 }
 
-function crear(accion: 'derivar' | 'capturar' = 'derivar', dentroDeHorario = true) {
+function crear(accion: 'derivar' | 'capturar' = 'derivar') {
   const registros: { conversacionId: string; contactoId: string }[] = [];
   const registrar = {
     ejecutar: (entrada: { conversacionId: string; contactoId: string }) => {
@@ -27,77 +26,102 @@ function crear(accion: 'derivar' | 'capturar' = 'derivar', dentroDeHorario = tru
       return Promise.resolve({ accion, leadId: 'lead-1' });
     },
   } as unknown as RegistrarPidePersona;
-  const horario = { estaDentroDeHorario: () => Promise.resolve(dentroDeHorario) };
-  const politica = new PoliticaPidePersona(registrar, new TextoHandoff(horario, new TextosAsistenteEnMemoria()));
-  return { politica, registros };
+  return { politica: new PoliticaPidePersona(registrar), registros };
 }
 
 describe('modulos/agente/aplicacion/politicas — PoliticaPidePersona (AGT14, D6)', () => {
-  it('AGT14 — La política corta el pipeline antes del LLM con el texto de handoff y el motivo pide-persona', async () => {
+  it('AGT14 — La política avisa y el turno llega al LLM', async () => {
     const { politica, registros } = crear();
+    const estado: EstadoTurno = {};
 
-    const decision = await politica.evaluar(turno('pásame con un humano'));
+    const decision = await politica.evaluar(turno('pásame con un humano'), estado);
 
-    expect(decision).toEqual({
-      decision: 'responder',
-      respuesta: {
-        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: '[mensaje_handoff]' }],
-        handoff: { motivo: 'pide-persona' },
-      },
-      cuentaTurno: false,
-    });
+    expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBe('pide-persona');
     expect(registros).toEqual([{ conversacionId: 'conv-1', contactoId: 'contacto-1' }]);
   });
 
-  it('AGT14 — Un mensaje normal pasa al LLM y no registra ningún lead', async () => {
+  it('AGT14 — Un mensaje normal pasa al LLM sin aviso y no registra ningún lead', async () => {
     const { politica, registros } = crear();
+    const estado: EstadoTurno = {};
 
-    await expect(politica.evaluar(turno('hola, busco un collar'))).resolves.toEqual({ decision: 'seguir' });
+    await expect(politica.evaluar(turno('hola, busco un collar'), estado)).resolves.toEqual({ decision: 'seguir' });
+
+    expect(estado.avisoPedido).toBeUndefined();
     expect(registros).toEqual([]);
   });
 
-  it('LDS3 — Mencionar la palabra no es pedirla: sigue al LLM', async () => {
-    const { politica } = crear();
+  it('LDS3 — Petición explícita de hablar con una persona: avisa, registra el lead y el LLM responde', async () => {
+    const { politica, registros } = crear();
+    const estado: EstadoTurno = {};
 
-    await expect(politica.evaluar(turno('¿el asesor de ustedes atiende los sábados?'))).resolves.toEqual({
-      decision: 'seguir',
-    });
+    const decision = await politica.evaluar(turno('quiero hablar con un asesor'), estado);
+
+    expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBe('pide-persona');
+    expect(registros).toHaveLength(1);
   });
 
-  it('LDS3 — Rechazar hablar con un bot también deriva', async () => {
+  it('LDS3 — Mencionar la palabra no es pedirla: sigue al LLM sin aviso', async () => {
     const { politica } = crear();
+    const estado: EstadoTurno = {};
 
-    const decision = await politica.evaluar(turno('no quiero hablar con un robot, pásame con alguien'));
+    await expect(politica.evaluar(turno('¿el asesor de ustedes atiende los sábados?'), estado)).resolves.toEqual({
+      decision: 'seguir',
+    });
+    expect(estado.avisoPedido).toBeUndefined();
+  });
 
-    expect(decision).toMatchObject({ decision: 'responder', respuesta: { handoff: { motivo: 'pide-persona' } } });
+  it('LDS3 — Rechazar hablar con un bot también avisa con pide-persona', async () => {
+    const { politica } = crear();
+    const estado: EstadoTurno = {};
+
+    const decision = await politica.evaluar(turno('no quiero hablar con un robot, pásame con alguien'), estado);
+
+    expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBe('pide-persona');
+  });
+
+  it('LDS3 — Pedir una persona sin cobertura sigue avisando (la política no consulta la cobertura)', async () => {
+    const { politica } = crear();
+    const estado: EstadoTurno = {};
+
+    await politica.evaluar(turno('quiero hablar con un asesor, vivo lejos'), estado);
+
+    expect(estado.avisoPedido).toBe('pide-persona');
   });
 
   it('detecta la petición en cualquiera de los mensajes de la ráfaga', async () => {
     const { politica } = crear();
+    const estado: EstadoTurno = {};
 
-    const decision = await politica.evaluar(turno('hola', 'quiero hablar con un asesor'));
+    await politica.evaluar(turno('hola', 'quiero hablar con un asesor'), estado);
 
-    expect(decision).toMatchObject({ decision: 'responder' });
+    expect(estado.avisoPedido).toBe('pide-persona');
   });
 
   it('un turno sin texto no evalúa nada', async () => {
     const { politica, registros } = crear();
+    const estado: EstadoTurno = {};
 
-    const decision = await politica.evaluar({
-      ...turno(),
-      mensajes: [{ idMensaje: 'm1', tipoContenido: 'ubicacion', texto: '' }],
-    });
+    const decision = await politica.evaluar(
+      { ...turno(), mensajes: [{ idMensaje: 'm1', tipoContenido: 'ubicacion', texto: '' }] },
+      estado,
+    );
 
     expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBeUndefined();
     expect(registros).toEqual([]);
   });
 
-  it('LDS4 — Fuera de horario el lead queda pendiente de captura y el turno sigue al LLM (T5 agrega la captura)', async () => {
-    const { politica, registros } = crear('capturar', false);
+  it('LDS4 — Una petición de persona fuera de horario avisa de inmediato y el lead queda pendiente de captura', async () => {
+    const { politica, registros } = crear('capturar');
+    const estado: EstadoTurno = {};
 
-    const decision = await politica.evaluar(turno('quiero hablar con un asesor'));
+    const decision = await politica.evaluar(turno('quiero hablar con un asesor'), estado);
 
     expect(decision).toEqual({ decision: 'seguir' });
+    expect(estado.avisoPedido).toBe('pide-persona');
     expect(registros).toHaveLength(1);
   });
 });

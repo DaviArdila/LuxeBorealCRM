@@ -17,8 +17,9 @@ const esquema = z.object({
  * `marcar_lead_caliente` (AGT11): el modelo propone —con señales de un vocabulario cerrado, LDS1— y el
  * puerto `EVALUADOR_LEAD` decide (R9). Un turno que ya dejó el efecto `sin-cobertura` responde
  * `derivado: false` sin consultar la escala: un cliente al que no se le puede vender no es un lead. La
- * herramienta no escribe ni deriva por sí misma: si la escala confirmó y hay que derivar deja el efecto
- * `lead-derivado`, que `ContenidoLlm` convierte en handoff (D4 de la Fase 08).
+ * herramienta no escribe ni avisa por sí misma: si la escala confirmó y hay que derivar deja el efecto
+ * `avisar-asesor` con el motivo `lead-caliente`, que `ContenidoLlm` vuelve el aviso de la respuesta sin cambiar el
+ * texto del modelo ni traspasar la conversación (AGT11, D2 de la Fase 12d).
  */
 export function crearMarcarLeadCaliente(evaluador: EvaluadorLead): Herramienta {
   return definirHerramienta(
@@ -37,7 +38,7 @@ export function crearMarcarLeadCaliente(evaluador: EvaluadorLead): Herramienta {
         paraElModelo: { derivado: decision.derivado, ...(decision.motivo === undefined ? {} : { motivo: decision.motivo }) },
         efectos:
           decision.accion === 'derivar' && decision.leadId !== null
-            ? [{ tipo: 'lead-derivado', leadId: decision.leadId }]
+            ? [{ tipo: 'avisar-asesor', motivo: 'lead-caliente' }]
             : [{ tipo: 'lead-propuesto', temperatura }],
       };
     },

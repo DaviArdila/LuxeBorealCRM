@@ -1,0 +1,35 @@
+{
+  "id": "agt28-asesor-confirma-apartado",
+  "titulo": "AGT28 — caso: con el asesor avisado, el bot informa y dice que el asesor confirma el apartado",
+  "origen": "sintetico",
+  "turnos": [
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Quiero hablar con un asesor y que me aparten el anillo Aurora"
+        }
+      ],
+      "guion": [
+        {
+          "texto": "Ya avisé a un asesor. El anillo Aurora está disponible; el asesor te confirma el apartado y el pago."
+        }
+      ],
+      "aserciones": {
+        "handoff": "prohibido",
+        "aviso": "esperado",
+        "menciona": [
+          "asesor te confirma el apartado"
+        ],
+        "textoAusente": [
+          "quedó apartado",
+          "ya está apartado"
+        ],
+        "herramientasProhibidas": [
+          "marcar_lead_caliente"
+        ],
+        "sinSku": true
+      }
+    }
+  ]
+}

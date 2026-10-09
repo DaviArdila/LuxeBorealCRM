@@ -17,7 +17,6 @@ import { CargadorPrompts } from '../../infraestructura/prompts/cargador-prompts.
 import { BucleHerramientas } from '../bucle-herramientas.js';
 import { EnsamblarPrompt } from '../ensamblar-prompt.js';
 import type { ProveedorEstilo } from '../proveedor-estilo.js';
-import { TextoHandoff } from '../texto-handoff.js';
 import { RegistroHerramientas } from '../registro-herramientas.js';
 import type { ConsultaCasos } from '../../../asistente/index.js';
 import { ContenidoLlm } from './contenido-llm.js';
@@ -72,6 +71,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     { indice: () => Promise.resolve([]) } as unknown as ConsultaCasos,
   );
   const contactos = new RepositorioContactoAgenteEnMemoria();
+  const asesorAvisado = { valor: false };
   const ficha = { ejecutar: () => Promise.reject(new ProductoNoDisponible()) } as unknown as ObtenerFichaProducto;
   const politica = new ContenidoLlm(
     bucle,
@@ -82,14 +82,14 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
       new ContadoresSesionEnMemoria(),
       { pendiente: () => Promise.resolve(false), completar: () => Promise.resolve() },
       parametros,
+      { estaAvisado: () => Promise.resolve(asesorAvisado.valor) },
     ),
     parametros,
     new ObtenerMensajeTechoGasto(parametros),
     historial,
     { AGENTE_HISTORIAL_TURNOS: historialTurnos },
-    new TextoHandoff({ estaDentroDeHorario: () => Promise.resolve(true) }, parametros),
   );
-  return { llm, politica, historial, contactos };
+  return { llm, politica, historial, contactos, asesorAvisado };
 }
 
 describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
@@ -173,7 +173,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     expect((decision as { respuesta: object }).respuesta).not.toHaveProperty('handoff');
   });
 
-  it('AGT4 — Dos efectos avisar-asesor en un turno dan un solo aviso', async () => {
+  it('AGT4 — Dos efectos avisar-asesor en un turno dan un solo aviso, el de mayor prioridad', async () => {
     const lead = herramienta('marcar_lead_caliente', { derivado: true }, [{ tipo: 'avisar-asesor', motivo: 'lead-caliente' }]);
     const { llm, politica } = crear([crearDerivarAAsesor(), lead]);
     llm.encolar(
@@ -192,7 +192,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     const respuesta = (decision as { respuesta: { aviso?: unknown } }).respuesta;
     expect(Array.isArray(respuesta.aviso)).toBe(false);
-    expect(respuesta.aviso).toEqual({ motivo: 'pide-asesor' });
+    expect(respuesta.aviso).toEqual({ motivo: 'lead-caliente' });
   });
 
   it('AGT24 — El motivo escrito por el modelo no queda en ningún lado', async () => {
@@ -489,12 +489,13 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     }
   });
 
-  it('AGT11 — La propuesta confirmada por la escala deriva: el turno termina en handoff lead-caliente con el texto de handoff', async () => {
-    const derivar: Herramienta = {
+  it('AGT11 — La propuesta confirmada por la escala avisa y el bot sigue: el turno termina con el texto del modelo y el aviso lead-caliente', async () => {
+    const avisa: Herramienta = {
       definicion: { nombre: 'marcar', descripcion: 'x', esquema: { safeParse: () => ({ success: true }) }, esquemaJson: {} },
-      ejecutar: () => Promise.resolve({ paraElModelo: { derivado: true }, efectos: [{ tipo: 'lead-derivado', leadId: 'lead-1' }] }),
+      ejecutar: () =>
+        Promise.resolve({ paraElModelo: { derivado: true }, efectos: [{ tipo: 'avisar-asesor', motivo: 'lead-caliente' }] }),
     };
-    const { llm, politica, historial } = crear([derivar]);
+    const { llm, politica, historial } = crear([avisa]);
     llm.encolar(
       { respuesta: { llamadasHerramienta: [{ id: 'c1', nombre: 'marcar', argumentos: {} }] } },
       { respuesta: { texto: 'Perfecto, ya te ayudo con eso' } },
@@ -505,13 +506,41 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
     expect(decision).toEqual({
       decision: 'responder',
       respuesta: {
-        pasos: [{ paso: 'handoff-1', tipo: 'texto', texto: '[mensaje_handoff]' }],
-        handoff: { motivo: 'lead-caliente' },
+        pasos: [{ paso: 'llm-1', tipo: 'texto', texto: 'Perfecto, ya te ayudo con eso' }],
+        aviso: { motivo: 'lead-caliente' },
       },
-      cuentaTurno: false,
+      cuentaTurno: true,
     });
-    // Un turno derivado no entra al historial: la sesión termina aquí.
-    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toEqual([]);
+    // El turno no terminó en handoff: la sesión sigue y su texto entra al historial.
+    await expect(historial.leer({ conversacionId: 'conv-1', version: 0 }, 6)).resolves.toEqual([
+      { rol: 'usuario', texto: 'hola' },
+      { rol: 'asistente', texto: 'Perfecto, ya te ayudo con eso' },
+    ]);
+  });
+
+  it('AGT14 — El turno llega a ContenidoLlm con la instrucción de que el asesor fue avisado', async () => {
+    const { llm, politica } = crear();
+    llm.encolar({ respuesta: { texto: 'Claro, un asesor te escribirá. Mientras, te cuento del producto.' } });
+
+    await politica.evaluar(turno(HOLA), { avisoPedido: 'pide-persona' });
+
+    const prompt = llm.solicitudes[0]?.systemPrompt ?? '';
+    expect(prompt).toContain('El cliente pidió hablar con una persona y el asesor ya fue avisado.');
+    expect(prompt).toContain('no confirmes pagos, apartados ni descuentos');
+  });
+
+  it('AGT28 — Con la marca «asesor avisado» el prompt del turno trae el límite; sin ella no', async () => {
+    const con = crear();
+    con.asesorAvisado.valor = true;
+    con.llm.encolar({ respuesta: { texto: 'ok' } });
+    const sin = crear();
+    sin.llm.encolar({ respuesta: { texto: 'ok' } });
+
+    await con.politica.evaluar(turno(HOLA));
+    await sin.politica.evaluar(turno(HOLA));
+
+    expect(con.llm.solicitudes[0]?.systemPrompt).toContain('no confirmes pagos, apartados ni descuentos');
+    expect(sin.llm.solicitudes[0]?.systemPrompt).not.toContain('no confirmes pagos, apartados ni descuentos');
   });
 
   it('un lead propuesto que no se deriva no cambia la respuesta del modelo', async () => {

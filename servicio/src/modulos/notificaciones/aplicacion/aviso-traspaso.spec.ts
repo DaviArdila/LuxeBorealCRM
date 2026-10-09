@@ -34,7 +34,6 @@ const MOTIVOS_SIN_LEAD = [
   'tope-turnos',
   'fallo-llm',
   'techo-gasto',
-  'audio-repetido',
   'argumentos-invalidos',
   'plazo-agotado',
 ] as const;
@@ -48,17 +47,6 @@ describe('AvisoTraspaso (NTF6)', () => {
     expect(encolar.avisos).toHaveLength(1);
     expect(encolar.avisos[0]?.aviso).toEqual({ tipo: 'traspaso', motivo, enlace: ENLACE });
   });
-
-  it.each(['lead-caliente', 'pide-persona'] as const)(
-    'NTF6 — el motivo %s lo avisa el camino de leads, no este',
-    async (motivo) => {
-      const { caso, encolar } = armar();
-
-      await caso.alConfirmarHandoff(evento(motivo));
-
-      expect(encolar.avisos).toEqual([]);
-    },
-  );
 
   it('NTF6 — la clave de idempotencia lleva la conversación, la versión y el motivo', async () => {
     const { caso, encolar } = armar();
@@ -90,7 +78,7 @@ describe('AvisoTraspaso (NTF6)', () => {
   it('NTF2 — dos motivos distintos de la misma conversación avisan los dos: no hay ventana por contacto', async () => {
     const { caso, encolar } = armar();
 
-    await caso.alConfirmarHandoff(evento('audio-repetido', 0));
+    await caso.alConfirmarHandoff(evento('fallo-llm', 0));
     await caso.alConfirmarHandoff(evento('techo-gasto', 0));
 
     expect(encolar.avisos).toHaveLength(2);

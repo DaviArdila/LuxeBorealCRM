@@ -242,7 +242,7 @@ describe('ProcesarTurno + ColaTurno (T4, integración, CNV1/CNV6/R8/D6/D7/D8)', 
       generar: () =>
         Promise.resolve({
           pasos: [{ paso: 'p1', tipo: 'texto', texto: 'te paso con un asesor' }],
-          handoff: { motivo: 'audio-repetido' },
+          handoff: { motivo: 'tope-turnos' },
         }),
     };
     const contexto = await crearAplicacion({ HANDOFF_TTL_MIN: 45 }, generador);

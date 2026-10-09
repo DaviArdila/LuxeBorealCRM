@@ -36,8 +36,7 @@ const TEXTOS = {
   mensaje_pedir_texto_audio: 'PEDIR-TEXTO-AUDIO',
   mensaje_imagen_no_procesada: 'IMAGEN-NO-PROCESADA',
   aviso_datos: 'AVISO-DE-DATOS',
-  mensaje_handoff: 'HANDOFF-DENTRO-DE-HORARIO',
-  mensaje_handoff_fuera_horario: 'HANDOFF-FUERA-DE-HORARIO',
+  mensaje_espera_handoff: 'ESPERA-DEL-ASESOR',
 } as const;
 
 type TipoAdjunto = 'audio' | 'image' | 'sticker';
@@ -226,7 +225,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     expect(await estadoDe(idConversacion)).toBe('bot');
   }, 30_000);
 
-  it('R12 — Segundo audio consecutivo', async () => {
+  it('R12 — Segundo audio consecutivo avisa al asesor y sigue pidiendo texto, sin traspasar', async () => {
     const aplicacion = await arrancar();
     const { idConversacion, idContacto } = nuevaConversacion();
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
@@ -235,12 +234,10 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: nuevoIdMensaje(), adjunto: 'audio' });
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
-    expect(mensajes[1]).toMatch(/^HANDOFF-(DENTRO|FUERA)-DE-HORARIO$/);
-    await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
-      timeout: 15_000,
-      interval: 100,
-    });
-    expect(await estadoDe(idConversacion)).toBe('handoff_pendiente');
+    expect(mensajes[1]).toContain(TEXTOS.mensaje_pedir_texto_audio);
+    // CNV13: el aviso no cambia el estado ni se espeja como `open` en el canal.
+    expect(await estadoDe(idConversacion)).toBe('bot');
+    expect(estadosEspejados(chatwootFalso, idConversacion)).not.toContain('open');
   }, 40_000);
 
   it('CAS7 — Editar el caso de un evento cambia la respuesta del siguiente evento', async () => {
@@ -319,7 +316,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     expect(mensajes[1]).toBe('Perfecto, oro.');
   }, 40_000);
 
-  it('R13 — Tope de turnos alcanzado', async () => {
+  it('R13 — Tope de turnos alcanzado: responde con el texto de espera y pasa a handoff_pendiente', async () => {
     const aplicacion = await arrancar(1);
     llm.encolar({ respuesta: { texto: 'Hola, ¿en qué te ayudo?' } });
     const { idConversacion, idContacto } = nuevaConversacion();
@@ -333,7 +330,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
-    expect(mensajes[1]).toMatch(/^HANDOFF-(DENTRO|FUERA)-DE-HORARIO$/);
+    expect(mensajes[1]).toBe(TEXTOS.mensaje_espera_handoff);
     await vi.waitFor(() => expect(estadosEspejados(chatwootFalso, idConversacion)).toContain('open'), {
       timeout: 15_000,
       interval: 100,

@@ -2,12 +2,12 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
 import { CatalogoModule } from '../catalogo/index.js';
-import { ObservadoresHandoffModule, RegistroObservadoresHandoff } from '../conversaciones/index.js';
+import { AvisoAsesorModule, RegistroObservadoresAviso } from '../conversaciones/index.js';
 import { HorarioModule } from '../horario/index.js';
 import { NotificacionesModule } from '../notificaciones/index.js';
 import { ArmarDatosAvisoLead } from './aplicacion/armar-datos-aviso-lead.js';
 import { AvisarLead } from './aplicacion/avisar-lead.js';
-import { AvisoLeadEnHandoff } from './aplicacion/aviso-lead-en-handoff.js';
+import { AvisoLeadEnAviso } from './aplicacion/aviso-lead-en-aviso.js';
 import { RecordarLeads } from './aplicacion/recordar-leads.js';
 import { CompletarCaptura } from './aplicacion/completar-captura.js';
 import { EvaluarPropuestaLead } from './aplicacion/evaluar-propuesta-lead.js';
@@ -23,8 +23,9 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
  * hay asesores. `CLOCK` es global. Lo consume `agente` por su barril.
  *
  * T6 (NTF1-NTF3): avisa a los asesores con `AvisarLead` (ventana de 24 h por contacto) a través de
- * `notificaciones`, y se registra como observador de handoff en `onModuleInit` (mismo patrón que
- * `CanalesModule`) para avisar solo después de confirmada la transición. T7 (LDS5): `BarridoLeads` es un job
+ * `notificaciones`, y se registra como observador de aviso en `onModuleInit` (mismo patrón que
+ * `CanalesModule`) para avisar un lead caliente solo después de encolada la respuesta del turno, sin traspaso
+ * (Fase 12d, D4). T7 (LDS5): `BarridoLeads` es un job
  * repetible de BullMQ que corre `RecordarLeads` cada `LEADS_BARRIDO_MS`.
  */
 @Module({
@@ -33,7 +34,7 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
     HorarioModule,
     CatalogoModule,
     NotificacionesModule,
-    ObservadoresHandoffModule,
+    AvisoAsesorModule,
     BullModule.registerQueue({ name: NOMBRE_COLA_BARRIDO_LEADS }),
   ],
   providers: [
@@ -43,7 +44,7 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
     ObtenerCapturaPendiente,
     ArmarDatosAvisoLead,
     AvisarLead,
-    AvisoLeadEnHandoff,
+    AvisoLeadEnAviso,
     CompletarCaptura,
     RecordarLeads,
     BarridoLeads,
@@ -52,11 +53,11 @@ import { REPOSITORIO_LEAD } from './puertos/repositorio-lead.js';
 })
 export class LeadsModule implements OnModuleInit {
   constructor(
-    private readonly registroObservadores: RegistroObservadoresHandoff,
-    private readonly avisoLeadEnHandoff: AvisoLeadEnHandoff,
+    private readonly registroObservadores: RegistroObservadoresAviso,
+    private readonly avisoLeadEnAviso: AvisoLeadEnAviso,
   ) {}
 
   onModuleInit(): void {
-    this.registroObservadores.registrar(this.avisoLeadEnHandoff);
+    this.registroObservadores.registrar(this.avisoLeadEnAviso);
   }
 }

@@ -5,19 +5,16 @@ import { EncolarAviso } from './encolar-aviso.js';
 import { ResolverEnlaceConversacion } from './resolver-enlace-conversacion.js';
 
 /**
- * Qué motivo de handoff avisa como «traspaso sin lead» (NTF6). Los dos que nacen de un lead (`lead-caliente`,
- * `pide-persona`) son `null`: los avisa `leads` con su propia ventana por contacto (NTF2). Es un `Record`
- * exhaustivo a propósito: un motivo de handoff nuevo no compila hasta que se decide si avisa.
+ * Qué aviso encola cada motivo de handoff (NTF6). Desde la Fase 12d los cinco motivos de handoff avisan (el lead, la
+ * petición de persona y los audios ya no traspasan: son avisos sin traspaso, NTF8). Es un `Record` exhaustivo a
+ * propósito: un motivo de handoff nuevo no compila hasta que se decide qué avisa.
  */
-const TRASPASO_DE_MOTIVO: Readonly<Record<MotivoHandoff, MotivoTraspaso | null>> = {
+const TRASPASO_DE_MOTIVO: Readonly<Record<MotivoHandoff, MotivoTraspaso>> = {
   'tope-turnos': 'tope-turnos',
   'fallo-llm': 'fallo-llm',
   'techo-gasto': 'techo-gasto',
-  'audio-repetido': 'audio-repetido',
   'argumentos-invalidos': 'argumentos-invalidos',
   'plazo-agotado': 'plazo-agotado',
-  'lead-caliente': null,
-  'pide-persona': null,
 };
 
 /**
@@ -38,9 +35,6 @@ export class AvisoTraspaso implements ObservadorHandoff {
 
   async alConfirmarHandoff(evento: EventoHandoff): Promise<void> {
     const motivo = TRASPASO_DE_MOTIVO[evento.motivo];
-    if (motivo === null) {
-      return;
-    }
     const enlace = await this.resolverEnlace.ejecutar(evento.conversacionId);
     await this.encolarAviso.ejecutar({
       claveIdempotencia: `traspaso:${evento.conversacionId}:${String(evento.version)}:${motivo}`,

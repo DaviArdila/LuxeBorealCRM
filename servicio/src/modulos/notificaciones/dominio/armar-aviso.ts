@@ -3,7 +3,6 @@ export type MotivoTraspaso =
   | 'tope-turnos'
   | 'fallo-llm'
   | 'techo-gasto'
-  | 'audio-repetido'
   | 'argumentos-invalidos'
   | 'plazo-agotado';
 
@@ -76,7 +75,6 @@ const TITULO_TRASPASO: Readonly<Record<MotivoTraspaso, string>> = {
   'tope-turnos': 'el bot llegó al tope de turnos con un cliente.',
   'fallo-llm': 'el bot no pudo responder por una falla técnica.',
   'techo-gasto': 'el bot dejó de responder por el techo de gasto.',
-  'audio-repetido': 'el cliente insiste con audios y el bot no los procesa.',
   'argumentos-invalidos': 'el bot no pudo completar una consulta.',
   'plazo-agotado': 'el bot se quedó sin tiempo para responder.',
 };

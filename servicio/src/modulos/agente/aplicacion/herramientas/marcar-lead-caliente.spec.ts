@@ -29,13 +29,13 @@ function evaluador(resultado: ResultadoEvaluacionLead) {
 }
 
 describe('modulos/agente/aplicacion/herramientas — marcar_lead_caliente', () => {
-  it('AGT11 — La propuesta confirmada por la escala deriva: el modelo recibe derivado true y queda el efecto', async () => {
+  it('AGT11 — La propuesta confirmada por la escala avisa: el modelo recibe derivado true y queda el efecto avisar-asesor', async () => {
     const { doble } = evaluador({ derivado: true, accion: 'derivar', leadId: 'lead-1' });
 
     const resultado = await crearMarcarLeadCaliente(doble).ejecutar(ARGUMENTOS, contexto());
 
     expect(resultado.paraElModelo).toEqual({ derivado: true });
-    expect(resultado.efectos).toEqual([{ tipo: 'lead-derivado', leadId: 'lead-1' }]);
+    expect(resultado.efectos).toEqual([{ tipo: 'avisar-asesor', motivo: 'lead-caliente' }]);
   });
 
   it('AGT11 — La propuesta que la escala no confirma no deriva y da un motivo al modelo', async () => {

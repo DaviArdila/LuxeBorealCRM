@@ -36,22 +36,10 @@ export interface SolicitudTurno {
 }
 
 /**
- * Motivos por los que el bot no puede seguir y la conversación pasa a `handoff_pendiente` (CNV8). Los tres últimos
- * son **transitorios**: hoy los siguen emitiendo las políticas de `agente` y se retiran en la T3 de la Fase 12d,
- * cuando esas políticas pasan a pedir un {@link MotivoAviso}.
+ * Motivos por los que el bot no puede seguir y la conversación pasa a `handoff_pendiente` (CNV8, D1 de la Fase 12d).
+ * Pedir una persona, un lead caliente o un audio repetido ya no traspasan: son un {@link MotivoAviso}.
  */
-export type MotivoHandoff =
-  | 'tope-turnos'
-  | 'fallo-llm'
-  | 'techo-gasto'
-  | 'argumentos-invalidos'
-  | 'plazo-agotado'
-  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
-  | 'audio-repetido'
-  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
-  | 'lead-caliente'
-  /** Transitorio hasta la T3 de la Fase 12d: pasa a ser un {@link MotivoAviso}. */
-  | 'pide-persona';
+export type MotivoHandoff = 'tope-turnos' | 'fallo-llm' | 'techo-gasto' | 'argumentos-invalidos' | 'plazo-agotado';
 
 /**
  * Motivos para avisar al asesor sin traspasar (CNV11, D1 de la Fase 12d): la conversación sigue en `bot`. Va aparte

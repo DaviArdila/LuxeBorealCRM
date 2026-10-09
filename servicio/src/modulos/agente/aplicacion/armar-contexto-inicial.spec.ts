@@ -1,11 +1,12 @@
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { RepositorioContactoAgenteEnMemoria } from '../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
+import type { ConsultaAsesorAvisado } from '../../conversaciones/index.js';
 import type { CapturaLead } from '../puertos/captura-lead.js';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
 
-// Escenarios AGT12 de `openspec/changes/fase-12d-derivar-sin-silencio/specs/agente/spec.md`.
+// Escenarios AGT12 y AGT28 de `openspec/changes/fase-12d-derivar-sin-silencio/specs/agente/spec.md`.
 
 const SESION = { conversacionId: 'conv-1', version: 0 };
 
@@ -28,8 +29,13 @@ function crear() {
   };
   const parametros = new TextosAsistenteEnMemoria();
   parametros.textos.set('mensaje_captura_completa', 'TEXTO-CIERRE-CAPTURA');
+  const avisado = { valor: false, falla: false };
+  const asesorAvisado: ConsultaAsesorAvisado = {
+    estaAvisado: () => (avisado.falla ? Promise.reject(new Error('redis caído')) : Promise.resolve(avisado.valor)),
+  };
   return {
-    caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, parametros),
+    caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, parametros, asesorAvisado),
+    avisado,
     contadores,
     contactos,
     consultados,
@@ -90,7 +96,9 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     const contactos = { leerNombre: () => Promise.reject(new Error('base caída')), guardarDatosCapturados: () => Promise.resolve() };
     const ficha = { ejecutar: () => Promise.reject(new Error('base caída')) } as unknown as ObtenerFichaProducto;
     const capturaCaida: CapturaLead = { pendiente: () => Promise.reject(new Error('base caída')), completar: () => Promise.resolve() };
-    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new TextosAsistenteEnMemoria());
+    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new TextosAsistenteEnMemoria(), {
+      estaAvisado: () => Promise.reject(new Error('redis caído')),
+    });
 
     await expect(caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'SKU-123' })).resolves.toEqual([]);
   });
@@ -115,5 +123,58 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     const instrucciones = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' })).join('\n');
 
     expect(instrucciones).not.toContain('guardar_datos_contacto');
+  });
+
+  describe('AGT28 — con el asesor ya avisado, el bot no confirma pagos, apartados ni descuentos', () => {
+    it('AGT28 — El contexto agrega la instrucción cuando el asesor ya fue avisado', async () => {
+      const { caso, avisado } = crear();
+      avisado.valor = true;
+
+      const texto = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero apartarlo' })).join('\n');
+
+      expect(texto).toMatch(/asesor ya fue avisado/i);
+      expect(texto).toMatch(/pagos, apartados ni descuentos/);
+      expect(texto).toMatch(/el asesor lo confirma/);
+      expect(texto).toMatch(/precios/);
+    });
+
+    it('AGT28 — Sin aviso el contexto no incluye la instrucción', async () => {
+      const { caso } = crear();
+
+      const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+
+      expect(instrucciones.join('\n')).not.toMatch(/apartados|asesor ya fue avisado/);
+    });
+
+    it('AGT28 — Un fallo al consultar la marca no rompe el contexto', async () => {
+      const { caso, avisado } = crear();
+      avisado.falla = true;
+
+      const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+
+      expect(instrucciones).toEqual([]);
+    });
+
+    it('AGT14 — Si la política acaba de pedir el aviso, el contexto informa la petición de persona y el límite', async () => {
+      const { caso } = crear();
+
+      const texto = (
+        await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero un asesor', avisoPedido: 'pide-persona' })
+      ).join('\n');
+
+      expect(texto).toMatch(/pidió hablar con una persona/i);
+      expect(texto).toMatch(/pagos, apartados ni descuentos/);
+    });
+
+    it('AGT28 — Un aviso pedido por otro motivo también activa el límite', async () => {
+      const { caso } = crear();
+
+      const texto = (
+        await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola', avisoPedido: 'lead-caliente' })
+      ).join('\n');
+
+      expect(texto).toMatch(/pagos, apartados ni descuentos/);
+      expect(texto).not.toMatch(/pidió hablar con una persona/i);
+    });
   });
 });

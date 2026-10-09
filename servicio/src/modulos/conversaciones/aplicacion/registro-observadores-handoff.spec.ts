@@ -4,7 +4,7 @@ import { RegistroObservadoresHandoff, type EventoHandoff } from './registro-obse
 // D7 de la Fase 08: los módulos de arriba (leads) se enteran de un handoff confirmado sin que
 // `conversaciones` los importe. Un observador que falla no revierte el handoff ni frena a los demás.
 
-const EVENTO: EventoHandoff = { conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'lead-caliente', version: 0 };
+const EVENTO: EventoHandoff = { conversacionId: 'conv-1', contactoId: 'contacto-1', motivo: 'tope-turnos', version: 0 };
 
 describe('modulos/conversaciones/aplicacion — RegistroObservadoresHandoff (D7)', () => {
   beforeEach(() => {

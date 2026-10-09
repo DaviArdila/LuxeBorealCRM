@@ -28,7 +28,7 @@ export function decidirNoTextuales(tipos: readonly TipoContenidoTurno[]): Decisi
   }
 }
 
-/** `cuentaAudios` ya incluye el audio actual: el primero pide texto, el segundo consecutivo deriva. */
-export function decidirAudio(cuentaAudios: number): 'pedir-texto' | 'derivar' {
-  return cuentaAudios >= 2 ? 'derivar' : 'pedir-texto';
+/** `cuentaAudios` ya incluye el audio actual: el primero pide texto, el segundo consecutivo avisa al asesor. */
+export function decidirAudio(cuentaAudios: number): 'pedir-texto' | 'avisar' {
+  return cuentaAudios >= 2 ? 'avisar' : 'pedir-texto';
 }
