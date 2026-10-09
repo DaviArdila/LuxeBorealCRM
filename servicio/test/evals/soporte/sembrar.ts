@@ -1,4 +1,3 @@
-import { RepositorioCasosPrisma } from '../../../src/modulos/asistente/infraestructura/prisma/repositorio-casos-prisma.js';
 import { normalizarNombre, textoDeBusqueda } from '../../../src/modulos/asistente/dominio/normalizar.js';
 import type { VersionAsistente } from '../../../src/modulos/asistente/puertos/version-asistente.js';
 import type { PrismaService } from '../../../src/plataforma/prisma/index.js';
@@ -15,10 +14,6 @@ export const SKU = {
 export const PRECIO_ANILLO_COP = 389_000;
 export const PRECIO_COLLAR_COP = 259_000;
 
-/** Texto del caso `contra_entrega` en las evals: corto y sin porcentaje, como el aprobado por el negocio. */
-export const TEXTO_CONTRA_ENTREGA_SEMILLA =
-  'Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra.';
-
 /** Un caso de intención que un caso de eval siembra (CAS8): su título es con lo que el agente lo consulta. */
 export interface CasoSemilla {
   readonly titulo: string;
@@ -28,7 +23,10 @@ export interface CasoSemilla {
   readonly activo?: boolean;
 }
 
-/** Los casos de intención que todo caso de eval encuentra sembrados, además de `contra_entrega`. */
+/**
+ * Los casos de intención que todo caso de eval encuentra sembrados. Contra entrega y sin cobertura ya no están: el código no
+ * los siembra (CAS13) y la eval que los necesita los declara en su `semilla.casos` (CAS12).
+ */
 export const CASOS_SEMILLA_BASE: readonly CasoSemilla[] = [
   {
     titulo: 'Devoluciones',
@@ -96,8 +94,7 @@ export async function sembrarBase(prisma: PrismaService): Promise<void> {
 }
 
 /**
- * Deja los casos del asistente como los espera cada caso de eval (D5): borra los que dejó el anterior, siembra `contra_entrega`
- * y los casos base, suma los del caso (y `relleno` casos de relleno para probar un índice grande) y sube la versión compartida
+ * Deja los casos del asistente como los espera cada caso de eval (D5): borra los que dejó el anterior, siembra los casos base, suma los del caso (y `relleno` casos de relleno para probar un índice grande) y sube la versión compartida
  * para que la copia en memoria de la aplicación los lea. Determinista: dos corridas dejan lo mismo.
  */
 export async function restablecerCasos(
@@ -108,9 +105,9 @@ export async function restablecerCasos(
   const ahora = new ClockSistema().ahora();
   await prisma.casoAsistente.deleteMany();
   await prisma.categoriaCaso.deleteMany();
-  // `guardarTextoDelSistema` crea el caso y la categoría «Políticas» si faltan.
-  await new RepositorioCasosPrisma(prisma).guardarTextoDelSistema('contra_entrega', TEXTO_CONTRA_ENTREGA_SEMILLA, ahora);
-  const categoria = await prisma.categoriaCaso.findUniqueOrThrow({ where: { nombreNormalizado: normalizarNombre('Políticas') } });
+  const categoria = await prisma.categoriaCaso.create({
+    data: { nombre: 'Políticas', nombreNormalizado: normalizarNombre('Políticas'), orden: 0, creado: ahora, actualizado: ahora },
+  });
   const relleno: CasoSemilla[] = Array.from({ length: semilla.relleno ?? 0 }, (_, i) => ({
     titulo: `Relleno ${String(i + 1).padStart(3, '0')}`,
     cuandoAplica: 'Cuando el cliente pregunta por un tema de relleno.',

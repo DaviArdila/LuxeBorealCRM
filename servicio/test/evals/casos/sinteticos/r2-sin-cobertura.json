@@ -2,6 +2,15 @@
   "id": "r2-sin-cobertura",
   "titulo": "R2 — Destino sin cobertura",
   "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Sin cobertura de envío",
+        "cuandoAplica": "Cuando el cliente pide un envío a un destino sin cobertura.",
+        "texto": "Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega."
+      }
+    ]
+  },
   "turnos": [
     {
       "mensajes": [
@@ -24,6 +33,16 @@
           ]
         },
         {
+          "llamadas": [
+            {
+              "nombre": "consultar_caso",
+              "argumentos": {
+                "titulo": "Sin cobertura de envío"
+              }
+            }
+          ]
+        },
+        {
           "texto": "Por ahora no tenemos cobertura de envío a tu ciudad. Si quieres, indícame otra dirección de entrega."
         }
       ],
@@ -32,8 +51,8 @@
         "dineroConRastro": true,
         "textoLiteral": [
           {
-            "herramienta": "cotizar_envio",
-            "campo": "mensaje_sin_cobertura"
+            "herramienta": "consultar_caso",
+            "campo": "texto"
           }
         ],
         "textoAusente": [

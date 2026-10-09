@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
 import type { PlanSemilla } from '../dominio/semilla.js';
+import { CASOS_DEL_SISTEMA } from '../dominio/sistema.js';
 import type { RepositorioSemilla } from '../puertos/repositorio-semilla.js';
 import type { VersionAsistente } from '../puertos/version-asistente.js';
 import { SembrarCasos } from './sembrar-casos.js';
 
 // CAS6 (Fase 12, T4): el caso de uso solo orquesta; la transacción real se prueba contra Postgres.
+
+/** Una base nueva recibe los casos del sistema y «Tratamiento de datos» (CAS13), nada más (12d). */
+const BASE = CASOS_DEL_SISTEMA.length + 1;
 
 class RepositorioSemillaFalso implements RepositorioSemilla {
   planes: PlanSemilla[] = [];
@@ -47,22 +51,22 @@ function crear(filas: Record<string, unknown>, insertados: number, delSistema: R
 
 describe('asistente/aplicacion — SembrarCasos (CAS6)', () => {
   it('informa cuántos casos insertó y cuántos ya existían, solo cantidades', async () => {
-    const { sembrar } = crear({}, 12);
+    const { sembrar } = crear({}, BASE);
 
-    expect(await sembrar.ejecutar()).toMatchObject({ insertados: 12, existentes: 0 });
+    expect(await sembrar.ejecutar()).toMatchObject({ insertados: BASE, existentes: 0 });
   });
 
   it('CAS6 — Sembrar dos veces no pisa: lo que ya existía se cuenta como existente', async () => {
     const { sembrar } = crear({}, 0);
 
-    expect(await sembrar.ejecutar()).toMatchObject({ insertados: 0, existentes: 12 });
+    expect(await sembrar.ejecutar()).toMatchObject({ insertados: 0, existentes: BASE });
   });
 
   it('planifica con lo que hay en parametro y lo pasa al repositorio', async () => {
-    const { sembrar, repositorio } = crear({ politica_garantia: 'La garantía cubre defectos.' }, 13);
+    const { sembrar, repositorio } = crear({ politica_garantia: 'La garantía cubre defectos.' }, BASE + 1);
 
-    expect(await sembrar.ejecutar()).toMatchObject({ insertados: 13, existentes: 0 });
-    expect(repositorio.planes[0]?.casos).toHaveLength(13);
+    expect(await sembrar.ejecutar()).toMatchObject({ insertados: BASE + 1, existentes: 0 });
+    expect(repositorio.planes[0]?.casos).toHaveLength(BASE + 1);
   });
 
   it('CAS13 — Informa con qué texto se planificó «Tratamiento de datos», solo en cantidades', async () => {
@@ -95,17 +99,17 @@ describe('asistente/aplicacion — SembrarCasos (CAS6)', () => {
     const { sembrar, version } = crear({}, 2);
     version.falla = true;
 
-    await expect(sembrar.ejecutar()).resolves.toMatchObject({ insertados: 2, existentes: 10 });
+    await expect(sembrar.ejecutar()).resolves.toMatchObject({ insertados: 2, existentes: BASE - 2 });
   });
 
   it('CAS6 — Con un archivo de casos los suma al plan y cuenta como existentes los que ya estaban', async () => {
-    const { sembrar, repositorio } = crear({}, 13);
+    const { sembrar, repositorio } = crear({}, BASE + 1);
 
     const resultado = await sembrar.ejecutar({
       casos: [{ categoria: 'Políticas', titulo: 'Devoluciones', cuandoAplica: 'Cuando preguntan por devoluciones.', texto: 'Aceptamos devoluciones en 8 días.' }],
     });
 
-    expect(resultado).toMatchObject({ insertados: 13, existentes: 0 });
+    expect(resultado).toMatchObject({ insertados: BASE + 1, existentes: 0 });
     expect(repositorio.planes[0]?.casos.some((c) => c.titulo === 'Devoluciones')).toBe(true);
   });
 

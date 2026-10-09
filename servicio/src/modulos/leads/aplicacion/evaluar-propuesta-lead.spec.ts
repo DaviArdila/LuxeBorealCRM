@@ -1,4 +1,5 @@
 import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lead-en-memoria.js';
+import { HECHO_CAPTURA_PENDIENTE } from '../dominio/hecho-captura.js';
 import { EvaluarPropuestaLead, type EntradaPropuesta } from './evaluar-propuesta-lead.js';
 
 // Escenarios LDS2 (y la decisión derivar/capturar de LDS4) de
@@ -114,7 +115,16 @@ describe('modulos/leads/aplicacion — EvaluarPropuestaLead', () => {
     const resultado = await caso.ejecutar(BASE);
 
     expect(resultado).toMatchObject({ derivado: false, accion: 'capturar' });
-    expect(resultado.motivo).toMatch(/datos/);
+    expect(resultado.motivo).toBe(HECHO_CAPTURA_PENDIENTE);
     expect(repositorio.leads[0]).toMatchObject({ derivado: false, capturadoFueraHorario: false });
+  });
+
+  it('LDS4 — La respuesta de marcar_lead_caliente dice el hecho de la captura, sin guion ni despedida', async () => {
+    const { caso } = crear(false);
+
+    const resultado = await caso.ejecutar(BASE);
+
+    expect(resultado.motivo).toBe(HECHO_CAPTURA_PENDIENTE);
+    expect(resultado.motivo).not.toMatch(/pídele|despídete|guardar_datos_contacto/i);
   });
 });

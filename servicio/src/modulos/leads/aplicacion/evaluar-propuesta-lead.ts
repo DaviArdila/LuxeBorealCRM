@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { HORARIO, type Horario } from '../../horario/index.js';
+import { HECHO_CAPTURA_PENDIENTE } from '../dominio/hecho-captura.js';
 import { evaluarEscala } from '../dominio/escala-lead.js';
 import { temperaturaMasAlta, type TemperaturaLead } from '../dominio/lead.js';
 import { redactarResumen } from '../dominio/redactar-resumen.js';
@@ -26,9 +27,8 @@ export interface ResultadoPropuesta {
 
 const MOTIVO_SIN_CONFIRMAR = 'Las señales aún no confirman intención de compra; sigue atendiendo al cliente.';
 const MOTIVO_YA_DERIVADO = 'Este cliente ya fue derivado a un asesor; sigue atendiéndolo con normalidad.';
-const MOTIVO_CAPTURAR =
-  'Fuera del horario de atención: pídele al cliente su nombre completo, teléfono de contacto, dirección y ' +
-  'localidad para que un asesor lo contacte, y guárdalos con guardar_datos_contacto.';
+// LDS4: la misma redacción que el contexto del turno (`agente`); un hecho, no un guion.
+const MOTIVO_CAPTURAR = HECHO_CAPTURA_PENDIENTE;
 
 /**
  * Evalúa la propuesta del LLM con la escala determinista (D2 de la Fase 08, R9, LDS2): guarda o actualiza

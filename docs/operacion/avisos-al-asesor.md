@@ -30,6 +30,12 @@ dirección ni el nombre del cliente. Decisión de fondo: [`fase-08d`](../../open
 | Traspaso por consulta o plazo | Argumentos inválidos o plazo agotado | `Traspaso: el bot no pudo completar una consulta.` / `…se quedó sin tiempo para responder.` |
 | Cliente esperando | Escribió con la conversación en manos humanas y nadie respondió en 10 min | `Cliente esperando: escribió hace 11 min y nadie ha respondido.` |
 
+**Captura fuera de horario.** Con un lead confirmado fuera de horario, el bot recibe un solo hecho: «Fuera de horario; el
+cliente mostró intención de compra y faltan sus datos de contacto (nombre completo, teléfono de contacto, dirección y
+localidad)». El código no trae un guion ni un texto de despedida: qué pedir y cómo cerrar lo define un caso de uso tuyo (por
+ejemplo «Captura fuera de horario»). El aviso al asesor sale cuando los datos quedan guardados, y eso exige que el cliente
+haya aceptado el tratamiento de datos.
+
 ### Avisos sin traspaso (Fase 12d)
 
 Un aviso ya no implica que el bot se calle. En estos avisos la conversación **sigue en `bot`**, el bot responde al cliente

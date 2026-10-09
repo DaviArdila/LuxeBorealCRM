@@ -151,8 +151,8 @@ export function elegirTarifa(
 }
 
 export type ResultadoCotizacion =
-  | { readonly cobertura: true; readonly rangoTexto: string; readonly diasTexto: string; readonly contraentregaDisponible: boolean; readonly politicaContraentregaTexto?: string }
-  | { readonly cobertura: false; readonly mensaje: string };
+  | { readonly cobertura: true; readonly rangoTexto: string; readonly diasTexto: string; readonly contraentregaDisponible: boolean }
+  | { readonly cobertura: false };
 
 /**
  * Arma la cotización con cobertura a partir de una tarifa ya elegida (CAT10, D6): rango y días ya

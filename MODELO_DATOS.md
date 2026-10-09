@@ -131,7 +131,7 @@ ni el estilo del bot vive aquí: los primeros son casos de `caso_asistente` y el
 `npm run casos:sembrar`.
 
 **`recargo_contraentrega_pct` es un dato interno** (Fase 13, total de la venta): el bot nunca dice el
-porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (caso `contra_entrega`).
+porcentaje al cliente, solo que el recargo «se suma al total de tu compra» (según tu caso de uso de contra entrega, si lo creaste).
 
 ### `version_estilo` — NUEVA (Fase 12, T3; ADR-0024)
 Una fila por versión del estilo del bot (cómo habla: tono, forma, formato). Reemplaza a las claves `prompt_estilo`,
@@ -201,16 +201,16 @@ calcular o decidir, es un parámetro del negocio.
 | `titulo_normalizado` | text | no | único; minúsculas y sin acentos |
 | `cuando_aplica` | text | no | cuándo se envía (caso del sistema) o cuándo usarlo (caso de intención) |
 | `disparador` | enum `disparador_caso` | no | `evento` (lo dispara el código) o `intencion` (lo consulta el LLM) |
-| `clave_sistema` | text | sí | único; clave de la lista cerrada del código (`mensaje_handoff`, `contra_entrega`…) |
+| `clave_sistema` | text | sí | único; clave de la lista cerrada del código (`mensaje_handoff`, `mensaje_error_llm`…) |
 | `modo` | enum `modo_caso` | no | `literal` (se cita palabra por palabra) o `guia` (base para redactar); por defecto `literal` |
 | `texto` | text | no | validado en código (CAS5): sin pesos, SKU ni marcadores `{{…}}`; nunca en logs (R14) |
 | `activo` | boolean | no | un caso inactivo no llega al bot |
 | `busqueda_normalizada` | text | no | título, «cuándo aplica» y texto normalizados, para el buscador sin la extensión `unaccent` |
 | `creado`, `actualizado` | timestamptz | no | |
 
-- `disparador` y `clave_sistema` son independientes: `contra_entrega` es de **intención** (el LLM puede consultarlo) y
-  tiene clave del sistema (el código lo adjunta a la cotización). Un caso con clave del sistema se edita pero no se
-  borra ni se desactiva.
+- Un caso con clave del sistema se edita pero no se borra ni se desactiva. Desde la Fase 12d `contra_entrega`,
+  `mensaje_fuera_cobertura` y `mensaje_captura_completa` no son claves del sistema: la migración `20261009130000_casos_a_intencion`
+  los dejó como casos de intención normales (sin clave, disparador `intencion`, «Políticas» si existe) con su título y texto.
 - Dos `CHECK` escritos a mano `[manual]` (Prisma no los expresa; los guarda la comprobación PER9):
   `caso_asistente_evento_requiere_sistema_check` (un caso de `evento` exige clave del sistema y modo `literal`) y
   `caso_asistente_sistema_activo_check` (un caso con clave del sistema nunca está inactivo).
@@ -262,8 +262,8 @@ Lo que el bot **cita**: un rango, nunca un precio exacto.
 | `creado`, `actualizado` | timestamptz | no | |
 
 **Búsqueda** (la hace el backend, nunca el LLM):
-1. ¿El destino está en `zona_sin_cobertura`? → sin cobertura: se responde con
-   `mensaje_fuera_cobertura` y se registra `evento_fuera_cobertura`.
+1. ¿El destino está en `zona_sin_cobertura`? → sin cobertura: se devuelve `cobertura: false` sin ningún texto (lo que el
+   cliente lee lo consulta el bot como caso de uso del dueño) y se registra `evento_fuera_cobertura`.
 2. Si no, la tarifa más específica que calce con el peso facturable: **ciudad exacta →
    departamento → nacional**.
 3. Peso facturable = `max(peso real, largo × ancho × alto / factor_volumetrico)` (se conserva el

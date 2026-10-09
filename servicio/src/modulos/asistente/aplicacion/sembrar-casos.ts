@@ -13,7 +13,7 @@ export interface ResultadoSemilla {
 }
 
 /**
- * Siembra las categorías «Sistema» y «Políticas» y los casos de hoy (CAS6): los once del sistema, con el texto que ya haya
+ * Siembra las categorías «Sistema» y «Políticas» y los casos de hoy (CAS6): los del sistema, con el texto que ya haya
  * en `parametro` o el de respaldo, «Tratamiento de datos» (CAS13) y un caso de intención por cada política existente. Nunca modifica un caso que ya
  * existe, retira de `parametro` las filas que copió en la misma transacción y es idempotente. Informa solo cantidades:
  * ningún texto sale por pantalla ni por logs (R14).

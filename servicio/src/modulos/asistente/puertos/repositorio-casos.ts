@@ -20,7 +20,7 @@ export interface CasoDeIntencion {
 export interface RepositorioCasos {
   /** Clave del sistema → texto de los casos con clave del sistema que tienen un texto guardado (aunque sea en blanco). */
   leerTextosDelSistema(): Promise<ReadonlyMap<string, string>>;
-  /** Los casos de intención activos (incluye `contra_entrega`), por orden de categoría y luego por título (CAS8, CAS10). */
+  /** Los casos de intención activos por orden de categoría y luego por título (CAS8, CAS10). */
   leerCasosDeIntencion(): Promise<readonly CasoDeIntencion[]>;
   /** Reemplaza el texto del caso (lo crea con su título y categoría de la lista cerrada si falta). `ahora` es del `Clock`. */
   guardarTextoDelSistema(clave: ClaveSistema, texto: string, ahora: Date): Promise<void>;

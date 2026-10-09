@@ -12,28 +12,44 @@ function filas(objeto: Record<string, unknown>): ReadonlyMap<string, unknown> {
 }
 
 describe('planificarSemilla (CAS6)', () => {
-  it('sin nada en parametro: once casos del sistema con su respaldo y el caso inicial de intención, en las categorías Sistema y Políticas', () => {
+  it('sin nada en parametro: los casos del sistema que quedan con su respaldo y el caso inicial de intención, en las categorías Sistema y Políticas', () => {
     const plan = planificarSemilla(filas({}));
 
     expect(plan.categorias.map((c) => [c.nombre, c.orden])).toEqual([
       ['Sistema', 0],
       ['Políticas', 1],
     ]);
-    expect(plan.casos).toHaveLength(12);
+    expect(plan.casos).toHaveLength(CASOS_DEL_SISTEMA.length + 1);
     for (const definicion of CASOS_DEL_SISTEMA) {
       const caso = plan.casos.find((c) => c.claveSistema === definicion.clave);
       expect(caso?.texto, definicion.clave).toBe(textoDeRespaldo(definicion.clave));
       expect(caso?.claveParametro, definicion.clave).toBeNull();
     }
-    expect(plan.casos.find((c) => c.claveSistema === 'contra_entrega')).toMatchObject({
-      categoria: 'Políticas',
-      disparador: 'intencion',
-    });
     expect(plan.casos.find((c) => c.claveSistema === 'mensaje_handoff')).toMatchObject({
       categoria: 'Sistema',
       disparador: 'evento',
       modo: 'literal',
     });
+  });
+
+  it('CAS6 — Sembrar no crea casos de negocio en una base nueva', () => {
+    const plan = planificarSemilla(filas({}));
+
+    expect(plan.casos.filter((c) => c.disparador === 'intencion').map((c) => c.titulo)).toEqual([TRATAMIENTO_DE_DATOS]);
+    const titulos = plan.casos.map((c) => c.titulo);
+    expect(titulos).not.toContain('Contra entrega');
+    expect(titulos).not.toContain('Sin cobertura de envío');
+    expect(titulos).not.toContain('Datos completos fuera de horario');
+    expect(plan.casos.map((c) => c.claveSistema)).not.toContain('contra_entrega');
+  });
+
+  it('CAS6 — La semilla no vuelve a crear como casos del sistema los tres que se convirtieron', () => {
+    const plan = planificarSemilla(filas({ mensaje_fuera_cobertura: 'Texto viejo.', mensaje_captura_completa: 'Texto viejo.' }));
+
+    const claves: readonly (string | null)[] = plan.casos.map((c) => c.claveSistema);
+    expect(claves).not.toContain('mensaje_fuera_cobertura');
+    expect(claves).not.toContain('mensaje_captura_completa');
+    expect(claves).not.toContain('contra_entrega');
   });
 
   it('CAS6 — Sembrar copia los textos que ya estaban editados', () => {
@@ -53,12 +69,15 @@ describe('planificarSemilla (CAS6)', () => {
     expect(plan.casos.find((c) => c.claveSistema === 'mensaje_error_llm')?.texto).toBe(textoDeRespaldo('mensaje_error_llm'));
   });
 
-  it('CAS6 — politica_contra_entrega alimenta el caso contra_entrega', () => {
+  it('CAS6 — politica_contra_entrega ya no es del sistema: se siembra como una política más', () => {
     const plan = planificarSemilla(filas({ politica_contra_entrega: 'Pagas al recibir.' }));
 
-    expect(plan.casos.find((c) => c.claveSistema === 'contra_entrega')).toMatchObject({
+    expect(plan.casos.find((c) => c.claveParametro === 'politica_contra_entrega')).toMatchObject({
+      titulo: 'Contra entrega',
+      claveSistema: null,
+      disparador: 'intencion',
+      categoria: 'Políticas',
       texto: 'Pagas al recibir.',
-      claveParametro: 'politica_contra_entrega',
     });
   });
 

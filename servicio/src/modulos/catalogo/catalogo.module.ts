@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AsistenteModule } from '../asistente/index.js';
 import { GeografiaModule } from '../geografia/index.js';
 import { MediosModule } from '../medios/index.js';
 import { PrismaModule } from '../../plataforma/prisma/index.js';
@@ -47,7 +46,7 @@ import { REPOSITORIO_PRODUCTO } from './puertos/repositorio-producto.js';
  * `ImportarCatalogo`.
  */
 @Module({
-  imports: [PrismaModule, RedisModule, AsistenteModule, GeografiaModule, MediosModule],
+  imports: [PrismaModule, RedisModule, GeografiaModule, MediosModule],
   providers: [
     { provide: REPOSITORIO_PRODUCTO, useClass: RepositorioProductoPrisma },
     { provide: REPOSITORIO_ENVIO, useClass: RepositorioEnvioPrisma },

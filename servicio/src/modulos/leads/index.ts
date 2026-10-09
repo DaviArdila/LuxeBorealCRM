@@ -18,5 +18,6 @@ export {
   type EntradaPidePersona,
   type ResultadoPidePersona,
 } from './aplicacion/registrar-pide-persona.js';
+export { HECHO_CAPTURA_PENDIENTE } from './dominio/hecho-captura.js';
 export { detectarPidePersona } from './dominio/detectar-pide-persona.js';
 export { NOMBRES_SENALES, type NombreSenal } from './dominio/escala-lead.js';

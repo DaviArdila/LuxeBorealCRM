@@ -54,7 +54,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T3 — Las políticas que derivan avisan y siguen; tope por defecto 20; se elimina `TextoHandoff`
 - [x] T4 — Consentimiento de datos: esquema, `registrar_consentimiento` y puerta en las herramientas que guardan datos
 - [x] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
-- [ ] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
+- [x] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
 - [ ] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
 - [ ] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
 - [ ] T9 — Evals, guías de operación (con los casos de ejemplo), `verify-report` y archivo del change
@@ -272,12 +272,12 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | Tarea | Ruta (inline / delegada) y evidencia | Commit | PR | Tier de review y resultado |
 |---|---|---|---|---|
 | T0 | inline (documentación, sin código). Hook `pre-push` en verde con Docker; el CI cayó en `auditoria:cliente` por un aviso crítico de `handlebars` ajeno al cambio y se corrigió aparte | `fe4a818` | #117 (fusionado `ba014f9`); arreglo de CI en #118 (`08e3714`) | passive: revisión estructural |
-| T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | pendiente | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
-| T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
-| T6 | pendiente | — | — | — |
+| T1 | delegada: un writer, RED observado primero. Disparador: 2+ archivos no triviales y lectura que prepara la escritura. Batería completa en verde: lint, typecheck, fronteras, deriva del contrato, unit 1654, integración 460, e2e 114, evals 41 + 1 omitida. Spot check del padre: lint, typecheck y unit repetidos | `bc0b433` | #119 (fusionado) | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
+| T2 | delegada: un writer, RED observado primero; el padre cerró los dos e2e que quedaban fuera de la superficie del writer (conteo de herramientas y texto del estilo de respaldo). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1658, integración 460, evals 42 + 1 omitida y e2e 114/114 en serie | `8d2e929` | #120 (fusionado) | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 hallazgos, autoridad quemada |
+| T3 | delegada: un writer, RED observado primero (salvo `prioridad-aviso`, spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1670, evals 43 + 1 omitida y e2e 114/114 en serie; integración 456 de 460 (`prompts-build` es la falla conocida de Windows y otros tres pasan en serie: carga de la máquina) | `85083df` | #121 (fusionado) | medio, `slice_budget_reached`; revisión nativa concedida por el dueño: aprobada, 0 bloqueantes, 2 observaciones no bloqueantes, autoridad quemada |
+| T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | #122 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
+| T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | #123 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
+| T6 | delegada: un writer, apilada sobre T5 mientras el CI estaba bloqueado por Docker Hub. RED observado en `sistema`, `cotizar-envio`, `contenido-llm` y la migración; sin RED para el hecho de captura (spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1709 (repetidos por el padre en el hook), integración 481, e2e 119 en serie y evals 49 + 1 omitida | `10e8a4c` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 bloqueantes, 1 advertencia descartada y 1 sugerencia, autoridad quemada |
 | T7 | pendiente | — | — | — |
 | T8 | pendiente | — | — | — |
 | T9 | pendiente | — | — | — |
@@ -382,6 +382,30 @@ Máximo del change: 10 tareas (T0-T9 = 10).
   intermitente bajo carga en esta máquina y pasa aislado; T5 no toca `canales`. El CI de GitHub es la referencia.
 - **Pendientes de documentos fuera de la superficie del writer:** `MODELO_DATOS.md` (línea ~128) y `docs/PREGUNTAS_ABIERTAS.md`
   todavía mencionan el aviso fijo; se corrigen en T9.
+
+### T6 (commit `10e8a4c`)
+- **Tamaño real:** 170 líneas de producción (cambiadas), 702 de pruebas y fakes, 125 de JSON de evals y 59 de SQL y
+  documentación. Producción bajo ~400; la excepción de tamaño anticipada no hace falta.
+- **Migración de datos** `20261009130000_casos_a_intencion` (solo el paso 1 de D10): `contra_entrega`,
+  `mensaje_fuera_cobertura` y `mensaje_captura_completa` pierden la clave del sistema y pasan a intención en la misma
+  sentencia (respeta el CHECK); título, texto y «cuándo aplica» del dueño intactos; pasan a «Políticas» solo si existe;
+  idempotente. Los pasos 2 (`aviso_datos`) y 3 (los dos traspasos) son de T7. Es `[manual]` solo en su encabezado: el
+  registro PER9 no la lista porque no crea objetos de esquema; `prisma/README.md` tiene una sección para migraciones de datos.
+- **Código:** `CASOS_DEL_SISTEMA` queda en 8 claves (T7 lo deja en 5); la semilla ya no crea casos de negocio;
+  `cotizar_envio` devuelve solo datos; se elimina `asegurarMensajeLiteral`; la captura fuera de horario es un único
+  hecho (`HECHO_CAPTURA_PENDIENTE`, `leads/dominio/hecho-captura.ts`) compartido por el contexto y `evaluar-propuesta-lead`.
+- **Revisión nativa (no bloquea):**
+  - Advertencia descartada con evidencia: temía que mover un caso a «Políticas» violara una restricción única por categoría
+    y título. En el esquema la unicidad de `caso_asistente` es global (`titulo_normalizado`, `clave_sistema`); no existe
+    unicidad por categoría y la migración no cambia títulos.
+  - Sugerencia: en una base que nunca pasó por la Fase 12, las filas viejas `mensaje_fuera_cobertura` y
+    `mensaje_captura_completa` de `parametro` quedan sin migrar (`politica_contra_entrega` sí se siembra como política).
+    Pérdida menor y deliberada: el dueño no tiene bases anteriores a la Fase 12.
+- **CI y entorno:** el CI estaba bloqueado por el límite de descargas anónimas de Docker Hub; se resolvió con el login en
+  el workflow (PR #124, secretos `DOCKERHUB_USERNAME` y `DOCKERHUB_TOKEN` cargados por el dueño). Hallazgos locales:
+  (1) el hook `pre-push` revisa el árbol de trabajo, no la rama empujada, y `secretos --arbol` revienta (`ENOENT`) si un
+  archivo registrado en git falta en el disco; (2) correr el hook o la integración desde un worktree escribió commits de
+  fixture en esa rama y dejó `core.bare=true`: no se empuja ni se commitea desde worktrees hasta corregir esas pruebas.
 
 ## Mapeo de escenarios por tarea
 

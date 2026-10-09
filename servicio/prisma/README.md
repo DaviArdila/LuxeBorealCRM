@@ -80,6 +80,15 @@ La guardia del paso 5 (`test/integracion/persistencia/marcas-manuales.ts`) tiene
 | `caso_asistente_sistema_activo_check` | `caso_asistente` | un caso del sistema nunca está inactivo | Fase 12 |
 | `contacto_consentimiento_excluyente_check` | `contacto` | `consentimiento_datos_en` y `consentimiento_rechazado_en` nunca tienen valor a la vez (PRV1) | Fase 12d |
 
+### Migraciones de datos escritas a mano
+
+Una migración que solo mueve datos (no crea objetos) lleva un encabezado que lo dice y no usa la marca `-- [manual] <nombre> —`,
+porque no deja ningún objeto que la guardia deba buscar en el catálogo. Se prueba con su SQL real contra Postgres.
+
+| Migración | Qué hace | Desde |
+|---|---|---|
+| `20261009130000_casos_a_intencion` | `contra_entrega`, `mensaje_fuera_cobertura` y `mensaje_captura_completa` pasan a casos de intención (clave y disparador en la misma sentencia por el CHECK `caso_asistente_evento_requiere_sistema_check`), a «Políticas» si existe; idempotente (CAS14, paso 1) | Fase 12d |
+
 ## UUID v7: quién genera el id
 
 `id uuid @default(uuid(7))` es un default **del cliente Prisma**, no de la base (D2, confirmado en

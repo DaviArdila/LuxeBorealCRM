@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 import {
   armarCotizacionConCobertura,
   elegirTarifa,
@@ -18,9 +17,9 @@ import { REPOSITORIO_PRODUCTO, type RepositorioProducto } from '../puertos/repos
  * calcula el peso facturable del producto, comprueba exclusión de cobertura (CAT7) antes que
  * elegir tarifa (CAT8, D3, prioridad ya fijada por el dominio), y arma la cotización. Sin
  * cobertura — por exclusión o por ausencia de tarifa que aplique — registra el evento (CAT9, D7:
- * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve el mensaje del caso
- * `mensaje_fuera_cobertura` del asistente, sin ningún rango (CAT11). Con cobertura y contra entrega disponible añade la
- * texto del caso `contra_entrega` (CAT10, CAS11). Un producto no encontrado no rechaza: cotiza
+ * `departamentoId`/`ciudadId` siempre `null` en esta fase) y devuelve solo `cobertura: false` (CAT11). Devuelve solo datos,
+ * nunca un texto de política: lo que el cliente lee de contra entrega o de cobertura lo consulta el LLM como caso de uso
+ * del dueño (CAT10, CAS12, 12d). Un producto no encontrado no rechaza: cotiza
  * con peso cero (ninguna línea de peso), igual que un producto sin peso ni medidas (CAT6).
  */
 @Injectable()
@@ -29,7 +28,6 @@ export class CotizarEnvio {
     @Inject(REPOSITORIO_PRODUCTO) private readonly repositorioProducto: RepositorioProducto,
     @Inject(REPOSITORIO_PARAMETRO_CATALOGO) private readonly repositorioParametro: RepositorioParametroCatalogo,
     @Inject(REPOSITORIO_ENVIO) private readonly repositorioEnvio: RepositorioEnvio,
-    @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
   async ejecutar(idOSku: string, destino: DestinoEnvio, cantidad = 1): Promise<ResultadoCotizacion> {
@@ -60,12 +58,7 @@ export class CotizarEnvio {
       return this.registrarSinCobertura(producto?.id ?? null, destino);
     }
 
-    const cotizacion = armarCotizacionConCobertura(tarifa);
-    if (!tarifa.contraentregaDisponible) return cotizacion;
-
-    // CAT10, CAS11: con contra entrega el bot cita el caso `contra_entrega` literal (o su respaldo aprobado); nunca el
-    // porcentaje del recargo.
-    return { ...cotizacion, politicaContraentregaTexto: await this.textos.textoDelSistema('contra_entrega') };
+    return armarCotizacionConCobertura(tarifa);
   }
 
   private async registrarSinCobertura(productoId: string | null, destino: DestinoEnvio): Promise<ResultadoCotizacion> {
@@ -76,7 +69,6 @@ export class CotizarEnvio {
       departamentoId: null,
       ciudadId: null,
     });
-    const mensaje = await this.textos.textoDelSistema('mensaje_fuera_cobertura');
-    return { cobertura: false, mensaje };
+    return { cobertura: false };
   }
 }

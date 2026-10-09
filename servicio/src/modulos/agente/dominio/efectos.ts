@@ -11,8 +11,8 @@ export type MotivoAvisoEfecto = 'pide-persona' | 'pide-asesor' | 'lead-caliente'
 
 export type EfectoTurno =
   | { readonly tipo: 'enviar-imagen'; readonly claveObjeto: string; readonly leyenda?: string }
-  /** Sin cobertura de envío; lleva el mensaje del negocio, que debe llegar literal al cliente (R2). */
-  | { readonly tipo: 'sin-cobertura'; readonly mensaje: string }
+  /** Sin cobertura de envío: solo el hecho, para que el lead no se evalúe; no lleva ningún texto (CAS12). */
+  | { readonly tipo: 'sin-cobertura' }
   | { readonly tipo: 'datos-contacto-guardados' }
   | { readonly tipo: 'lead-propuesto'; readonly temperatura: 'tibio' | 'caliente' }
   /** Avisar al asesor sin traspasar (CNV13): `ContenidoLlm` lo vuelve el `aviso` de la respuesta y el bot sigue. */

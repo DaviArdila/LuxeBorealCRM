@@ -2,6 +2,15 @@
   "id": "r2-recargo-sin-porcentaje",
   "titulo": "R2 — El recargo contra entrega se dice sin porcentaje",
   "origen": "sintetico",
+  "semilla": {
+    "casos": [
+      {
+        "titulo": "Contra entrega",
+        "cuandoAplica": "Cuando el cliente pregunta cómo funciona el pago contra entrega o su recargo.",
+        "texto": "Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra."
+      }
+    ]
+  },
   "turnos": [
     {
       "mensajes": [

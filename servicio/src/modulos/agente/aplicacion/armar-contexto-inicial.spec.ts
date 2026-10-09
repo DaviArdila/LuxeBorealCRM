@@ -1,7 +1,8 @@
 import { ContadoresSesionEnMemoria } from '../../../../test/fakes/contadores-sesion-en-memoria.js';
 import { RepositorioContactoAgenteEnMemoria } from '../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
-import { TextosAsistenteEnMemoria } from '../../../../test/fakes/textos-asistente-en-memoria.js';
+import { RepositorioLeadEnMemoria } from '../../../../test/fakes/repositorio-lead-en-memoria.js';
 import type { ConsultaAsesorAvisado } from '../../conversaciones/index.js';
+import { EvaluarPropuestaLead, HECHO_CAPTURA_PENDIENTE } from '../../leads/index.js';
 import type { CapturaLead } from '../puertos/captura-lead.js';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
@@ -24,19 +25,20 @@ function crear() {
         : Promise.reject(new ProductoNoDisponible());
     },
   } as unknown as ObtenerFichaProducto;
-  const captura = { pendiente: false };
+  const captura = { pendiente: false, completadas: [] as string[] };
   const capturaLead: CapturaLead = {
     pendiente: () => Promise.resolve(captura.pendiente),
-    completar: () => Promise.resolve(),
+    completar: (conversacionId) => {
+      captura.completadas.push(conversacionId);
+      return Promise.resolve();
+    },
   };
-  const parametros = new TextosAsistenteEnMemoria();
-  parametros.textos.set('mensaje_captura_completa', 'TEXTO-CIERRE-CAPTURA');
   const avisado = { valor: false, falla: false };
   const asesorAvisado: ConsultaAsesorAvisado = {
     estaAvisado: () => (avisado.falla ? Promise.reject(new Error('redis caído')) : Promise.resolve(avisado.valor)),
   };
   return {
-    caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, parametros, asesorAvisado),
+    caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, asesorAvisado),
     avisado,
     contadores,
     contactos,
@@ -103,26 +105,37 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     };
     const ficha = { ejecutar: () => Promise.reject(new Error('base caída')) } as unknown as ObtenerFichaProducto;
     const capturaCaida: CapturaLead = { pendiente: () => Promise.reject(new Error('base caída')), completar: () => Promise.resolve() };
-    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new TextosAsistenteEnMemoria(), {
+    const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, {
       estaAvisado: () => Promise.reject(new Error('redis caído')),
     });
 
     await expect(caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'SKU-123' })).resolves.toEqual([]);
   });
 
-  it('LDS4 — Handoff fuera de horario dispara la captura de datos: las instrucciones piden los cuatro datos y el cierre', async () => {
+  it('LDS4 — Un lead confirmado fuera de horario informa el hecho y no ordena qué pedir', async () => {
     const { caso, captura, contactos } = crear();
     captura.pendiente = true;
     contactos.aceptar('k');
 
-    const instrucciones = (await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' })).join('\n');
+    const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' });
 
-    expect(instrucciones).toMatch(/nombre completo/i);
-    expect(instrucciones).toMatch(/teléfono/i);
-    expect(instrucciones).toMatch(/dirección/i);
-    expect(instrucciones).toMatch(/localidad/i);
-    expect(instrucciones).toContain('guardar_datos_contacto');
-    expect(instrucciones).toContain('TEXTO-CIERRE-CAPTURA');
+    expect(instrucciones).toContain(HECHO_CAPTURA_PENDIENTE);
+    const texto = instrucciones.join('\n');
+    expect(texto).toMatch(/fuera de horario/i);
+    expect(texto).toMatch(/intención de compra/i);
+    expect(texto).toMatch(/nombre completo/i);
+    expect(texto).not.toMatch(/pídele|uno a uno|despídete|texto exacto|guardar_datos_contacto/i);
+  });
+
+  it('R10 — Un lead caliente fuera de horario espera los datos antes del aviso: el contexto informa el hecho y no cierra la captura', async () => {
+    const { caso, captura } = crear();
+    captura.pendiente = true;
+
+    const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' });
+
+    expect(instrucciones).toContain(HECHO_CAPTURA_PENDIENTE);
+    // Armar el contexto solo informa: cerrar la captura (y con ella el aviso) lo hace `guardar_datos_contacto`.
+    expect(captura.completadas).toEqual([]);
   });
 
   it('LDS4 — Sin consentimiento el contexto informa también el consentimiento pendiente', async () => {
@@ -133,10 +146,8 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
     const texto = instrucciones.join('\n');
     expect(instrucciones).toContain(HECHO_PENDIENTE);
-    expect(texto).toMatch(/fuera del horario/i);
-    expect(texto).toMatch(/intención de compra/i);
+    expect(instrucciones).toContain(HECHO_CAPTURA_PENDIENTE);
     expect(texto).not.toContain('guardar_datos_contacto');
-    expect(texto).not.toContain('TEXTO-CIERRE-CAPTURA');
   });
 
   it('LDS4 — Si no se puede leer el consentimiento la captura tampoco ordena guardar datos', async () => {
@@ -148,6 +159,25 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
     expect(texto).toMatch(/intención de compra/i);
     expect(texto).not.toContain('guardar_datos_contacto');
+  });
+
+  it('LDS4 — El hecho de la captura es el mismo en el contexto y en la herramienta', async () => {
+    const { caso, captura } = crear();
+    captura.pendiente = true;
+    const evaluar = new EvaluarPropuestaLead(new RepositorioLeadEnMemoria(), { estaDentroDeHorario: () => Promise.resolve(false) });
+
+    const propuesta = await evaluar.ejecutar({
+      conversacionId: 'conv-1',
+      contactoId: 'k',
+      temperatura: 'caliente',
+      senales: ['pide_pagar'],
+      resumen: 'Quiere el anillo',
+      productoId: null,
+    });
+    const contexto = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'quiero pagar' });
+
+    expect(propuesta.motivo).toBe(HECHO_CAPTURA_PENDIENTE);
+    expect(contexto.filter((linea) => linea === propuesta.motivo)).toHaveLength(1);
   });
 
   it('sin captura pendiente no agrega instrucciones de captura', async () => {
