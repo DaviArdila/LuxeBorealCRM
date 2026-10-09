@@ -66,6 +66,20 @@ mano, directamente en el `migration.sql` generado, siguiendo este patrón:
    en la tabla esperada y con la expresión exacta. Una marca desconocida, un objeto ausente o uno
    recreado con otra forma hace fallar la verificación y bloquea `npm run verify` (PER9).
 
+### Objetos `[manual]` vigentes
+
+La guardia del paso 5 (`test/integracion/persistencia/marcas-manuales.ts`) tiene una forma esperada por cada uno.
+
+| Objeto | Tabla | Qué impone | Desde |
+|---|---|---|---|
+| `zona_sin_cobertura_departamento_id_ciudad_id_key` | `zona_sin_cobertura` | índice único `NULLS NOT DISTINCT` | Fase 01 |
+| `movimiento_inventario_cantidad_positiva_check` | `movimiento_inventario` | `cantidad > 0` | Fase 01 |
+| `movimiento_inventario_usuario_si_origen_usuario_check` | `movimiento_inventario` | origen `usuario` exige `usuario_id` | Fase 01 |
+| `version_estilo_vigente_key` | `version_estilo` | una sola versión vigente | Fase 08c |
+| `caso_asistente_evento_requiere_sistema_check` | `caso_asistente` | un caso `evento` exige clave del sistema y modo `literal` | Fase 12 |
+| `caso_asistente_sistema_activo_check` | `caso_asistente` | un caso del sistema nunca está inactivo | Fase 12 |
+| `contacto_consentimiento_excluyente_check` | `contacto` | `consentimiento_datos_en` y `consentimiento_rechazado_en` nunca tienen valor a la vez (PRV1) | Fase 12d |
+
 ## UUID v7: quién genera el id
 
 `id uuid @default(uuid(7))` es un default **del cliente Prisma**, no de la base (D2, confirmado en

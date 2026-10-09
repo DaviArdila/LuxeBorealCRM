@@ -17,6 +17,7 @@ const NOMBRE_CHECK_USUARIO = 'movimiento_inventario_usuario_si_origen_usuario_ch
 const NOMBRE_INDICE_ESTILO_VIGENTE = 'version_estilo_vigente_key';
 const NOMBRE_CHECK_EVENTO = 'caso_asistente_evento_requiere_sistema_check';
 const NOMBRE_CHECK_SISTEMA_ACTIVO = 'caso_asistente_sistema_activo_check';
+const NOMBRE_CHECK_CONSENTIMIENTO = 'contacto_consentimiento_excluyente_check';
 
 export type TipoObjetoManual = 'indice_nulls_not_distinct' | 'indice_unico_parcial' | 'check' | 'desconocido';
 
@@ -62,6 +63,14 @@ const FORMAS_ESPERADAS = new Map<string, FormaEsperada>([
       tipo: 'check',
       tabla: 'caso_asistente',
       expresion: 'clave_sistemaisnulloractivo',
+    },
+  ],
+  [
+    NOMBRE_CHECK_CONSENTIMIENTO,
+    {
+      tipo: 'check',
+      tabla: 'contacto',
+      expresion: 'consentimiento_datos_enisnullorconsentimiento_rechazado_enisnull',
     },
   ],
   [

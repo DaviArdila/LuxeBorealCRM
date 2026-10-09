@@ -194,27 +194,31 @@ model EventoFueraCobertura {
 /// Llave propia (P1): el teléfono nunca es identidad. `chatwoot_contact_id` une la misma persona
 /// entre canales (Chatwoot, ADR-0005).
 model Contacto {
-  id                String         @id @default(uuid(7)) @db.Uuid
-  chatwootContactId Int?           @unique @map("chatwoot_contact_id")
-  telefono          String?        @unique
-  nombre            String?
-  documento         String?        @unique
-  correo            String?
-  telefonoAlterno   String?        @map("telefono_alterno")
-  direccion         String?
-  localidad         String?
-  departamentoTexto String?        @map("departamento_texto")
-  ciudadTexto       String?        @map("ciudad_texto")
-  ciudadId          String?        @map("ciudad_id")
-  ultimoProductoId  String?        @map("ultimo_producto_id") @db.Uuid
-  aceptaContacto    Boolean        @default(false) @map("acepta_contacto")
-  creado            DateTime       @default(now()) @db.Timestamptz(3)
-  actualizado       DateTime       @default(now()) @db.Timestamptz(3)
-  ciudad            Ciudad?        @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
-  ultimoProducto    Producto?      @relation("ContactoUltimoProducto", fields: [ultimoProductoId], references: [id], onDelete: SetNull)
-  conversaciones    Conversacion[]
-  leads             Lead[]
-  ventas            Venta[]
+  id                        String         @id @default(uuid(7)) @db.Uuid
+  chatwootContactId         Int?           @unique @map("chatwoot_contact_id")
+  telefono                  String?        @unique
+  nombre                    String?
+  documento                 String?        @unique
+  correo                    String?
+  telefonoAlterno           String?        @map("telefono_alterno")
+  direccion                 String?
+  localidad                 String?
+  departamentoTexto         String?        @map("departamento_texto")
+  ciudadTexto               String?        @map("ciudad_texto")
+  ciudadId                  String?        @map("ciudad_id")
+  ultimoProductoId          String?        @map("ultimo_producto_id") @db.Uuid
+  aceptaContacto            Boolean        @default(false) @map("acepta_contacto")
+  /// Fase 12d (P68): cuándo aceptó el tratamiento de datos. Nunca coexiste con `consentimientoRechazadoEn`
+  /// (CHECK `[manual]` `contacto_consentimiento_excluyente_check`, que Prisma no expresa).
+  consentimientoDatosEn     DateTime?      @map("consentimiento_datos_en") @db.Timestamptz(3)
+  consentimientoRechazadoEn DateTime?      @map("consentimiento_rechazado_en") @db.Timestamptz(3)
+  creado                    DateTime       @default(now()) @db.Timestamptz(3)
+  actualizado               DateTime       @default(now()) @db.Timestamptz(3)
+  ciudad                    Ciudad?        @relation(fields: [ciudadId], references: [id], onDelete: Restrict)
+  ultimoProducto            Producto?      @relation("ContactoUltimoProducto", fields: [ultimoProductoId], references: [id], onDelete: SetNull)
+  conversaciones            Conversacion[]
+  leads                     Lead[]
+  ventas                    Venta[]
 
   @@map("contacto")
 }

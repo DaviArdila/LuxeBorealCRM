@@ -7,10 +7,17 @@ import { CAPTURA_LEAD, type CapturaLead } from '../puertos/captura-lead.js';
 import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../asistente/index.js';
 import {
   REPOSITORIO_CONTACTO_AGENTE,
+  type EstadoConsentimiento,
   type RepositorioContactoAgente,
 } from '../puertos/repositorio-contacto-agente.js';
 
 const PATRON_SKU = /SKU-[A-Z0-9-]+/i;
+
+const HECHOS_CONSENTIMIENTO: Readonly<Record<EstadoConsentimiento, string>> = {
+  pendiente: 'El cliente aún no respondió si acepta el tratamiento de datos.',
+  aceptado: 'El cliente aceptó el tratamiento de datos.',
+  rechazado: 'El cliente rechazó el tratamiento de datos.',
+};
 
 export interface EntradaContextoInicial {
   readonly sesion: SesionHerramienta;
@@ -23,7 +30,7 @@ export interface EntradaContextoInicial {
 /**
  * Contexto inicial del turno (D7 de la Fase 07b, AGT12; SPEC del prototipo §3.3 y §3.7): instrucciones
  * de texto para la parte variable del prompt. En el primer turno de la conversación, un SKU activo en
- * el mensaje se informa como un hecho (el producto de entrada); si el contacto ya tiene nombre, también como un hecho. El
+ * el mensaje se informa como un hecho (el producto de entrada); si el contacto ya tiene nombre, también como un hecho; y el estado de su consentimiento de datos (AGT27). El
  * contexto no ordena qué hacer con ellos: eso lo definen los casos de uso del dueño (AGT12, D13 de la Fase 12d). Con el asesor ya
  * avisado (CNV15) agrega un hecho y un límite (AGT28): puede seguir informando pero no confirma pagos, apartados ni
  * descuentos. Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
@@ -49,6 +56,10 @@ export class ArmarContextoInicial {
     const nombre = await this.nombreDelContacto(entrada.contactoId);
     if (nombre !== null) {
       instrucciones.push(`El cliente se llama ${nombre}.`);
+    }
+    const consentimiento = await this.hechoDelConsentimiento(entrada.contactoId);
+    if (consentimiento !== null) {
+      instrucciones.push(consentimiento);
     }
     const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
     if (capturaPendiente !== null) {
@@ -120,6 +131,16 @@ export class ArmarContextoInicial {
       return { id: ficha.id, nombre: ficha.nombre };
     } catch {
       // Producto inexistente, inactivo o catálogo caído: consulta genérica.
+      return null;
+    }
+  }
+
+  /** AGT27: el estado del consentimiento como un hecho, sin guion; si la lectura falla el turno sigue sin él. */
+  private async hechoDelConsentimiento(contactoId: string): Promise<string | null> {
+    try {
+      const estado = await this.contactos.consentimientoDe(contactoId);
+      return HECHOS_CONSENTIMIENTO[estado];
+    } catch {
       return null;
     }
   }

@@ -9,6 +9,8 @@ import { ArmarContextoInicial } from './armar-contexto-inicial.js';
 // Escenarios AGT12 y AGT28 de `openspec/changes/fase-12d-derivar-sin-silencio/specs/agente/spec.md`.
 
 const SESION = { conversacionId: 'conv-1', version: 0 };
+/** AGT27: sin respuesta, el contexto siempre informa el consentimiento como hecho. */
+const HECHO_PENDIENTE = 'El cliente aún no respondió si acepta el tratamiento de datos.';
 
 function crear() {
   const contadores = new ContadoresSesionEnMemoria();
@@ -59,7 +61,7 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
     const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'me interesa el SKU-999' });
 
-    expect(instrucciones).toEqual([]);
+    expect(instrucciones).toEqual([HECHO_PENDIENTE]);
     expect(consultados).toEqual(['SKU-999']);
   });
 
@@ -69,7 +71,7 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
     const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
 
-    expect(instrucciones).toEqual(['El cliente se llama Laura.']);
+    expect(instrucciones).toEqual(['El cliente se llama Laura.', HECHO_PENDIENTE]);
     expect(instrucciones.join('\n')).not.toMatch(/salúdalo|asumas|última vez/i);
   });
 
@@ -79,7 +81,7 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
     const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'y el SKU-123?' });
 
-    expect(instrucciones).toEqual([]);
+    expect(instrucciones).toEqual([HECHO_PENDIENTE]);
     expect(consultados).toEqual([]);
   });
 
@@ -93,7 +95,12 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
   it('un fallo al leer el catálogo o el contacto no rompe el turno: cae al caso genérico', async () => {
     const contadores = new ContadoresSesionEnMemoria();
-    const contactos = { leerNombre: () => Promise.reject(new Error('base caída')), guardarDatosCapturados: () => Promise.resolve() };
+    const contactos = {
+      guardarDatosCapturados: () => Promise.resolve(),
+      registrarConsentimiento: () => Promise.resolve(),
+      leerNombre: () => Promise.reject(new Error('base caída')),
+      consentimientoDe: () => Promise.reject(new Error('base caída')),
+    };
     const ficha = { ejecutar: () => Promise.reject(new Error('base caída')) } as unknown as ObtenerFichaProducto;
     const capturaCaida: CapturaLead = { pendiente: () => Promise.reject(new Error('base caída')), completar: () => Promise.resolve() };
     const caso = new ArmarContextoInicial(ficha, contactos, contadores, capturaCaida, new TextosAsistenteEnMemoria(), {
@@ -125,6 +132,41 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     expect(instrucciones).not.toContain('guardar_datos_contacto');
   });
 
+  describe('AGT27 — el contexto informa el estado del consentimiento como un hecho', () => {
+    it('AGT27 — El contexto informa que el contacto no ha respondido', async () => {
+      const { caso } = crear();
+
+      const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+
+      expect(instrucciones).toContain(HECHO_PENDIENTE);
+    });
+
+    it('AGT27 — El contexto informa que el contacto ya aceptó, sin ninguna orden', async () => {
+      const { caso, contactos } = crear();
+      contactos.aceptar('k');
+
+      const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+
+      expect(instrucciones).toEqual(['El cliente aceptó el tratamiento de datos.']);
+    });
+
+    it('AGT27 — El contexto informa que el contacto rechazó', async () => {
+      const { caso, contactos } = crear();
+      await contactos.registrarConsentimiento('k', false);
+
+      const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+
+      expect(instrucciones).toEqual(['El cliente rechazó el tratamiento de datos.']);
+    });
+
+    it('AGT26 — Si falla la lectura del consentimiento el turno sigue sin ese hecho', async () => {
+      const { caso, contactos } = crear();
+      contactos.fallo = new Error('base caída');
+
+      await expect(caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' })).resolves.toEqual([]);
+    });
+  });
+
   describe('AGT28 — con el asesor ya avisado, el bot no confirma pagos, apartados ni descuentos', () => {
     it('AGT28 — El contexto agrega la instrucción cuando el asesor ya fue avisado', async () => {
       const { caso, avisado } = crear();
@@ -152,7 +194,7 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
 
       const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
 
-      expect(instrucciones).toEqual([]);
+      expect(instrucciones).toEqual([HECHO_PENDIENTE]);
     });
 
     it('AGT14 — Si la política acaba de pedir el aviso, el contexto informa la petición de persona y el límite', async () => {

@@ -245,8 +245,16 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     return telegramFalso.llamadasRegistradas().map((llamada) => llamada.texto ?? '');
   }
 
-  async function turno(aplicacion: INestApplication, texto: string) {
+  /** Deja al contacto con el tratamiento de datos ya aceptado (PRV1) antes del webhook; sin él nace sin respuesta. */
+  async function aceptarTratamiento(aplicacion: INestApplication, idContacto: number): Promise<void> {
+    await aplicacion.get(PrismaService).contacto.create({
+      data: { chatwootContactId: idContacto, consentimientoDatosEn: new Date('2026-10-09T10:00:00.000Z') },
+    });
+  }
+
+  async function turno(aplicacion: INestApplication, texto: string, aceptado = true) {
     const { idConversacion, idContacto } = nuevaConversacion();
+    if (aceptado) await aceptarTratamiento(aplicacion, idContacto);
     const idMensaje = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, texto);
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje });
@@ -283,6 +291,22 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const lineaAtender = aviso.split('\n').find((linea) => linea.startsWith('Atender: '));
     expect(lineaAtender).toMatch(new RegExp(`/app/accounts/1/conversations/${String(idConversacion)}$`));
     expect(telegramFalso.llamadasRegistradas()[0]?.chatId).toBe('-100555');
+  }, 40_000);
+
+  it('LDS3 — Sin consentimiento el aviso sale y el lead no se registra', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar({ respuesta: { texto: 'Claro, ya avisé a un asesor.' } });
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor', false);
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    const [aviso] = await esperarAvisos(1);
+    expect(aviso).toContain('Aviso: el cliente pidió hablar con una persona.');
+    const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
+    expect(conversacion.estado).toBe('bot');
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    await expect(prisma.lead.count({ where: { contactoId: contacto.id } })).resolves.toBe(0);
   }, 40_000);
 
   it('LDS3 — Mencionar la palabra no es pedirla: el turno sigue al LLM y no deriva', async () => {
@@ -368,6 +392,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
         { respuesta: { texto: 'Con gusto, ¿me das tu nombre completo?' } },
       );
       const { idConversacion, idContacto } = nuevaConversacion();
+      await aceptarTratamiento(aplicacion, idContacto);
       const primero = nuevoIdMensaje();
       chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Quiero pagar ya');
       await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero });
@@ -419,6 +444,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const aplicacion = await arrancar();
     const { idConversacion: primera, idContacto } = nuevaConversacion();
     const { idConversacion: segunda } = nuevaConversacion();
+    await aceptarTratamiento(aplicacion, idContacto);
     for (const idConversacion of [primera, segunda]) {
       llm.encolar(
         llamada(`c-${String(idConversacion)}`, 'marcar_lead_caliente', {

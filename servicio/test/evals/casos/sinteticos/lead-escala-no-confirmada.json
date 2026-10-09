@@ -2,6 +2,9 @@
   "id": "lead-escala-no-confirmada",
   "titulo": "R9 — caso: una señal débil sola no traspasa aunque el modelo proponga caliente",
   "origen": "sintetico",
+  "contacto": {
+    "consentimiento": "aceptado"
+  },
   "turnos": [
     {
       "mensajes": [

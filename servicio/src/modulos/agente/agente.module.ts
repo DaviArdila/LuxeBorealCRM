@@ -20,6 +20,8 @@ import { crearCotizarEnvio } from './aplicacion/herramientas/cotizar-envio.js';
 import { crearDerivarAAsesor } from './aplicacion/herramientas/derivar-a-asesor.js';
 import { crearGuardarDatosContacto } from './aplicacion/herramientas/guardar-datos-contacto.js';
 import { crearMarcarLeadCaliente } from './aplicacion/herramientas/marcar-lead-caliente.js';
+import { protegerEscrituras } from './aplicacion/herramientas/con-consentimiento.js';
+import { crearRegistrarConsentimiento } from './aplicacion/herramientas/registrar-consentimiento.js';
 import { crearEnviarFotos } from './aplicacion/herramientas/enviar-fotos.js';
 import { crearObtenerFicha } from './aplicacion/herramientas/obtener-ficha.js';
 import { ArmarContextoInicial } from './aplicacion/armar-contexto-inicial.js';
@@ -48,8 +50,8 @@ import {
   type RepositorioContactoAgente,
 } from './puertos/repositorio-contacto-agente.js';
 
-/** R1: el LLM solo dispone de estas ocho herramientas. */
-const TOTAL_HERRAMIENTAS = 8;
+/** R1: el LLM solo dispone de estas nueve herramientas. */
+const TOTAL_HERRAMIENTAS = 9;
 
 /**
  * Módulo del agente (Fases 07a y 07b, ADR-0016): implementa el puerto `GENERADOR_RESPUESTA` que define
@@ -79,7 +81,7 @@ const TOTAL_HERRAMIENTAS = 8;
     EnsamblarPrompt,
     BucleHerramientas,
     ContenidoLlm,
-    // R1: exactamente ocho herramientas; el arranque falla si falta o sobra alguna.
+    // R1: exactamente nueve herramientas; las que escriben datos del cliente pasan por la puerta de consentimiento (AGT26); el arranque falla si falta o sobra alguna.
     {
       provide: HERRAMIENTAS_AGENTE,
       useFactory: (
@@ -93,16 +95,21 @@ const TOTAL_HERRAMIENTAS = 8;
         contactos: RepositorioContactoAgente,
         evaluador: EvaluadorLead,
         captura: CapturaLead,
-      ): readonly Herramienta[] => [
-        crearBuscarProducto(buscar),
-        crearObtenerFicha(ficha),
-        crearCotizarEnvio(cotizar),
-        crearConsultarCaso(casos),
-        crearEnviarFotos(fotos, contadores, configuracion),
-        crearGuardarDatosContacto(contactos, captura),
-        crearMarcarLeadCaliente(evaluador),
-        crearDerivarAAsesor(),
-      ],
+      ): readonly Herramienta[] =>
+        protegerEscrituras(
+          [
+            crearBuscarProducto(buscar),
+            crearObtenerFicha(ficha),
+            crearCotizarEnvio(cotizar),
+            crearConsultarCaso(casos),
+            crearEnviarFotos(fotos, contadores, configuracion),
+            crearGuardarDatosContacto(contactos, captura),
+            crearMarcarLeadCaliente(evaluador),
+            crearDerivarAAsesor(),
+            crearRegistrarConsentimiento(contactos),
+          ],
+          contactos,
+        ),
       inject: [
         BuscarProductos,
         ObtenerFichaProducto,

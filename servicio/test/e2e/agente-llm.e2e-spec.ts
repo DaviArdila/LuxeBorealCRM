@@ -1,5 +1,5 @@
 /**
- * E2E de la Fase 07b (T9): el agente con LLM y las ocho herramientas de punta a punta, con la app
+ * E2E de la Fase 07b (T9): el agente con LLM y las nueve herramientas de punta a punta, con la app
  * real (`AppModule`), BullMQ consumiendo de verdad y Postgres + Redis reales. Cada escenario entra por
  * un webhook firmado de Chatwoot → inbox → turno (debounce + lock) → `ContenidoLlm` → bucle de
  * herramientas con un `FakePuertoLlm` programado sobre `LLM_PORT` (nunca OpenRouter) → herramientas
@@ -248,8 +248,21 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     });
   }
 
-  async function turno(aplicacion: INestApplication, texto: string) {
+  /**
+   * `consentimiento`: deja el contacto ya creado con la respuesta indicada antes del webhook (PRV1); sin él el contacto nace
+   * sin respuesta, como un cliente real.
+   */
+  async function turno(aplicacion: INestApplication, texto: string, consentimiento?: 'aceptado' | 'rechazado') {
     const { idConversacion, idContacto } = nuevaConversacion();
+    if (consentimiento !== undefined) {
+      const fecha = new Date('2026-10-09T10:00:00.000Z');
+      await aplicacion.get(PrismaService).contacto.create({
+        data: {
+          chatwootContactId: idContacto,
+          ...(consentimiento === 'aceptado' ? { consentimientoDatosEn: fecha } : { consentimientoRechazadoEn: fecha }),
+        },
+      });
+    }
     const idMensaje = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), idMensaje, texto);
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje });
@@ -274,7 +287,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(JSON.stringify(resultadosDe(llm, 2))).toContain(formatearCop(PRECIO_COP));
     expect(JSON.stringify(resultadosDe(llm, 1))).not.toContain('389000');
     expect(llm.solicitudes).toHaveLength(3);
-    // R1: el modelo recibió exactamente las ocho herramientas.
+    // R1: el modelo recibió exactamente las nueve herramientas.
     expect(llm.solicitudes[0]?.herramientas?.map((h) => h.nombre).sort()).toEqual([
       'buscar_producto',
       'consultar_caso',
@@ -284,6 +297,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       'guardar_datos_contacto',
       'marcar_lead_caliente',
       'obtener_ficha',
+      'registrar_consentimiento',
     ]);
   }, 40_000);
 
@@ -537,7 +551,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       { respuesta: { texto: 'Listo Laura, ya tengo tus datos' } },
     );
 
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34 apto 301, Chapinero');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34 apto 301, Chapinero', 'aceptado');
 
     await esperarMensajes(chatwootFalso, idConversacion, 1);
     const contacto = await aplicacion.get(PrismaService).contacto.findUniqueOrThrow({
@@ -564,7 +578,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       { respuesta: { texto: 'Perfecto, sigo contigo' } },
     );
 
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Cuánto cuesta?');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Cuánto cuesta?', 'aceptado');
 
     await esperarMensajes(chatwootFalso, idConversacion, 1);
     expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ derivado: false });
@@ -589,12 +603,79 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       { respuesta: { texto: 'Perfecto' } },
     );
 
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya', 'aceptado');
 
     await esperarMensajes(chatwootFalso, idConversacion, 1);
     expect(resultadosDe(llm, 1)[0]?.resultado).toMatchObject({ derivado: true });
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
     await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({ derivado: true });
+  }, 40_000);
+
+  it('AGT26 — Sin aceptar, guardar datos no guarda: el modelo recibe requiereConsentimiento', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar(
+      llamada('c1', 'guardar_datos_contacto', {
+        nombre_completo: 'Laura Gómez Pérez',
+        telefono_contacto: '3001234567',
+        direccion: 'Calle 45 # 12-34 apto 301',
+        localidad: 'Chapinero',
+      }),
+      { respuesta: { texto: 'Antes necesito tu autorización para guardar tus datos' } },
+    );
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ requiereConsentimiento: true });
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    expect([contacto.nombre, contacto.direccion, contacto.localidad, contacto.telefonoAlterno]).toEqual([null, null, null, null]);
+  }, 40_000);
+
+  it('LDS2 — Sin consentimiento no se crea el lead y no se avisa', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar(
+      llamada('c1', 'marcar_lead_caliente', {
+        temperatura: 'caliente',
+        senales: ['pide_pagar'],
+        resumen: 'Quiere pagar ya',
+        id_producto: null,
+      }),
+      { respuesta: { texto: 'Perfecto' } },
+    );
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ requiereConsentimiento: true });
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    await expect(prisma.lead.count({ where: { contactoId: contacto.id } })).resolves.toBe(0);
+  }, 40_000);
+
+  it('AGT25 — Con un sí registrado en el turno, guardar datos ya guarda', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+    llm.encolar(
+      llamada('c1', 'registrar_consentimiento', { acepta: true }),
+      llamada('c2', 'guardar_datos_contacto', {
+        nombre_completo: 'Laura Gómez Pérez',
+        telefono_contacto: 'este mismo',
+        direccion: 'Calle 45 # 12-34 apto 301',
+        localidad: 'Chapinero',
+      }),
+      { respuesta: { texto: 'Listo Laura' } },
+    );
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Sí, acepto. Soy Laura Gómez Pérez, calle 45 # 12-34, Chapinero');
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    // La fecha del sí quedó en el contacto y el guardado posterior del mismo turno ya no pidió consentimiento.
+    expect(resultadosDe(llm, 2)[0]?.resultado).toEqual({ guardado: true });
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    expect(contacto).toMatchObject({ nombre: 'Laura Gómez Pérez', localidad: 'Chapinero' });
+    expect(contacto.consentimientoDatosEn).not.toBeNull();
+    expect(contacto.consentimientoRechazadoEn).toBeNull();
   }, 40_000);
 
   it('AGT6 — Una caída del proveedor deriva a un asesor con el texto de mensaje_error_llm', async () => {

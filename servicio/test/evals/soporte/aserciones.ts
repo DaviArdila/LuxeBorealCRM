@@ -70,6 +70,20 @@ export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: Asercio
     const llamadas = grabacion.llamadas.filter((l) => aserciones.herramientasProhibidas?.includes(l.nombre)).map((l) => l.nombre);
     agregar('herramientasProhibidas', llamadas.length === 0, true, llamadas.length === 0 ? 'ninguna herramienta prohibida' : `se llamó: ${[...new Set(llamadas)].join(', ')}`);
   }
+  if (aserciones.resultadosEsperados !== undefined) {
+    const faltantes = aserciones.resultadosEsperados.filter(
+      (esperado) =>
+        !grabacion.resultados.some(
+          (r) => r.nombre === esperado.herramienta && !r.esError && coincideParcial(r.resultado, esperado.resultado),
+        ),
+    );
+    agregar(
+      'resultadosEsperados',
+      faltantes.length === 0,
+      false,
+      faltantes.length === 0 ? 'resultados esperados devueltos' : `sin el resultado esperado: ${faltantes.map((f) => f.herramienta).join(', ')}`,
+    );
+  }
   if (aserciones.dineroConRastro === true) {
     const sinRastro = contarMontosSinRastro(grabacion.textoFinal, grabacion.resultados.map((r) => r.resultado));
     agregar('dineroConRastro', sinRastro === 0, true, sinRastro === 0 ? 'todo monto tiene rastro' : `${String(sinRastro)} monto(s) sin rastro en herramientas`);
