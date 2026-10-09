@@ -3,7 +3,7 @@
 - Change: `fase-12d-derivar-sin-silencio` · Fase de la hoja de ruta: **12d** · Rama de la spec: `fase-12d-derivar-sin-silencio`
 - Fecha: 2026-10-08 (decisiones del dueño incorporadas el 2026-10-09) · Estado: **aprobada por el dueño el 2026-10-09** («procede con la implementación»)
 - Depende de: **Fase 12 cerrada** (casos del asistente), 08d (avisos con enlace) y 07b/08 (herramientas y leads), todas fusionadas en `main`.
-- ADR: [0027](../../../docs/adr/0027-derivar-avisa-sin-silenciar-al-bot.md) (`propuesta`). Se apoya en 0016 y 0024.
+- ADR: [0027](../../../../docs/adr/0027-derivar-avisa-sin-silenciar-al-bot.md) (`propuesta`). Se apoya en 0016 y 0024.
 - Plan de origen: `C:\Users\ASUS\.claude\plans\los-casos-de-usos-iridescent-glade.md` (decisiones del 2026-10-08) y
   `C:\Users\ASUS\.claude\plans\haz-un-an-lisis-del-woolly-mochi.md` §6-8 (decisiones del 2026-10-09).
 

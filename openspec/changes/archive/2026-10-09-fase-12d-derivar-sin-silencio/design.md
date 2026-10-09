@@ -7,7 +7,7 @@
   `configuracion-negocio` (CFG6)
 - Decisiones del dueño del 2026-10-09 incorporadas: P65 (tope 20), P66, P67, P70 (un aviso por motivo), P71, P72
   (`seguridad.v1.md`), P73 (`estilo.v4.md`, sin `sinEmojis`), P74 (fuera de fase), P75 y «ningún caso de negocio sembrado» (D13).
-- ADR: [0027](../../../docs/adr/0027-derivar-avisa-sin-silenciar-al-bot.md) nuevo (`propuesta`); se apoya en 0016 (agente
+- ADR: [0027](../../../../docs/adr/0027-derivar-avisa-sin-silenciar-al-bot.md) nuevo (`propuesta`); se apoya en 0016 (agente
   implementa el puerto de conversaciones) y 0024 (casos del asistente).
 
 ## Technical Approach
