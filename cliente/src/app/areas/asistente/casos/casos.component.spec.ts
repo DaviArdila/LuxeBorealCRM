@@ -6,7 +6,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { MatTooltip } from '@angular/material/tooltip';
 import { By } from '@angular/platform-browser';
 import { provideApiMismoOrigen } from '../../../nucleo/configuracion-api';
-import { CasosComponent } from './casos.component';
+import { CasosComponent, HERRAMIENTAS_DEL_BOT, MAXIMO_CUANDO_APLICA, unirFrase } from './casos.component';
 
 const URL_CASOS = '/api/v1/asistente/casos';
 const URL_CATEGORIAS = '/api/v1/asistente/categorias';
@@ -514,5 +514,175 @@ describe('SHL10 — Las categorías se reordenan arrastrando sus fichas', () => 
 
     control.expectNone((p) => p.method === 'PUT');
     expect(el.querySelector('[data-categoria]')!.getAttribute('data-arrastre')).toBe('apagado');
+  });
+});
+
+const NOMBRES_DE_FICHAS = [
+  'buscar productos',
+  'ver la ficha',
+  'cotizar el envío',
+  'enviar fotos',
+  'guardar los datos del cliente',
+  'marcar un lead',
+  'avisar a un asesor',
+];
+
+const fichasDeAyuda = () => [...document.querySelectorAll<HTMLButtonElement>('button[data-herramienta]')];
+
+describe('SHL10 — Casos del sistema: título y «cuándo aplica» editables', () => {
+  it('SHL10 — El título de un caso del sistema se edita desde la ventana', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await asentar(fixture);
+    const titulo = document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!;
+    expect(titulo.disabled).toBe(false);
+    escribir('titulo', 'Pasar a un asesor');
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    const edicion = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`);
+    expect(edicion.request.body).toMatchObject({ titulo: 'Pasar a un asesor' });
+  });
+
+  it('SHL10 — El «cuándo aplica» de un caso del sistema se edita desde la ventana', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await asentar(fixture);
+    expect(document.querySelector<HTMLTextAreaElement>('[data-campo="cuando-aplica"]')!.disabled).toBe(false);
+    escribir('cuando-aplica', 'Cuando se avisa a una persona');
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    const edicion = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`);
+    expect(edicion.request.body).toMatchObject({ cuandoAplica: 'Cuando se avisa a una persona' });
+  });
+
+  it('SHL10 — El modo y el estado de un caso del sistema no se ofrecen ni se envían', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await asentar(fixture);
+    expect(document.querySelector('[data-campo="activo"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('Modo');
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    const cuerpo = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`).request.body as object;
+    expect(cuerpo).not.toHaveProperty('modo');
+    expect(cuerpo).not.toHaveProperty('activo');
+  });
+
+  it('SHL10 — Un título duplicado muestra el motivo del servidor y no cierra la ventana', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await asentar(fixture);
+    escribir('titulo', 'Garantía');
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+    control
+      .expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`)
+      .flush({ codigo: 'caso-duplicado', title: 'Caso duplicado', detail: 'ya existe un caso con ese título' }, { status: 409, statusText: 'x' });
+    await asentar(fixture);
+
+    const ventana = document.querySelector('[data-campo="titulo"]')!.closest('mat-dialog-container')!;
+    expect(ventana.textContent).toContain('ya existe un caso con ese título');
+  });
+});
+
+describe('SHL12 — Ayuda de herramientas bajo «Cuándo aplica»', () => {
+  it('SHL12 — Las fichas aparecen en un caso de intención', async () => {
+    const { fixture } = await abrir();
+
+    botonConEtiqueta('Crear nuevo caso')!.click();
+    await asentar(fixture);
+
+    const ayuda = document.querySelector('[data-ayuda-herramientas]')!;
+    expect(ayuda.textContent).toContain('sugerencias');
+    expect(ayuda.textContent).toContain('el bot decide');
+    expect(fichasDeAyuda().map((b) => b.textContent!.trim())).toEqual(NOMBRES_DE_FICHAS);
+    expect(document.querySelector('[data-campo="cuando-aplica"]')!.getAttribute('aria-describedby')).toContain(ayuda.id);
+    expect(fichasDeAyuda().every((b) => b.type === 'button')).toBe(true);
+  });
+
+  it('SHL12 — Tocar una ficha agrega su frase al texto', async () => {
+    const { fixture } = await abrir();
+
+    await abrirCategoria(fixture, 'Políticas');
+    botonConEtiqueta('Editar Garantía')!.click();
+    await asentar(fixture);
+    escribir('cuando-aplica', 'el cliente pregunta por envíos');
+    await asentar(fixture);
+    fichasDeAyuda().find((b) => b.textContent!.trim() === 'cotizar el envío')!.click();
+    await asentar(fixture);
+
+    expect(document.querySelector<HTMLTextAreaElement>('[data-campo="cuando-aplica"]')!.value).toBe(
+      'el cliente pregunta por envíos. cuando haya que cotizar el envío',
+    );
+  });
+
+  it('SHL12 — El contador cuenta la frase agregada', async () => {
+    const { fixture } = await abrir();
+
+    botonConEtiqueta('Crear nuevo caso')!.click();
+    await asentar(fixture);
+    fichasDeAyuda()[0]!.click();
+    await asentar(fixture);
+
+    const frase = HERRAMIENTAS_DEL_BOT[0]!.frase;
+    const ventana = document.querySelector('[data-campo="cuando-aplica"]')!.closest('mat-dialog-container')!;
+    expect(ventana.textContent).toContain(`${frase.length} / ${MAXIMO_CUANDO_APLICA}`);
+  });
+
+  it('SHL12 — Un caso del sistema no muestra la ayuda', async () => {
+    const { fixture } = await abrir();
+
+    await abrirCategoria(fixture, 'Sistema');
+    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await asentar(fixture);
+
+    expect(document.querySelector('[data-ayuda-herramientas]')).toBeNull();
+    expect(fichasDeAyuda()).toHaveLength(0);
+  });
+
+  it('SHL12 — La petición lleva solo el texto', async () => {
+    const { fixture, control } = await abrir();
+
+    await abrirCategoria(fixture, 'Políticas');
+    botonConEtiqueta('Editar Garantía')!.click();
+    await asentar(fixture);
+    fichasDeAyuda().find((b) => b.textContent!.trim() === 'avisar a un asesor')!.click();
+    await asentar(fixture);
+    boton('Guardar').click();
+    await asentar(fixture);
+
+    const cuerpo = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-1`).request.body as Record<string, unknown>;
+    expect(cuerpo['cuandoAplica']).toBe('Cuando preguntan por la garantía. cuando haya que avisar a un asesor');
+    expect(Object.keys(cuerpo).sort()).toEqual(['activo', 'actualizado', 'categoriaId', 'cuandoAplica', 'modo', 'texto', 'titulo']);
+  });
+
+  it('SHL12 — La lista de capacidades tiene los siete nombres, sin repetir y con frases que caben', () => {
+    expect(HERRAMIENTAS_DEL_BOT.map((h) => h.nombre)).toEqual(NOMBRES_DE_FICHAS);
+    expect(new Set(HERRAMIENTAS_DEL_BOT.map((h) => h.nombre)).size).toBe(7);
+    for (const h of HERRAMIENTAS_DEL_BOT) {
+      expect(h.frase.trim()).not.toBe('');
+      expect(unirFrase('', h.frase).length).toBeLessThanOrEqual(MAXIMO_CUANDO_APLICA);
+    }
+  });
+
+  it('SHL12 — Unir la frase respeta el texto previo: vacío, con punto final o con espacio final', () => {
+    expect(unirFrase('', 'cuando x')).toBe('cuando x');
+    expect(unirFrase('hola', 'cuando x')).toBe('hola. cuando x');
+    expect(unirFrase('hola.', 'cuando x')).toBe('hola. cuando x');
+    expect(unirFrase('hola ', 'cuando x')).toBe('hola cuando x');
   });
 });

@@ -56,7 +56,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T5 — Se retira el aviso fijo del primer mensaje; nace el caso de uso «Tratamiento de datos»
 - [x] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
 - [x] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
-- [ ] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
+- [x] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
 - [ ] T9 — Evals, guías de operación (con los casos de ejemplo), `verify-report` y archivo del change
 
 Máximo del change: 10 tareas (T0-T9 = 10).
@@ -279,7 +279,7 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | #123 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
 | T6 | delegada: un writer, apilada sobre T5 mientras el CI estaba bloqueado por Docker Hub. RED observado en `sistema`, `cotizar-envio`, `contenido-llm` y la migración; sin RED para el hecho de captura (spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1709 (repetidos por el padre en el hook), integración 481, e2e 119 en serie y evals 49 + 1 omitida | `10e8a4c` | #125 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 bloqueantes, 1 advertencia descartada y 1 sugerencia, autoridad quemada |
 | T7 | delegada: un writer y una segunda pasada para cerrar un riesgo de pérdida del texto del dueño que el padre detectó antes del commit. RED observado en `sistema.spec` y en las 8 pruebas de la migración; sin RED separado para la prueba de integración del orden semilla-migración. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1719, integración 492, e2e 119 en serie y evals 49 + 1 omitida | `855eef3` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T8 | pendiente | — | — | — |
+| T8 | delegada: un writer, spec primero (RED por compilación: faltaban las constantes exportadas; después un selector mal elegido en el propio spec). Verificación: `npm --prefix cliente run ci` repetido por el padre: lint, 201 + 22 pruebas, build y `api:deriva` (35 archivos) | `4116d98` | pendiente | medio pero `under_budget`: la evaluación nativa no pide revisión (la porción queda pendiente hasta alcanzar el presupuesto) |
 | T9 | pendiente | — | — | — |
 
 ## Notas de ejecución
@@ -423,6 +423,20 @@ Máximo del change: 10 tareas (T0-T9 = 10).
   `parametro`, respaldo. Una prueba de integración recorre el camino exacto (semilla y luego migración).
 - **Decisión:** las filas viejas `mensaje_handoff*`, `mensaje_fuera_cobertura` y `mensaje_captura_completa` de `parametro`
   no se borran: es texto del dueño que ya no tiene adónde ir. Si el dueño quiere retirarlas, se hace aparte.
+
+### T8 (commit `4116d98`)
+- **Tamaño real:** 2 archivos, +255/−7: `casos.component.ts` (+90) y su spec (+172). No toca el servidor, la API ni `openapi/`.
+- **Resultado:** en un caso del sistema se editan texto, categoría, título y «cuándo aplica» (modo, estado y borrado siguen
+  bloqueados); el título repetido usa el manejo del error 409 que ya existía. En los casos de intención aparece, bajo «Cuándo
+  aplica», una línea de ayuda (las fichas son sugerencias y el bot decide) y siete fichas; tocar una agrega su frase al texto.
+  La ayuda no aparece en los casos del sistema.
+- **Regla de unión de la frase** (`unirFrase`, documentada en su TSDoc): campo vacío, solo la frase; texto que termina en
+  espacio, se pega; termina en `.`, `!` o `?`, se agrega un espacio; cualquier otro final, se agrega «. ». Nunca recorta: el
+  contador muestra si se pasó de `MAXIMO_CUANDO_APLICA` y el servidor lo rechaza como hoy.
+- **Las frases de las siete fichas las redactó el writer** (todas «cuando haya que …»); el dueño puede cambiarlas en
+  `HERRAMIENTAS_DEL_BOT`. Si se suma una herramienta al agente, se agrega su ficha ahí; la nota va a la guía en T9.
+- **Revisión:** la evaluación nativa dio riesgo medio con `review_due: false` (`under_budget`), así que no hubo revisión de
+  esta porción.
 
 ## Mapeo de escenarios por tarea
 

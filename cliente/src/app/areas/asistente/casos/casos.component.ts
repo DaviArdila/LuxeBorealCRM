@@ -29,7 +29,7 @@ import { CasosServicio, type Caso, type CategoriaDeCasos, type FiltrosDeCasos } 
 
 /** Topes que muestran los contadores; la regla de validez es del servidor (CAS5). */
 const MAXIMO_TITULO = 80;
-const MAXIMO_CUANDO_APLICA = 200;
+export const MAXIMO_CUANDO_APLICA = 200;
 const MAXIMO_DESCRIPCION_EVENTO = 1000;
 const MAXIMO_TEXTO = 1200;
 const RETARDO_BUSQUEDA_MS = 300;
@@ -38,6 +38,38 @@ const LARGO_EXTRACTO = 160;
 const TITULOS_EN_FICHA = 3;
 const AYUDA =
   'Aquí se editan las respuestas del bot por situación. Cómo habla el bot se edita en «Estilo del bot».';
+
+/** Una capacidad del bot que la ayuda de «Cuándo aplica» ofrece como ficha (SHL12): su nombre y la frase que agrega. */
+export interface HerramientaDelBot {
+  readonly nombre: string;
+  readonly frase: string;
+}
+
+/**
+ * Lo que sabe hacer el bot, en palabras simples (SHL12, D12). Es solo una ayuda de redacción del cliente: no viaja a
+ * la API ni al modelo. Al sumar una herramienta al agente, se agrega aquí su ficha. Cada frase debe caber en el
+ * máximo de «Cuándo aplica» aun con el campo vacío (lo comprueba el spec).
+ */
+export const HERRAMIENTAS_DEL_BOT: readonly HerramientaDelBot[] = [
+  { nombre: 'buscar productos', frase: 'cuando haya que buscar productos' },
+  { nombre: 'ver la ficha', frase: 'cuando haya que ver la ficha de un producto' },
+  { nombre: 'cotizar el envío', frase: 'cuando haya que cotizar el envío' },
+  { nombre: 'enviar fotos', frase: 'cuando haya que enviar fotos' },
+  { nombre: 'guardar los datos del cliente', frase: 'cuando haya que guardar los datos del cliente' },
+  { nombre: 'marcar un lead', frase: 'cuando haya que marcar un lead' },
+  { nombre: 'avisar a un asesor', frase: 'cuando haya que avisar a un asesor' },
+];
+
+/**
+ * Agrega `frase` al final de `texto` (SHL12). Regla única de separación: con el campo vacío, solo la frase; si el
+ * texto ya termina en espacio, se pega sin más; si termina en `.`, `!` o `?`, se agrega un espacio; en cualquier otro
+ * caso se agrega «. » (punto y espacio). Nunca recorta: el contador del campo muestra si se pasó del máximo.
+ */
+export function unirFrase(texto: string, frase: string): string {
+  if (texto === '') return frase;
+  if (/\s$/.test(texto)) return texto + frase;
+  return /[.!?]$/.test(texto) ? `${texto} ${frase}` : `${texto}. ${frase}`;
+}
 
 type Tipo = '' | 'evento' | 'intencion';
 type Modo = 'literal' | 'guia';
@@ -260,16 +292,28 @@ interface Grupo {
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Título</mat-label>
-        <input matInput data-campo="titulo" [value]="formulario.titulo()" [disabled]="soloTexto()"
+        <input matInput data-campo="titulo" [value]="formulario.titulo()"
                (input)="formulario.titulo.set($any($event.target).value)" />
         <mat-hint align="end">{{ formulario.titulo().length }} / {{ maximoTitulo }}</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Cuándo aplica</mat-label>
-        <textarea matInput rows="3" data-campo="cuando-aplica" [value]="formulario.cuandoAplica()" [disabled]="soloTexto()"
-                  (input)="formulario.cuandoAplica.set($any($event.target).value)"></textarea>
+        <textarea matInput rows="3" data-campo="cuando-aplica" [value]="formulario.cuandoAplica()"
+                  aria-describedby="ayuda-herramientas" (input)="formulario.cuandoAplica.set($any($event.target).value)"></textarea>
         <mat-hint align="end">{{ formulario.cuandoAplica().length }} / {{ maximoCuandoAplica() }}</mat-hint>
       </mat-form-field>
+      @if (!soloTexto()) {
+        <div class="ayuda-herramientas" id="ayuda-herramientas" data-ayuda-herramientas>
+          <p>
+            Las fichas son sugerencias para redactar: el bot decide cuándo usar cada capacidad. Toca una para agregar su frase.
+          </p>
+          <div class="fichas">
+            @for (herramienta of herramientas; track herramienta.nombre) {
+              <button type="button" class="ficha" data-herramienta (click)="agregarFrase(herramienta)">{{ herramienta.nombre }}</button>
+            }
+          </div>
+        </div>
+      }
       <app-editor-con-contador etiqueta="Texto" campo="texto" [filas]="6" [maximo]="maximoTexto"
                                [(texto)]="formulario.texto" />
       @if (!soloTexto()) {
@@ -369,6 +413,28 @@ interface Grupo {
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
+    .ayuda-herramientas p {
+      margin: 0 0 var(--luxe-espacio-xs);
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-small);
+    }
+    .fichas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .ficha {
+      padding: 0.25rem 0.75rem;
+      border: 1px solid var(--mat-sys-outline);
+      border-radius: 1rem;
+      background: transparent;
+      color: var(--mat-sys-on-surface);
+      font: var(--mat-sys-label-large);
+      cursor: pointer;
+    }
+    .ficha:hover {
+      background: var(--mat-sys-surface-container-high);
+    }
     .categorias {
       display: flex;
       flex-direction: column;
@@ -402,6 +468,7 @@ export class CasosComponent {
   protected readonly ayuda = AYUDA;
   protected readonly maximoTitulo = MAXIMO_TITULO;
   protected readonly maximoTexto = MAXIMO_TEXTO;
+  protected readonly herramientas = HERRAMIENTAS_DEL_BOT;
 
   protected readonly motivo = signal<string | null>(null);
   protected readonly ocupado = signal(false);
@@ -450,7 +517,7 @@ export class CasosComponent {
     modo: signal<Modo>('literal'),
     activo: signal(true),
   };
-  /** Un caso del sistema solo edita su texto (y su categoría): el resto lo define el código. */
+  /** Un caso del sistema no ofrece el modo ni el estado activo ni la ayuda de herramientas: el resto lo define el código. */
   protected readonly soloTexto = signal(false);
   protected readonly maximoCuandoAplica = computed(() => (this.eventoDelCasoSignal() ? MAXIMO_DESCRIPCION_EVENTO : MAXIMO_CUANDO_APLICA));
   private readonly eventoDelCasoSignal = signal(false);
@@ -618,7 +685,13 @@ export class CasosComponent {
         activo: f.activo(),
       });
     } else if (this.soloTexto()) {
-      await this.servicio.editar(id, { actualizado: this.actualizadoDelCaso, categoriaId: f.categoriaId(), texto: f.texto() });
+      await this.servicio.editar(id, {
+        actualizado: this.actualizadoDelCaso,
+        categoriaId: f.categoriaId(),
+        titulo: f.titulo(),
+        cuandoAplica: f.cuandoAplica(),
+        texto: f.texto(),
+      });
     } else {
       await this.servicio.editar(id, {
         actualizado: this.actualizadoDelCaso,
@@ -632,6 +705,11 @@ export class CasosComponent {
     }
     await this.recargar();
   };
+
+  /** Agrega la frase de una ficha al «cuándo aplica» (SHL12); lo guardado sigue siendo texto plano. */
+  protected agregarFrase(herramienta: HerramientaDelBot): void {
+    this.formulario.cuandoAplica.update((texto) => unirFrase(texto, herramienta.frase));
+  }
 
   protected cerrarBorrado(abierta: boolean): void {
     if (!abierta) this.borrando.set(null);
