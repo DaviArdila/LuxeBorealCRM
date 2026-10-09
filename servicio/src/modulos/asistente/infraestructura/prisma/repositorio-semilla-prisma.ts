@@ -23,6 +23,14 @@ export class RepositorioSemillaPrisma implements RepositorioSemilla {
     return new Map(filas.map((fila) => [fila.clave, fila.valor]));
   }
 
+  async leerTextosDeCasosDelSistema(): Promise<ReadonlyMap<string, unknown>> {
+    const filas = await this.prisma.casoAsistente.findMany({
+      where: { claveSistema: { in: CASOS_DEL_SISTEMA.map((caso) => caso.clave) } },
+      select: { claveSistema: true, texto: true },
+    });
+    return new Map(filas.flatMap((fila) => (fila.claveSistema === null ? [] : [[fila.claveSistema, fila.texto] as const])));
+  }
+
   async aplicar(plan: PlanSemilla, ahora: Date): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
       const categorias = new Map<string, string>();

@@ -99,7 +99,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toEqual({ insertados: 11, existentes: 0 });
+    expect(resultado).toMatchObject({ insertados: 12, existentes: 0 });
     const casos = await prisma.casoAsistente.findMany({ where: { claveSistema: { not: null } }, include: { categoria: true } });
     expect(casos).toHaveLength(11);
     for (const caso of casos) {
@@ -134,9 +134,9 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toEqual({ insertados: 14, existentes: 0 });
+    expect(resultado).toMatchObject({ insertados: 15, existentes: 0 });
     const politicas = await prisma.casoAsistente.findMany({
-      where: { claveSistema: null },
+      where: { claveSistema: null, titulo: { not: 'Tratamiento de datos' } },
       include: { categoria: true },
       orderBy: { titulo: 'asc' },
     });
@@ -165,6 +165,54 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     await prisma.parametro.delete({ where: { clave: 'llm_techo_mensual_usd' } });
   });
 
+  it('CAS13 — Una base nueva tiene un solo caso de uso inicial: «Tratamiento de datos», sin clave del sistema', async () => {
+    const { sembrar, prisma } = await crearContexto();
+
+    await sembrar.ejecutar();
+
+    const deIntencion = await prisma.casoAsistente.findMany({ where: { claveSistema: null }, include: { categoria: true } });
+    expect(deIntencion).toHaveLength(1);
+    expect(deIntencion[0]).toMatchObject({
+      titulo: 'Tratamiento de datos',
+      disparador: 'intencion',
+      modo: 'guia',
+      activo: true,
+      categoria: { nombre: 'Políticas' },
+    });
+    expect(deIntencion[0]?.texto).toMatch(/asistente automatizado/i);
+  });
+
+  it('CAS13 — Con aviso_datos todavía en parametro, «Tratamiento de datos» nace con ese texto y lo retira', async () => {
+    const { sembrar, prisma } = await crearContexto();
+    await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Texto del negocio. ¿Aceptas?', actualizado: instante } });
+
+    await sembrar.ejecutar();
+
+    const caso = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
+    expect(caso.texto).toBe('Texto del negocio. ¿Aceptas?');
+    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).toBeNull();
+  });
+
+  it('CAS13 — Con el caso del sistema aviso_datos editado, «Tratamiento de datos» nace con ese texto y la semilla es idempotente', async () => {
+    const { sembrar, prisma } = await crearContexto();
+    await sembrar.ejecutar();
+    await prisma.casoAsistente.deleteMany({ where: { titulo: 'Tratamiento de datos' } });
+    await prisma.casoAsistente.update({ where: { claveSistema: 'aviso_datos' }, data: { texto: 'Texto editado por el dueño. ¿Aceptas?' } });
+    await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Texto viejo de parametro. ¿Aceptas?', actualizado: instante } });
+
+    const primera = await sembrar.ejecutar();
+    const segunda = await sembrar.ejecutar();
+
+    const caso = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
+    expect(caso.texto).toBe('Texto editado por el dueño. ¿Aceptas?');
+    expect(primera).toMatchObject({ insertados: 1, origenesDeTexto: { casoDelSistema: 1, parametro: 0, respaldo: 0 } });
+    expect(segunda.insertados).toBe(0);
+    // El caso del sistema queda intacto (lo retira la migración de T7) y la fila de parametro no se copió, así que no se retira.
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe('Texto editado por el dueño. ¿Aceptas?');
+    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).not.toBeNull();
+    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe(caso.texto);
+  });
+
   it('CAS6 — Sembrar dos veces no pisa una edición e informa que no insertó casos nuevos', async () => {
     const { sembrar, prisma } = await crearContexto();
     await sembrar.ejecutar();
@@ -173,7 +221,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toEqual({ insertados: 0, existentes: 11 });
+    expect(resultado).toMatchObject({ insertados: 0, existentes: 12 });
     expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe('EDITADO-EN-LA-PANTALLA');
     // La fila que reapareció no se copió, así que no se retira.
     expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).not.toBeNull();
@@ -213,7 +261,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
       leerEstiloInicial: () => Promise.resolve('# Estilo\n'),
     });
 
-    expect(informe).toEqual({ limpio: true, mensaje: 'casos:sembrar: 11 insertados, 0 ya existían.\nestilo: ya existía' });
+    expect(informe).toEqual({ limpio: true, mensaje: 'casos:sembrar: 12 insertados, 0 ya existían.\ntexto inicial de «Tratamiento de datos»: 0 del caso aviso_datos, 0 de parametro, 1 de respaldo\nestilo: ya existía' });
     for (const espia of espiados) expect(JSON.stringify(espia.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
     expect(JSON.stringify(salida.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
   });
@@ -267,7 +315,7 @@ describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', ()
 
     const indice = await casos.indice();
 
-    expect(indice.map((e) => e.titulo)).toEqual(['Contra entrega', 'Garantía']);
+    expect(indice.map((e) => e.titulo)).toEqual(['Contra entrega', 'Garantía', 'Tratamiento de datos']);
     expect(indice[1]).toEqual({ titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.' });
     expect(JSON.stringify(indice)).not.toContain('Cubre ocho días');
   });

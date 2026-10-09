@@ -22,8 +22,14 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 ## Cargar los casos de hoy (una vez)
 
 `npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los once casos del sistema (con el texto que ya
-hubiera en `parametro` o, si no, el de respaldo) y un caso de intención por cada política `politica_<tema>` que hubiera.
+hubiera en `parametro` o, si no, el de respaldo), el caso de uso «Tratamiento de datos» y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
+
+«Tratamiento de datos» es el único caso de uso que se siembra solo: es donde el bot se presenta como asistente automatizado,
+explica cómo usa los datos y pide que el cliente acepte, antes de guardar su nombre o su dirección. Lo puedes reescribir o
+borrar: borrarlo **no** abre la puerta, porque sin la aceptación del cliente el sistema no guarda ningún dato. Si lo borras, el
+bot deja de pedir la aceptación con tu texto y no podrá tomar pedidos. Si `parametro` todavía guarda un `aviso_datos`, el caso
+nace con ese texto.
 
 Para una base de desarrollo, `npm run casos:sembrar -- --archivo datos-desarrollo/asistente/casos.json` suma además los casos
 de ese archivo (`{ "casos": [{ "categoria", "titulo", "cuandoAplica", "texto", "modo" }] }`). Se valida entero con las reglas
