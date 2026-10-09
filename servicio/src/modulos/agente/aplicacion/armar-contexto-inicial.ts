@@ -20,8 +20,8 @@ export interface EntradaContextoInicial {
 /**
  * Contexto inicial del turno (D7 de la Fase 07b, AGT12; SPEC del prototipo §3.3 y §3.7): instrucciones
  * de texto para la parte variable del prompt. En el primer turno de la conversación, un SKU activo en
- * el mensaje se indica como producto de entrada; si el contacto ya tiene nombre, se le indica al
- * modelo que lo salude por él sin asumir su interés. Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
+ * el mensaje se informa como un hecho (el producto de entrada); si el contacto ya tiene nombre, también como un hecho. El
+ * contexto no ordena qué hacer con ellos: eso lo definen los casos de uso del dueño (AGT12, D13 de la Fase 12d). Con un lead pendiente de captura fuera de horario agrega las instrucciones de captura (R10). Nunca incluye otro dato personal, y un fallo al
  * leer el catálogo o el contacto degrada al caso genérico en vez de romper el turno.
  */
 @Injectable()
@@ -38,16 +38,11 @@ export class ArmarContextoInicial {
     const instrucciones: string[] = [];
     const producto = await this.productoDeEntrada(entrada);
     if (producto !== null) {
-      instrucciones.push(
-        `El cliente llegó interesado en el producto "${producto.nombre}" (id: ${producto.id}). ` +
-          'Salúdalo y ofrécele la ficha de ese producto; los datos los obtienes con obtener_ficha.',
-      );
+      instrucciones.push(`El cliente llegó desde el producto «${producto.nombre}» (id: ${producto.id}).`);
     }
     const nombre = await this.nombreDelContacto(entrada.contactoId);
     if (nombre !== null) {
-      instrucciones.push(
-        `El cliente se llama ${nombre}: salúdalo por su nombre. No asumas que quiere lo mismo que la última vez.`,
-      );
+      instrucciones.push(`El cliente se llama ${nombre}.`);
     }
     const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
     if (capturaPendiente !== null) {

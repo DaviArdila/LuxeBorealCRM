@@ -10,6 +10,8 @@ export interface GrabacionTurno {
   /** Pasos de texto de la respuesta, unidos. */
   readonly textoFinal: string;
   readonly handoff: MotivoHandoff | null;
+  /** Motivo del aviso al asesor que trajo la respuesta (AGT24), o `null` si no trajo ninguno. */
+  readonly aviso: string | null;
 }
 
 export interface ResultadoAsercion {
@@ -21,8 +23,6 @@ export interface ResultadoAsercion {
 }
 
 const PATRON_PORCENTAJE = /\d+(?:[.,]\d+)?\s*%|por\s+ciento/i;
-// Pictogramas (emojis) sin contar ©, ® ni ™, que son texto corriente de un catálogo (AGT15).
-const PATRON_EMOJI = /(?![©®™])\p{Extended_Pictographic}|\p{Emoji_Presentation}/u;
 // Convención de SKU del proyecto: `SKU-XXXX` (MODELO_DATOS §4). La palabra «sku» sola no cuenta (AGT16).
 const PATRON_SKU = /\bSKU-[A-Z0-9]+\b/i;
 
@@ -47,7 +47,7 @@ function camposDeResultados(g: GrabacionTurno, herramienta: string, campo: strin
  * Evalúa las aserciones declaradas de un turno, en el orden fijo de `NOMBRES_ASERCION` (D4). Son
  * funciones puras sobre la grabación y `detalle` nunca copia texto del cliente ni de la respuesta (R14).
  * Críticas: herramienta prohibida, dinero con rastro, recargo sin porcentaje y handoff prohibido. Las de
- * estilo (`sinEmojis`, `sinSku`; Fase 08b) no son críticas: vigilan una preferencia del dueño, no una
+ * estilo (`sinSku`; Fase 08b) no son críticas: vigilan una preferencia del dueño, no una
  * regla invariante.
  */
 export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: AsercionesTurno): readonly ResultadoAsercion[] {
@@ -88,6 +88,11 @@ export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: Asercio
       hubo === esperado ? 'handoff como se esperaba' : hubo ? `handoff inesperado (${grabacion.handoff ?? ''})` : 'faltó el handoff esperado',
     );
   }
+  if (aserciones.aviso !== undefined) {
+    const hubo = grabacion.aviso !== null;
+    const esperado = aserciones.aviso === 'esperado';
+    agregar('aviso', hubo === esperado, false, hubo === esperado ? 'aviso como se esperaba' : hubo ? 'aviso inesperado' : 'faltó el aviso esperado');
+  }
   if (aserciones.textoLiteral !== undefined) {
     const faltas = aserciones.textoLiteral.filter(({ herramienta, campo }) => {
       const valores = camposDeResultados(grabacion, herramienta, campo);
@@ -103,10 +108,6 @@ export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: Asercio
     const texto = normalizarTexto(grabacion.textoFinal);
     const faltan = aserciones.menciona.filter((patron) => !new RegExp(normalizarTexto(patron)).test(texto));
     agregar('menciona', faltan.length === 0, false, faltan.length === 0 ? 'menciona lo esperado' : `no menciona: ${faltan.join(', ')}`);
-  }
-  if (aserciones.sinEmojis === true) {
-    const hay = PATRON_EMOJI.test(grabacion.textoFinal);
-    agregar('sinEmojis', !hay, false, hay ? 'el texto contiene un emoji' : 'sin emojis');
   }
   if (aserciones.sinSku === true) {
     const hay = PATRON_SKU.test(grabacion.textoFinal);

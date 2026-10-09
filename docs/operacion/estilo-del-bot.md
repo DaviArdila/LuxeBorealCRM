@@ -3,7 +3,7 @@
 **Resumen.** El estilo del bot (tono, longitud, formato, emojis) es una lista de **secciones** que el admin crea, edita,
 ordena y apaga desde la pantalla «Estilo del bot» (`/asistente/estilo`), sin desplegar y con vuelta atrás. El bot recibe
 todas las secciones activas juntas, como un solo bloque. Cada versión guarda **quién la publicó**. Solo el estilo es
-editable: las reglas de dinero, datos y herramientas no se pueden tocar. Antes de exponer un estilo nuevo a clientes, se
+editable: los seis límites de seguridad (`seguridad.v1.md`: datos solo de herramientas, nada de dinero calculado) no se pueden tocar. Antes de exponer un estilo nuevo a clientes, se
 mide con los evals reales. Decisiones de fondo:
 [ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md) y
 [ADR-0026](../adr/0026-estilo-del-bot-en-secciones.md).
@@ -16,10 +16,11 @@ mide con los evals reales. Decisiones de fondo:
 | Se puede editar | No se puede editar |
 |---|---|
 | Quién es el bot, el tono, la longitud de los mensajes | Que el modelo nunca calcula dinero ni inventa datos (R1, R2) |
-| Viñetas, saltos de línea, uso de emojis | Cuándo usar cada herramienta, envíos, pagos, ubicación |
+| Viñetas, saltos de línea, uso de emojis (el respaldo no los prohíbe; si no los quieres, escríbelo aquí) | Qué hace cada herramienta (lo dice su descripción en el código) |
 | Cómo ofrece fotos y cómo saluda | La plantilla del turno (horario, instrucciones) |
 
-Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v3.md`): nunca se
+Si no hay estilo publicado, el bot usa el archivo del repositorio (`servicio/src/modulos/agente/prompts/estilo.v4.md`), una sola
+frase sin prohibiciones («Eres un asistente de atención por chat. Responde en español, con mensajes cortos y claros.»): nunca se
 queda sin estilo.
 
 ## Las secciones
@@ -55,9 +56,8 @@ texto. Va siempre en el prompt, como contexto, y **no es una herramienta**.
 
 ## El estilo inicial de una base nueva
 
-Una base nueva no queda con el estilo genérico del archivo: `npm run casos:sembrar` publica como **versión 1** el estilo
-pensado para una tienda colombiana de grifos, accesorios de baño y lavaplatos de acero inoxidable (trato de «usted» por
-defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md` y queda partido en secciones por sus encabezados `# `.
+Una base nueva queda con el mismo texto mínimo del respaldo: `npm run casos:sembrar` publica como **versión 1** esa frase
+bajo un único encabezado `# Estilo`, sin tono de negocio ni prohibiciones; el dueño escribe el suyo. El texto está en `servicio/prisma/datos/estilo-inicial.md` y queda partido en secciones por sus encabezados `# `.
 
 - **Cuándo aplica.** Solo si `version_estilo` no tiene ninguna fila, ni vigente ni retirada. Si ya hay un estilo publicado
   (por la pantalla o por el comando), o aunque solo queden versiones retiradas, la semilla no hace nada y nunca pisa lo que
@@ -68,7 +68,7 @@ defecto). El texto está en `servicio/prisma/datos/estilo-inicial.md` y queda pa
   bases nuevas; en una base que ya tiene versiones no cambia nada.
 - **Cómo volver a él.** En una base que ya tiene versiones, publícalo como una versión nueva:
   `npm run prompt:estilo -- publicar --archivo prisma/datos/estilo-inicial.md` (desde `servicio/`). Sin él, el respaldo
-  `estilo.v3.md` rige solo mientras la tabla esté vacía.
+  `estilo.v4.md` rige solo mientras la tabla esté vacía.
 
 ## Dónde vive y quién publicó
 
@@ -135,7 +135,7 @@ Un estilo rechazado no cambia nada: el vigente sigue igual y el comando termina 
 - **Privacidad.** El comando nunca escribe el texto del estilo en los logs (R14). Solo `ver` lo muestra, en tu terminal.
 - **Editar a mano en la base.** No lo hagas: se salta la validación y el historial. La base garantiza una sola versión
   vigente (índice único parcial), pero no revisa el contenido.
-- **El archivo de respaldo** también cambia con un commit (versión `v3` del prompt si hace falta); eso sí exige desplegar.
+- **El archivo de respaldo** también cambia con un commit (sube la versión del prompt si hace falta); eso sí exige desplegar.
 
 ## Si algo no funciona
 

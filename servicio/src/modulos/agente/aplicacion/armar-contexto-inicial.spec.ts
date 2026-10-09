@@ -5,7 +5,7 @@ import type { CapturaLead } from '../puertos/captura-lead.js';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../catalogo/index.js';
 import { ArmarContextoInicial } from './armar-contexto-inicial.js';
 
-// Escenarios AGT12 de `openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/specs/agente/spec.md`.
+// Escenarios AGT12 de `openspec/changes/fase-12d-derivar-sin-silencio/specs/agente/spec.md`.
 
 const SESION = { conversacionId: 'conv-1', version: 0 };
 
@@ -38,13 +38,14 @@ function crear() {
 }
 
 describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () => {
-  it('AGT12 — Un SKU prellenado válido arranca con ese producto en contexto', async () => {
+  it('AGT12 — Un SKU prellenado válido informa el producto de entrada como hecho', async () => {
     const { caso } = crear();
 
     const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'Hola, me interesa el SKU-123' });
 
-    expect(instrucciones.join('\n')).toContain('prod-123');
-    expect(instrucciones.join('\n')).toContain('Anillo Aurora');
+    const texto = instrucciones.join('\n');
+    expect(texto).toContain('El cliente llegó desde el producto «Anillo Aurora» (id: prod-123).');
+    expect(texto).not.toMatch(/salúdalo|ofrécele|ficha/i);
   });
 
   it('AGT12 — Un SKU inexistente cae al caso genérico', async () => {
@@ -56,15 +57,14 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
     expect(consultados).toEqual(['SKU-999']);
   });
 
-  it('AGT12 — Un cliente conocido se saluda por su nombre sin asumir su interés', async () => {
+  it('AGT12 — El nombre de un cliente conocido se informa como hecho', async () => {
     const { caso, contactos } = crear();
     contactos.nombres.set('k', 'Laura');
 
     const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
 
-    const texto = instrucciones.join('\n');
-    expect(texto).toContain('Laura');
-    expect(texto).toMatch(/no asumas/i);
+    expect(instrucciones).toEqual(['El cliente se llama Laura.']);
+    expect(instrucciones.join('\n')).not.toMatch(/salúdalo|asumas|última vez/i);
   });
 
   it('el SKU solo se busca en el primer turno de la conversación', async () => {

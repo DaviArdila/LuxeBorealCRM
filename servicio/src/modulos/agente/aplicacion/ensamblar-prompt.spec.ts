@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { normalizarTexto } from '../../../compartido/texto/index.js';
 import { componerEstilo, dividirEstilo } from '../dominio/secciones-estilo.js';
 import type { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import type { ConsultaCasos, EntradaIndice } from '../../asistente/index.js';
@@ -8,8 +9,7 @@ import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js'
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
 import type { EstiloVigente, ProveedorEstilo } from './proveedor-estilo.js';
 
-// Escenarios AGT13 de `openspec/specs/agente/spec.md`; el estilo separado es de la Fase 08b
-// (`openspec/changes/fase-08b-comportamiento-agente/`).
+// Escenarios AGT13 y AGT24 del delta de `openspec/changes/fase-12d-derivar-sin-silencio/specs/agente/spec.md`.
 
 const CATALOGO = '- SKU-1: Anillo Aurora — Oro laminado\n- SKU-2: Collar Luna — Plata 925';
 
@@ -48,31 +48,31 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(texto).not.toMatch(/\bCOP\b/);
   });
 
-  it('AGT13 — El estilo va entre las reglas y el catálogo', async () => {
+  it('AGT13 — El estilo va entre la seguridad y el catálogo', async () => {
     const { ensamblar, cargador } = crear(CATALOGO, true, { texto: 'ESTILO-DE-LA-BASE: sé breve.', version: 3, origen: 'base' });
 
     const { texto } = await ensamblar.ensamblar({ instruccionesTurno: ['INSTRUCCION-DEL-TURNO'] });
 
-    const posReglas = texto.indexOf(cargador.reglas.trim());
+    const posSeguridad = texto.indexOf(cargador.seguridad.trim());
     const posEstilo = texto.indexOf('ESTILO-DE-LA-BASE');
     const posCatalogo = texto.indexOf(CATALOGO);
     const posTurno = texto.indexOf('INSTRUCCION-DEL-TURNO');
-    expect(posReglas).toBe(0);
-    expect(posEstilo).toBeGreaterThan(posReglas);
+    expect(posSeguridad).toBe(0);
+    expect(posEstilo).toBeGreaterThan(posSeguridad);
     expect(posCatalogo).toBeGreaterThan(posEstilo);
     expect(posTurno).toBeGreaterThan(posCatalogo);
   });
 
-  it('AGT13 — Cambiar el estilo no cambia las reglas', async () => {
+  it('AGT13 — Cambiar el estilo no cambia la seguridad', async () => {
     const base = crear();
     const alterno = crear(CATALOGO, true, { texto: 'ESTILO-ALTERNO: usa un tono muy formal.', version: 2, origen: 'base' });
 
     const a = await base.ensamblar.ensamblar({ instruccionesTurno: [] });
     const b = await alterno.ensamblar.ensamblar({ instruccionesTurno: [] });
 
-    const finReglas = a.texto.indexOf(base.cargador.reglas.trim()) + base.cargador.reglas.trim().length;
-    expect(finReglas).toBeGreaterThan(100);
-    expect(b.texto.slice(0, finReglas)).toBe(a.texto.slice(0, finReglas));
+    const finSeguridad = a.texto.indexOf(base.cargador.seguridad.trim()) + base.cargador.seguridad.trim().length;
+    expect(finSeguridad).toBeGreaterThan(100);
+    expect(b.texto.slice(0, finSeguridad)).toBe(a.texto.slice(0, finSeguridad));
     expect(b.texto).toContain('ESTILO-ALTERNO');
     expect(a.texto).not.toContain('ESTILO-ALTERNO');
   });
@@ -91,18 +91,59 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     const resultado = await ensamblar.ensamblar({ instruccionesTurno: [] });
 
-    expect(resultado).toMatchObject({ version: 'v4', versionEstilo: 5 });
+    expect(resultado).toMatchObject({ version: 'v5', versionEstilo: 5 });
     expect(JSON.stringify({ version: resultado.version, versionEstilo: resultado.versionEstilo })).not.toContain('ESTILO-PUBLICADO');
   });
 
-  it('el estilo ordena sin emojis, viñetas y sin pegotes; las reglas no hablan de estilo', () => {
+  it('AGT13 — La seguridad no trae reglas de negocio ni títulos de casos', () => {
     const { cargador } = crear();
+    const seguridad = normalizarTexto(cargador.seguridad);
 
-    expect(cargador.estilo).toMatch(/sin emojis/i);
-    expect(cargador.estilo).toMatch(/viñetas/i);
-    expect(cargador.estilo).toMatch(/pegot/i);
-    expect(cargador.reglas).not.toMatch(/emoji/i);
-    expect(cargador.reglas).not.toMatch(/Sin listas largas/i);
+    for (const prohibido of ['foto', 'aproximado', 'contra entrega', 'cobertura', 'ubicacion', 'salud']) {
+      expect(seguridad).not.toContain(prohibido);
+    }
+    expect(seguridad).not.toMatch(/# herramientas/);
+    expect(cargador.seguridad).not.toMatch(/emoji/i);
+    for (const titulo of ['Garantía', 'Medios de pago', 'Fotos', 'Saludo', 'Tratamiento de datos']) {
+      expect(seguridad).not.toContain(normalizarTexto(titulo));
+    }
+  });
+
+  it('AGT13 — La seguridad trae exactamente seis límites', () => {
+    const { cargador } = crear();
+    const limites = cargador.seguridad.split('\n').filter((linea) => /^\d+\. /.test(linea));
+
+    expect(limites).toHaveLength(6);
+    expect(cargador.seguridad).toMatch(/herramienta llamada en este turno/i);
+    expect(cargador.seguridad).toMatch(/Nunca calcules/);
+    expect(cargador.seguridad).toMatch(/modo `literal`/);
+    expect(cargador.seguridad).toMatch(/modo `guia`/);
+    expect(cargador.seguridad).toMatch(/códigos internos/i);
+    expect(cargador.seguridad).toMatch(/no puedes ver imágenes/i);
+  });
+
+  it('AGT24 — La parte fija del prompt nombra la herramienta solo ante un dato que falta', async () => {
+    const { ensamblar, cargador } = crear();
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    const reglas = cargador.seguridad.split('\n').filter((linea) => linea.includes('derivar_a_asesor'));
+    expect(reglas).toHaveLength(1);
+    expect(reglas[0]).toMatch(/^4\. /);
+    expect(reglas[0]).toMatch(/no tienes el dato/i);
+    expect(texto.split('derivar_a_asesor')).toHaveLength(2);
+    expect(texto).not.toMatch(/traspas|handoff|pasar(lo)? a humano/i);
+  });
+
+  it('AGT13 — Sin secciones de estilo rige el respaldo mínimo', async () => {
+    const { ensamblar, cargador } = crear();
+
+    const { texto, versionEstilo } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(versionEstilo).toBe(0);
+    expect(cargador.estilo.trim()).toBe('Eres un asistente de atención por chat. Responde en español, con mensajes cortos y claros.');
+    expect(texto).toContain(cargador.estilo.trim());
+    expect(cargador.estilo).not.toMatch(/(nunca|no |sin |jamás)/i);
   });
 
   it('la parte variable dice si es horario de atención', async () => {
@@ -116,34 +157,9 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   it('entrega la versión del prompt para el log del turno', async () => {
     const { ensamblar } = crear();
 
-    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v4' });
+    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v5' });
   });
 
-  it('las reglas incluyen la política de citar políticas, el recargo sin porcentaje y la ubicación', () => {
-    const { cargador } = crear();
-
-    expect(cargador.reglas).toMatch(/consultar_caso/);
-    expect(cargador.reglas).not.toMatch(/consultar_politica/);
-    expect(cargador.reglas).toMatch(/contra entrega/i);
-    expect(cargador.reglas).toMatch(/una sola vez/i);
-    expect(cargador.reglas).toMatch(/porcentaje/i);
-    expect(cargador.reglas).toMatch(/ciudad y departamento/i);
-    expect(cargador.reglas).toMatch(/enviar_fotos/);
-    expect(cargador.reglas).toMatch(/ángulo/i);
-    expect(cargador.reglas).not.toMatch(/collage/i);
-  });
-
-  it('las reglas exigen citar literal los textos de las herramientas y no repetir llamadas (v4)', () => {
-    const { cargador } = crear();
-
-    expect(cargador.reglas).toMatch(/palabra por palabra/i);
-    for (const campo of ['precio_texto', 'rango_texto', 'dias_texto', 'mensaje_sin_cobertura', 'politica_contraentrega_texto']) {
-      expect(cargador.reglas).toContain(`\`${campo}\``);
-    }
-    expect(cargador.reglas).toMatch(/nunca dentro de ella/i);
-    expect(cargador.reglas).toMatch(/no llames a otra herramienta para lo mismo/i);
-    expect(cargador.reglas).toMatch(/no lo adivines/i);
-  });
   const INDICE: readonly EntradaIndice[] = [
     { titulo: 'Garantía', cuandoAplica: 'Cuando el cliente pregunta por la garantía.' },
     { titulo: 'Medios de pago', cuandoAplica: 'Cuando el cliente pregunta cómo puede pagar.' },
@@ -189,16 +205,6 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     const fin = a.texto.indexOf(CATALOGO) + CATALOGO.length;
     expect(b.texto.slice(0, fin)).toBe(a.texto.slice(0, fin));
-  });
-
-  it('CAS8 — Las reglas v4: literal palabra por palabra, guía sin datos nuevos y consultar solo lo que el índice lista', () => {
-    const { cargador } = crear();
-
-    expect(cargador.reglas).toMatch(/modo `literal`/);
-    expect(cargador.reglas).toMatch(/modo `guia`/);
-    expect(cargador.reglas).toMatch(/sin agregar datos que el caso no trae/i);
-    expect(cargador.reglas).toMatch(/solo si el título está en el índice/i);
-    expect(cargador.reglas).toMatch(/`encontrado: false`/);
   });
 
   it('EST-S1 — El prompt con las secciones sembradas es idéntico al del estilo inicial', async () => {

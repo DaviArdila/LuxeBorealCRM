@@ -30,7 +30,7 @@ export function crearEnviarFotos(
 ): Herramienta {
   return definirHerramienta(
     'enviar_fotos',
-    'Envía al cliente UNA foto de un producto: la principal por defecto, o la de un ángulo si el cliente pide verlo desde otro lado. No mandes varias seguidas.',
+    'Envía al cliente una foto de un producto: la principal, o la del ángulo que se indique.',
     esquema,
     async ({ id_producto, angulo }, ctx) => {
       if ((await contadores.fotosIndividuales(ctx.sesion)) >= configuracion.AGENTE_FOTOS_INDIVIDUALES_MAX) {

@@ -39,8 +39,8 @@ export class GrabadorLlm implements LlmPort {
     return this.llamadasAlLlmContadas;
   }
 
-  /** Arma la grabación del turno con el texto y el handoff de la respuesta del agente. */
-  grabacion(textoFinal: string, handoff: GrabacionTurno['handoff']): GrabacionTurno {
+  /** Arma la grabación del turno con el texto, el handoff y el aviso de la respuesta del agente. */
+  grabacion(textoFinal: string, handoff: GrabacionTurno['handoff'], aviso: GrabacionTurno['aviso'] = null): GrabacionTurno {
     const nombres = new Map<string, string>();
     const llamadas: { nombre: string; argumentos: unknown }[] = [];
     for (const respuesta of this.respuestas) {
@@ -49,7 +49,7 @@ export class GrabadorLlm implements LlmPort {
         llamadas.push({ nombre: llamada.nombre, argumentos: llamada.argumentos });
       }
     }
-    return { llamadas, resultados: [...this.resultadosDelTurno], textoFinal, handoff };
+    return { llamadas, resultados: [...this.resultadosDelTurno], textoFinal, handoff, aviso };
   }
 }
 

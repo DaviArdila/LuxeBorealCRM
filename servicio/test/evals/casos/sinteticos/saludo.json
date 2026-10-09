@@ -17,7 +17,6 @@
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "sinEmojis": true,
         "sinSku": true
       }
     }

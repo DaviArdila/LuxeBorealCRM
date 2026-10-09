@@ -1,5 +1,5 @@
 /**
- * E2E de la Fase 07b (T9): el agente con LLM y las siete herramientas de punta a punta, con la app
+ * E2E de la Fase 07b (T9): el agente con LLM y las ocho herramientas de punta a punta, con la app
  * real (`AppModule`), BullMQ consumiendo de verdad y Postgres + Redis reales. Cada escenario entra por
  * un webhook firmado de Chatwoot → inbox → turno (debounce + lock) → `ContenidoLlm` → bucle de
  * herramientas con un `FakePuertoLlm` programado sobre `LLM_PORT` (nunca OpenRouter) → herramientas
@@ -274,11 +274,12 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     expect(JSON.stringify(resultadosDe(llm, 2))).toContain(formatearCop(PRECIO_COP));
     expect(JSON.stringify(resultadosDe(llm, 1))).not.toContain('389000');
     expect(llm.solicitudes).toHaveLength(3);
-    // R1: el modelo recibió exactamente las siete herramientas.
+    // R1: el modelo recibió exactamente las ocho herramientas.
     expect(llm.solicitudes[0]?.herramientas?.map((h) => h.nombre).sort()).toEqual([
       'buscar_producto',
       'consultar_caso',
       'cotizar_envio',
+      'derivar_a_asesor',
       'enviar_fotos',
       'guardar_datos_contacto',
       'marcar_lead_caliente',
@@ -469,10 +470,10 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
       const despues = await promptDeUnTurno(aplicacion, 'Hola otra vez');
 
       expect(publicado).toEqual({ publicado: true, version: 1 });
-      expect(antes).toContain('Cómo escribes');
+      expect(antes).toContain('Eres un asistente de atención por chat');
       expect(antes).not.toContain('ESTILO-E2E-PUBLICADO');
       expect(despues).toContain('ESTILO-E2E-PUBLICADO');
-      expect(despues).not.toContain('Cómo escribes');
+      expect(despues).not.toContain('Eres un asistente de atención por chat');
       // AGT18: las reglas no negociables siguen intactas (R1, R2) con cualquier estilo.
       expect(despues).toContain('Nunca calcules dinero');
     } finally {
