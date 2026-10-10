@@ -3,7 +3,7 @@
 **Resumen.** Cada vez que una conversación pasa a una persona, o un cliente espera una respuesta que nadie da, el bot
 manda un aviso al grupo de Telegram con el motivo y **un enlace que abre esa conversación en Chatwoot**. Tocas el enlace,
 se abre Chatwoot en el navegador del celular y escribes al cliente. El aviso nunca lleva teléfono, cédula, correo,
-dirección ni el nombre del cliente. Decisión de fondo: [`fase-08d`](../../openspec/changes/archive/2026-10-01-fase-08d-avisos-con-enlace/proposal.md).
+dirección ni el nombre del cliente. **Desde la Fase 12d el bot no se calla cuando avisa**: pedir una persona, un lead caliente y los audios repetidos mandan **un aviso por motivo** y el bot sigue atendiendo hasta que entras tú. Solo cinco motivos pasan la conversación a espera (`handoff_pendiente`): falla del modelo, techo de gasto, argumentos inválidos, plazo agotado y tope de turnos (20 por defecto). Decisión de fondo: [`fase-08d`](../../openspec/changes/archive/2026-10-01-fase-08d-avisos-con-enlace/proposal.md).
 
 > Los comandos `npm run …` de esta guía se corren dentro de `servicio/` (o desde la raíz con
 > `npm --prefix servicio run …`), y el `.env` es `servicio/.env` ([ADR-0023](../adr/0023-estructura-servicio-y-cliente.md)).
@@ -38,6 +38,8 @@ haya aceptado el tratamiento de datos.
 
 ### Avisos sin traspaso (Fase 12d)
 
+Motivos: **pide una persona** (o el bot pide un asesor), **lead caliente** y **audio repetido**. Cada uno avisa **una vez por sesión del bot**; un motivo distinto avisa aparte, y también llegan fuera de horario.
+
 Un aviso ya no implica que el bot se calle. En estos avisos la conversación **sigue en `bot`**, el bot responde al cliente
 y tú entras cuando quieras desde el enlace; en cuanto escribes en Chatwoot, la conversación pasa a `humano`.
 
@@ -47,7 +49,7 @@ y tú entras cuando quieras desde el enlace; en cuanto escribes en Chatwoot, la 
 | El bot pidió un asesor | `Aviso: el bot pidió que un asesor intervenga en esta conversación.` |
 | Audios repetidos | `Aviso: el cliente insiste con audios y el bot no los procesa.` |
 
-Los tres llevan debajo `El bot sigue atendiendo la conversación.` y la línea `Atender:`. El aviso de lead caliente sigue
+El **lead caliente** (que también avisa sin traspasar) tiene su aviso propio en la tabla de arriba. Los tres de esta tabla llevan debajo `El bot sigue atendiendo la conversación.` y la línea `Atender:`. El aviso de lead caliente sigue
 su propio camino (ventana de 24 h por contacto): llega con el producto, las señales y el resumen, la conversación queda en `bot`,
 se etiqueta con `lead-caliente` y el texto que ve el cliente es el del modelo.
 

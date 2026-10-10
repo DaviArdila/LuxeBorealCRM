@@ -263,12 +263,13 @@ Cuando hay cobertura, el servicio de cotización de envío MUST devolver `cobert
 `rango_texto` (resultado de `formatearRangoCop` sobre `rango_min_cop`/`rango_max_cop` de la tarifa
 elegida), `dias_texto` (resultado de `formatearDias` sobre `dias_min`/`dias_max`) y
 `contraentrega_disponible` tomado de la tarifa elegida, sin que el LLM (Fase 07) tenga que calcular
-ni redondear nada (R2). Cuando `contraentrega_disponible` es `true`, MUST devolver además
-`politica_contraentrega_texto` con el texto del caso del sistema `contra_entrega` (CAS11, Fase 12), para que el bot
-lo cite literal; cuando es `false`, MUST NOT incluirlo.
+ni redondear nada (R2). MUST NOT devolver ningún texto de política: ni con `contraentrega_disponible` en `true` ni en `false`.
+Si el dueño tiene un caso de uso de contra entrega, el LLM lo consulta (CAS12); la semilla no lo crea (CAS13).
 
-(Previously: la cotización no devolvía ninguna política; el bot no tenía dónde apoyarse para explicar
-la contra entrega.)
+(Previously: con `contraentrega_disponible` en `true`, devolvía además `politica_contraentrega_texto` con el texto del caso del
+sistema `contra_entrega`, para que el bot lo citara literal.)
+
+Fase que lo implementa: 12d (se retira el texto adjunto)
 
 #### Scenario: Cotización con cobertura devuelve el rango y los días ya formateados de la tarifa elegida
 
@@ -276,47 +277,49 @@ la contra entrega.)
   `dias_max = 4` y `contraentrega_disponible = true`,
 - Cuando se cotiza el envío a un destino que resuelve esa tarifa,
 - Entonces el resultado es `cobertura: true` con `rango_texto` igual a
-  `formatearRangoCop(30000, 40000)`, `dias_texto` igual a `formatearDias(2, 4)`,
-  `contraentrega_disponible: true` y `politica_contraentrega_texto` igual al texto del caso
-  `contra_entrega`.
+  `formatearRangoCop(30000, 40000)`, `dias_texto` igual a `formatearDias(2, 4)` y
+  `contraentrega_disponible: true`.
 
-#### Scenario: Cotización con cobertura sin contra entrega no incluye la política
+#### Scenario: La cotización con contra entrega no trae ningún texto de política
+
+- Dada una tarifa elegida con `contraentrega_disponible = true`,
+- Cuando se cotiza el envío a un destino que resuelve esa tarifa,
+- Entonces el resultado no incluye `politica_contraentrega_texto` ni ningún otro texto de política.
+
+#### Scenario: Cotización con cobertura sin contra entrega
 
 - Dada una tarifa elegida con `contraentrega_disponible = false`,
 - Cuando se cotiza el envío a un destino que resuelve esa tarifa,
-- Entonces el resultado es `cobertura: true` con `contraentrega_disponible: false` y no incluye
-  `politica_contraentrega_texto`.
+- Entonces el resultado es `cobertura: true` con `contraentrega_disponible: false` y ningún texto de política.
 
-#### Scenario: El caso de contra entrega editado por el negocio reemplaza al texto de respaldo
+#### Scenario: Cotizar no consulta el puerto de textos del asistente
 
-- Dado el caso `contra_entrega` con un texto editado y una tarifa elegida con
-  `contraentrega_disponible = true`,
-- Cuando se cotiza el envío a un destino que resuelve esa tarifa,
-- Entonces `politica_contraentrega_texto` es ese texto editado, sin modificar.
+- Dado el servicio de cotización construido sin ningún puerto de textos,
+- Cuando se cotiza con y sin contra entrega,
+- Entonces la cotización se calcula con normalidad.
 
-### Requirement: CAT11 — Cotización de envío sin cobertura devuelve un mensaje configurable y ningún rango
+### Requirement: CAT11 — Cotización de envío sin cobertura devuelve `cobertura: false` y ningún rango ni texto
 
-Cuando no hay cobertura, el servicio de cotización de envío MUST devolver `cobertura: false` junto
-con el texto del caso del sistema `mensaje_fuera_cobertura` del asistente (R15, CAS7), y MUST NOT incluir
-`rango_texto`, `dias_texto` ni `contraentrega_disponible`. Si el caso no existe, MUST usar su texto de respaldo, que que informe la falta de cobertura y no prometa ningún
-contacto ni seguimiento (esa promesa depende de la Fase 08).
+Cuando no hay cobertura, el servicio de cotización de envío MUST devolver `cobertura: false` y MUST NOT incluir
+`rango_texto`, `dias_texto`, `contraentrega_disponible` ni ningún mensaje. El texto que el cliente lee lo consulta el LLM como
+un caso de uso del dueño si existe (CAS12; la semilla no lo crea); si no existe, el LLM informa la falta de cobertura sin
+inventar condiciones ni prometer ningún contacto.
 
-(Previously: el texto por defecto prometía «Un asesor revisará tu caso y te contactará».)
+(Previously: devolvía además el texto del caso del sistema `mensaje_fuera_cobertura` y, sin caso, un texto de respaldo.)
 
-#### Scenario: Sin cobertura se devuelve el mensaje del parámetro del negocio, sin ningún rango
+Fase que lo implementa: 12d (se retira el mensaje adjunto)
 
-- Dado el parámetro `mensaje_fuera_cobertura` con un texto configurado, y un destino sin ninguna
-  tarifa ni exclusión que aplique,
+#### Scenario: Sin cobertura se devuelve solo cobertura falsa, sin ningún rango
+
+- Dado un destino sin ninguna tarifa ni exclusión que aplique,
 - Cuando se cotiza el envío a ese destino,
-- Entonces el resultado es `cobertura: false` con ese mensaje, y no incluye `rango_texto` ni
-  `dias_texto`.
+- Entonces el resultado es `cobertura: false`, no incluye `rango_texto` ni `dias_texto` y no incluye ningún mensaje.
 
-#### Scenario: Sin parámetro configurado el mensaje por defecto no promete ningún contacto
+#### Scenario: Un destino excluido de la cobertura tampoco trae mensaje
 
-- Dado que el parámetro `mensaje_fuera_cobertura` no existe, y un destino excluido de la cobertura,
+- Dado un destino excluido de la cobertura,
 - Cuando se cotiza el envío a ese destino,
-- Entonces el resultado es `cobertura: false` con un mensaje que informa la falta de cobertura y que
-  no contiene una promesa de contacto de un asesor.
+- Entonces el resultado es `cobertura: false` sin mensaje y queda el evento fuera de cobertura registrado (CAT9).
 
 ### Requirement: IMP1 — Lectura de las pestañas del catálogo desde Sheets o desde un directorio local
 
@@ -483,8 +486,10 @@ nombre la fila y diga que los textos se editan en «Casos de uso» (CFG6): los t
 solo guarda configuración del negocio. Una clave que no está en el registro de claves conocidas ni es de texto MUST NOT
 producir un error — MUST producir una advertencia y guardarse tal cual, como valor jsonb de tipo cadena.
 
-(Previously: una clave `politica_*` se validaba como una política del negocio y se guardaba en `parametro` (CAT12); desde la
-Fase 12 las políticas son casos del asistente.)
+(Previously: el escenario de rechazo de una clave de texto citaba `mensaje_fuera_cobertura` y `aviso_datos`, que dejan de ser
+claves del sistema en la Fase 12d; el rechazo por prefijo no cambia.)
+
+Fase que lo implementa: 12d (ejemplos del escenario de rechazo)
 
 #### Scenario: horario_atencion con JSON válido se guarda como objeto jsonb
 
@@ -523,7 +528,7 @@ Fase 12 las políticas son casos del asistente.)
 
 #### Scenario: Una fila de texto se rechaza y dice dónde se editan los textos
 
-- Dado un parámetro con la clave `politica_devoluciones`, `mensaje_fuera_cobertura`, `aviso_datos` o `prompt_estilo`,
+- Dado un parámetro con la clave `politica_devoluciones`, `mensaje_error_llm`, `aviso_datos` o `prompt_estilo`,
 - Cuando se valida el catálogo,
 - Entonces el resultado incluye un error de validación en la columna `clave` de esa fila que menciona «Casos de uso», y no
   se importa nada.

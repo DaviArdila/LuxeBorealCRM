@@ -59,6 +59,29 @@ de un caso: si uno falla no se siembra nada y el mensaje dice cuál (por posici�
 `parametros.csv` del importador del catálogo ya no acepta filas de texto (`mensaje_*`, `aviso_*`, `politica_*`,
 `prompt_estilo*`): el importador termina con error nombrando la fila y no escribe nada.
 
+## Casos de ejemplo que puedes crear
+
+> **No se cargan solos.** `casos:sembrar` no crea ninguno de estos casos (solo «Tratamiento de datos»). Hasta que tú los
+> crees en «Casos de uso», el bot **no tiene esa conducta**: sin el caso, no manda varias fotos, no habla del envío de una
+> forma fija ni pide datos fuera de horario. Lo único fijo son los seis límites de seguridad del prompt.
+
+Son puntos de partida: copia la idea, escribe el texto con tu voz y respeta las reglas de un caso (sin pesos, SKU ni `{{…}}`).
+«Cuándo aplica» describe la situación; el bot decide si consulta el caso. Los textos con cifras (precios, rangos, recargo) los
+da el sistema, no el caso.
+
+| Caso | Cuándo aplica (sugerencia) | Modo sugerido |
+|---|---|---|
+| Fotos | Cuando el cliente pida ver fotos o imágenes de un producto | `guia`: cuántas fotos mandar y cómo presentarlas |
+| Costo del envío | Cuando el cliente pregunte cuánto cuesta o cuánto demora el envío | `guia`: cómo hablar del rango y de los días sin prometer un valor exacto |
+| Ubicación compartida | Cuando el cliente comparta su ubicación en el chat | `literal` o `guia`: qué decirle y qué dato de dirección pedir en su lugar |
+| Saludo | Cuando el cliente salude o abra la conversación sin una pregunta | `guia`: cómo saludar y qué ofrecer primero |
+| Captura fuera de horario | Cuando sea fuera de horario y el cliente quiera comprar, y falten sus datos de contacto | `guia`: qué datos pedir y cómo despedirse (el bot ya sabe el hecho de que falta captura) |
+| Contra entrega | Cuando el cliente pregunte por pagar al recibir | `guia`: cómo explicar la modalidad; el recargo lo suma el sistema y el bot no dice el porcentaje |
+| Sin cobertura | Cuando la cotización diga que no hay cobertura de envío | `literal`: el mensaje exacto que quieres dar y el siguiente paso |
+
+Si tu base ya tenía «Contra entrega», «Sin cobertura de envío» o «Datos completos fuera de horario», la migración de la
+Fase 12d los dejó como casos de intención con tu texto: no hace falta crearlos otra vez.
+
 ## Reglas de un caso
 
 | Regla | Detalle |
@@ -105,7 +128,7 @@ En el back office (`Asistente › Casos de uso`, solo `admin`) los casos se ven 
 contador. El buscador espera 300 ms tras la última tecla y consulta al servidor; los filtros de categoría y tipo también.
 «Nuevo caso» y «Editar» abren una ventana con categoría, título, «cuándo aplica», texto, modo y activo; el motivo de un
 rechazo aparece dentro de la ventana y lo escrito se conserva. Un caso del sistema lleva la etiqueta «Sistema», muestra
-cuándo se envía y solo permite editar el texto y la categoría: no tiene «Borrar» ni «Activo». Un caso inactivo se ve
+cuándo se envía y permite editar texto, categoría, título y «cuándo aplica»: no tiene «Borrar», «Activo» ni modo. Un caso inactivo se ve
 atenuado con la etiqueta «Inactivo». Abajo, «Categorías» permite crear, renombrar, subir, bajar y borrar (una con casos no
 se borra: la pantalla dice por qué).
 

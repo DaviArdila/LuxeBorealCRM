@@ -213,7 +213,10 @@ equivocado MUST ignorarse con un aviso y regir el valor por defecto del módulo 
 fase, `parametro` MUST NOT contener claves `mensaje_*`, `aviso_*`, `politica_*` ni `prompt_estilo*`, y el importador MUST
 rechazar con un mensaje claro una fila de texto en `parametros.csv`.
 
-Fase que lo implementa: 12
+(Previously: el escenario del importador usaba la fila `mensaje_fuera_cobertura`, que desde la Fase 12d es un caso de uso y no
+una clave del sistema.)
+
+Fase que lo implementa: 12; 12d (ejemplo del escenario del importador)
 
 #### Scenario: Escribir una clave fuera del registro se rechaza
 
@@ -235,6 +238,6 @@ Fase que lo implementa: 12
 
 #### Scenario: El importador rechaza una clave de texto
 
-- Dado un `parametros.csv` con una fila `mensaje_fuera_cobertura`,
+- Dado un `parametros.csv` con una fila `politica_devoluciones`,
 - Cuando se corre `npm run catalogo:importar`,
 - Entonces termina con error que nombra la fila, indica que los textos se editan en Casos de uso, y no escribe nada (todo o nada).

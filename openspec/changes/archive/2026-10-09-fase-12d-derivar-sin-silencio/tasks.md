@@ -1,6 +1,6 @@
 # Tasks: Fase 12d — Derivar avisa sin silenciar al bot, consentimiento de datos y casos del sistema mínimos
 
-**Estado: aprobada por el dueño el 2026-10-09; en curso desde T1.** La puerta de `luxeboreal-fases` quedó abierta
+**Estado: cerrada el 2026-10-09 (T0-T9 hechas; ver `verify-report.md`).** La puerta de `luxeboreal-fases` quedó abierta
 con `proposal.md`, `specs/`, `design.md` y este archivo. Plan de origen:
 `C:\Users\ASUS\.claude\plans\los-casos-de-usos-iridescent-glade.md` y, para las decisiones del 2026-10-09,
 `C:\Users\ASUS\.claude\plans\haz-un-an-lisis-del-woolly-mochi.md` §6-8.
@@ -57,7 +57,7 @@ atribución de IA. Antes de cada push, la batería completa de `CLAUDE.md`. Cada
 - [x] T6 — Contra entrega, sin cobertura y captura completa pasan a casos de uso (migración de datos), la semilla deja de crear casos de negocio y la captura se informa como hecho
 - [x] T7 — `CASOS_DEL_SISTEMA` queda en cinco casos; se ajustan tests y evals
 - [x] T8 — Cliente: título y «cuándo aplica» editables en los casos del sistema y ayuda de herramientas bajo «Cuándo aplica»
-- [ ] T9 — Evals, guías de operación (con los casos de ejemplo), `verify-report` y archivo del change
+- [x] T9 — Evals, guías de operación (con los casos de ejemplo), `verify-report` y archivo del change
 
 Máximo del change: 10 tareas (T0-T9 = 10).
 
@@ -278,9 +278,9 @@ Máximo del change: 10 tareas (T0-T9 = 10).
 | T4 | delegada: un writer, RED observado primero (salvo `politica-pide-persona`, spec e implementación a la vez). La primera pasada quedó en `partial` porque el repositorio de contactos vive en `agente/puertos` e `infraestructura/prisma`, fuera de la superficie que le di; se amplió y se retomó el mismo agente. Verificación: prisma:generar, lint, typecheck, fronteras, deriva del contrato, unit 1693, integración 470, e2e 118/118 en serie y evals 45 + 1 omitida | `d5571ea` | #122 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
 | T5 | delegada: un writer, RED observado primero en las pruebas unitarias (las evals usan herramientas ya existentes y pasaron a la primera). Se le pidió un ajuste antes del commit para no perder el texto editado de `aviso_datos`. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1703, e2e 118/118 en serie, evals 47 + 1 omitida; integración de `asistente` en verde y `CAN1` de `canales` (límite de 500 ms) pasa aislado pero se tambalea bajo carga | `92f28b6` | #123 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 1 sugerencia no bloqueante, autoridad quemada |
 | T6 | delegada: un writer, apilada sobre T5 mientras el CI estaba bloqueado por Docker Hub. RED observado en `sistema`, `cotizar-envio`, `contenido-llm` y la migración; sin RED para el hecho de captura (spec e implementación a la vez). Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1709 (repetidos por el padre en el hook), integración 481, e2e 119 en serie y evals 49 + 1 omitida | `10e8a4c` | #125 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 bloqueantes, 1 advertencia descartada y 1 sugerencia, autoridad quemada |
-| T7 | delegada: un writer y una segunda pasada para cerrar un riesgo de pérdida del texto del dueño que el padre detectó antes del commit. RED observado en `sistema.spec` y en las 8 pruebas de la migración; sin RED separado para la prueba de integración del orden semilla-migración. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1719, integración 492, e2e 119 en serie y evals 49 + 1 omitida | `855eef3` | pendiente | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
-| T8 | delegada: un writer, spec primero (RED por compilación: faltaban las constantes exportadas; después un selector mal elegido en el propio spec). Verificación: `npm --prefix cliente run ci` repetido por el padre: lint, 201 + 22 pruebas, build y `api:deriva` (35 archivos) | `4116d98` | pendiente | medio pero `under_budget`: la evaluación nativa no pide revisión (la porción queda pendiente hasta alcanzar el presupuesto) |
-| T9 | pendiente | — | — | — |
+| T7 | delegada: un writer y una segunda pasada para cerrar un riesgo de pérdida del texto del dueño que el padre detectó antes del commit. RED observado en `sistema.spec` y en las 8 pruebas de la migración; sin RED separado para la prueba de integración del orden semilla-migración. Verificación: lint, typecheck, fronteras, deriva del contrato, unit 1719, integración 492, e2e 119 en serie y evals 49 + 1 omitida | `855eef3` | #126 (fusionado) | medio, `slice_budget_reached`; revisión nativa aceptada por autorización permanente del dueño: aprobada, 0 hallazgos, autoridad quemada |
+| T8 | delegada: un writer, spec primero (RED por compilación: faltaban las constantes exportadas; después un selector mal elegido en el propio spec). Verificación: `npm --prefix cliente run ci` repetido por el padre: lint, 201 + 22 pruebas, build y `api:deriva` (35 archivos) | `4116d98` | #128 (fusionado) | medio pero `under_budget`: la evaluación nativa no pide revisión (la porción queda pendiente hasta alcanzar el presupuesto) |
+| T9 | delegada: un writer (documentación y especificaciones; sin código ni evals nuevas: las de derivación, consentimiento, AGT28 y CAS12 ya existían). Deltas fusionados a mano en `openspec/specs/` (9 dominios), guías, `MODELO_DATOS.md`, inventario, preguntas y `verify-report.md`; change archivado con `git mv` | commit de cierre de `fase-12d-p9-cierre` | el de este cierre | passive: revisión estructural |
 
 ## Notas de ejecución
 

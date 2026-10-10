@@ -5,7 +5,7 @@
 Cubre los avisos internos a los asesores: por qué canal salen, qué pueden decir y cuántas veces. Los
 avisos salen por un puerto propio (`Notificador`, hoy Telegram) a través del outbox, no llevan datos
 personales del cliente y llevan un enlace que abre la conversación en Chatwoot. Avisan de los leads (uno por
-contacto cada 24 horas), de todo traspaso a una persona y de un cliente que espera respuesta, cada uno con su límite
+contacto cada 24 horas), de todo traspaso a una persona, de los avisos sin traspaso (uno por motivo) y de un cliente que espera respuesta, cada uno con su límite
 para no saturar al equipo.
 
 ## Requirements
@@ -78,24 +78,39 @@ Fase que lo implementa: 08; 08d (límite por instancia)
 - Cuando la conversación pasa a un asesor por tope de turnos,
 - Entonces se encola un aviso de traspaso aunque no hayan pasado 24 horas.
 
-### Requirement: NTF3 — El aviso se envía después de confirmar el cambio de estado
+### Requirement: NTF3 — El aviso se envía después de confirmar lo que lo origina
 
-El aviso MUST encolarse solo después de que la transición de la conversación quedó confirmada en la base
-(nunca antes), y MUST NOT encolarse si la transición falla o la conversación ya no está en el estado
-esperado.
+El aviso de un **traspaso** MUST encolarse solo después de que la transición de la conversación quedó confirmada en la base
+(nunca antes), y MUST NOT encolarse si la transición falla o la conversación ya no está en el estado esperado. El aviso **sin
+traspaso** (NTF8) MUST encolarse solo después de que los pasos de la respuesta del turno quedaron encolados, y MUST NOT
+encolarse si la conversación ya pasó a `humano` (CNV13).
 
-Fase que lo implementa: 08
+(Previously: el requisito exigía confirmar siempre una transición de estado, porque todo aviso la tenía.)
 
-#### Scenario: La notificación se envía después de confirmar el estado
+Fase que lo implementa: 08; 12d (avisos sin traspaso)
 
-- Dado un lead derivado dentro de horario,
+#### Scenario: La notificación de un traspaso se envía después de confirmar el estado
+
+- Dado un traspaso por tope de turnos,
 - Cuando se ejecuta la derivación,
 - Entonces la conversación ya está en `handoff_pendiente` cuando el aviso entra al outbox.
 
 #### Scenario: Una transición fallida no avisa
 
 - Dado que la transición a `handoff_pendiente` no se pudo aplicar,
-- Cuando se procesa la derivación,
+- Cuando se procesa el traspaso,
+- Entonces no se encola ningún aviso.
+
+#### Scenario: El aviso sin traspaso entra al outbox después de la respuesta
+
+- Dado una respuesta con un paso de texto y un aviso `pide-asesor`,
+- Cuando se procesa el turno,
+- Entonces el paso de texto está encolado antes que la fila de outbox `notificacion.telegram`.
+
+#### Scenario: Un aviso sin traspaso no se encola si un asesor ya tomó la conversación
+
+- Dado una conversación que pasó a `humano` mientras el generador corría,
+- Cuando se procesa la respuesta con aviso,
 - Entonces no se encola ningún aviso.
 
 ### Requirement: NTF4 — Reintento hasta entregar, sin perder el lead
@@ -161,14 +176,15 @@ Fase que lo implementa: 08d
 
 ### Requirement: NTF6 — Todo traspaso a una persona avisa, con su motivo
 
-Cuando una conversación pasa a una persona por **cualquier** motivo de handoff (`lead-caliente`, `pide-persona`,
-`tope-turnos`, `fallo-llm`, `techo-gasto`, `audio-repetido`, `argumentos-invalidos`, `plazo-agotado`), el sistema
-MUST encolar un aviso al asesor **después** de confirmar la transición (NTF3). Cada motivo MUST decirse con un
-texto propio en claro. Los motivos que nacen de un lead (`lead-caliente`, `pide-persona`) siguen el camino de
-leads (NTF2 por contacto); los demás MUST avisar una sola vez por instancia de traspaso (conversación, motivo y
-versión de la conversación) y MUST NOT crear un lead.
+Cuando una conversación pasa a una persona por **cualquier** motivo de handoff (`tope-turnos`, `fallo-llm`, `techo-gasto`,
+`argumentos-invalidos`, `plazo-agotado`), el sistema MUST encolar un aviso al asesor **después** de confirmar la transición
+(NTF3). Cada motivo MUST decirse con un texto propio en claro. Estos avisos MUST avisar una sola vez por instancia de traspaso
+(conversación, motivo y versión de la conversación) y MUST NOT crear un lead.
 
-Fase que lo implementa: 08d
+(Previously: la lista incluía `lead-caliente`, `pide-persona` y `audio-repetido`, que ahora avisan sin traspasar (NTF8); los dos
+primeros seguían el camino de leads.)
+
+Fase que lo implementa: 08d; 12d (la lista de motivos de traspaso baja a cinco)
 
 #### Scenario: El tope de turnos avisa
 
@@ -195,7 +211,7 @@ Fase que lo implementa: 08d
 - Cuando pasa a un asesor por segunda vez,
 - Entonces se encola un aviso nuevo.
 
-#### Scenario: Una transición fallida no avisa
+#### Scenario: Una transición fallida de un traspaso no avisa
 
 - Dado un traspaso cuya transición falla o cuya conversación ya no está en el estado esperado,
 - Cuando se intenta avisar,
@@ -240,3 +256,69 @@ Fase que lo implementa: 08d
 - Dado un mensaje del cliente en `humano` y una conversación que vence y vuelve a `bot` con origen `ttl`,
 - Cuando corre el barrido de esperas,
 - Entonces no se encola ningún aviso.
+
+### Requirement: NTF8 — El aviso sin traspaso llega una vez por motivo, también fuera de horario
+
+Cuando la respuesta de un turno trae un aviso con motivo `pide-persona`, `pide-asesor` o `audio-repetido`, el sistema MUST
+encolar un aviso al asesor con el enlace de la conversación (NTF5) y un texto propio en claro por motivo, sin datos
+personales (NTF1) y sin crear un lead. MUST encolarse una sola vez por conversación **y motivo** mientras el asesor no la tome
+(CNV14: `pide-persona` y `pide-asesor` cuentan como el mismo motivo) y con una clave de idempotencia del outbox por
+conversación, versión y motivo; un aviso de otro motivo MUST encolarse aunque ya haya uno. El aviso con motivo `lead-caliente` MUST seguir
+el camino de leads (R11, NTF2). Un aviso sin traspaso MUST encolarse dentro y fuera del horario de atención. No MUST depender de la ventana de 24
+horas por contacto (NTF2).
+
+Fase que lo implementa: 12d
+
+#### Scenario: Pedir una persona avisa y el texto lo dice
+
+- Dado un turno con aviso `pide-persona`,
+- Cuando se encola el aviso,
+- Entonces hay una fila de outbox `notificacion.telegram` cuyo texto dice que el cliente pidió hablar con una persona y trae el enlace de la conversación.
+
+#### Scenario: La herramienta derivar_a_asesor tiene su propio texto
+
+- Dado un turno con aviso `pide-asesor` y otro con `pide-persona`,
+- Cuando se arman los avisos,
+- Entonces los textos son distintos y ninguno contiene teléfono, nombre ni el motivo que escribió el modelo.
+
+#### Scenario: El audio repetido avisa sin traspasar
+
+- Dado un turno con aviso `audio-repetido`,
+- Cuando se encola el aviso,
+- Entonces el texto dice que el cliente insiste con audios y la conversación sigue en `bot`.
+
+#### Scenario: Fuera de horario el aviso también sale
+
+- Dado un turno fuera del horario de atención con aviso `pide-asesor`,
+- Cuando se procesa el turno,
+- Entonces se encola el aviso igual que dentro de horario.
+
+#### Scenario: Un segundo aviso del mismo motivo no se encola
+
+- Dado una conversación con un aviso `pide-persona` ya encolado y su marca puesta,
+- Cuando un turno posterior trae un aviso `pide-asesor`,
+- Entonces no se encola un segundo aviso.
+
+#### Scenario: Un aviso de otro motivo sí se encola
+
+- Dado una conversación con un aviso `pide-persona` ya encolado y su marca puesta,
+- Cuando un turno posterior trae un aviso `audio-repetido`,
+- Entonces se encola un aviso nuevo cuyo texto dice que el cliente insiste con audios.
+
+#### Scenario: Pasada la toma del asesor se puede avisar otra vez
+
+- Dado una conversación avisada que pasó a `humano` y volvió a `bot`,
+- Cuando un turno trae un aviso `pide-asesor`,
+- Entonces se encola un aviso nuevo.
+
+#### Scenario: El aviso sin traspaso no consume la ventana de leads
+
+- Dado un contacto sin leads avisados y un aviso `pide-persona`,
+- Cuando se encola el aviso,
+- Entonces el contacto sigue sin `notificado_en` y un lead caliente posterior se avisa sin esperar 24 horas.
+
+#### Scenario: Un fallo del encolado no pierde el turno
+
+- Dado que el encolado del aviso falla,
+- Cuando se procesa el turno con aviso,
+- Entonces la respuesta al cliente ya está encolada, se registra un `warn` sin datos del cliente y el siguiente aviso reintenta.
