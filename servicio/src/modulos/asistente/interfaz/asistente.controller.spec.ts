@@ -149,6 +149,9 @@ describe('AsistenteController — casos (CAS9)', () => {
     await expect(controlador.editarCaso(caso.id, { actualizado: '2026-10-06T10:00:00.000Z', claveSistema: 'otra' }, admin)).rejects.toMatchObject({
       codigo: 'caso-invalido',
     });
+    await expect(controlador.editarCaso(caso.id, { actualizado: '2026-10-06T10:00:00.000Z', titulo: 'Otro título' }, admin)).rejects.toMatchObject({
+      codigo: 'caso-invalido',
+    });
   });
 
   it('borrarCaso borra un caso de intención y responde caso-del-sistema o caso-inexistente en los demás casos', async () => {

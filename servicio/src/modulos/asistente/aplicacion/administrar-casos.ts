@@ -59,9 +59,18 @@ export type ResultadoEditarCaso =
 
 export type ResultadoBorrarCaso = { readonly ok: true } | { readonly ok: false; readonly razon: 'inexistente' | 'del-sistema' };
 
+/** Nombre del primer campo fijo de un caso del sistema que la edición intenta cambiar; `null` si no cambia ninguno (CAS4). */
+function campoDelSistemaCambiado(actual: CasoAdmin, cambios: CambiosCaso): string | null {
+  if (cambios.titulo !== undefined && cambios.titulo.trim() !== actual.titulo.trim()) return 'el título';
+  if (cambios.categoriaId !== undefined && cambios.categoriaId !== actual.categoriaId) return 'la categoría';
+  if (cambios.cuandoAplica !== undefined && cambios.cuandoAplica.trim() !== actual.cuandoAplica.trim()) return 'cuándo aplica';
+  if (cambios.modo !== undefined && cambios.modo !== actual.modo) return 'el modo';
+  return null;
+}
+
 /**
- * Administra los casos del asistente (CAS3, CAS4, CAS5, CAS10): crea y edita casos de intención con su validación, edita (sin
- * borrar ni desactivar) los del sistema, protege las ediciones simultáneas con la fecha de actualización y lista con búsqueda,
+ * Administra los casos del asistente (CAS3, CAS4, CAS5, CAS10): crea y edita casos de intención con su validación, edita solo el texto (sin
+ * borrar ni desactivar) de los del sistema, protege las ediciones simultáneas con la fecha de actualización y lista con búsqueda,
  * filtros y cursor. Cada escritura sube la versión compartida (CAS7). Nunca escribe un texto en logs (R14).
  */
 @Injectable()
@@ -127,6 +136,10 @@ export class AdministrarCasos {
     if (actual === null) return { ok: false, razon: 'inexistente' };
     if (cambios.claveSistema !== undefined && cambios.claveSistema !== actual.claveSistema) {
       return { ok: false, razon: 'invalido', motivo: 'la clave del sistema de un caso no se cambia desde la API (CAS4)' };
+    }
+    if (actual.claveSistema !== null) {
+      const fijo = campoDelSistemaCambiado(actual, cambios);
+      if (fijo !== null) return { ok: false, razon: 'invalido', motivo: `en un caso del sistema solo se edita el texto, no ${fijo} (CAS4)` };
     }
     const titulo = (cambios.titulo ?? actual.titulo).trim();
     const cuandoAplica = (cambios.cuandoAplica ?? actual.cuandoAplica).trim();

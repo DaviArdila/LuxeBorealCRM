@@ -181,24 +181,42 @@ describe('asistente/aplicacion — AdministrarCasos (editar y borrar)', () => {
     expect(repositorio.casos).toHaveLength(0);
   });
 
-  it('CAS4 — El título de un caso del sistema se edita', async () => {
+  it('CAS4 — En un caso del sistema solo se edita el texto: título, categoría, cuándo aplica y modo se rechazan', async () => {
+    const { admin, repositorio, politicas, sistema, version } = crear();
+    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Audio recibido', disparador: 'evento', claveSistema: 'mensaje_pedir_texto_audio', actualizado: LEIDO });
+    const rechazo = (campo: string) => ({ ok: false, razon: 'invalido', motivo: `en un caso del sistema solo se edita el texto, no ${campo} (CAS4)` });
+
+    expect(await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'Audios' })).toEqual(rechazo('el título'));
+    expect(await admin.editar(caso.id, { actualizado: LEIDO, categoriaId: politicas.id })).toEqual(rechazo('la categoría'));
+    expect(await admin.editar(caso.id, { actualizado: LEIDO, cuandoAplica: 'Otra situación.' })).toEqual(rechazo('cuándo aplica'));
+    expect(await admin.editar(caso.id, { actualizado: LEIDO, modo: 'guia' })).toEqual(rechazo('el modo'));
+    expect(repositorio.casos[0]).toMatchObject({ titulo: 'Audio recibido', categoriaId: sistema.id });
+    expect(version.incrementos).toBe(0);
+  });
+
+  it('CAS4 — Un caso del sistema tolera que se reenvíen los mismos valores junto al texto nuevo', async () => {
     const { admin, repositorio, sistema } = crear();
     const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Audio recibido', disparador: 'evento', claveSistema: 'mensaje_pedir_texto_audio', actualizado: LEIDO });
 
-    const resultado = await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'Audios' });
+    const resultado = await admin.editar(caso.id, {
+      actualizado: LEIDO,
+      titulo: ` ${caso.titulo} `,
+      categoriaId: caso.categoriaId,
+      cuandoAplica: caso.cuandoAplica,
+      modo: caso.modo,
+      texto: 'Escríbeme el mensaje, por favor.',
+    });
 
-    expect(resultado).toMatchObject({ ok: true, caso: { titulo: 'Audios', claveSistema: 'mensaje_pedir_texto_audio', disparador: 'evento' } });
+    expect(resultado).toMatchObject({ ok: true, caso: { titulo: 'Audio recibido', texto: 'Escríbeme el mensaje, por favor.' } });
   });
 
-  it('CAS4 — El título editado no puede repetir el de otro caso', async () => {
+  it('CAS3 — Un caso de intención sí cambia título, categoría, cuándo aplica y modo', async () => {
     const { admin, repositorio, politicas, sistema } = crear();
-    repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Tratamiento de datos' });
-    const caso = repositorio.sembrarCaso({ categoriaId: sistema.id, titulo: 'Audio recibido', disparador: 'evento', claveSistema: 'mensaje_pedir_texto_audio', actualizado: LEIDO });
+    const caso = repositorio.sembrarCaso({ categoriaId: politicas.id, titulo: 'Garantía', actualizado: LEIDO });
 
-    const resultado = await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'tratamiento de datos' });
+    const resultado = await admin.editar(caso.id, { actualizado: LEIDO, titulo: 'Garantías', categoriaId: sistema.id, cuandoAplica: 'Cuando piden cambios.', modo: 'guia' });
 
-    expect(resultado).toEqual({ ok: false, razon: 'duplicado' });
-    expect((await admin.obtener(caso.id))?.titulo).toBe('Audio recibido');
+    expect(resultado).toMatchObject({ ok: true, caso: { titulo: 'Garantías', categoriaId: sistema.id, cuandoAplica: 'Cuando piden cambios.', modo: 'guia' } });
   });
 
   it('CAS4 — Un caso del sistema no se desactiva', async () => {
@@ -217,7 +235,7 @@ describe('asistente/aplicacion — AdministrarCasos (editar y borrar)', () => {
     expect(await admin.editar(caso.id, { actualizado: LEIDO, modo: 'guia' })).toEqual({
       ok: false,
       razon: 'invalido',
-      motivo: 'un caso del sistema solo admite el modo literal',
+      motivo: 'en un caso del sistema solo se edita el texto, no el modo (CAS4)',
     });
   });
 
