@@ -4,7 +4,7 @@
 
 Todo lo que el bot le dice al cliente es un **caso**: una categoría, un título único, un «cuándo aplica», un texto y un modo
 (literal o guía). Los casos del sistema son una lista cerrada que el código dispara solo (audio, imagen, falla del modelo, techo de
-gasto y espera del asesor); los de intención (también «Tratamiento de datos», el único que se siembra) los crea y edita un admin y el agente los consulta con
+gasto, espera del asesor y la barrera de consentimiento); los de intención los crea y edita un admin (la semilla solo crea uno por cada política `politica_<tema>`) y el agente los consulta con
 `consultar_caso`. Este dominio es dueño de la lista de casos, de su validación (sin pesos, SKU ni plantillas), de la semilla,
 de la API de administración y del puerto único con el que los demás módulos piden un texto. La regla que ordena el dominio:
 si el cliente lo lee, es un caso; si el código lo usa para calcular o decidir, es un parámetro del negocio
@@ -149,7 +149,7 @@ Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligato
 
 - Dado una base recién migrada,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces existen nueve casos con clave del sistema, cada uno con el texto de respaldo de su clave.
+- Entonces existen once casos con clave del sistema, cada uno con el texto de respaldo de su clave.
 
 #### Scenario: Un caso del sistema se edita
 
@@ -247,11 +247,10 @@ Fase que lo implementa: 12
 
 ### Requirement: CAS6 — La semilla carga los casos de hoy sin pisar lo editado
 
-`npm run casos:sembrar` MUST crear, de forma idempotente, las categorías «Sistema» y «Políticas», los nueve casos del
-sistema (con el texto que ya haya en `parametro` bajo su clave y, si no hay, el de respaldo; el aviso de consentimiento hereda además el texto que el dueño editó en `aviso_datos`), el caso de uso inicial
-«Tratamiento de datos» de CAS13 y un caso de intención por cada fila `politica_<tema>` de `parametro`. MUST NOT crear ningún otro
-caso de negocio (contra entrega, cobertura, captura, fotos, envío, ubicación, saludo): esos los crea el dueño. El caso inicial
-MUST crearse solo si no existe ya un caso con ese título (sin distinguir mayúsculas ni acentos). Después de crear un
+`npm run casos:sembrar` MUST crear, de forma idempotente, las categorías «Sistema» y «Políticas», los once casos del
+sistema (con el texto que ya haya en `parametro` bajo su clave y, si no hay, el de respaldo; el aviso de consentimiento hereda además el texto que el dueño editó en `aviso_datos`) y un caso de intención por cada fila `politica_<tema>` de `parametro`. MUST NOT crear ningún otro
+caso de negocio (contra entrega, cobertura, captura, fotos, envío, ubicación, saludo, «Tratamiento de datos»): esos los crea el dueño (CAS13). Cada caso
+MUST crearse solo si no existe ya un caso con ese título (sin distinguir mayúsculas ni acentos); por eso un caso de intención borrado se recrea mientras su política siga en `parametro`. Después de crear un
 caso a partir de una fila de `parametro`, la semilla MUST retirar esa fila en la misma transacción, para que el texto
 tenga un solo dueño. La semilla MUST NOT modificar un caso que ya exista y MUST informar solo cuántos casos insertó y cuántos ya existían, sin escribir
 textos en pantalla ni en logs (R14). El mismo comando siembra el estilo inicial del bot cuando `version_estilo` está
@@ -259,7 +258,7 @@ vacía (`agente`, EST-D6).
 
 (Previously: sembraba once casos del sistema y `contra_entrega` siempre, con su respaldo en código.)
 
-Fase que lo implementa: 12; 12d (cinco casos del sistema y un solo caso de uso inicial)
+Fase que lo implementa: 12; 12d (cinco casos del sistema y un solo caso de uso inicial); ADR-0028 (once casos del sistema; la semilla ya no crea «Tratamiento de datos»)
 
 #### Scenario: Sembrar copia los textos que ya estaban editados
 
@@ -271,17 +270,17 @@ Fase que lo implementa: 12; 12d (cinco casos del sistema y un solo caso de uso i
 
 - Dado las filas `politica_devoluciones`, `politica_garantia` y `politica_instalacion` en `parametro`,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces existen tres casos de intención en la categoría «Políticas» con esos textos, además de «Tratamiento de datos».
+- Entonces existen tres casos de intención en la categoría «Políticas» con esos textos.
 
 #### Scenario: Sembrar no crea casos de negocio en una base nueva
 
 - Dado una base recién migrada sin ningún caso,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces el único caso de intención es «Tratamiento de datos», sin clave del sistema, y no existen «Contra entrega», «Sin cobertura de envío» ni «Datos completos fuera de horario».
+- Entonces no existe ningún caso de intención, ni «Tratamiento de datos», y no existen «Contra entrega», «Sin cobertura de envío» ni «Datos completos fuera de horario».
 
 #### Scenario: Un caso inicial ya existente no se duplica
 
-- Dado un caso «tratamiento de datos» ya creado por un admin con otro texto,
+- Dado un caso «garantía» ya creado por un admin con otro texto y `politica_garantia` en `parametro`,
 - Cuando se corre `npm run casos:sembrar`,
 - Entonces no se crea un segundo caso con ese título y el texto del admin sigue igual.
 
@@ -306,7 +305,7 @@ Fase que lo implementa: 12; 12d (cinco casos del sistema y un solo caso de uso i
 ### Requirement: CAS7 — Un único puerto entrega el texto de un caso del sistema, y rige al instante
 
 `asistente` MUST exportar un puerto `TextosAsistente` con `textoDelSistema(clave)` que MUST devolver siempre un texto
-(nunca lanzar): el del caso si existe y no está vacío, y si no el de respaldo del código. La clave MUST ser una de las nueve de
+(nunca lanzar): el del caso si existe y no está vacío, y si no el de respaldo del código. La clave MUST ser una de las once de
 CAS4. Los módulos `agente`, `conversaciones` y `llm` MUST pedir sus textos al cliente por ese puerto y MUST NOT leer
 `parametro` para obtener un texto. El puerto MUST guardar una copia en memoria mientras la versión compartida en Redis no
 cambie (el mismo mecanismo que el estilo, AGT19); toda escritura de un caso o categoría MUST subir esa versión, y un caso
@@ -358,7 +357,7 @@ Fase que lo implementa: 12; 12d (cinco claves y sin consumo desde `catalogo`)
 
 El prompt de cada turno MUST incluir un **índice** de los casos de intención activos (título y «cuándo aplica»), acotado
 a 60 casos y 6.000 caracteres; si se excede, MUST recortarse por orden de categoría y avisar en el log sin contenido. Los
-casos que la migración convierte (CAS14) y el caso inicial «Tratamiento de datos» (CAS13) entran al índice como cualquier otro
+casos que la migración convierte (CAS14) y los que sembró una política (CAS6) entran al índice como cualquier otro
 caso de intención. La
 herramienta `consultar_caso({ titulo })` MUST reemplazar a `consultar_politica`: devuelve el texto y el modo del caso (sin
 distinguir mayúsculas ni acentos), un caso inexistente o inactivo MUST devolver la lista de títulos disponibles, y el LLM
@@ -386,7 +385,7 @@ Fase que lo implementa: 12; 12d (los casos convertidos entran al índice)
 
 - Dado una base de la Fase 12 migrada con CAS14,
 - Cuando se arma el índice,
-- Entonces trae «Tratamiento de datos», «Contra entrega», «Sin cobertura de envío» y «Datos completos fuera de horario» con su «cuándo aplica».
+- Entonces trae «Contra entrega», «Sin cobertura de envío» y «Datos completos fuera de horario» con su «cuándo aplica».
 
 #### Scenario: consultar_caso devuelve el texto y el modo
 
@@ -569,45 +568,41 @@ Fase que lo implementa: 12d
 - Cuando `ContenidoLlm` arma los pasos,
 - Entonces el primer paso de texto es exactamente el texto final del modelo.
 
-### Requirement: CAS13 — «Tratamiento de datos» es el único caso de uso que se siembra
+### Requirement: CAS13 — «Tratamiento de datos» ya no se siembra
 
-La semilla MUST crear un solo caso de intención inicial: «Tratamiento de datos», sin clave del sistema, en modo `guia`, en la
-categoría «Políticas», editable y borrable. Su «cuándo aplica» MUST decir la señal que lo activa (el bot va a tomar datos de
-despacho o a registrar el interés de compra y el contacto no aceptó el tratamiento de datos). Su texto de respaldo en
-`asistente/dominio` MUST presentar al bot como un asistente automatizado (P71), MUST terminar pidiendo la aceptación y MUST
-cumplir CAS5 (sin pesos, SKU ni marcadores); en las bases migradas el caso conserva el texto de `aviso_datos` (CAS14). El código
-MUST NOT sembrar ningún otro caso de negocio: «Contra entrega», «Sin cobertura de envío» y «Datos completos fuera de horario»
-existen solo donde la migración los convirtió (CAS14) o donde el dueño los crea; la guía de operación lista casos de ejemplo
-(Fotos, Costo del envío, Ubicación compartida, Saludo, Captura fuera de horario, Contra entrega, Sin cobertura) que el dueño puede
-crear, sin cargarlos solos. Borrar «Tratamiento de datos» MUST NOT desactivar la puerta de consentimiento (AGT26).
+La semilla MUST NOT crear el caso de intención «Tratamiento de datos»: la barrera `PoliticaConsentimiento` (ADR-0028) impide que un
+contacto pendiente o rechazado llegue al modelo, así que ese caso no puede dispararse, ocupa espacio en el índice del prompt
+(CAS8) y puede contradecir el texto del aviso. El aviso de la barrera (`consentimiento_aviso`, caso del sistema) es la fuente
+única de la petición de aceptación; la semilla MUST conservar la herencia del texto que el dueño ya editó en `aviso_datos`
+(fila legada del sistema o `parametro`) hacia `consentimiento_aviso` (CAS6). Los casos de intención iniciales son solo los
+`politica_<tema>` (CAS6). El código MUST NOT sembrar ningún otro caso de negocio: «Contra entrega», «Sin cobertura de envío» y
+«Datos completos fuera de horario» existen solo donde la migración los convirtió (CAS14) o donde el dueño los crea; la guía de
+operación lista casos de ejemplo (Fotos, Costo del envío, Ubicación compartida, Saludo, Captura fuera de horario, Contra entrega,
+Sin cobertura) que el dueño puede crear, sin cargarlos solos. Una base antigua puede conservar la fila «Tratamiento de datos» que
+sembraron versiones anteriores o la migración de CAS14 hasta que el dueño la borre desde el back office; borrarla MUST NOT
+desactivar la puerta de consentimiento (AGT26).
 
-Fase que lo implementa: 12d
+Fase que lo implementa: 12d; ADR-0028 (retiro de la semilla)
 
-#### Scenario: Una base nueva tiene un solo caso de uso inicial
+#### Scenario: Una base nueva no tiene casos de intención
 
 - Dado una base recién migrada sin ningún caso,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces existen los nueve casos del sistema y un solo caso de intención, «Tratamiento de datos», sin clave del sistema.
+- Entonces existen los once casos del sistema y ningún caso de intención, y en particular no existe «Tratamiento de datos».
 
-#### Scenario: «Tratamiento de datos» es editable y borrable
+#### Scenario: El aviso hereda el texto editado de `aviso_datos`
 
-- Dado una base sembrada,
-- Cuando un admin lista los casos,
-- Entonces «Tratamiento de datos» aparece sin clave del sistema, con «Borrar» y «Desactivar» disponibles.
+- Dado `aviso_datos` en `parametro` con un texto del dueño y sin `consentimiento_aviso`,
+- Cuando se corre `npm run casos:sembrar`,
+- Entonces `consentimiento_aviso` nace con ese texto y no se crea «Tratamiento de datos».
 
-#### Scenario: El texto inicial cumple la validación de casos
+#### Scenario: El informe de la semilla no menciona «Tratamiento de datos»
 
-- Dado el texto de respaldo de «Tratamiento de datos»,
-- Cuando se valida con las reglas de CAS5,
-- Entonces pasa.
+- Dado una base nueva,
+- Cuando se corre `npm run casos:sembrar`,
+- Entonces el informe dice solo cuántos casos insertó y cuántos ya existían, y cómo quedó el estilo.
 
-#### Scenario: El texto inicial se presenta como asistente y pide la aceptación
-
-- Dado el texto inicial de «Tratamiento de datos» en una base nueva,
-- Cuando se lee,
-- Entonces dice que quien atiende es un asistente automatizado y termina con una pregunta que pide aceptar el tratamiento de datos.
-
-#### Scenario: Borrar el caso no abre la puerta de los datos
+#### Scenario: Borrar el caso heredado no abre la puerta de los datos
 
 - Dado que un admin borró «Tratamiento de datos» y un contacto sin respuesta de consentimiento,
 - Cuando el modelo llama `guardar_datos_contacto`,
@@ -618,8 +613,8 @@ Fase que lo implementa: 12d
 Una migración de datos MUST aplicarse una sola vez y de forma idempotente sobre `caso_asistente`: (1) los casos con clave
 `mensaje_fuera_cobertura`, `mensaje_captura_completa` y `contra_entrega` pierden su clave del sistema, pasan a disparador
 `intencion` y se mueven a la categoría «Políticas» si existe, conservando título, texto, «cuándo aplica» y fecha de creación;
-(2) el caso con clave `aviso_datos` pasa a ser el caso «Tratamiento de datos» (nuevo título, «cuándo aplica» de CAS13, modo
-`guia`), conservando su texto, salvo que ya exista un caso con ese título, en cuyo caso se borra; (3) los casos con clave
+(2) el caso con clave `aviso_datos` pasa a ser el caso «Tratamiento de datos» (nuevo título, «cuándo aplica» de la Fase 12d, modo
+`guia`; hoy la semilla ya no lo crea, CAS13), conservando su texto, salvo que ya exista un caso con ese título, en cuyo caso se borra; (3) los casos con clave
 `mensaje_handoff` y `mensaje_handoff_fuera_horario` se borran. El cambio de clave y de disparador MUST ocurrir en la misma
 sentencia, para respetar la restricción de la Fase 12 que exige clave del sistema a todo caso de disparador `evento`. La
 migración MUST NOT dejar a ningún caso activo con dos títulos iguales y MUST dejar los campos de búsqueda coherentes con el
