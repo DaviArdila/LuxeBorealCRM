@@ -33,6 +33,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0025](0025-multiempresa-negocio-id-y-rls.md) | Multiempresa con `negocio_id` y seguridad por fila (reemplazaría a 0006; no iniciada) | propuesta | 2026-10-06 |
 | [0026](0026-estilo-del-bot-en-secciones.md) | Estilo del bot en secciones: un bloque compuesto, no una herramienta (matiza 0020 y 0024) | propuesta | 2026-10-07 |
 | [0027](0027-derivar-avisa-sin-silenciar-al-bot.md) | Derivar avisa al asesor sin silenciar al bot; consentimiento en lugar de aviso fijo (matiza R6 y R14) | aceptada | 2026-10-08 |
+| [0028](0028-consentimiento-previo-al-llm.md) | Consentimiento de datos como barrera previa al LLM (reabre la alternativa B del 0027) | propuesta | 2026-10-10 |
 
 ## Plantilla
 

@@ -1,7 +1,10 @@
 {
   "id": "consentimiento-sin-aceptar-no-se-guarda",
-  "titulo": "AGT26 — caso: sin aceptar el tratamiento de datos no se guarda nada",
+  "titulo": "AGT29 — caso: sin aceptar el tratamiento de datos el modelo no interviene y no se guarda nada",
   "origen": "sintetico",
+  "contacto": {
+    "consentimiento": "pendiente"
+  },
   "turnos": [
     {
       "mensajes": [
@@ -12,38 +15,22 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "guardar_datos_contacto",
-              "argumentos": {
-                "nombre_completo": "Laura Gómez Pérez",
-                "telefono_contacto": "3001234567",
-                "direccion": "Calle 45 # 12-34 apto 301",
-                "localidad": "Chapinero"
-              }
-            }
-          ]
-        },
-        {
-          "texto": "Antes de guardar tus datos necesito que aceptes el tratamiento de datos. ¿Aceptas?"
+          "texto": "El modelo no debe responder este turno."
         }
       ],
       "aserciones": {
-        "herramientasEsperadas": [
-          {
-            "nombre": "guardar_datos_contacto"
-          }
+        "herramientasProhibidas": [
+          "guardar_datos_contacto",
+          "registrar_consentimiento",
+          "consultar_caso",
+          "buscar_producto",
+          "cotizar_envio"
+        ],
+        "menciona": [
+          "responde si o no"
         ],
         "handoff": "prohibido",
-        "sinSku": true,
-        "resultadosEsperados": [
-          {
-            "herramienta": "guardar_datos_contacto",
-            "resultado": {
-              "requiereConsentimiento": true
-            }
-          }
-        ]
+        "sinSku": true
       }
     }
   ]

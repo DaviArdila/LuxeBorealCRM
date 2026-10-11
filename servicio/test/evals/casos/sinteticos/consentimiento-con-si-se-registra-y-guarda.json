@@ -1,26 +1,46 @@
 {
   "id": "consentimiento-con-si-se-registra-y-guarda",
-  "titulo": "AGT25 — caso: con un sí el consentimiento se registra y luego se guardan los datos",
+  "titulo": "AGT29 — caso: con un sí la aceptación se registra y luego se guardan los datos",
   "origen": "sintetico",
+  "contacto": {
+    "consentimiento": "pendiente"
+  },
   "turnos": [
     {
       "mensajes": [
         {
           "tipoContenido": "texto",
-          "texto": "Sí, acepto. Soy Laura Gómez Pérez, calle 45 # 12-34 apto 301, Chapinero"
+          "texto": "Sí"
         }
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "registrar_consentimiento",
-              "argumentos": {
-                "acepta": true
-              }
-            }
-          ]
-        },
+          "texto": "El modelo no debe responder este turno."
+        }
+      ],
+      "aserciones": {
+        "herramientasProhibidas": [
+          "guardar_datos_contacto",
+          "registrar_consentimiento",
+          "consultar_caso",
+          "buscar_producto",
+          "cotizar_envio"
+        ],
+        "menciona": [
+          "quedo registrada"
+        ],
+        "handoff": "prohibido",
+        "sinSku": true
+      }
+    },
+    {
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34 apto 301, Chapinero"
+        }
+      ],
+      "guion": [
         {
           "llamadas": [
             {
@@ -41,32 +61,19 @@
       "aserciones": {
         "herramientasEsperadas": [
           {
-            "nombre": "registrar_consentimiento",
-            "argumentos": {
-              "acepta": true
-            }
-          },
-          {
             "nombre": "guardar_datos_contacto"
           }
         ],
-        "handoff": "prohibido",
-        "sinSku": true,
         "resultadosEsperados": [
-          {
-            "herramienta": "registrar_consentimiento",
-            "resultado": {
-              "registrado": true,
-              "acepta": true
-            }
-          },
           {
             "herramienta": "guardar_datos_contacto",
             "resultado": {
               "guardado": true
             }
           }
-        ]
+        ],
+        "handoff": "prohibido",
+        "sinSku": true
       }
     }
   ]

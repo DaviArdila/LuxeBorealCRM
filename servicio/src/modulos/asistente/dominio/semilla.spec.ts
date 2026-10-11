@@ -250,3 +250,34 @@ describe('leerArchivoDeCasos (CAS6, datos de desarrollo)', () => {
     expect(resultado.ok && resultado.casos.slice(0, 3).map((c) => c.titulo)).toEqual(['Devoluciones', 'Garantía', 'Instalación']);
   });
 });
+
+describe('planificarSemilla: textos de la barrera de consentimiento (ADR-0028)', () => {
+  const delSistema = (plan: ReturnType<typeof planificarSemilla>, clave: string) => plan.casos.find((c) => c.claveSistema === clave);
+
+  it('ADR-0028 — Siembra los cuatro textos de la barrera como casos del sistema con su respaldo', () => {
+    const plan = planificarSemilla(filas({}));
+
+    for (const clave of ['consentimiento_aviso', 'consentimiento_recordatorio', 'consentimiento_aceptado', 'consentimiento_rechazado'] as const) {
+      expect(delSistema(plan, clave), clave).toMatchObject({ texto: textoDeRespaldo(clave), categoria: 'Sistema', disparador: 'evento', modo: 'literal', claveParametro: null });
+    }
+  });
+
+  it('ADR-0028 — El aviso hereda el texto que el dueño ya editó: primero la fila legada y luego parametro', () => {
+    const conLegada = planificarSemilla(filas({ aviso_datos: 'De parametro.' }), undefined, '  Del dueño. ¿Aceptas?  ');
+    const soloParametro = planificarSemilla(filas({ aviso_datos: 'De parametro. ¿Aceptas?' }));
+
+    expect(delSistema(conLegada, 'consentimiento_aviso')).toMatchObject({ texto: 'Del dueño. ¿Aceptas?', claveParametro: null });
+    expect(delSistema(soloParametro, 'consentimiento_aviso')).toMatchObject({ texto: 'De parametro. ¿Aceptas?', claveParametro: null });
+  });
+
+  it('ADR-0028 — Un texto guardado con la propia clave manda sobre el heredado, y los demás textos no heredan nada', () => {
+    const plan = planificarSemilla(filas({ consentimiento_aviso: 'Propio.', aviso_datos: 'Heredado.' }), undefined, 'Legado.');
+
+    expect(delSistema(plan, 'consentimiento_aviso')).toMatchObject({ texto: 'Propio.', claveParametro: 'consentimiento_aviso' });
+    expect(delSistema(plan, 'consentimiento_recordatorio')?.texto).toBe(textoDeRespaldo('consentimiento_recordatorio'));
+  });
+
+  it('ADR-0028 — Sin texto del dueño o con uno vacío rige el respaldo del aviso', () => {
+    expect(delSistema(planificarSemilla(filas({ aviso_datos: '   ' }), undefined, '  '), 'consentimiento_aviso')?.texto).toBe(textoDeRespaldo('consentimiento_aviso'));
+  });
+});

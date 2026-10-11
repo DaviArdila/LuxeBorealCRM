@@ -249,12 +249,13 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
   }
 
   /**
-   * `consentimiento`: deja el contacto ya creado con la respuesta indicada antes del webhook (PRV1); sin él el contacto nace
-   * sin respuesta, como un cliente real.
+   * `consentimiento`: deja el contacto ya creado con la respuesta indicada antes del webhook (PRV1). Por defecto el contacto ya
+   * aceptó, porque la barrera de consentimiento (ADR-0028) corta antes del modelo; `pendiente` lo deja nacer sin respuesta,
+   * como un cliente real.
    */
-  async function turno(aplicacion: INestApplication, texto: string, consentimiento?: 'aceptado' | 'rechazado') {
+  async function turno(aplicacion: INestApplication, texto: string, consentimiento: 'aceptado' | 'pendiente' | 'rechazado' = 'aceptado') {
     const { idConversacion, idContacto } = nuevaConversacion();
-    if (consentimiento !== undefined) {
+    if (consentimiento !== 'pendiente') {
       const fecha = new Date('2026-10-09T10:00:00.000Z');
       await aplicacion.get(PrismaService).contacto.create({
         data: {
@@ -629,71 +630,56 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     await expect(prisma.lead.findFirstOrThrow({ where: { contactoId: contacto.id } })).resolves.toMatchObject({ derivado: true });
   }, 40_000);
 
-  it('AGT26 — Sin aceptar, guardar datos no guarda: el modelo recibe requiereConsentimiento', async () => {
+  it('AGT29 — Un contacto nuevo recibe el aviso de consentimiento y su mensaje nunca llega al modelo', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    llm.encolar(
-      llamada('c1', 'guardar_datos_contacto', {
-        nombre_completo: 'Laura Gómez Pérez',
-        telefono_contacto: '3001234567',
-        direccion: 'Calle 45 # 12-34 apto 301',
-        localidad: 'Chapinero',
-      }),
-      { respuesta: { texto: 'Antes necesito tu autorización para guardar tus datos' } },
-    );
 
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Soy Laura Gómez Pérez, vivo en la calle 45 # 12-34, Chapinero', 'pendiente');
 
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ requiereConsentimiento: true });
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('Responde SÍ o NO');
+    expect(llm.solicitudes).toHaveLength(0);
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
-    expect([contacto.nombre, contacto.direccion, contacto.localidad, contacto.telefonoAlterno]).toEqual([null, null, null, null]);
-  }, 40_000);
-
-  it('LDS2 — Sin consentimiento no se crea el lead y no se avisa', async () => {
-    const aplicacion = await arrancar();
-    const prisma = aplicacion.get(PrismaService);
-    llm.encolar(
-      llamada('c1', 'marcar_lead_caliente', {
-        temperatura: 'caliente',
-        senales: ['pide_pagar'],
-        resumen: 'Quiere pagar ya',
-        id_producto: null,
-      }),
-      { respuesta: { texto: 'Perfecto' } },
-    );
-
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero pagar ya');
-
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-    expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ requiereConsentimiento: true });
-    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    expect([contacto.nombre, contacto.direccion, contacto.localidad, contacto.consentimientoDatosEn]).toEqual([null, null, null, null]);
     await expect(prisma.lead.count({ where: { contactoId: contacto.id } })).resolves.toBe(0);
   }, 40_000);
 
-  it('AGT25 — Con un sí registrado en el turno, guardar datos ya guarda', async () => {
+  it('AGT29 — Un sí registra la aceptación con su fecha y confirma, sin llamar al modelo', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    llm.encolar(
-      llamada('c1', 'registrar_consentimiento', { acepta: true }),
-      llamada('c2', 'guardar_datos_contacto', {
-        nombre_completo: 'Laura Gómez Pérez',
-        telefono_contacto: 'este mismo',
-        direccion: 'Calle 45 # 12-34 apto 301',
-        localidad: 'Chapinero',
-      }),
-      { respuesta: { texto: 'Listo Laura' } },
-    );
 
-    const { idConversacion, idContacto } = await turno(aplicacion, 'Sí, acepto. Soy Laura Gómez Pérez, calle 45 # 12-34, Chapinero');
+    const { idConversacion, idContacto } = await turno(aplicacion, 'Sí', 'pendiente');
 
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-    // La fecha del sí quedó en el contacto y el guardado posterior del mismo turno ya no pidió consentimiento.
-    expect(resultadosDe(llm, 2)[0]?.resultado).toEqual({ guardado: true });
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('quedó registrada');
+    expect(llm.solicitudes).toHaveLength(0);
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
-    expect(contacto).toMatchObject({ nombre: 'Laura Gómez Pérez', localidad: 'Chapinero' });
     expect(contacto.consentimientoDatosEn).not.toBeNull();
     expect(contacto.consentimientoRechazadoEn).toBeNull();
+  }, 40_000);
+
+  it('AGT29 — Un no registra el rechazo, explica que sin autorización no se continúa y no llama al modelo', async () => {
+    const aplicacion = await arrancar();
+    const prisma = aplicacion.get(PrismaService);
+
+    const { idConversacion, idContacto } = await turno(aplicacion, 'No', 'pendiente');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('Sin tu autorización');
+    expect(llm.solicitudes).toHaveLength(0);
+    const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
+    expect(contacto.consentimientoRechazadoEn).not.toBeNull();
+    expect(contacto.consentimientoDatosEn).toBeNull();
+  }, 40_000);
+
+  it('AGT29 — Quien rechazó y vuelve a escribir recibe el recordatorio, sin modelo', async () => {
+    const aplicacion = await arrancar();
+
+    const { idConversacion } = await turno(aplicacion, 'Hola, cuánto cuesta el anillo?', 'rechazado');
+
+    const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(unico)).toContain('necesitamos tu autorización');
+    expect(llm.solicitudes).toHaveLength(0);
   }, 40_000);
 
   it('AGT6 — Una caída del proveedor deriva a un asesor con el texto de mensaje_error_llm', async () => {

@@ -294,16 +294,16 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     expect(telegramFalso.llamadasRegistradas()[0]?.chatId).toBe('-100555');
   }, 40_000);
 
-  it('LDS3 — Sin consentimiento el aviso sale y el lead no se registra', async () => {
+  it('LDS3 — Sin consentimiento la barrera responde el aviso de autorización: el modelo no corre, no se avisa y no hay lead', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
-    llm.encolar({ respuesta: { texto: 'Claro, ya avisé a un asesor.' } });
 
     const { idConversacion, idContacto } = await turno(aplicacion, 'Quiero hablar con un asesor', false);
 
-    await esperarMensajes(chatwootFalso, idConversacion, 1);
-    const [aviso] = await esperarAvisos(1);
-    expect(aviso).toContain('Aviso: el cliente pidió hablar con una persona.');
+    const [respuesta] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(contenido(respuesta)).toContain('Responde SÍ o NO');
+    expect(llm.solicitudes).toHaveLength(0);
+    expect(telegramFalso.llamadasRegistradas()).toHaveLength(0);
     const conversacion = await prisma.conversacion.findUniqueOrThrow({ where: { chatwootConversationId: idConversacion } });
     expect(conversacion.estado).toBe('bot');
     const contacto = await prisma.contacto.findUniqueOrThrow({ where: { chatwootContactId: idContacto } });
@@ -540,6 +540,7 @@ describe('Leads y handoff de punta a punta (Fase 08)', () => {
     const prisma = aplicacion.get(PrismaService);
     llm.encolar({ respuesta: { texto: 'Hola, ¿en qué te ayudo?' } });
     const { idConversacion, idContacto } = nuevaConversacion();
+    await aceptarTratamiento(aplicacion, idContacto);
 
     const idPrimero = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), idPrimero, 'Hola');

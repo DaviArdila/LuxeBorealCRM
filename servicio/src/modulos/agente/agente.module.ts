@@ -30,6 +30,7 @@ import { EnsamblarPrompt } from './aplicacion/ensamblar-prompt.js';
 import { EstiloModule } from './estilo.module.js';
 import { MotorTurno } from './aplicacion/motor-turno.js';
 import { ContenidoLlm } from './aplicacion/politicas/contenido-llm.js';
+import { PoliticaConsentimiento } from './aplicacion/politicas/politica-consentimiento.js';
 import { PoliticaNoTextuales } from './aplicacion/politicas/politica-no-textuales.js';
 import { PoliticaPidePersona } from './aplicacion/politicas/politica-pide-persona.js';
 import { PoliticaTopeTurnos } from './aplicacion/politicas/politica-tope-turnos.js';
@@ -59,7 +60,7 @@ const TOTAL_HERRAMIENTAS = 9;
  * `ConversacionesModule.conGenerador(AgenteModule)`. Nunca importa `canales` (regla 13): pide
  * pasos y handoff, y `conversaciones` los ejecuta.
  *
- * El orden de `POLITICAS_TURNO` es el del pipeline (AGT1): mensajes no textuales (R12), tope de
+ * El orden de `POLITICAS_TURNO` es el del pipeline (AGT1): barrera de consentimiento (ADR-0028, AGT29), mensajes no textuales (R12), tope de
  * turnos (R13), petición de persona (Fase 08, R9) y, al final, `ContenidoLlm` (Fase 07b): el bucle de herramientas sobre `LLM_PORT`.
  * `HorarioModule` aporta `HORARIO` al prompt; `AvisoAsesorModule` aporta la lectura `ASESOR_AVISADO` (CNV15, AGT28). El
  * motor aplica el aviso de datos, suma el aviso al asesor que pidió una política y registra el turno (AGT2, D8, D2 de la 12d).
@@ -75,6 +76,7 @@ const TOTAL_HERRAMIENTAS = 9;
     { provide: EVALUADOR_LEAD, useClass: EvaluadorLeadDeLeads },
     { provide: CAPTURA_LEAD, useClass: CapturaLeadDeLeads },
     ArmarContextoInicial,
+    PoliticaConsentimiento,
     PoliticaNoTextuales,
     PoliticaTopeTurnos,
     PoliticaPidePersona,
@@ -132,12 +134,13 @@ const TOTAL_HERRAMIENTAS = 9;
     {
       provide: POLITICAS_TURNO,
       useFactory: (
+        consentimiento: PoliticaConsentimiento,
         noTextuales: PoliticaNoTextuales,
         tope: PoliticaTopeTurnos,
         pidePersona: PoliticaPidePersona,
         contenido: ContenidoLlm,
-      ) => [noTextuales, tope, pidePersona, contenido],
-      inject: [PoliticaNoTextuales, PoliticaTopeTurnos, PoliticaPidePersona, ContenidoLlm],
+      ) => [consentimiento, noTextuales, tope, pidePersona, contenido],
+      inject: [PoliticaConsentimiento, PoliticaNoTextuales, PoliticaTopeTurnos, PoliticaPidePersona, ContenidoLlm],
     },
     { provide: GENERADOR_RESPUESTA, useClass: MotorTurno },
   ],

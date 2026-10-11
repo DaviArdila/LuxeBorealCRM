@@ -1,6 +1,6 @@
 /**
  * La lista cerrada de casos del sistema (CAS4, D2 de la Fase 12): los textos que el **código** envía solo, sin pasar
- * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco: «Contra entrega», «Sin cobertura de envío» y la captura completa
+ * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco y el ADR-0028 le suma los cuatro textos de la barrera de consentimiento: «Contra entrega», «Sin cobertura de envío» y la captura completa
  * son casos de uso del dueño; el aviso de datos es el caso «Tratamiento de datos»; los dos traspasos los reemplaza el aviso
  * al asesor. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
  * conserva el que tiene guardado. Es la única
@@ -62,6 +62,44 @@ export const CASOS_DEL_SISTEMA = [
     categoriaInicial: 'Sistema',
     disparador: 'evento',
     textoRespaldo: 'Gracias por escribirnos. En este momento te atiende directamente un asesor, que te responderá en breve.',
+  },
+  {
+    // ADR-0028: la barrera de consentimiento; el texto de aviso respeta el que el dueño ya editó (aviso_datos).
+    clave: 'consentimiento_aviso',
+    titulo: 'Aviso de tratamiento de datos',
+    descripcion:
+      'Primer mensaje a un contacto que aún no respondió al tratamiento de datos: se presenta como asistente automatizado y pide SÍ o NO. El bot no sigue hasta que acepte.',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo:
+      'Hola, soy el asistente virtual de LuxeBoreal. Para atenderte necesitamos guardar tus datos personales (nombre, teléfono y lo que nos escribas) y tratarlos según la Ley 1581 de 2012 y nuestra política de privacidad. Los usamos solo para atenderte y gestionar tu compra o pedido, y puedes consultarlos, corregirlos o pedir su eliminación cuando quieras. Sin tu autorización no podemos continuar. ¿Autorizas el tratamiento de tus datos? Responde SÍ o NO.',
+  },
+  {
+    clave: 'consentimiento_recordatorio',
+    titulo: 'Recordatorio de tratamiento de datos',
+    descripcion:
+      'Cuando el contacto que rechazó (o cuyo estado no se pudo leer) vuelve a escribir sin aceptar: le recuerda que necesita su autorización y pide SÍ o NO.',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo: 'Para poder ayudarte necesitamos tu autorización de tratamiento de datos. ¿La das? Responde SÍ o NO.',
+  },
+  {
+    clave: 'consentimiento_aceptado',
+    titulo: 'Tratamiento de datos aceptado',
+    descripcion: 'Cuando el contacto responde SÍ al tratamiento de datos: confirma que quedó registrado y lo invita a continuar.',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo: '¡Gracias! Ya quedó registrada tu autorización. ¿En qué te puedo ayudar?',
+  },
+  {
+    clave: 'consentimiento_rechazado',
+    titulo: 'Tratamiento de datos rechazado',
+    descripcion:
+      'Cuando el contacto responde NO al tratamiento de datos: explica que sin su autorización no se puede continuar y que puede escribir SÍ cuando quiera.',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo:
+      'Entendido, no guardaremos tus datos. Sin tu autorización no podemos continuar la conversación por aquí. Si cambias de idea, responde SÍ y con gusto te atendemos.',
   },
 ] as const satisfies readonly DefinicionCasoSistema[];
 

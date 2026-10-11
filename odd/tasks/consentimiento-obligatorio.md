@@ -1,0 +1,31 @@
+# Consentimiento de tratamiento de datos obligatorio
+
+Rama: `feat/consentimiento-obligatorio`. Trabajo fuera de fase (ODD). Plan: `C:\Users\ASUS\.claude\plans\pasted-content-id-bb54-quiero-poner-clever-garden.md`.
+
+## Objetivo
+Todo contacto con consentimiento `pendiente` o `rechazado` recibe un mensaje fijo (sin LLM) y no avanza hasta
+responder SÍ. Texto primero (Fase A); botones reales de WhatsApp quedan para una fase B aparte.
+
+## Alcance autorizado
+Política previa al LLM en `agente`, textos como datos (R15), ADR nuevo (propuesta), specs `privacidad` y `agente`,
+tests y evals. Sin cambios al esquema de datos.
+
+## Tareas
+- [x] T1 ADR (propuesta) que reabre la alternativa B del ADR-0027 + nota en PREGUNTAS_ABIERTAS. (ADR-0028 y P76; hash: ver Evidencia)
+- [x] T2 `PoliticaConsentimiento` + registro en `POLITICAS_TURNO` antes de `contenido-llm` (TDD).
+- [x] T3 Textos del aviso/recordatorio/confirmaciones como datos y siembra idempotente.
+- [x] T4 Specs (`privacidad`, `agente`), evals y e2e ajustados.
+- [x] T5 Batería completa local (parcial: sin Docker no corren integracion, e2e ni evals).
+
+## Ruta
+Delegada: un writer (más de 2 archivos no triviales y lectura previa a la escritura).
+
+## Evidencia
+(se completa por tarea)
+- T1: `docs/adr/0028-consentimiento-previo-al-llm.md`, indice del README de ADR y P76 en PREGUNTAS_ABIERTAS. Passive (solo documentos): lectura estructural. Commit: ver Evidencia final.
+- T2: RED observado (politica-consentimiento.spec.ts fallaba: modulo inexistente); GREEN: `npx vitest run --project unit politica-consentimiento`: 25 pasan. Primera politica del pipeline; las 4 claves `consentimiento_*` se definen en `sistema.ts` (necesarias para compilar). `typecheck` y `eslint` limpios sobre agente/asistente. Ruta: delegada (writer unico).
+- T3: `planificarSemilla` siembra los 4 textos (idempotente por clave/titulo) y el aviso hereda `aviso_datos` (fila legada, luego parametro). `npx vitest run --project unit asistente`: 13 archivos, 156 pasan; typecheck y eslint limpios. Excepcion TDD: la implementacion se escribio antes de las pruebas de herencia (sin RED observado para T3). Nota: en una base ya migrada el texto editado vive en el caso «Tratamiento de datos»; el aviso nuevo nace con el respaldo y se edita desde el admin.
+- T4: specs `privacidad` (PRV7, R14), `agente` (AGT29, nota en AGT27) y `asistente` (CAS4: nueve casos); `docs/operacion/casos-del-asistente.md`; los 4 casos de evals de consentimiento reescritos a la barrera, el arnes de evals parte de un contacto que ya acepto salvo `consentimiento: pendiente|rechazado`; e2e: `turno()` acepta por defecto y 4 pruebas AGT29 reemplazan AGT26/LDS2/AGT25 (la puerta de herramientas sigue cubierta por `con-consentimiento.spec.ts`). Sin Docker en esta maquina: e2e y evals NO se pudieron ejecutar (solo typecheck, eslint y unit `test/evals`: 54 pasan).
+- T5 (servicio/): lint, typecheck, fronteras: limpios (exit 0). contrato:deriva: coincide byte a byte. commits: 4 commits validos. Vitest unit: 1741 pasan, 8 fallan, todas en test/fronteras (buscar-secretos, comparar-contrato, validar-flujos: usan gitleaks/oasdiff/actionlint por Docker, que no esta disponible; no tocan codigo de este cambio). Vitest integracion, e2e y evals: NO ejecutados, Testcontainers falla con "Could not find a working container runtime strategy" (Docker apagado). Pendiente: correrlos con Docker antes del push.
+- Commits: T1 a5efbba, T2 321f8a6, T3 0e97b3f, T4 bdf9e22, T5 (este registro) ver `git log`.
+- T6 (e2e de la barrera): `agente-politicas` (R14 primer mensaje, R13 tope) y `leads` (NTF6) siembran el contacto como aceptado; LDS3 sin consentimiento se reescribio para probar la barrera (aviso de autorizacion, sin LLM, sin aviso a Telegram, sin lead). `npm run test:e2e`: 11 archivos, 120 pasan; lint y typecheck limpios.
