@@ -35,7 +35,7 @@ sembrar. Los demás casos de intención (los que creaste tú) nunca se recrean.
 espacio en el índice del prompt y puede contradecir el aviso. Una base antigua puede conservar esa fila hasta que la borres desde
 «Casos de uso»; borrarla no abre ninguna puerta. El aviso nace con el texto que ya hubieras editado: primero el del antiguo caso
 del sistema `aviso_datos` (si todavía existe), luego el de `parametro` y, si no hay ninguno, el de respaldo. `casos:sembrar` solo
-lee esa fila antigua: nunca la modifica ni la borra.
+lee esa fila antigua (nunca la modifica ni la borra); la fila `aviso_datos` de `parametro`, en cambio, se retira al crear el aviso.
 
 **Contra entrega, sin cobertura y la captura fuera de horario ya no son casos del sistema** (Fase 12d). El código no los
 siembra ni los lee: son casos de uso tuyos. En una base que ya los tenía, la migración los dejó como casos de intención

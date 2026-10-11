@@ -69,7 +69,10 @@ export function planificarSemilla(
     const claveParametro = definicion.clave;
     const guardado = textoValido(filas.get(claveParametro));
     // ADR-0028: el aviso de la barrera respeta el texto del dueño (aviso_datos: fila legada del sistema o parametro) antes del respaldo.
-    const delDueno = definicion.clave === CLAVE_AVISO_CONSENTIMIENTO && guardado === null ? (textoValido(textoLegadoDelAviso) ?? textoValido(filas.get(CLAVE_LEGADA_AVISO_DATOS))) : null;
+    const heredaAviso = definicion.clave === CLAVE_AVISO_CONSENTIMIENTO && guardado === null;
+    const delCasoLegado = heredaAviso ? textoValido(textoLegadoDelAviso) : null;
+    const deParametro = heredaAviso ? textoValido(filas.get(CLAVE_LEGADA_AVISO_DATOS)) : null;
+    const delDueno = delCasoLegado ?? deParametro;
     if (delDueno !== null) {
       return {
         claveSistema: definicion.clave,
@@ -79,8 +82,8 @@ export function planificarSemilla(
         modo: 'literal',
         categoria: definicion.categoriaInicial,
         texto: delDueno,
-        // La fila `aviso_datos` de parametro no se retira aquí: queda como texto legado.
-        claveParametro: null,
+        // Si el texto salió de `aviso_datos` en parametro, esa fila se retira (un solo dueño del texto, CFG6).
+        claveParametro: delCasoLegado === null ? CLAVE_LEGADA_AVISO_DATOS : null,
       };
     }
     return {

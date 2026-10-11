@@ -202,7 +202,7 @@ describe('planificarSemilla: textos de la barrera de consentimiento (ADR-0028)',
     const soloParametro = planificarSemilla(filas({ aviso_datos: 'De parametro. ¿Aceptas?' }));
 
     expect(delSistema(conLegada, 'consentimiento_aviso')).toMatchObject({ texto: 'Del dueño. ¿Aceptas?', claveParametro: null });
-    expect(delSistema(soloParametro, 'consentimiento_aviso')).toMatchObject({ texto: 'De parametro. ¿Aceptas?', claveParametro: null });
+    expect(delSistema(soloParametro, 'consentimiento_aviso')).toMatchObject({ texto: 'De parametro. ¿Aceptas?', claveParametro: 'aviso_datos' });
   });
 
   it('ADR-0028 — Un texto guardado con la propia clave manda sobre el heredado, y los demás textos no heredan nada', () => {

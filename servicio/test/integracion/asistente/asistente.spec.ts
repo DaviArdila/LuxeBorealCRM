@@ -204,6 +204,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'consentimiento_aviso' } })).texto).toBe('Texto del negocio. ¿Aceptas?');
     expect(await prisma.casoAsistente.count({ where: { claveSistema: 'aviso_datos' } })).toBe(0);
     expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(0);
+    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).toBeNull();
   });
 
   it('CAS14 — La semilla antes de la migración no pierde el texto editado de aviso_datos', async () => {
