@@ -50,7 +50,9 @@ botones de WhatsApp quedan para una Fase B aparte.
 
 - Un contacto que pide una persona o un asesor antes de aceptar recibe primero el aviso de consentimiento (la política de
   pide-persona queda detrás de la barrera).
-- El caso «Tratamiento de datos» deja de ser la vía principal de pedir la aceptación; queda como respaldo del modelo.
+- El caso «Tratamiento de datos» deja de ser la vía de pedir la aceptación y la semilla ya no lo crea (limpieza posterior,
+  `odd/tasks/limpieza-casos-consentimiento.md`): no queda un «respaldo del modelo» con ese caso, solo la puerta en código
+  (AGT26) y el aviso de la barrera. Una base antigua puede conservar la fila hasta que el dueño la borre.
 - Un SÍ ambiguo («claro, pero antes dime el precio») repite el aviso: el reconocimiento es por frase exacta normalizada.
 
 **Obligatorio o prohibido:** ningún texto del cliente o del contacto se escribe en logs (R14); el tiempo sale del `Clock`; la

@@ -24,7 +24,9 @@ Hechos del repositorio al 2026-10-08:
   (`PoliticaPidePersona`, `PoliticaNoTextuales`, `ContenidoLlm` con el efecto `lead-derivado`; CNV8, CNV11). En ese estado el
   bot no responde (`ProcesarTurno` descarta el turno si el estado no es `bot`) y solo envía un aviso de espera (CNV3). El asesor puede tardar y el cliente queda sin respuesta.
 - El primer mensaje lleva `aviso_datos` pegado por `MotorTurno.conAviso` (AGT2, R14). El cliente no acepta nada y sus datos se
-  guardan igual con `guardar_datos_contacto` y `marcar_lead_caliente`.
+  guardan igual con `guardar_datos_contacto` y `marcar_lead_caliente`. (Nota: el ADR-0028 reemplazó ese aviso pegado por una
+  barrera previa al modelo y la semilla ya no crea el caso «Tratamiento de datos» que este ADR describe más abajo; el texto
+  original se conserva como historia.)
 - La lista cerrada `CASOS_DEL_SISTEMA` tiene once casos (`asistente/dominio/sistema.ts`). Cinco son textos de eventos que el
   código dispara (audio, imagen, falla, techo, espera); los demás son aviso de datos, dos traspasos, captura completa, falta de
   cobertura y contra entrega, que `cotizar_envio` o el contexto del turno adjuntan por código.

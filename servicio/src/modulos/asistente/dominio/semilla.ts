@@ -17,8 +17,6 @@ export interface CasoPlan {
   readonly categoria: string;
   readonly texto: string;
   readonly claveParametro: string | null;
-  /** De dónde salió el texto de un caso inicial (CAS13); solo lo informa el resumen de la semilla, como cantidades. */
-  readonly origenTexto?: 'caso-del-sistema' | 'parametro' | 'respaldo';
 }
 
 export interface PlanSemilla {
@@ -26,33 +24,11 @@ export interface PlanSemilla {
   readonly casos: readonly CasoPlan[];
 }
 
-/** Un caso de intención con el que nace el asistente; `claveParametro` es la fila de `parametro` que lo alimenta si existe. */
-export type CasoInicial = Omit<CasoPlan, 'claveSistema' | 'disparador' | 'claveParametro'> & { readonly claveParametro: string };
-
-/**
- * Los casos de intención que la semilla crea (CAS13): uno solo, «Tratamiento de datos». Es la parte de R14 que el dueño
- * puede reescribir: presenta al bot como asistente automatizado (P71) y pide la aceptación; la puerta de AGT26 vive en
- * código y no depende de que este caso exista. El texto que el dueño ya editó manda: primero la fila de sistema legada
- * `aviso_datos` (solo lectura; la migración `casos_del_sistema_minimos` la convierte o la borra, CAS14), luego `parametro` y al final el respaldo.
- */
 /**
  * Clave del sistema que `aviso_datos` tuvo hasta la Fase 12d. Ya no está en `CASOS_DEL_SISTEMA`: la semilla solo la lee para
- * no perder el texto del dueño si corre antes de la migración, que borra esa fila cuando «Tratamiento de datos» ya existe.
+ * no perder el texto del dueño, que hereda `consentimiento_aviso` (ADR-0028), si corre antes de la migración.
  */
 export const CLAVE_LEGADA_AVISO_DATOS = 'aviso_datos';
-
-export const CASOS_INICIALES_DE_INTENCION: readonly CasoInicial[] = [
-  {
-    titulo: 'Tratamiento de datos',
-    cuandoAplica:
-      'Cuando el bot va a tomar datos de despacho o a registrar el interés de compra y el cliente aún no aceptó el tratamiento de datos (consentimiento pendiente).',
-    modo: 'guia',
-    categoria: 'Políticas',
-    texto:
-      'Soy un asistente automatizado. Uso tus datos de contacto y de entrega solo para gestionar tu pedido. ¿Aceptas el tratamiento de tus datos para continuar?',
-    claveParametro: 'aviso_datos',
-  },
-];
 
 /** Clave del sistema cuyo texto hereda el que el dueño ya editó para `aviso_datos` (ADR-0028). */
 const CLAVE_AVISO_CONSENTIMIENTO = 'consentimiento_aviso';
@@ -79,8 +55,9 @@ function tituloDeTema(tema: string): string {
 
 /**
  * Decide qué casos crea la semilla (CAS6) a partir de las filas de texto que ya hay en `parametro`: los casos del
- * sistema (con el texto guardado si es válido y, si no, el de respaldo), «Tratamiento de datos» (CAS13) y un caso de
- * intención por cada fila `politica_<tema>`. Ningún otro caso de negocio: contra entrega, cobertura y captura los crea el
+ * sistema (con el texto guardado si es válido y, si no, el de respaldo) y un caso de intención por cada fila
+ * `politica_<tema>`. «Tratamiento de datos» ya no se siembra (CAS13): la barrera de consentimiento impide que el modelo
+ * llegue a ese caso. Ningún otro caso de negocio: contra entrega, cobertura y captura los crea el
  * dueño (CAS6, 12d). Función pura: no toca la base.
  */
 export function planificarSemilla(
@@ -92,7 +69,10 @@ export function planificarSemilla(
     const claveParametro = definicion.clave;
     const guardado = textoValido(filas.get(claveParametro));
     // ADR-0028: el aviso de la barrera respeta el texto del dueño (aviso_datos: fila legada del sistema o parametro) antes del respaldo.
-    const delDueno = definicion.clave === CLAVE_AVISO_CONSENTIMIENTO && guardado === null ? (textoValido(textoLegadoDelAviso) ?? textoValido(filas.get(CLAVE_LEGADA_AVISO_DATOS))) : null;
+    const heredaAviso = definicion.clave === CLAVE_AVISO_CONSENTIMIENTO && guardado === null;
+    const delCasoLegado = heredaAviso ? textoValido(textoLegadoDelAviso) : null;
+    const deParametro = heredaAviso ? textoValido(filas.get(CLAVE_LEGADA_AVISO_DATOS)) : null;
+    const delDueno = delCasoLegado ?? deParametro;
     if (delDueno !== null) {
       return {
         claveSistema: definicion.clave,
@@ -102,8 +82,8 @@ export function planificarSemilla(
         modo: 'literal',
         categoria: definicion.categoriaInicial,
         texto: delDueno,
-        // La fila de origen (aviso_datos) la retira «Tratamiento de datos», que la lee primero; este caso no la borra.
-        claveParametro: null,
+        // Si el texto salió de `aviso_datos` en parametro, esa fila se retira (un solo dueño del texto, CFG6).
+        claveParametro: delCasoLegado === null ? CLAVE_LEGADA_AVISO_DATOS : null,
       };
     }
     return {
@@ -115,27 +95,6 @@ export function planificarSemilla(
       categoria: definicion.categoriaInicial,
       texto: guardado ?? definicion.textoRespaldo,
       claveParametro: guardado === null ? null : claveParametro,
-    };
-  });
-
-  const iniciales: CasoPlan[] = CASOS_INICIALES_DE_INTENCION.map((inicial) => {
-    const esValido = (texto: string | null): texto is string =>
-      texto !== null &&
-      validarCaso({ titulo: inicial.titulo, cuandoAplica: inicial.cuandoAplica, texto, modo: inicial.modo, disparador: 'intencion', claveSistema: null }).valido;
-    // CAS13: el texto que el dueño ya editó manda: primero la fila de sistema legada, luego `parametro`, al final el respaldo.
-    const delCasoLegado = textoValido(textoLegadoDelAviso);
-    const deParametro = textoValido(filas.get(inicial.claveParametro));
-    const origenTexto = esValido(delCasoLegado) ? 'caso-del-sistema' : esValido(deParametro) ? 'parametro' : 'respaldo';
-    return {
-      claveSistema: null,
-      titulo: inicial.titulo,
-      cuandoAplica: inicial.cuandoAplica,
-      disparador: 'intencion',
-      modo: inicial.modo,
-      categoria: inicial.categoria,
-      texto: origenTexto === 'caso-del-sistema' ? (delCasoLegado ?? inicial.texto) : origenTexto === 'parametro' ? (deParametro ?? inicial.texto) : inicial.texto,
-      claveParametro: origenTexto === 'parametro' ? inicial.claveParametro : null,
-      origenTexto,
     };
   });
 
@@ -163,7 +122,7 @@ export function planificarSemilla(
     });
 
   const categoriasNuevas = (archivo?.categorias ?? []).map((categoria, indice) => ({ nombre: categoria.nombre, orden: CATEGORIAS_INICIALES.length + indice }));
-  return { categorias: [...CATEGORIAS_INICIALES, ...categoriasNuevas], casos: [...delSistema, ...iniciales, ...politicas, ...(archivo?.casos ?? [])] };
+  return { categorias: [...CATEGORIAS_INICIALES, ...categoriasNuevas], casos: [...delSistema, ...politicas, ...(archivo?.casos ?? [])] };
 }
 
 /** Los casos de intención de un archivo de datos de desarrollo, ya validados, y las categorías que traen y aún no existen. */

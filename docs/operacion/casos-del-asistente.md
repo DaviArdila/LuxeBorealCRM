@@ -13,7 +13,7 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
 | **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
-| **Caso del sistema** | Un texto que el código envía en una situación fija. Son nueve: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor y los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
+| **Caso del sistema** | Un texto que el código envía en una situación fija. Son once: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor, los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) y los dos títulos de sus botones («Sí» y «No») | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
@@ -21,16 +21,21 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 
 ## Cargar los casos de hoy (una vez)
 
-`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los nueve casos del sistema (con el texto que ya
-hubiera en `parametro` o, si no, el de respaldo), el caso de uso «Tratamiento de datos» y un caso de intención por cada política `politica_<tema>` que hubiera.
+`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los once casos del sistema (con el texto que ya
+hubiera en `parametro` o, si no, el de respaldo) y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
 
-«Tratamiento de datos» es el único caso de uso que se siembra solo: es donde el bot se presenta como asistente automatizado,
-explica cómo usa los datos y pide que el cliente acepte, antes de guardar su nombre o su dirección. Lo puedes reescribir o
-borrar: borrarlo **no** abre la puerta, porque sin la aceptación del cliente el sistema no guarda ningún dato. Si lo borras, el
-bot deja de pedir la aceptación con tu texto y no podrá tomar pedidos. El caso nace con el texto que ya hubieras editado: primero el
-del antiguo caso del sistema `aviso_datos` (si todavía existe, porque `casos:sembrar` corrió antes que la migración), luego el de
-`parametro` y, si no hay ninguno válido, el de respaldo. `casos:sembrar` solo lee esa fila antigua: nunca la modifica ni la borra.
+**Un caso de intención que borras puede reaparecer.** `casos:sembrar` busca por título: si borraste un caso de intención
+cuyo título coincide con una política `politica_<tema>` que todavía está en `parametro` (por ejemplo «Garantía»), la siguiente
+corrida lo recrea con ese texto y retira la fila de `parametro`. Si no lo quieres, bórralo también de `parametro` antes de
+sembrar. Los demás casos de intención (los que creaste tú) nunca se recrean.
+
+**«Tratamiento de datos» ya no se siembra.** Pedir la aceptación es de la barrera de consentimiento (ADR-0028), que envía el
+«Aviso de tratamiento de datos» antes de que el modelo vea al contacto; un caso de uso con el mismo fin no se puede disparar, gasta
+espacio en el índice del prompt y puede contradecir el aviso. Una base antigua puede conservar esa fila hasta que la borres desde
+«Casos de uso»; borrarla no abre ninguna puerta. El aviso nace con el texto que ya hubieras editado: primero el del antiguo caso
+del sistema `aviso_datos` (si todavía existe), luego el de `parametro` y, si no hay ninguno, el de respaldo. `casos:sembrar` solo
+lee esa fila antigua (nunca la modifica ni la borra); la fila `aviso_datos` de `parametro`, en cambio, se retira al crear el aviso.
 
 **Contra entrega, sin cobertura y la captura fuera de horario ya no son casos del sistema** (Fase 12d). El código no los
 siembra ni los lee: son casos de uso tuyos. En una base que ya los tenía, la migración los dejó como casos de intención
@@ -46,7 +51,12 @@ responder **SÍ**. Con **NO** recibe «Tratamiento de datos rechazado» y puede 
 como cualquier caso del sistema y todos piden «Responde SÍ o NO»: si reescribes el aviso o el recordatorio, conserva esa
 instrucción, porque el sistema reconoce la respuesta por el texto (sí, si, acepto, autorizo, 1, ok / no, no acepto, 2). En una
 base nueva, el aviso toma tu texto de `aviso_datos` si existía; en una base ya migrada nace con el texto de respaldo y lo
-cambias desde el admin. El caso de uso «Tratamiento de datos» queda como respaldo del modelo.
+cambias desde el admin. No hay un caso de uso de respaldo: la barrera vive en el código.
+
+**La falla técnica del modelo** (`mensaje_error_llm`) no cubre solo una caída del proveedor: es el texto que recibe el cliente
+también cuando se agota el plazo del turno, cuando el modelo pide una herramienta con argumentos inválidos y cuando dijo un monto
+sin rastro (ver [dinero sin rastro](dinero-sin-rastro-y-evals-reales.md)). En todos esos casos la conversación pasa a un asesor,
+así que redáctalo pensando en una espera humana y no solo en un error.
 
 **Los botones del aviso** (Botones de WhatsApp). En WhatsApp el aviso y el recordatorio salen con dos botones de respuesta,
 «Sí, autorizo» y «No autorizo»; «Responde SÍ o NO» se queda en el texto como respaldo. En los demás canales (y en el inbox local
@@ -83,7 +93,7 @@ de un caso: si uno falla no se siembra nada y el mensaje dice cuál (por posici�
 
 ## Casos de ejemplo que puedes crear
 
-> **No se cargan solos.** `casos:sembrar` no crea ninguno de estos casos (solo «Tratamiento de datos»). Hasta que tú los
+> **No se cargan solos.** `casos:sembrar` no crea ninguno de estos casos. Hasta que tú los
 > crees en «Casos de uso», el bot **no tiene esa conducta**: sin el caso, no manda varias fotos, no habla del envío de una
 > forma fija ni pide datos fuera de horario. Lo único fijo son los seis límites de seguridad del prompt.
 

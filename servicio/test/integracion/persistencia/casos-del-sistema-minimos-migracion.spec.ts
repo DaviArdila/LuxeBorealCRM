@@ -4,7 +4,6 @@ import path from 'node:path';
 import { Client } from 'pg';
 import { describe, expect, it } from 'vitest';
 import { textoDeBusqueda } from '../../../src/modulos/asistente/dominio/normalizar.js';
-import { CASOS_INICIALES_DE_INTENCION } from '../../../src/modulos/asistente/dominio/semilla.js';
 import { urlPostgresDePrueba } from '../../soporte/infraestructura.js';
 
 /**
@@ -25,7 +24,13 @@ const MIGRACION = path.resolve(
 
 const MIGRACION_DE_CASOS_A_INTENCION = path.resolve(MIGRACION, '..', '..', '20261009130000_casos_a_intencion', 'migration.sql');
 
-const TRATAMIENTO = CASOS_INICIALES_DE_INTENCION[0];
+/** Lo que la migración (SQL) da a «Tratamiento de datos»: la semilla ya no lo crea, así que se fija aquí. */
+const TRATAMIENTO = {
+  cuandoAplica:
+    'Cuando el bot va a tomar datos de despacho o a registrar el interés de compra y el cliente aún no aceptó el tratamiento de datos (consentimiento pendiente).',
+  modo: 'guia',
+  categoria: 'Políticas',
+};
 const TEXTO_DEL_DUENO = 'TEXTO-DEL-DUEÑO: soy un asistente automatizado, ¿aceptas el tratamiento de tus datos?';
 
 async function conTransaccion(accion: (cliente: Client) => Promise<void>): Promise<void> {
@@ -116,11 +121,11 @@ describe('Migración casos_del_sistema_minimos (Fase 12d, T7, CAS14 pasos 2 y 3,
         titulo: 'Tratamiento de datos',
         titulo_normalizado: 'tratamiento de datos',
         texto: TEXTO_DEL_DUENO,
-        cuando_aplica: TRATAMIENTO?.cuandoAplica,
-        modo: TRATAMIENTO?.modo,
+        cuando_aplica: TRATAMIENTO.cuandoAplica,
+        modo: TRATAMIENTO.modo,
         disparador: 'intencion',
         clave_sistema: null,
-        categoria: TRATAMIENTO?.categoria,
+        categoria: TRATAMIENTO.categoria,
       });
       expect(casos[0]?.creado).toEqual(new Date('2026-10-01T09:00:00Z'));
       const buscado = await cliente.query(`SELECT 1 FROM caso_asistente WHERE busqueda_normalizada LIKE '%tratamiento%'`);
@@ -136,7 +141,7 @@ describe('Migración casos_del_sistema_minimos (Fase 12d, T7, CAS14 pasos 2 y 3,
       await migrar(cliente);
 
       const [fila] = await leerCasos(cliente);
-      expect(fila?.busqueda_normalizada).toBe(textoDeBusqueda({ titulo: 'Tratamiento de datos', cuandoAplica: TRATAMIENTO?.cuandoAplica ?? '', texto: TEXTO_DEL_DUENO }));
+      expect(fila?.busqueda_normalizada).toBe(textoDeBusqueda({ titulo: 'Tratamiento de datos', cuandoAplica: TRATAMIENTO.cuandoAplica, texto: TEXTO_DEL_DUENO }));
     });
   });
 
