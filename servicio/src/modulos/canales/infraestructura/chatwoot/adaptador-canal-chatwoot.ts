@@ -12,6 +12,7 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import type { EstadoConversacionCanal } from '../../dominio/evento-canal.js';
+import { validarOpcionesBotones } from '../../dominio/opciones-botones.js';
 import type { AdaptadorCanal } from '../../puertos/adaptador-canal.js';
 import { ClienteChatwoot } from './cliente-chatwoot.js';
 
@@ -70,6 +71,24 @@ export class AdaptadorCanalChatwoot implements AdaptadorCanal {
       message_type: 'outgoing',
       content: texto,
       content_attributes: { luxe_clave: marca },
+    });
+  }
+
+  /**
+   * Botones de respuesta: Chatwoot v4.17.1 los publica con `content_type: "input_select"` y `content_attributes.items`
+   * (hasta 3 ítems en WhatsApp Cloud son botones; más serían una lista). La marca viaja en `content_attributes` junto a
+   * los ítems. El `value` repite el título: Chatwoot lo descarta y el clic llega como el título (ver `opciones-botones.ts`).
+   */
+  async enviarBotones(idConversacion: string, texto: string, opciones: readonly string[], marca: string): Promise<void> {
+    const titulos = validarOpcionesBotones(opciones);
+    await this.cliente.post(idConversacion, 'messages', {
+      message_type: 'outgoing',
+      content: texto,
+      content_type: 'input_select',
+      content_attributes: {
+        luxe_clave: marca,
+        items: titulos.map((titulo) => ({ title: titulo, value: titulo })),
+      },
     });
   }
 

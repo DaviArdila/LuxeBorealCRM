@@ -16,7 +16,20 @@ export interface PasoImagen {
   readonly leyenda?: string;
 }
 
-export type PasoRespuesta = PasoTexto | PasoImagen;
+/**
+ * Un paso de texto con opciones de respuesta (botones, de 1 a 3). Genérico: lo puede devolver cualquier política,
+ * herramienta o caso. Los títulos (hasta 20 caracteres, sin repetirse; `validarOpcionesBotones`) son lo que el cliente
+ * ve y, al pulsar, lo que escribe de vuelta: el clic llega como un mensaje de texto con el **título**, sin id. Un canal que
+ * no soporta botones recibe el texto con las opciones numeradas (`enviar-respuesta-turno.ts`).
+ */
+export interface PasoBotones {
+  readonly paso: string;
+  readonly tipo: 'botones';
+  readonly texto: string;
+  readonly opciones: readonly string[];
+}
+
+export type PasoRespuesta = PasoTexto | PasoImagen | PasoBotones;
 
 /** Token de inyección del puerto {@link EnviarRespuestaTurno} (D10 de `design.md`). */
 export const ENVIAR_RESPUESTA_TURNO = Symbol('ENVIAR_RESPUESTA_TURNO');

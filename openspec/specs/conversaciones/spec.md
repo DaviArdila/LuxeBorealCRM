@@ -654,3 +654,33 @@ Fase que lo implementa: 12d
 - Dado que Redis falla,
 - Cuando el agente consulta el puerto,
 - Entonces recibe «no avisado», queda un `warn` sin datos del cliente y el turno continúa.
+
+### Requirement: CNV16 — Un paso de botones sale por el punto único de salida, con respaldo en texto
+
+Un paso de respuesta de tipo `botones` (texto y de 1 a 3 opciones) MUST poder devolverlo cualquier política, herramienta o
+caso, y MUST salir por el mismo punto único de salida que el texto (R5), en su orden y con la misma relectura por paso (CNV9).
+Si el canal del turno admite botones (perfil, CAN8), MUST encolarse como mensaje de botones (CAN11). Si no los admite, o si
+sus opciones no cumplen el límite del canal, MUST salir como un mensaje de texto con las opciones numeradas debajo del texto
+(`1. …`, `2. …`), de modo que el cliente nunca se quede sin el mensaje; en el segundo caso queda un `warn` con el motivo y sin
+el texto (R14). El clic en un botón llega como un mensaje de texto con el título: quien interprete la respuesta MUST compararla
+por título.
+
+Fase que lo implementa: Botones de WhatsApp (fuera de fase, ODD)
+
+#### Scenario: Un paso de botones sale como mensaje de botones
+
+- Dado una respuesta con un paso de botones en una conversación de WhatsApp en `bot`,
+- Cuando se envía por el punto único de salida,
+- Entonces se encola un mensaje de botones con el texto y las opciones, con estado requerido `bot`.
+
+#### Scenario: Un canal sin botones recibe el texto con las opciones numeradas
+
+- Dado un turno cuyo canal no admite botones y una respuesta con un paso de botones,
+- Cuando se envía,
+- Entonces se encola un único mensaje de texto con el texto, una línea en blanco y las opciones numeradas.
+
+#### Scenario: Unas opciones inválidas degradan a texto en vez de perder el mensaje
+
+- Dado un paso de botones con un título de más de 20 caracteres,
+- Cuando se envía,
+- Entonces sale como texto con las opciones numeradas y queda un `warn` sin el contenido.

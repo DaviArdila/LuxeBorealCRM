@@ -15,6 +15,7 @@ import {
   claveMensaje,
   grupoConversacion,
 } from '../dominio/claves-idempotencia.js';
+import { validarOpcionesBotones } from '../dominio/opciones-botones.js';
 import type {
   MensajeSaliente,
   SalidaCanal,
@@ -28,9 +29,10 @@ export const TIPO_OUTBOX_MENSAJE = 'canal.mensaje';
 export const TIPO_OUTBOX_ESTADO = 'canal.estado';
 export const TIPO_OUTBOX_ETIQUETAS = 'canal.etiquetas';
 
-/** Contenido que no debe persistir tras publicarse (R14): el texto, o la leyenda de una imagen. */
+/** Contenido que no debe persistir tras publicarse (R14): el texto, el texto y las opciones, o la leyenda de una imagen. */
 function efimeroDe(mensaje: MensajeSaliente): Record<string, unknown> | undefined {
   if (mensaje.tipo === 'texto') return { texto: mensaje.texto };
+  if (mensaje.tipo === 'botones') return { texto: mensaje.texto, opciones: mensaje.opciones };
   return mensaje.leyenda === undefined ? undefined : { leyenda: mensaje.leyenda };
 }
 
@@ -46,6 +48,11 @@ export class SalidaCanalOutbox implements SalidaCanal {
       );
     }
 
+    // Falla al encolar, no al publicar: unas opciones inválidas nunca llegarían a entregarse en un reintento.
+    for (const mensaje of solicitud.mensajes) {
+      if (mensaje.tipo === 'botones') validarOpcionesBotones(mensaje.opciones);
+    }
+
     const grupo = grupoConversacion(solicitud.idConversacion);
     const entradas: NuevaEntradaOutbox[] = solicitud.mensajes.map((mensaje, paso) => ({
       tipo: TIPO_OUTBOX_MENSAJE,
@@ -59,6 +66,8 @@ export class SalidaCanalOutbox implements SalidaCanal {
         total,
         // La clave del objeto no es dato personal: viaja en `datos`; la leyenda sí puede serlo (R14).
         ...(mensaje.tipo === 'imagen' ? { claveObjeto: mensaje.claveObjeto } : {}),
+        // El discriminador de los botones no es dato personal; el texto y los títulos van en `efimero`.
+        ...(mensaje.tipo === 'botones' ? { conBotones: true } : {}),
         // Opaco para `canales`: solo la guardia registrada sabe leerlo (CAN9).
         ...(solicitud.requiereEstado === undefined ? {} : { requiereEstado: solicitud.requiereEstado }),
       },

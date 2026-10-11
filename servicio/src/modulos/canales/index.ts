@@ -22,6 +22,13 @@ export {
 } from './puertos/consumidor-eventos-canal.js';
 export type { EventoCanal } from './dominio/evento-canal.js';
 export { perfilDeCapacidades, type PerfilCapacidades } from './dominio/perfil-capacidades.js';
+export {
+  MAX_OPCIONES_BOTONES,
+  MAX_TITULO_BOTON,
+  OpcionesBotonesInvalidas,
+  enumerarOpciones,
+  validarOpcionesBotones,
+} from './dominio/opciones-botones.js';
 export { LECTOR_MENSAJE_CANAL, type LectorMensajeCanal } from './puertos/lector-mensaje-canal.js';
 export {
   SALIDA_CANAL,

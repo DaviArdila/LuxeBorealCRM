@@ -18,6 +18,7 @@ class AdaptadorCanalFalso implements AdaptadorCanal {
     leyenda: string | undefined;
     marca: string;
   }[] = [];
+  readonly botonesEnviados: { idConversacion: string; texto: string; opciones: readonly string[]; marca: string }[] = [];
   readonly estadosCambiados: { idConversacion: string; estado: string }[] = [];
   readonly etiquetasAgregadas: { idConversacion: string; etiquetas: readonly string[] }[] = [];
   readonly consultasDeMarca: { idConversacion: string; marca: string }[] = [];
@@ -30,6 +31,12 @@ class AdaptadorCanalFalso implements AdaptadorCanal {
   enviarTexto(idConversacion: string, texto: string, marca: string): Promise<void> {
     if (this.falloAEmitir) return Promise.reject(this.falloAEmitir);
     this.enviados.push({ idConversacion, texto, marca });
+    return Promise.resolve();
+  }
+
+  enviarBotones(idConversacion: string, texto: string, opciones: readonly string[], marca: string): Promise<void> {
+    if (this.falloAEmitir) return Promise.reject(this.falloAEmitir);
+    this.botonesEnviados.push({ idConversacion, texto, opciones, marca });
     return Promise.resolve();
   }
 
@@ -344,5 +351,68 @@ describe('modulos/canales/aplicacion/PublicarEfectoCanal (D9, D10, D13)', () => 
       clase: 'permanente',
     });
     expect(adaptador.imagenesEnviadas).toEqual([]);
+  });
+
+  describe('botones (texto con opciones)', () => {
+    function entradaBotones(overrides: Partial<EntradaOutbox> = {}): EntradaOutbox {
+      return {
+        id: 'fila-bot',
+        tipo: TIPO_OUTBOX_MENSAJE,
+        claveIdempotencia: 'canal:mensaje:42:r1:00',
+        grupo: 'canal:42',
+        orden: 0,
+        datos: { idConversacion: '42', secuencia: 'r1', paso: 0, total: 1, conBotones: true },
+        efimero: { texto: '¿Autorizas?', opciones: ['Sí, autorizo', 'No autorizo'] },
+        intento: 1,
+        ...overrides,
+      };
+    }
+
+    it('una fila con conBotones llama enviarBotones con el texto y las opciones efímeros', async () => {
+      const adaptador = new AdaptadorCanalFalso();
+      const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
+
+      await manejador.publicar(entradaBotones());
+
+      expect(adaptador.enviados).toEqual([]);
+      expect(adaptador.botonesEnviados).toEqual([
+        {
+          idConversacion: '42',
+          texto: '¿Autorizas?',
+          opciones: ['Sí, autorizo', 'No autorizo'],
+          marca: 'canal:mensaje:42:r1:00',
+        },
+      ]);
+    });
+
+    it('un reintento con la marca ya en Chatwoot no los envía otra vez (D13)', async () => {
+      const adaptador = new AdaptadorCanalFalso(true);
+      const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
+
+      await manejador.publicar(entradaBotones({ intento: 2 }));
+
+      expect(adaptador.consultasDeMarca).toEqual([{ idConversacion: '42', marca: 'canal:mensaje:42:r1:00' }]);
+      expect(adaptador.botonesEnviados).toEqual([]);
+    });
+
+    it('la guardia CAN9 también rige: si el estado cambió, falla como permanente y no envía', async () => {
+      const adaptador = new AdaptadorCanalFalso();
+      const registro = new RegistroGuardiaEnvioCanal();
+      registro.registrar({ puedeEnviar: () => Promise.resolve(false) });
+      const manejador = new PublicarEfectoCanal(adaptador, registro, ALMACENAMIENTO_VACIO);
+
+      await expect(
+        manejador.publicar(entradaBotones({ datos: { idConversacion: '42', conBotones: true, requiereEstado: 'bot' } })),
+      ).rejects.toMatchObject({ name: 'FalloPublicacion', clase: 'permanente' });
+      expect(adaptador.botonesEnviados).toEqual([]);
+    });
+
+    it('una fila con opciones efímeras malformadas es un error de datos, no un envío', async () => {
+      const adaptador = new AdaptadorCanalFalso();
+      const manejador = new PublicarEfectoCanal(adaptador, new RegistroGuardiaEnvioCanal(), ALMACENAMIENTO_VACIO);
+
+      await expect(manejador.publicar(entradaBotones({ efimero: { texto: 'hola' } }))).rejects.toThrow(/opciones/);
+      expect(adaptador.botonesEnviados).toEqual([]);
+    });
   });
 });
