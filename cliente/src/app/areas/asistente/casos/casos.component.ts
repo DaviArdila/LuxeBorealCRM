@@ -284,7 +284,7 @@ interface Grupo {
                          [hayCambios]="true" [alGuardar]="guardarCaso" [mensajeDeError]="motivoDe">
       <mat-form-field appearance="outline">
         <mat-label>Categoría</mat-label>
-        <mat-select [(value)]="formulario.categoriaId">
+        <mat-select [(value)]="formulario.categoriaId" [disabled]="soloTexto()">
           @for (categoria of servicio.categorias(); track categoria.id) {
             <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
           }
@@ -292,13 +292,13 @@ interface Grupo {
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Título</mat-label>
-        <input matInput data-campo="titulo" [value]="formulario.titulo()"
+        <input matInput data-campo="titulo" [value]="formulario.titulo()" [disabled]="soloTexto()"
                (input)="formulario.titulo.set($any($event.target).value)" />
         <mat-hint align="end">{{ formulario.titulo().length }} / {{ maximoTitulo }}</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Cuándo aplica</mat-label>
-        <textarea matInput rows="3" data-campo="cuando-aplica" [value]="formulario.cuandoAplica()"
+        <textarea matInput rows="3" data-campo="cuando-aplica" [value]="formulario.cuandoAplica()" [disabled]="soloTexto()"
                   aria-describedby="ayuda-herramientas" (input)="formulario.cuandoAplica.set($any($event.target).value)"></textarea>
         <mat-hint align="end">{{ formulario.cuandoAplica().length }} / {{ maximoCuandoAplica() }}</mat-hint>
       </mat-form-field>
@@ -685,13 +685,8 @@ export class CasosComponent {
         activo: f.activo(),
       });
     } else if (this.soloTexto()) {
-      await this.servicio.editar(id, {
-        actualizado: this.actualizadoDelCaso,
-        categoriaId: f.categoriaId(),
-        titulo: f.titulo(),
-        cuandoAplica: f.cuandoAplica(),
-        texto: f.texto(),
-      });
+      // En un caso del sistema el servidor solo admite el texto (CAS4): lo demás ni se envía.
+      await this.servicio.editar(id, { actualizado: this.actualizadoDelCaso, texto: f.texto() });
     } else {
       await this.servicio.editar(id, {
         actualizado: this.actualizadoDelCaso,

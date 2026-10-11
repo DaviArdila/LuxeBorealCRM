@@ -122,7 +122,7 @@ Fase que lo implementa: 12
 - Cuando un admin lo borra,
 - Entonces la respuesta es `204` y ya no aparece en el listado.
 
-### Requirement: CAS4 — Los casos del sistema son una lista cerrada que se edita pero no se crea ni se borra
+### Requirement: CAS4 — Los casos del sistema son una lista cerrada cuyo texto se edita pero que no se crea ni se borra
 
 Los casos que el **código** dispara solo, porque el LLM no puede o no debe hablar, MUST ser una lista cerrada en
 `asistente/dominio/sistema.ts`, cada uno con su clave, su descripción de cuándo se envía y su texto de respaldo. La lista MUST
@@ -134,14 +134,15 @@ técnica, el techo de gasto o el tope de turnos) y los cuatro de la barrera de c
 `consentimiento_rechazado`, más los títulos de los botones del aviso, `consentimiento_boton_si` y `consentimiento_boton_no`
 (texto de respaldo «Sí, autorizo» y «No autorizo»). Un caso que declara un tope de caracteres (los dos títulos de botón: 20,
 el límite de WhatsApp) MUST rechazar al editarse un texto más largo o de más de una línea, nombrando la regla y sin copiar el
-texto. Un caso con clave del sistema MUST poder editarse (texto, categoría, título y
-«cuándo aplica») y MUST NOT borrarse ni desactivarse. El título MUST seguir siendo único (CAS1) aunque se edite: el código
-encuentra el caso por su clave, nunca por su título. La API MUST NOT permitir crear un caso con una clave del sistema ni cambiar
+texto. En un caso con clave del sistema MUST editarse solo el texto: la API MUST rechazar con `422 caso-invalido` un título,
+una categoría, un «cuándo aplica» o un modo distintos del guardado (sin copiar texto), y MUST tolerar que se reenvíen iguales.
+Además MUST NOT borrarse ni desactivarse: el código encuentra el caso por su clave y sus textos son literales. La API MUST NOT permitir crear un caso con una clave del sistema ni cambiar
 la clave de uno existente: una situación nueva necesita código que la detecte. Siempre MUST existir un texto para cada clave: el
 guardado, o el de respaldo si falta.
 
 (Previously: la lista tenía once casos —los diez mensajes fijos más `contra_entrega`—, incluidos el aviso de datos, los dos
-traspasos, la captura completa, la falta de cobertura y la contra entrega.)
+traspasos, la captura completa, la falta de cobertura y la contra entrega. También: un caso con clave del sistema podía
+editarse en texto, categoría, título y «cuándo aplica».)
 
 Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligatorio (nueve casos); botones de WhatsApp (once)
 
@@ -157,17 +158,17 @@ Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligato
 - Cuando un admin cambia su texto,
 - Entonces la respuesta es `200` y el caso conserva su clave del sistema.
 
-#### Scenario: El título de un caso del sistema se edita
+#### Scenario: Un caso del sistema no cambia de título, categoría, cuándo aplica ni modo
 
 - Dado el caso `mensaje_pedir_texto_audio` titulado «Audio recibido»,
-- Cuando un admin lo renombra a «Audios»,
-- Entonces la respuesta es `200`, el título nuevo queda guardado y el bot sigue usando ese caso al recibir un audio.
+- Cuando un admin intenta renombrarlo a «Audios» (o cambiar su categoría, su «cuándo aplica» o su modo),
+- Entonces la respuesta es `422` con el código `caso-invalido`, el motivo dice que solo se edita el texto y el caso no cambia.
 
-#### Scenario: El título editado no puede repetir el de otro caso
+#### Scenario: Reenviar los valores actuales junto al texto nuevo se tolera
 
-- Dado el caso «Tratamiento de datos» y el caso del sistema «Audio recibido»,
-- Cuando un admin intenta renombrar el de audio a «tratamiento de datos»,
-- Entonces la respuesta es `409` con el código `caso-duplicado` y el título no cambia.
+- Dado el caso `mensaje_pedir_texto_audio`,
+- Cuando un admin envía su título, categoría, «cuándo aplica» y modo actuales con un texto nuevo,
+- Entonces la respuesta es `200` y solo cambia el texto.
 
 #### Scenario: Un caso del sistema no se borra
 

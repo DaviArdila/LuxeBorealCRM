@@ -295,12 +295,15 @@ describe('Categorías y casos del asistente por la API (T7, e2e)', () => {
     const caso = await sistema(ctx, api);
 
     const editado = await api.patch(`/casos/${caso.id}`, { actualizado: caso.actualizado, texto: 'Un asesor te escribe ya.' });
+    const conTitulo = await api.patch(`/casos/${caso.id}`, { actualizado: (editado.body as CasoApi).actualizado, titulo: 'Otro título' });
     const borrado = await api.delete(`/casos/${caso.id}`);
     const desactivado = await api.patch(`/casos/${caso.id}`, { actualizado: (editado.body as CasoApi).actualizado, activo: false });
     const conClave = await api.post('/casos', { categoriaId: caso.categoriaId, ...NUEVO, claveSistema: 'mensaje_espera_handoff' });
 
     expect(editado.status).toBe(200);
     expect(editado.body).toMatchObject({ claveSistema: 'mensaje_espera_handoff', disparador: 'evento' });
+    expect(conTitulo.status).toBe(422);
+    expect(codigoDe(conTitulo)).toBe('caso-invalido');
     expect(borrado.status).toBe(409);
     expect(codigoDe(borrado)).toBe('caso-del-sistema');
     expect(desactivado.status).toBe(409);

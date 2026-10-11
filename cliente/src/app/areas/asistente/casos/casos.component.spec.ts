@@ -529,41 +529,33 @@ const NOMBRES_DE_FICHAS = [
 
 const fichasDeAyuda = () => [...document.querySelectorAll<HTMLButtonElement>('button[data-herramienta]')];
 
-describe('SHL10 — Casos del sistema: título y «cuándo aplica» editables', () => {
-  it('SHL10 — El título de un caso del sistema se edita desde la ventana', async () => {
-    const { fixture, control } = await abrir();
+describe('SHL10 — Casos del sistema: solo el texto es editable', () => {
+  it('SHL10 — En un caso del sistema categoría, título y «cuándo aplica» están deshabilitados y el texto no', async () => {
+    const { fixture } = await abrir();
 
     await abrirCategoria(fixture, 'Sistema');
     botonConEtiqueta('Editar Traspaso a un asesor')!.click();
     await asentar(fixture);
-    const titulo = document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!;
-    expect(titulo.disabled).toBe(false);
-    escribir('titulo', 'Pasar a un asesor');
-    await asentar(fixture);
-    boton('Guardar').click();
-    await asentar(fixture);
 
-    const edicion = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`);
-    expect(edicion.request.body).toMatchObject({ titulo: 'Pasar a un asesor' });
+    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLTextAreaElement>('[data-campo="cuando-aplica"]')!.disabled).toBe(true);
+    expect(document.querySelector('mat-select[aria-disabled="true"]')).not.toBeNull();
+    expect(document.querySelector<HTMLTextAreaElement>('textarea[data-campo="texto"]')!.disabled).toBe(false);
   });
 
-  it('SHL10 — El «cuándo aplica» de un caso del sistema se edita desde la ventana', async () => {
-    const { fixture, control } = await abrir();
+  it('SHL10 — Un caso de intención conserva todos sus campos habilitados', async () => {
+    const { fixture } = await abrir();
 
-    await abrirCategoria(fixture, 'Sistema');
-    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
+    await abrirCategoria(fixture, 'Políticas');
+    botonConEtiqueta('Editar Garantía')!.click();
     await asentar(fixture);
+
+    expect(document.querySelector<HTMLInputElement>('[data-campo="titulo"]')!.disabled).toBe(false);
     expect(document.querySelector<HTMLTextAreaElement>('[data-campo="cuando-aplica"]')!.disabled).toBe(false);
-    escribir('cuando-aplica', 'Cuando se avisa a una persona');
-    await asentar(fixture);
-    boton('Guardar').click();
-    await asentar(fixture);
-
-    const edicion = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`);
-    expect(edicion.request.body).toMatchObject({ cuandoAplica: 'Cuando se avisa a una persona' });
+    expect(document.querySelector('mat-select[aria-disabled="true"]')).toBeNull();
   });
 
-  it('SHL10 — El modo y el estado de un caso del sistema no se ofrecen ni se envían', async () => {
+  it('SHL10 — Guardar un caso del sistema envía solo el texto y la fecha leída', async () => {
     const { fixture, control } = await abrir();
 
     await abrirCategoria(fixture, 'Sistema');
@@ -575,27 +567,7 @@ describe('SHL10 — Casos del sistema: título y «cuándo aplica» editables', 
     await asentar(fixture);
 
     const cuerpo = control.expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`).request.body as object;
-    expect(cuerpo).not.toHaveProperty('modo');
-    expect(cuerpo).not.toHaveProperty('activo');
-  });
-
-  it('SHL10 — Un título duplicado muestra el motivo del servidor y no cierra la ventana', async () => {
-    const { fixture, control } = await abrir();
-
-    await abrirCategoria(fixture, 'Sistema');
-    botonConEtiqueta('Editar Traspaso a un asesor')!.click();
-    await asentar(fixture);
-    escribir('titulo', 'Garantía');
-    await asentar(fixture);
-    boton('Guardar').click();
-    await asentar(fixture);
-    control
-      .expectOne((p) => p.method === 'PATCH' && p.url === `${URL_CASOS}/k-0`)
-      .flush({ codigo: 'caso-duplicado', title: 'Caso duplicado', detail: 'ya existe un caso con ese título' }, { status: 409, statusText: 'x' });
-    await asentar(fixture);
-
-    const ventana = document.querySelector('[data-campo="titulo"]')!.closest('mat-dialog-container')!;
-    expect(ventana.textContent).toContain('ya existe un caso con ese título');
+    expect(Object.keys(cuerpo).sort()).toEqual(['actualizado', 'texto']);
   });
 });
 
