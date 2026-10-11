@@ -4,18 +4,23 @@ import { CASOS_DEL_SISTEMA, textoDeRespaldo, type ClaveSistema } from './sistema
 
 // CAS4 (Fase 12, T4): la lista cerrada de casos del sistema es la única fuente de los textos de respaldo.
 
-const CINCO_MENSAJES = [
+const MENSAJES = [
   'mensaje_pedir_texto_audio',
   'mensaje_imagen_no_procesada',
   'mensaje_error_llm',
   'mensaje_espera_handoff',
   'mensaje_techo_gasto',
+  // ADR-0028: la barrera de consentimiento.
+  'consentimiento_aviso',
+  'consentimiento_recordatorio',
+  'consentimiento_aceptado',
+  'consentimiento_rechazado',
 ];
 
 describe('CASOS_DEL_SISTEMA (CAS4)', () => {
-  it('CAS4 — Contiene exactamente los cinco mensajes fijos de la lista cerrada', () => {
-    expect(CASOS_DEL_SISTEMA).toHaveLength(5);
-    expect(CASOS_DEL_SISTEMA.map((c) => c.clave).sort()).toEqual([...CINCO_MENSAJES].sort());
+  it('CAS4 — Contiene exactamente los cinco mensajes fijos y los cuatro de la barrera de consentimiento (ADR-0028)', () => {
+    expect(CASOS_DEL_SISTEMA).toHaveLength(9);
+    expect(CASOS_DEL_SISTEMA.map((c) => c.clave).sort()).toEqual([...MENSAJES].sort());
   });
 
   it('CAS4 — Las claves retiradas ya no son claves del sistema', () => {
@@ -56,6 +61,13 @@ describe('CASOS_DEL_SISTEMA (CAS4)', () => {
     const disparadores = new Set<string>(CASOS_DEL_SISTEMA.map((c) => c.disparador));
 
     expect([...disparadores]).toEqual(['evento']);
+  });
+
+  it('ADR-0028 — Los textos de la barrera piden SÍ o NO y el aviso presenta al bot como asistente', () => {
+    for (const clave of ['consentimiento_aviso', 'consentimiento_recordatorio'] as const) {
+      expect(textoDeRespaldo(clave), clave).toMatch(/Responde SÍ o NO/);
+    }
+    expect(textoDeRespaldo('consentimiento_aviso')).toMatch(/asistente virtual/);
   });
 
   it('CAS7 — El respaldo de cada clave sale de la lista', () => {

@@ -12,7 +12,7 @@ tests y evals. Sin cambios al esquema de datos.
 
 ## Tareas
 - [x] T1 ADR (propuesta) que reabre la alternativa B del ADR-0027 + nota en PREGUNTAS_ABIERTAS. (ADR-0028 y P76; hash: ver Evidencia)
-- [ ] T2 `PoliticaConsentimiento` + registro en `POLITICAS_TURNO` antes de `contenido-llm` (TDD).
+- [x] T2 `PoliticaConsentimiento` + registro en `POLITICAS_TURNO` antes de `contenido-llm` (TDD).
 - [ ] T3 Textos del aviso/recordatorio/confirmaciones como datos y siembra idempotente.
 - [ ] T4 Specs (`privacidad`, `agente`), evals y e2e ajustados.
 - [ ] T5 Batería completa local.
@@ -23,3 +23,4 @@ Delegada: un writer (más de 2 archivos no triviales y lectura previa a la escri
 ## Evidencia
 (se completa por tarea)
 - T1: `docs/adr/0028-consentimiento-previo-al-llm.md`, indice del README de ADR y P76 en PREGUNTAS_ABIERTAS. Passive (solo documentos): lectura estructural. Commit: ver Evidencia final.
+- T2: RED observado (politica-consentimiento.spec.ts fallaba: modulo inexistente); GREEN: `npx vitest run --project unit politica-consentimiento`: 25 pasan. Primera politica del pipeline; las 4 claves `consentimiento_*` se definen en `sistema.ts` (necesarias para compilar). `typecheck` y `eslint` limpios sobre agente/asistente. Ruta: delegada (writer unico).
