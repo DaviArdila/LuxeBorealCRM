@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizarTexto } from '../../../compartido/texto/index.js';
-import { CASOS_DEL_SISTEMA, textoDeRespaldo, type ClaveSistema } from './sistema.js';
+import { CASOS_DEL_SISTEMA, definicionDe, maximoDeCaracteres, textoDeRespaldo, type ClaveSistema } from './sistema.js';
 
 // CAS4 (Fase 12, T4): la lista cerrada de casos del sistema es la única fuente de los textos de respaldo.
 
@@ -15,11 +15,14 @@ const MENSAJES = [
   'consentimiento_recordatorio',
   'consentimiento_aceptado',
   'consentimiento_rechazado',
+  // Botones de respuesta del aviso (títulos de hasta 20 caracteres).
+  'consentimiento_boton_si',
+  'consentimiento_boton_no',
 ];
 
 describe('CASOS_DEL_SISTEMA (CAS4)', () => {
-  it('CAS4 — Contiene exactamente los cinco mensajes fijos y los cuatro de la barrera de consentimiento (ADR-0028)', () => {
-    expect(CASOS_DEL_SISTEMA).toHaveLength(9);
+  it('CAS4 — Contiene exactamente los cinco mensajes fijos, los cuatro de la barrera de consentimiento y los dos títulos de sus botones (ADR-0028)', () => {
+    expect(CASOS_DEL_SISTEMA).toHaveLength(11);
     expect(CASOS_DEL_SISTEMA.map((c) => c.clave).sort()).toEqual([...MENSAJES].sort());
   });
 
@@ -68,6 +71,20 @@ describe('CASOS_DEL_SISTEMA (CAS4)', () => {
       expect(textoDeRespaldo(clave), clave).toMatch(/Responde SÍ o NO/);
     }
     expect(textoDeRespaldo('consentimiento_aviso')).toMatch(/asistente virtual/);
+  });
+
+  it('Botones — Los títulos de los botones del aviso caben en 20 caracteres y no se repiten', () => {
+    const si = definicionDe('consentimiento_boton_si');
+    const no = definicionDe('consentimiento_boton_no');
+
+    expect(si.maximoCaracteres).toBe(20);
+    expect(no.maximoCaracteres).toBe(20);
+    expect(textoDeRespaldo('consentimiento_boton_si')).toBe('Sí, autorizo');
+    expect(textoDeRespaldo('consentimiento_boton_no')).toBe('No autorizo');
+    for (const caso of CASOS_DEL_SISTEMA) {
+      const maximo = maximoDeCaracteres(caso.clave);
+      if (maximo !== undefined) expect(caso.textoRespaldo.length, caso.clave).toBeLessThanOrEqual(maximo);
+    }
   });
 
   it('CAS7 — El respaldo de cada clave sale de la lista', () => {

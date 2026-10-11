@@ -27,7 +27,8 @@
           "cotizar_envio"
         ],
         "menciona": [
-          "responde si o no"
+          "responde si o no",
+          "botones: si autorizo | no autorizo"
         ],
         "handoff": "prohibido",
         "sinSku": true

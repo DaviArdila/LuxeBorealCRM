@@ -56,4 +56,9 @@ botones de WhatsApp quedan para una Fase B aparte.
 **Obligatorio o prohibido:** ningún texto del cliente o del contacto se escribe en logs (R14); el tiempo sale del `Clock`; la
 salida pasa por el punto único de `conversaciones` (R5).
 
-**Pendiente:** Fase B (botones de WhatsApp) tras verificar el soporte de Chatwoot.
+**Fase B (botones de WhatsApp), hecha:** el aviso y el recordatorio salen con los botones «Sí, autorizo» y «No autorizo»
+mediante un paso de salida genérico `botones` (CNV16, CAN11), con «Responde SÍ o NO» como respaldo en el cuerpo y las opciones
+numeradas en los canales sin botones. Chatwoot los publica como `input_select` y el clic vuelve como el **título** (sin id), así
+que la política compara también contra los títulos vigentes. Los títulos son dos casos del sistema (`consentimiento_boton_si`,
+`consentimiento_boton_no`, máximo 20 caracteres). Verificado contra el código fuente de Chatwoot v4.17.1 y contra el doble de
+Chatwoot de las pruebas; **no** probado contra un WhatsApp Cloud real.
