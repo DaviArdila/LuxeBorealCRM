@@ -113,6 +113,13 @@ function servidor(app: INestApplication): Server {
 
 /** Ids únicos por escenario: la base y Redis se comparten entre los tests de este archivo. */
 let contador = 500;
+/** Deja al contacto con el tratamiento de datos ya aceptado (PRV1): la barrera de consentimiento (ADR-0028) corta antes del modelo. */
+async function aceptarTratamiento(aplicacion: INestApplication, idContacto: number): Promise<void> {
+  await aplicacion.get(PrismaService).contacto.create({
+    data: { chatwootContactId: idContacto, consentimientoDatosEn: new Date('2026-10-09T10:00:00.000Z') },
+  });
+}
+
 function nuevaConversacion(): { readonly idConversacion: number; readonly idContacto: number } {
   contador += 1;
   return { idConversacion: contador, idContacto: contador };
@@ -301,6 +308,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     const aplicacion = await arrancar();
     llm.encolar({ respuesta: { texto: 'Claro, ¿de qué material?' } }, { respuesta: { texto: 'Perfecto, oro.' } });
     const { idConversacion, idContacto } = nuevaConversacion();
+    await aceptarTratamiento(aplicacion, idContacto);
     const primero = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola, busco un anillo');
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero });
@@ -319,6 +327,7 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     const aplicacion = await arrancar(1);
     llm.encolar({ respuesta: { texto: 'Hola, ¿en qué te ayudo?' } });
     const { idConversacion, idContacto } = nuevaConversacion();
+    await aceptarTratamiento(aplicacion, idContacto);
     const primero = nuevoIdMensaje();
     chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola');
     await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero });
