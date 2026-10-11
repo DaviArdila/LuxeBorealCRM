@@ -42,6 +42,8 @@ export class FalloCanal extends Error {
  */
 export interface AdaptadorCanal {
   enviarTexto(idConversacion: string, texto: string, marca: string): Promise<void>;
+  /** Texto con de 1 a 3 botones de respuesta; lanza `OpcionesBotonesInvalidas` si las opciones no cumplen el límite. */
+  enviarBotones(idConversacion: string, texto: string, opciones: readonly string[], marca: string): Promise<void>;
   enviarImagen(
     idConversacion: string,
     contenido: Buffer,

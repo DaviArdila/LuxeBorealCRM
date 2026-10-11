@@ -243,3 +243,35 @@ Fase que lo implementa: 07b
   enviado,
 - Cuando el publicador lo reintenta,
 - Entonces encuentra la marca en Chatwoot y marca la fila como enviada sin un segundo `POST`.
+
+### Requirement: CAN11 — Un mensaje con botones de respuesta viaja como input_select y se reconcilia como un texto
+
+El puerto de canal de salida MUST admitir un mensaje de tipo `botones`: un texto con de 1 a 3 opciones. Cada título
+MUST tener como máximo 20 caracteres (límite de Meta), no estar vacío y no repetirse dentro del mensaje; una opción que no
+cumple MUST rechazarse con un error que nombre la regla rota (sin copiar el título, R14), nunca truncarse en silencio. El
+adaptador Chatwoot MUST publicarlo con `POST .../messages` con `content_type: "input_select"`,
+`content_attributes.items = [{ title, value }]` (el `value` repite el título) y la marca de idempotencia en
+`content_attributes.luxe_clave`. El texto y los títulos MUST ser efímeros en el `outbox` (R14), y la reconciliación por marca
+(CAN10) y la guardia de envío (CAN9) MUST regir igual que para el texto. En Chatwoot el clic llega como un mensaje de texto cuyo
+contenido es el **título** del botón; el id no vuelve.
+
+Fase que lo implementa: Botones de WhatsApp (fuera de fase, ODD)
+
+#### Scenario: Enviar botones publica un input_select con los títulos como items
+
+- Dado un mensaje de botones con el texto «¿Autorizas?» y las opciones «Sí, autorizo» y «No autorizo»,
+- Cuando el publicador lo procesa,
+- Entonces se realiza un `POST` a `.../messages` con `content_type: "input_select"`, los dos ítems y la marca en
+  `content_attributes`, y el texto y los títulos no quedan en la fila una vez enviada.
+
+#### Scenario: Unas opciones inválidas se rechazan al encolar
+
+- Dado un mensaje de botones con cuatro opciones, o con un título de más de 20 caracteres,
+- Cuando se intenta encolar,
+- Entonces se rechaza con un error y no se crea ninguna fila del `outbox`.
+
+#### Scenario: Un reintento de unos botones ya creados no los envía otra vez
+
+- Dado un mensaje de botones cuyo primer intento creó el mensaje en Chatwoot pero no se marcó como enviado,
+- Cuando el publicador lo reintenta,
+- Entonces encuentra la marca y marca la fila como enviada sin un segundo `POST`.

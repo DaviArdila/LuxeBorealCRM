@@ -7,6 +7,9 @@
  * D5 (07b) — imagen: una fila con `datos.claveObjeto` lee los bytes de `medios` (MED10) y llama
  * `enviarImagen`; la reconciliación y la guardia CAN9 valen igual que para el texto (CAN10).
  *
+ * Botones: una fila con `datos.conBotones` lleva el texto y las opciones en `efimero` (R14) y llama `enviarBotones`, con
+ * la misma reconciliación y guardia que el texto.
+ *
  * D13 — reconciliación: si el intento actual **no** es el primero (`entrada.intento > 1`), hubo un
  * intento previo cuyo resultado no se conoce con certeza (timeout, *lease* vencido, proceso caído
  * entre el `POST` y la marca de enviado). Antes de reenviar un mensaje se consulta
@@ -48,6 +51,15 @@ function textoEfimero(efimero: Readonly<Record<string, unknown>> | undefined): s
 function leyendaEfimera(efimero: Readonly<Record<string, unknown>> | undefined): string | undefined {
   const valor = efimero?.leyenda;
   return typeof valor === 'string' ? valor : undefined;
+}
+
+/** Opciones de un mensaje con botones: un arreglo de textos en `efimero.opciones`. */
+function opcionesEfimeras(efimero: Readonly<Record<string, unknown>> | undefined): readonly string[] {
+  const valor = efimero?.opciones;
+  if (!Array.isArray(valor) || !valor.every((opcion): opcion is string => typeof opcion === 'string')) {
+    throw new Error(`Fila de outbox "${TIPO_OUTBOX_MENSAJE}" con botones sin opciones efímeras ("efimero.opciones").`);
+  }
+  return valor;
 }
 
 function estadoDeDatos(datos: Readonly<Record<string, unknown>>): Exclude<EstadoConversacionCanal, 'pospuesta'> {
@@ -128,6 +140,13 @@ export class PublicarEfectoCanal implements ManejadorOutbox {
     }
 
     const texto = textoEfimero(entrada.efimero);
+    if (entrada.datos.conBotones === true) {
+      const opciones = opcionesEfimeras(entrada.efimero);
+      await this.conFalloPublicacion(() =>
+        this.adaptador.enviarBotones(idConversacion, texto, opciones, entrada.claveIdempotencia),
+      );
+      return;
+    }
     await this.conFalloPublicacion(() =>
       this.adaptador.enviarTexto(idConversacion, texto, entrada.claveIdempotencia),
     );

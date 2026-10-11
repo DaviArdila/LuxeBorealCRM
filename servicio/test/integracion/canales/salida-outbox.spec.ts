@@ -282,6 +282,60 @@ describe('SalidaCanalOutbox + PublicarEfectoCanal contra Chatwoot falso (T7, int
     expect(JSON.stringify(fila.payload)).toContain('catalogo/luna/collage.jpg');
   });
 
+  it('CAN6 — Enviar botones publica un input_select con los títulos como items y la marca', async () => {
+    const arrancado = await crearAplicacion(chatwootFalso);
+    app = arrancado.app;
+    const salidaCanal = app.get<SalidaCanal>(SALIDA_CANAL);
+    const publicador = app.get(PublicadorOutbox);
+    const prisma = app.get(PrismaService);
+    const idConversacion = randomUUID().slice(0, 8);
+
+    await salidaCanal.enviarMensajes({
+      idConversacion,
+      idRespuesta: 'r1',
+      mensajes: [{ tipo: 'botones', texto: '¿Autorizas? Responde SÍ o NO.', opciones: ['Sí, autorizo', 'No autorizo'] }],
+    });
+    await publicador.publicarPendientes();
+
+    const [botones] = llamadasAMensajes(chatwootFalso).map((l) => l.cuerpo);
+    expect(botones).toMatchObject({
+      message_type: 'outgoing',
+      content: '¿Autorizas? Responde SÍ o NO.',
+      content_type: 'input_select',
+      content_attributes: {
+        luxe_clave: `canal:mensaje:${idConversacion}:r1:00`,
+        items: [
+          { title: 'Sí, autorizo', value: 'Sí, autorizo' },
+          { title: 'No autorizo', value: 'No autorizo' },
+        ],
+      },
+    });
+
+    // El texto y los títulos son efímeros (R14): tras publicarse no queda nada de ellos en la fila.
+    const fila = await prisma.outbox.findFirstOrThrow({
+      where: { claveIdempotencia: `canal:mensaje:${idConversacion}:r1:00` },
+    });
+    expect(fila.enviadoEn).not.toBeNull();
+    expect(JSON.stringify(fila.payload)).not.toContain('autorizo');
+  });
+
+  it('CAN6 — Unas opciones inválidas se rechazan al encolar y no dejan filas', async () => {
+    const arrancado = await crearAplicacion(chatwootFalso);
+    app = arrancado.app;
+    const salidaCanal = app.get<SalidaCanal>(SALIDA_CANAL);
+    const prisma = app.get(PrismaService);
+    const idConversacion = randomUUID().slice(0, 8);
+
+    await expect(
+      salidaCanal.enviarMensajes({
+        idConversacion,
+        idRespuesta: 'r1',
+        mensajes: [{ tipo: 'botones', texto: 'hola', opciones: ['a', 'b', 'c', 'd'] }],
+      }),
+    ).rejects.toThrow(/entre 1 y 3/);
+    expect(await prisma.outbox.count({ where: { claveIdempotencia: { contains: idConversacion } } })).toBe(0);
+  });
+
   it.each([
     ['la marca vuelve en content_attributes', false],
     ['Chatwoot descarta content_attributes y la marca solo viaja en el nombre del adjunto', true],

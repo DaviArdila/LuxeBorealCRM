@@ -40,4 +40,10 @@ export {
   type TipoContenidoTurno,
 } from './puertos/generador-respuesta.js';
 export type { CanalConversacion } from './puertos/repositorio-conversacion.js';
-export type { PasoImagen, PasoRespuesta, PasoTexto } from './puertos/salida-conversacion.js';
+export type { PasoBotones, PasoImagen, PasoRespuesta, PasoTexto } from './puertos/salida-conversacion.js';
+export {
+  MAX_OPCIONES_BOTONES,
+  MAX_TITULO_BOTON,
+  OpcionesBotonesInvalidas,
+  validarOpcionesBotones,
+} from '../canales/index.js';

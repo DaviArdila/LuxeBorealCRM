@@ -50,6 +50,40 @@ describe('AdaptadorCanalChatwoot (unitario, D9/D12/D13/D15)', () => {
     ]);
   });
 
+  it('CAN6 — enviarBotones hace POST input_select con los títulos como items y la marca junto a ellos', async () => {
+    const cliente = new ClienteChatwootFalso();
+    const adaptador = adaptadorCon(cliente);
+
+    await adaptador.enviarBotones('42', '¿Autorizas?', ['Sí, autorizo', 'No autorizo'], 'canal:mensaje:42:r1:00');
+
+    expect(cliente.llamadasPost).toEqual([
+      {
+        idConversacion: '42',
+        sufijo: 'messages',
+        cuerpo: {
+          message_type: 'outgoing',
+          content: '¿Autorizas?',
+          content_type: 'input_select',
+          content_attributes: {
+            luxe_clave: 'canal:mensaje:42:r1:00',
+            items: [
+              { title: 'Sí, autorizo', value: 'Sí, autorizo' },
+              { title: 'No autorizo', value: 'No autorizo' },
+            ],
+          },
+        },
+      },
+    ]);
+  });
+
+  it('CAN6 — enviarBotones rechaza opciones inválidas antes de llamar a Chatwoot', async () => {
+    const cliente = new ClienteChatwootFalso();
+    const adaptador = adaptadorCon(cliente);
+
+    await expect(adaptador.enviarBotones('42', 'hola', ['a', 'b', 'c', 'd'], 'm')).rejects.toThrow(/entre 1 y 3/);
+    expect(cliente.llamadasPost).toEqual([]);
+  });
+
   it('CAN6 — cambiarEstado traduce cada estado propio al status de Chatwoot vía toggle_status', async () => {
     const cliente = new ClienteChatwootFalso();
     const adaptador = adaptadorCon(cliente);

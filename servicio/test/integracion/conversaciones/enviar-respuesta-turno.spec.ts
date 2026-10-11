@@ -43,6 +43,13 @@ class EnviarRespuestaTurnoSinImagen extends EnviarRespuestaTurno {
   }
 }
 
+/** Fuerza que el canal no admita botones, para probar la degradación a texto sin depender del perfil real. */
+class EnviarRespuestaTurnoSinBotones extends EnviarRespuestaTurno {
+  protected override admiteBotones(): boolean {
+    return false;
+  }
+}
+
 let modulo: TestingModule | undefined;
 
 afterEach(async () => {
@@ -53,6 +60,7 @@ afterEach(async () => {
 async function crearContexto(): Promise<{
   enviarRespuestaTurno: EnviarRespuestaTurno;
   enviarSinImagen: EnviarRespuestaTurno;
+  enviarSinBotones: EnviarRespuestaTurno;
   prisma: PrismaService;
   salidaCanal: SalidaCanalDoble;
 }> {
@@ -114,6 +122,7 @@ async function crearContexto(): Promise<{
   return {
     enviarRespuestaTurno: new EnviarRespuestaTurno(repositorio, salidaCanal),
     enviarSinImagen: new EnviarRespuestaTurnoSinImagen(repositorio, salidaCanal),
+    enviarSinBotones: new EnviarRespuestaTurnoSinBotones(repositorio, salidaCanal),
     prisma,
     salidaCanal,
   };
@@ -220,5 +229,45 @@ describe('EnviarRespuestaTurno (T6, integración, R5, D10)', () => {
     ]);
 
     expect(salidaCanal.llamadas[0]?.mensajes).toEqual([{ tipo: 'texto', texto: 'mira este modelo' }]);
+  });
+
+  it('Botones — un paso de botones sale como mensaje de botones por el punto único, en su orden', async () => {
+    const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarRespuestaTurno.enviar(idConv, 'resp-bot', [
+      { paso: 'p1', tipo: 'botones', texto: '¿Autorizas? Responde SÍ o NO.', opciones: ['Sí, autorizo', 'No autorizo'] },
+    ]);
+
+    expect(salidaCanal.llamadas[0]).toMatchObject({
+      requiereEstado: 'bot',
+      mensajes: [{ tipo: 'botones', texto: '¿Autorizas? Responde SÍ o NO.', opciones: ['Sí, autorizo', 'No autorizo'] }],
+    });
+  });
+
+  it('Botones — un canal sin botones recibe el texto con las opciones numeradas', async () => {
+    const { enviarSinBotones, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarSinBotones.enviar(idConv, 'resp-sin-bot', [
+      { paso: 'p1', tipo: 'botones', texto: '¿Autorizas?', opciones: ['Sí, autorizo', 'No autorizo'] },
+    ]);
+
+    expect(salidaCanal.llamadas[0]?.mensajes).toEqual([
+      { tipo: 'texto', texto: '¿Autorizas?\n\n1. Sí, autorizo\n2. No autorizo' },
+    ]);
+  });
+
+  it('Botones — unas opciones inválidas degradan a texto en vez de perder el mensaje', async () => {
+    const { enviarRespuestaTurno, prisma, salidaCanal } = await crearContexto();
+    const idConv = await crearConversacion(prisma, 'bot');
+
+    await enviarRespuestaTurno.enviar(idConv, 'resp-inv', [
+      { paso: 'p1', tipo: 'botones', texto: '¿Autorizas?', opciones: ['Un título que supera los veinte caracteres'] },
+    ]);
+
+    expect(salidaCanal.llamadas[0]?.mensajes).toEqual([
+      { tipo: 'texto', texto: '¿Autorizas?\n\n1. Un título que supera los veinte caracteres' },
+    ]);
   });
 });

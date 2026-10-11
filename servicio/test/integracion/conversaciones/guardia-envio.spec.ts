@@ -30,6 +30,10 @@ class AdaptadorCanalFalso implements AdaptadorCanal {
     if (this.enviados.length === 1) await this.despuesDelPrimerEnvio?.();
   }
 
+  enviarBotones(): Promise<void> {
+    return Promise.resolve();
+  }
+
   enviarImagen(): Promise<void> {
     return Promise.resolve();
   }

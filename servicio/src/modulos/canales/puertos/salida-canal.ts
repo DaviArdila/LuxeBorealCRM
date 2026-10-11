@@ -18,11 +18,14 @@ export const SALIDA_CANAL = Symbol('SALIDA_CANAL');
 /**
  * Mensaje saliente propio del dominio (CAN6). La imagen se expresa con la clave del objeto en el
  * almacenamiento (MED1) y una leyenda opcional, nunca con bytes ni URLs: los bytes se leen recién al
- * publicar (D5 de la 07b), así la fila del outbox sigue siendo pequeña.
+ * publicar (D5 de la 07b), así la fila del outbox sigue siendo pequeña. `botones` es un texto con de 1 a 3
+ * opciones de respuesta (títulos de hasta 20 caracteres, sin repetirse); el canal que no los soporta no debe
+ * recibirlos: quien arma la solicitud los degrada a texto (`enumerarOpciones`).
  */
 export type MensajeSaliente =
   | { readonly tipo: 'texto'; readonly texto: string }
-  | { readonly tipo: 'imagen'; readonly claveObjeto: string; readonly leyenda?: string };
+  | { readonly tipo: 'imagen'; readonly claveObjeto: string; readonly leyenda?: string }
+  | { readonly tipo: 'botones'; readonly texto: string; readonly opciones: readonly string[] };
 
 /**
  * `idRespuesta` MUST ser estable entre reintentos de quien llama (D11): identifica una secuencia
