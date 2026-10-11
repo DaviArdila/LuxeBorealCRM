@@ -1,6 +1,6 @@
 /**
  * La lista cerrada de casos del sistema (CAS4, D2 de la Fase 12): los textos que el **código** envía solo, sin pasar
- * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco y el ADR-0028 le suma los cuatro textos de la barrera de consentimiento: «Contra entrega», «Sin cobertura de envío» y la captura completa
+ * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco y el ADR-0028 le suma los cuatro textos de la barrera de consentimiento y los dos títulos de sus botones: «Contra entrega», «Sin cobertura de envío» y la captura completa
  * son casos de uso del dueño; el aviso de datos es el caso «Tratamiento de datos»; los dos traspasos los reemplaza el aviso
  * al asesor. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
  * conserva el que tiene guardado. Es la única
@@ -16,6 +16,11 @@ export interface DefinicionCasoSistema {
   readonly categoriaInicial: 'Sistema' | 'Políticas';
   readonly disparador: 'evento' | 'intencion';
   readonly textoRespaldo: string;
+  /**
+   * Tope de caracteres del texto cuando el caso es un dato con un límite del canal, no un mensaje: los títulos de los botones
+   * de WhatsApp (20, Meta). Lo exigen la edición (`validarCaso`) y quien lo lee, que cae al respaldo si lo supera.
+   */
+  readonly maximoCaracteres?: number;
 }
 
 export const CASOS_DEL_SISTEMA = [
@@ -101,6 +106,28 @@ export const CASOS_DEL_SISTEMA = [
     textoRespaldo:
       'Entendido, no guardaremos tus datos. Sin tu autorización no podemos continuar la conversación por aquí. Si cambias de idea, responde SÍ y con gusto te atendemos.',
   },
+  {
+    // Títulos de los botones de respuesta del aviso y del recordatorio. El clic llega como el título (Chatwoot descarta el
+    // id), así que la política entiende lo que el dueño edite aquí. Límite de Meta: 20 caracteres.
+    clave: 'consentimiento_boton_si',
+    titulo: 'Botón «Sí» del aviso de datos',
+    descripcion:
+      'Título del botón con el que el contacto autoriza el tratamiento de datos, en el aviso y el recordatorio. Máximo 20 caracteres; no debe repetir el del botón «No».',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo: 'Sí, autorizo',
+    maximoCaracteres: 20,
+  },
+  {
+    clave: 'consentimiento_boton_no',
+    titulo: 'Botón «No» del aviso de datos',
+    descripcion:
+      'Título del botón con el que el contacto rechaza el tratamiento de datos, en el aviso y el recordatorio. Máximo 20 caracteres; no debe repetir el del botón «Sí».',
+    categoriaInicial: 'Sistema',
+    disparador: 'evento',
+    textoRespaldo: 'No autorizo',
+    maximoCaracteres: 20,
+  },
 ] as const satisfies readonly DefinicionCasoSistema[];
 
 /** Las categorías con las que nace el asistente y su orden (CAS6); también donde se crea un caso del sistema que falte. */
@@ -123,4 +150,10 @@ export function definicionDe(clave: ClaveSistema): DefinicionCasoSistema {
   const definicion = CASOS_DEL_SISTEMA.find((caso) => caso.clave === clave);
   if (definicion === undefined) throw new Error(`clave del sistema desconocida: ${clave}`);
   return definicion;
+}
+
+/** El tope de caracteres del texto de una clave que lo declara (títulos de botones), o `undefined`; acepta cualquier clave. */
+export function maximoDeCaracteres(clave: string | null): number | undefined {
+  const definiciones: readonly DefinicionCasoSistema[] = CASOS_DEL_SISTEMA;
+  return definiciones.find((definicion) => definicion.clave === clave)?.maximoCaracteres;
 }

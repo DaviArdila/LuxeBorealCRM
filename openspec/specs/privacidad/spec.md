@@ -127,14 +127,23 @@ respuesta MUST repetir el aviso o el recordatorio y no registrar nada. Quien rec
 leer o registrar el estado, el sistema MUST fallar cerrado: responde el recordatorio y no llama al modelo. Los audios, imágenes y
 stickers MUST seguir resolviéndose por R12 sin llegar al modelo. Los textos MUST ser casos del sistema editables (R15) y la
 barrera MUST NOT escribir contenido de mensajes en logs (R14). Es la primera línea de defensa; la puerta de AGT26 se conserva.
+El aviso y el recordatorio MUST salir con dos botones de respuesta («Sí, autorizo» y «No autorizo», datos editables de hasta 20
+caracteres) y MUST conservar «Responde SÍ o NO» en el cuerpo como respaldo; un clic llega como el título del botón y MUST
+entenderse como SÍ o NO.
 
-Fase que lo implementa: consentimiento-obligatorio (ADR-0028)
+Fase que lo implementa: consentimiento-obligatorio (ADR-0028); botones de WhatsApp
 
 #### Scenario: Un contacto nuevo recibe el aviso y no llega al modelo
 
 - Dado un contacto sin respuesta de consentimiento,
 - Cuando escribe cualquier mensaje distinto de SÍ o NO,
 - Entonces recibe el aviso con la pregunta «Responde SÍ o NO» y el modelo no se llama.
+
+#### Scenario: El aviso sale con botones y el clic se entiende
+
+- Dado un contacto sin respuesta en un canal que admite botones,
+- Cuando recibe el aviso y pulsa «Sí, autorizo» (le llega al sistema como ese texto),
+- Entonces el aviso salió con los botones «Sí, autorizo» y «No autorizo», y el clic registra la aceptación.
 
 #### Scenario: Un sí registra la aceptación y confirma
 

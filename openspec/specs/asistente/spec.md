@@ -126,12 +126,15 @@ Fase que lo implementa: 12
 
 Los casos que el **código** dispara solo, porque el LLM no puede o no debe hablar, MUST ser una lista cerrada en
 `asistente/dominio/sistema.ts`, cada uno con su clave, su descripción de cuándo se envía y su texto de respaldo. La lista MUST
-contener exactamente nueve casos: `mensaje_pedir_texto_audio` («Audio recibido»), `mensaje_imagen_no_procesada` («Imagen sin
+contener exactamente once casos: `mensaje_pedir_texto_audio` («Audio recibido»), `mensaje_imagen_no_procesada` («Imagen sin
 texto»), `mensaje_error_llm` («Falla técnica del modelo»), `mensaje_techo_gasto` («Techo de gasto alcanzado») y
 `mensaje_espera_handoff` («Espera del asesor»: lo que el cliente lee mientras la conversación espera a un asesor tras una falla
 técnica, el techo de gasto o el tope de turnos) y los cuatro de la barrera de consentimiento (ADR-0028, AGT29):
 `consentimiento_aviso` («Aviso de tratamiento de datos»), `consentimiento_recordatorio`, `consentimiento_aceptado` y
-`consentimiento_rechazado`. Un caso con clave del sistema MUST poder editarse (texto, categoría, título y
+`consentimiento_rechazado`, más los títulos de los botones del aviso, `consentimiento_boton_si` y `consentimiento_boton_no`
+(texto de respaldo «Sí, autorizo» y «No autorizo»). Un caso que declara un tope de caracteres (los dos títulos de botón: 20,
+el límite de WhatsApp) MUST rechazar al editarse un texto más largo o de más de una línea, nombrando la regla y sin copiar el
+texto. Un caso con clave del sistema MUST poder editarse (texto, categoría, título y
 «cuándo aplica») y MUST NOT borrarse ni desactivarse. El título MUST seguir siendo único (CAS1) aunque se edite: el código
 encuentra el caso por su clave, nunca por su título. La API MUST NOT permitir crear un caso con una clave del sistema ni cambiar
 la clave de uno existente: una situación nueva necesita código que la detecte. Siempre MUST existir un texto para cada clave: el
@@ -140,7 +143,7 @@ guardado, o el de respaldo si falta.
 (Previously: la lista tenía once casos —los diez mensajes fijos más `contra_entrega`—, incluidos el aviso de datos, los dos
 traspasos, la captura completa, la falta de cobertura y la contra entrega.)
 
-Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligatorio (nueve casos)
+Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligatorio (nueve casos); botones de WhatsApp (once)
 
 #### Scenario: Los casos del sistema existen después de sembrar
 

@@ -48,6 +48,20 @@ instrucción, porque el sistema reconoce la respuesta por el texto (sí, si, ace
 base nueva, el aviso toma tu texto de `aviso_datos` si existía; en una base ya migrada nace con el texto de respaldo y lo
 cambias desde el admin. El caso de uso «Tratamiento de datos» queda como respaldo del modelo.
 
+**Los botones del aviso** (Botones de WhatsApp). En WhatsApp el aviso y el recordatorio salen con dos botones de respuesta,
+«Sí, autorizo» y «No autorizo»; «Responde SÍ o NO» se queda en el texto como respaldo. En los demás canales (y en el inbox local
+de pruebas) no hay botones: el mensaje sale con las opciones numeradas debajo (`1. Sí, autorizo`, `2. No autorizo`) y se
+contesta con el número o con el texto. Los títulos son dos casos del sistema que editas como los demás: «Botón «Sí» del aviso de
+datos» y «Botón «No» del aviso de datos» (campo «Texto»). Reglas:
+
+- **Máximo 20 caracteres** y una sola línea (límite de Meta). Si guardas uno más largo, el admin lo rechaza diciendo el límite;
+  si de algún modo llegara uno inválido, el bot usa los títulos de respaldo en vez de cortarlo.
+- **Los dos títulos no pueden ser iguales** (sin contar mayúsculas): si lo son, rigen los de respaldo.
+- **El clic llega como texto con el título del botón**, no como un identificador: el bot entiende lo que escribas aquí aunque
+  no sea «sí» o «no» (por ejemplo «Claro que sí»). Por eso conviene que cada título diga claramente su sentido.
+- Un cambio rige sin desplegar, como cualquier otro caso del sistema.
+- Los botones solo existen en la conversación de WhatsApp oficial (Cloud API); Chatwoot no los admite en otros canales.
+
 **Qué pasó con el aviso de datos y los traspasos** (Fase 12d). La lista de casos del sistema bajó de once a cinco. En una base
 que ya existía, la migración `20261009140000_casos_del_sistema_minimos` hizo esto, una sola vez y sin perder tu texto:
 

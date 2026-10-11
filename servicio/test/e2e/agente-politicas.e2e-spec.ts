@@ -134,16 +134,20 @@ interface Entrante {
   readonly idContacto: number;
   readonly idMensaje: number;
   readonly adjunto?: TipoAdjunto;
+  /** `conversation.channel` de Chatwoot; por defecto el del fixture (`Channel::Api`, el inbox local de pruebas). */
+  readonly canalChatwoot?: string;
 }
 
 async function enviarWebhook(app: INestApplication, entrante: Entrante): Promise<void> {
   const fixture = cargarFixtureChatwoot('mensaje-creado-entrante-texto.json');
   const evento = JSON.parse(fixture.rawBody.toString('utf8')) as Record<string, unknown>;
   const conversacion = evento['conversation'] as {
+    channel: string;
     id: number;
     contact_inbox: { contact_id: number; source_id: string };
   };
   conversacion.id = entrante.idConversacion;
+  if (entrante.canalChatwoot !== undefined) conversacion.channel = entrante.canalChatwoot;
   conversacion.contact_inbox.contact_id = entrante.idContacto;
   conversacion.contact_inbox.source_id = `57300${String(entrante.idContacto)}`;
   evento['id'] = entrante.idMensaje;
@@ -321,6 +325,57 @@ describe('Agente: políticas deterministas de punta a punta (T7 de la Fase 07a; 
     const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
     expect(mensajes[0]).toBe('Claro, ¿de qué material?');
     expect(mensajes[1]).toBe('Perfecto, oro.');
+  }, 40_000);
+
+  it('Botones — En WhatsApp el aviso de datos llega a Chatwoot como botones y el clic (el título) registra la aceptación', async () => {
+    const aplicacion = await arrancar();
+    const { idConversacion, idContacto } = nuevaConversacion();
+    const prisma = aplicacion.get(PrismaService);
+    await prisma.contacto.create({ data: { chatwootContactId: idContacto } });
+    const primero = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola, busco un anillo');
+
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero, canalChatwoot: 'Channel::Whatsapp' });
+
+    await esperarMensajes(chatwootFalso, idConversacion, 1);
+    const [aviso] = chatwootFalso
+      .llamadasRegistradas()
+      .filter((l) => l.metodo === 'POST' && l.ruta.endsWith(`/conversations/${String(idConversacion)}/messages`))
+      .map((l) => l.cuerpo as { content: string; content_type?: string; content_attributes?: { items?: unknown } });
+    expect(aviso?.content).toMatch(/Responde SÍ o NO/);
+    expect(aviso?.content_type).toBe('input_select');
+    expect(aviso?.content_attributes?.items).toEqual([
+      { title: 'Sí, autorizo', value: 'Sí, autorizo' },
+      { title: 'No autorizo', value: 'No autorizo' },
+    ]);
+
+    const segundo = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), segundo, 'Sí, autorizo');
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo, canalChatwoot: 'Channel::Whatsapp' });
+
+    const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
+    expect(mensajes[1]).toMatch(/quedó registrada tu autorización/);
+    const contacto = await prisma.contacto.findFirstOrThrow({ where: { chatwootContactId: idContacto } });
+    expect(contacto.consentimientoDatosEn).not.toBeNull();
+  }, 40_000);
+
+  it('Botones — En un canal sin botones el aviso llega como texto con las opciones numeradas y el número responde', async () => {
+    const aplicacion = await arrancar();
+    const { idConversacion, idContacto } = nuevaConversacion();
+    const prisma = aplicacion.get(PrismaService);
+    await prisma.contacto.create({ data: { chatwootContactId: idContacto } });
+    const primero = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), primero, 'Hola');
+
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: primero });
+
+    const [aviso] = await esperarMensajes(chatwootFalso, idConversacion, 1);
+    expect(aviso).toMatch(/Responde SÍ o NO\.\n\n1\. Sí, autorizo\n2\. No autorizo$/);
+    const segundo = nuevoIdMensaje();
+    chatwootFalso.programarTextoDeMensaje(String(idConversacion), segundo, '2');
+    await enviarWebhook(aplicacion, { idConversacion, idContacto, idMensaje: segundo });
+    const mensajes = await esperarMensajes(chatwootFalso, idConversacion, 2);
+    expect(mensajes[1]).toMatch(/no guardaremos tus datos/);
   }, 40_000);
 
   it('R13 — Tope de turnos alcanzado: responde con el texto de espera y pasa a handoff_pendiente', async () => {

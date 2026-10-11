@@ -1,3 +1,4 @@
+import { maximoDeCaracteres } from './sistema.js';
 import { contieneMarcadorDePlantilla, contieneSku, contieneValorEnPesos } from '../../../compartido/texto/index.js';
 
 /** Topes de un caso (CAS5): constantes de código, como el del estilo (ADR-0020); subirlos no invalida nada guardado. */
@@ -46,6 +47,13 @@ export function validarCaso(caso: DatosCaso): ResultadoValidacionCaso {
   }
   if (texto.length > MAX_CARACTERES_TEXTO_CASO) {
     return { valido: false, motivo: `el texto supera ${String(MAX_CARACTERES_TEXTO_CASO)} caracteres` };
+  }
+  const maximo = maximoDeCaracteres(caso.claveSistema);
+  if (maximo !== undefined && texto.length > maximo) {
+    return { valido: false, motivo: `el texto de este botón supera ${String(maximo)} caracteres (límite de WhatsApp)` };
+  }
+  if (maximo !== undefined && /[\r\n]/.test(texto)) {
+    return { valido: false, motivo: 'el texto de este botón tiene más de una línea' };
   }
   if (contieneValorEnPesos(texto)) {
     return { valido: false, motivo: 'el texto contiene un valor en pesos (R1, R2)' };

@@ -1535,8 +1535,13 @@ de un contacto sin aceptar MUST dejar pasar a R12 (que no llama al modelo); una 
 respuestas MUST NOT consumir turnos de la sesión (R13), MUST salir por el punto único de salida (R5) y sus textos MUST salir de
 los casos del sistema `consentimiento_aviso`, `consentimiento_recordatorio`, `consentimiento_aceptado` y
 `consentimiento_rechazado` (R15). El aviso MUST heredar el texto que el dueño ya editó en `aviso_datos` al sembrar.
+El aviso y el recordatorio MUST devolverse como un paso `botones` (CNV16) con los títulos de los casos del sistema
+`consentimiento_boton_si` y `consentimiento_boton_no` (máximo 20 caracteres, sin repetirse); si los guardados no cumplen,
+MUST regir los de respaldo («Sí, autorizo», «No autorizo»). Además de las frases conocidas, un texto igual (normalizado) al
+título vigente de un botón MUST contar como ese botón, porque el clic llega como el título. La confirmación y la negativa
+siguen siendo texto.
 
-Fase que lo implementa: consentimiento-obligatorio (ADR-0028)
+Fase que lo implementa: consentimiento-obligatorio (ADR-0028); botones de WhatsApp
 
 #### Scenario: Un contacto pendiente no llega al modelo
 
@@ -1549,6 +1554,13 @@ Fase que lo implementa: consentimiento-obligatorio (ADR-0028)
 - Dado un contacto sin respuesta,
 - Cuando responde «sí», «no» o una frase ambigua,
 - Entonces se registra la aceptación, se registra el rechazo o se repite el aviso, respectivamente.
+
+#### Scenario: Los botones usan los títulos del dueño o los de respaldo
+
+- Dado un contacto pendiente y títulos de botón editados,
+- Cuando el motor evalúa su turno,
+- Entonces el aviso lleva esos títulos si caben en 20 caracteres y no se repiten, y si no, los de respaldo; y escribir el
+  título vigente de un botón cuenta como pulsarlo.
 
 #### Scenario: Falla cerrado
 

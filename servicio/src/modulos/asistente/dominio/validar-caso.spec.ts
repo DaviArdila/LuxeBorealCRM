@@ -17,6 +17,28 @@ function motivoDe(cambios: Partial<DatosCaso>): string | null {
   return resultado.valido ? null : resultado.motivo;
 }
 
+describe('validarCaso: título de un botón del sistema', () => {
+  const BOTON: DatosCaso = { ...BASE, disparador: 'evento', claveSistema: 'consentimiento_boton_si', texto: 'Sí, autorizo' };
+
+  it('un título de hasta 20 caracteres es válido', () => {
+    expect(validarCaso({ ...BOTON, texto: 'x'.repeat(20) })).toEqual({ valido: true });
+  });
+
+  it('un título de más de 20 caracteres se rechaza y nombra el tope, no el texto', () => {
+    const resultado = validarCaso({ ...BOTON, texto: 'x'.repeat(21) });
+
+    expect(resultado).toEqual({ valido: false, motivo: 'el texto de este botón supera 20 caracteres (límite de WhatsApp)' });
+  });
+
+  it('un título con salto de línea se rechaza: un botón es una sola línea', () => {
+    expect(validarCaso({ ...BOTON, texto: 'Sí\nautorizo' })).toMatchObject({ valido: false });
+  });
+
+  it('el mismo texto largo sí es válido en un caso del sistema sin tope', () => {
+    expect(validarCaso({ ...BOTON, claveSistema: 'consentimiento_aviso', texto: 'x'.repeat(100) })).toEqual({ valido: true });
+  });
+});
+
 describe('validarCaso (CAS5)', () => {
   it('un caso correcto es válido', () => {
     expect(validarCaso(BASE)).toEqual({ valido: true });

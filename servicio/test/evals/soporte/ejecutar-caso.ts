@@ -71,7 +71,14 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma, versionC
       mensajes: turno.mensajes.map((mensaje, i) => ({ idMensaje: `${caso.id}-${String(indice)}-${String(i)}`, ...mensaje })),
     };
     const respuesta = await generador.generar(solicitud);
-    const texto = respuesta.pasos.flatMap((paso) => (paso.tipo === 'texto' ? [paso.texto] : [])).join('\n');
+    // Un paso de botones se evalúa como lo ve el cliente: el cuerpo y, debajo, los títulos de los botones.
+    const texto = respuesta.pasos
+      .flatMap((paso) => {
+        if (paso.tipo === 'texto') return [paso.texto];
+        if (paso.tipo === 'botones') return [`${paso.texto}\nBotones: ${paso.opciones.join(' | ')}`];
+        return [];
+      })
+      .join('\n');
     const grabacion = grabador.grabacion(texto, respuesta.handoff?.motivo ?? null, respuesta.aviso?.motivo ?? null);
     resultados.push(...evaluarAserciones(grabacion, turno.aserciones));
   }

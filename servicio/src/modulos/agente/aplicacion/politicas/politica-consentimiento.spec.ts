@@ -30,13 +30,22 @@ function crear(estado: 'pendiente' | 'aceptado' | 'rechazado' = 'pendiente') {
   if (estado === 'rechazado') void contactos.registrarConsentimiento('contacto-1', false);
   contactos.registros = 0;
   const textos = new TextosAsistenteEnMemoria();
-  return { politica: new PoliticaConsentimiento(contactos, textos), contactos };
+  return { politica: new PoliticaConsentimiento(contactos, textos), contactos, textos };
 }
 
 function texto(clave: string) {
   return {
     decision: 'responder',
     respuesta: { pasos: [{ paso: expect.any(String) as string, tipo: 'texto', texto: `[${clave}]` }] },
+    cuentaTurno: false,
+  };
+}
+
+/** El aviso y el recordatorio salen con los dos botones (los títulos del respaldo cuando el dato no es válido). */
+function conBotones(clave: string, opciones: readonly string[] = ['Sí, autorizo', 'No autorizo']) {
+  return {
+    decision: 'responder',
+    respuesta: { pasos: [{ paso: expect.any(String) as string, tipo: 'botones', texto: `[${clave}]`, opciones }] },
     cuentaTurno: false,
   };
 }
@@ -52,14 +61,14 @@ describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento (ADR-00
   it('AGT29 — Un contacto pendiente recibe el aviso y el modelo no interviene', async () => {
     const { politica, contactos } = crear('pendiente');
 
-    await expect(politica.evaluar(solicitud('hola, cuánto cuesta el collar?'))).resolves.toEqual(texto('consentimiento_aviso'));
+    await expect(politica.evaluar(solicitud('hola, cuánto cuesta el collar?'))).resolves.toEqual(conBotones('consentimiento_aviso'));
     expect(contactos.registros).toBe(0);
   });
 
   it('AGT29 — Un contacto que rechazó recibe el recordatorio', async () => {
     const { politica } = crear('rechazado');
 
-    await expect(politica.evaluar(solicitud('hola otra vez'))).resolves.toEqual(texto('consentimiento_recordatorio'));
+    await expect(politica.evaluar(solicitud('hola otra vez'))).resolves.toEqual(conBotones('consentimiento_recordatorio'));
   });
 
   it.each(['sí', 'Si', 'SÍ.', ' acepto ', '1', 'ok', 'Sí, acepto', 'siii'])('AGT29 — «%s» registra la aceptación y confirma', async (respuesta) => {
@@ -86,7 +95,7 @@ describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento (ADR-00
   it('AGT29 — Una respuesta ambigua repite el aviso y no registra nada', async () => {
     const { politica, contactos } = crear('pendiente');
 
-    await expect(politica.evaluar(solicitud('claro, pero antes dime el precio'))).resolves.toEqual(texto('consentimiento_aviso'));
+    await expect(politica.evaluar(solicitud('claro, pero antes dime el precio'))).resolves.toEqual(conBotones('consentimiento_aviso'));
     expect(contactos.registros).toBe(0);
   });
 
@@ -100,14 +109,14 @@ describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento (ADR-00
     const { politica, contactos } = crear('aceptado');
     contactos.fallo = new Error('base caída');
 
-    await expect(politica.evaluar(solicitud('hola'))).resolves.toEqual(texto('consentimiento_recordatorio'));
+    await expect(politica.evaluar(solicitud('hola'))).resolves.toEqual(conBotones('consentimiento_recordatorio'));
   });
 
   it('AGT29 — Si falla el registro del sí no confirma y no pasa al modelo', async () => {
     const { politica, contactos } = crear('pendiente');
     contactos.registrarConsentimiento = () => Promise.reject(new Error('base caída'));
 
-    await expect(politica.evaluar(solicitud('sí'))).resolves.toEqual(texto('consentimiento_recordatorio'));
+    await expect(politica.evaluar(solicitud('sí'))).resolves.toEqual(conBotones('consentimiento_recordatorio'));
   });
 
   it.each<TipoContenidoTurno>(['audio', 'imagen', 'sticker'])('R12 — Un %s de un contacto sin aceptar lo resuelve R12, sin modelo', async (tipo) => {
@@ -119,6 +128,47 @@ describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento (ADR-00
   it('AGT29 — Una ubicación sola de un contacto sin aceptar recibe el recordatorio-aviso', async () => {
     const { politica } = crear('pendiente');
 
-    await expect(politica.evaluar(solicitud('ubicacion'))).resolves.toEqual(texto('consentimiento_aviso'));
+    await expect(politica.evaluar(solicitud('ubicacion'))).resolves.toEqual(conBotones('consentimiento_aviso'));
+  });
+
+  it.each(['Sí, autorizo', 'No autorizo'])('Botones — el clic «%s» (llega como el título del botón) se entiende', async (titulo) => {
+    const { politica, contactos } = crear('pendiente');
+
+    await politica.evaluar(solicitud(titulo));
+
+    await expect(contactos.consentimientoDe('contacto-1')).resolves.toBe(titulo === 'Sí, autorizo' ? 'aceptado' : 'rechazado');
+  });
+
+  it('Botones — usa los títulos editados por el dueño y también entiende el clic con esos títulos', async () => {
+    const { politica, textos, contactos } = crear('pendiente');
+    textos.textos.set('consentimiento_boton_si', 'Claro que sí');
+    textos.textos.set('consentimiento_boton_no', 'Prefiero que no');
+
+    await expect(politica.evaluar(solicitud('hola'))).resolves.toEqual(
+      conBotones('consentimiento_aviso', ['Claro que sí', 'Prefiero que no']),
+    );
+    await politica.evaluar(solicitud('Claro que sí'));
+    await expect(contactos.consentimientoDe('contacto-1')).resolves.toBe('aceptado');
+  });
+
+  it('Botones — un título editado de más de 20 caracteres cae al título de respaldo', async () => {
+    const { politica, textos } = crear('pendiente');
+    textos.textos.set('consentimiento_boton_si', 'Sí, autorizo el tratamiento de mis datos');
+
+    await expect(politica.evaluar(solicitud('hola'))).resolves.toEqual(conBotones('consentimiento_aviso'));
+  });
+
+  it('Botones — dos títulos iguales caen a los de respaldo en vez de repetir botones', async () => {
+    const { politica, textos } = crear('pendiente');
+    textos.textos.set('consentimiento_boton_si', 'Ok');
+    textos.textos.set('consentimiento_boton_no', 'ok');
+
+    await expect(politica.evaluar(solicitud('hola'))).resolves.toEqual(conBotones('consentimiento_aviso'));
+  });
+
+  it('Botones — la confirmación y la negativa salen como texto, sin botones', async () => {
+    const { politica } = crear('pendiente');
+
+    await expect(politica.evaluar(solicitud('no'))).resolves.toEqual(texto('consentimiento_rechazado'));
   });
 });
