@@ -2,7 +2,8 @@
  * La lista cerrada de casos del sistema (CAS4, D2 de la Fase 12): los textos que el **código** envía solo, sin pasar
  * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco; el ADR-0028 le suma los cuatro textos de la barrera de consentimiento y los dos títulos de sus botones (once en total): «Contra entrega», «Sin cobertura de envío» y la captura completa
  * son casos de uso del dueño; el aviso de datos es `consentimiento_aviso`, que envía la barrera (el caso de intención «Tratamiento de datos» se retiró de la semilla); los dos traspasos los reemplaza el aviso
- * al asesor. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
+ * al asesor. En la API de un caso del sistema solo se edita el texto (CAS4): título, categoría, «cuándo aplica» y modo quedan
+ * fijos, porque el código lo dispara por su clave. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
  * conserva el que tiene guardado. Es la única
  * lista que el código necesita: una situación nueva exige código que la detecte, así que no se crea desde la API. Los
  * demás módulos importan la clave de aquí; el texto de respaldo (el del prototipo, P31, o el aprobado por el negocio)

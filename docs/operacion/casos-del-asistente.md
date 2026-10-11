@@ -13,7 +13,7 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
 | **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
-| **Caso del sistema** | Un texto que el código envía en una situación fija. Son once: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor, los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) y los dos títulos de sus botones («Sí» y «No») | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
+| **Caso del sistema** | Un texto que el código envía en una situación fija. Son once: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor, los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) y los dos títulos de sus botones («Sí» y «No») | Tú editas solo el texto; título, categoría y «cuándo aplica» quedan fijos porque el código lo dispara por su clave. La lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
@@ -61,7 +61,7 @@ así que redáctalo pensando en una espera humana y no solo en un error.
 **Los botones del aviso** (Botones de WhatsApp). En WhatsApp el aviso y el recordatorio salen con dos botones de respuesta,
 «Sí, autorizo» y «No autorizo»; «Responde SÍ o NO» se queda en el texto como respaldo. En los demás canales (y en el inbox local
 de pruebas) no hay botones: el mensaje sale con las opciones numeradas debajo (`1. Sí, autorizo`, `2. No autorizo`) y se
-contesta con el número o con el texto. Los títulos son dos casos del sistema que editas como los demás: «Botón «Sí» del aviso de
+contesta con el número o con el texto. Los títulos son dos casos del sistema, y como en todos ellos solo editas el texto: «Botón «Sí» del aviso de
 datos» y «Botón «No» del aviso de datos» (campo «Texto»). Reglas:
 
 - **Máximo 20 caracteres** y una sola línea (límite de Meta). Si guardas uno más largo, el admin lo rechaza diciendo el límite;
@@ -121,7 +121,7 @@ Fase 12d los dejó como casos de intención con tu texto: no hace falta crearlos
 | Título | 1 a 80 caracteres; único sin distinguir mayúsculas ni acentos (es con lo que el bot lo pide) |
 | «Cuándo aplica» | Obligatorio; hasta 200 caracteres en un caso de intención |
 | Texto | 1 a 1.200 caracteres; sin valores en pesos, sin SKU y sin marcadores `{{…}}` |
-| Del sistema | Se edita, pero no se borra, no se desactiva y su clave no cambia; solo modo `literal` |
+| Del sistema | Solo se edita el texto: título, categoría, «cuándo aplica» y modo no cambian (`422 caso-invalido`), no se borra, no se desactiva y su clave no cambia; siempre `literal` |
 | Inactivo | Sigue existiendo, pero no llega al bot ni a su índice |
 
 Un texto que incumple una regla se rechaza con el motivo y **sin copiar el texto**.
@@ -160,7 +160,7 @@ En el back office (`Asistente › Casos de uso`, solo `admin`) los casos se ven 
 contador. El buscador espera 300 ms tras la última tecla y consulta al servidor; los filtros de categoría y tipo también.
 «Nuevo caso» y «Editar» abren una ventana con categoría, título, «cuándo aplica», texto, modo y activo; el motivo de un
 rechazo aparece dentro de la ventana y lo escrito se conserva. Un caso del sistema lleva la etiqueta «Sistema», muestra
-cuándo se envía y permite editar texto, categoría, título y «cuándo aplica»: no tiene «Borrar», «Activo» ni modo. Un caso inactivo se ve
+cuándo se envía y permite editar solo el texto (categoría, título y «cuándo aplica» salen deshabilitados): no tiene «Borrar», «Activo» ni modo. Un caso inactivo se ve
 atenuado con la etiqueta «Inactivo». Abajo, «Categorías» permite crear, renombrar, subir, bajar y borrar (una con casos no
 se borra: la pantalla dice por qué).
 
@@ -174,7 +174,7 @@ memoria. Si Redis falla en ese momento, el caso queda guardado igual y los demá
 | Síntoma | Qué mirar |
 |---|---|
 | `409 caso-modificado` al guardar | Otro admin lo editó; vuelve a leer el caso (`obtenerCaso`) y aplica tu cambio sobre el actual |
-| `422 caso-invalido` | El motivo dice la regla rota (pesos, SKU, plantilla, vacío, largo o modo guía en un caso del sistema) |
+| `422 caso-invalido` | El motivo dice la regla rota (pesos, SKU, plantilla, vacío, largo, o cambiar en un caso del sistema algo que no sea el texto) |
 | `409 categoria-con-casos` | Mueve o borra los casos de la categoría primero |
 | El bot no usa un caso nuevo | Revisa que esté activo, que sea de intención y que su «cuándo aplica» describa la pregunta del cliente |
 | El bot sigue con el texto anterior | Espera hasta 5 minutos y revisa que Redis esté arriba |
