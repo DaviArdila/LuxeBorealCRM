@@ -8,13 +8,11 @@ import { VERSION_ASISTENTE, type VersionAsistente } from '../puertos/version-asi
 export interface ResultadoSemilla {
   readonly insertados: number;
   readonly existentes: number;
-  /** Con qué texto se planificaron los casos iniciales (CAS13), solo cantidades: nunca el texto (R14). */
-  readonly origenesDeTexto?: { readonly casoDelSistema: number; readonly parametro: number; readonly respaldo: number };
 }
 
 /**
- * Siembra las categorías «Sistema» y «Políticas» y los casos de hoy (CAS6): los cinco del sistema, con el texto que ya haya
- * en `parametro` o el de respaldo, «Tratamiento de datos» (CAS13) y un caso de intención por cada política existente. Nunca modifica un caso que ya
+ * Siembra las categorías «Sistema» y «Políticas» y los casos de hoy (CAS6): los del sistema, con el texto que ya haya
+ * en `parametro` o el de respaldo, y un caso de intención por cada política existente (sin «Tratamiento de datos», CAS13). Nunca modifica un caso que ya
  * existe, retira de `parametro` las filas que copió en la misma transacción y es idempotente. Informa solo cantidades:
  * ningún texto sale por pantalla ni por logs (R14).
  */
@@ -48,11 +46,6 @@ export class SembrarCasos {
         this.logger.warn({ evento: 'asistente.version-compartida-no-actualizada' });
       }
     }
-    const origen = (valor: 'caso-del-sistema' | 'parametro' | 'respaldo') => plan.casos.filter((caso) => caso.origenTexto === valor).length;
-    return {
-      insertados,
-      existentes: plan.casos.length - insertados,
-      origenesDeTexto: { casoDelSistema: origen('caso-del-sistema'), parametro: origen('parametro'), respaldo: origen('respaldo') },
-    };
+    return { insertados, existentes: plan.casos.length - insertados };
   }
 }

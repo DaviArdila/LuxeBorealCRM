@@ -54,13 +54,8 @@ export async function ejecutarSembrarCasos(
     }
   }
   try {
-    const { insertados, existentes, origenesDeTexto } = await dependencias.sembrar.ejecutar(contenido);
-    const origenes =
-      insertados > 0 && origenesDeTexto !== undefined
-        ? `
-texto inicial de «Tratamiento de datos»: ${String(origenesDeTexto.casoDelSistema)} del caso aviso_datos, ${String(origenesDeTexto.parametro)} de parametro, ${String(origenesDeTexto.respaldo)} de respaldo`
-        : '';
-    const casos = `casos:sembrar: ${String(insertados)} insertados, ${String(existentes)} ya existían.${origenes}`;
+    const { insertados, existentes } = await dependencias.sembrar.ejecutar(contenido);
+    const casos = `casos:sembrar: ${String(insertados)} insertados, ${String(existentes)} ya existían.`;
     try {
       const estilo = await dependencias.sembrarEstilo.ejecutar(await dependencias.leerEstiloInicial());
       const lineaEstilo = estilo.sembrado ? `estilo: sembrado v${String(estilo.version)}` : 'estilo: ya existía';
@@ -80,7 +75,7 @@ estilo: no se pudo sembrar: ${(error as Error).message}` };
 class ContextoSembrarCasos {}
 
 /**
- * Comando `npm run casos:sembrar` (CAS6): crea las categorías «Sistema» y «Políticas», los casos del sistema, «Tratamiento de datos» (CAS13)
+ * Comando `npm run casos:sembrar` (CAS6): crea las categorías «Sistema» y «Políticas», los casos del sistema
  * y un caso por cada política de `parametro`, retirando de `parametro` lo que copió. Con `--archivo <ruta.json>` suma los casos de
  * desarrollo de ese archivo. Además siembra el estilo inicial del bot como versión 1 solo si `version_estilo` no tiene
  * ninguna versión (EST-D6). Idempotente; nunca pisa un caso ni un estilo existente.

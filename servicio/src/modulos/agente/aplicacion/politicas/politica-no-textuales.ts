@@ -15,7 +15,7 @@ function responderTexto(paso: string, texto: string, extra?: Pick<RespuestaTurno
 
 /**
  * R12 (D6 de la Fase 07a): primera política del pipeline. Aplica la tabla de `decidirNoTextuales` al
- * turno completo y, si no es texto, responde con textos que salen de `parametro` (AGT3, R15) sin
+ * turno completo y, si no es texto, responde con textos que salen de `caso_asistente` (AGT3, R15) sin
  * llegar al LLM. Un audio repetido en la misma sesión vuelve a pedir texto y pide avisar al asesor con el motivo
  * `audio-repetido`; la conversación sigue en `bot` (CNV13).
  */

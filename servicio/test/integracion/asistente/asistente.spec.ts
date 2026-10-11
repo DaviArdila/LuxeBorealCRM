@@ -104,7 +104,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length + 1, existentes: 0 });
+    expect(resultado).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length, existentes: 0 });
     const casos = await prisma.casoAsistente.findMany({ where: { claveSistema: { not: null } }, include: { categoria: true } });
     expect(casos).toHaveLength(CASOS_DEL_SISTEMA.length);
     for (const caso of casos) {
@@ -138,9 +138,9 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length + 1 + 3, existentes: 0 });
+    expect(resultado).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length + 3, existentes: 0 });
     const politicas = await prisma.casoAsistente.findMany({
-      where: { claveSistema: null, titulo: { not: 'Tratamiento de datos' } },
+      where: { claveSistema: null },
       include: { categoria: true },
       orderBy: { titulo: 'asc' },
     });
@@ -168,21 +168,13 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     await prisma.parametro.delete({ where: { clave: 'llm_techo_mensual_usd' } });
   });
 
-  it('CAS13 — Una base nueva tiene un solo caso de uso inicial: «Tratamiento de datos», sin clave del sistema', async () => {
+  it('CAS13 — Una base nueva no tiene ningún caso de intención: «Tratamiento de datos» ya no se siembra', async () => {
     const { sembrar, prisma } = await crearContexto();
 
     await sembrar.ejecutar();
 
-    const deIntencion = await prisma.casoAsistente.findMany({ where: { claveSistema: null }, include: { categoria: true } });
-    expect(deIntencion).toHaveLength(1);
-    expect(deIntencion[0]).toMatchObject({
-      titulo: 'Tratamiento de datos',
-      disparador: 'intencion',
-      modo: 'guia',
-      activo: true,
-      categoria: { nombre: 'Políticas' },
-    });
-    expect(deIntencion[0]?.texto).toMatch(/asistente automatizado/i);
+    expect(await prisma.casoAsistente.count({ where: { claveSistema: null } })).toBe(0);
+    expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(0);
   });
 
   it('CAS6 — Sembrar no crea casos de negocio ni vuelve a crear como del sistema los tres convertidos', async () => {
@@ -200,28 +192,18 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     expect(claves).not.toContain('mensaje_captura_completa');
   });
 
-  it('CAS13 — Con aviso_datos todavía en parametro, «Tratamiento de datos» nace con ese texto y lo retira', async () => {
+  it('CAS13 — Con aviso_datos todavía en parametro, el aviso de la barrera hereda ese texto y no nace «Tratamiento de datos»', async () => {
     const { sembrar, prisma } = await crearContexto();
     await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Texto del negocio. ¿Aceptas?', actualizado: instante } });
-
-    await sembrar.ejecutar();
-
-    const caso = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
-    expect(caso.texto).toBe('Texto del negocio. ¿Aceptas?');
-    expect(await prisma.parametro.findUnique({ where: { clave: 'aviso_datos' } })).toBeNull();
-  });
-
-  it('CAS13 — La semilla es idempotente con «Tratamiento de datos» y no vuelve a crear el caso del sistema aviso_datos', async () => {
-    const { sembrar, prisma } = await crearContexto();
-    await prisma.parametro.create({ data: { clave: 'aviso_datos', valor: 'Texto viejo de parametro. ¿Aceptas?', actualizado: instante } });
 
     const primera = await sembrar.ejecutar();
     const segunda = await sembrar.ejecutar();
 
-    expect(primera).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length + 1, origenesDeTexto: { casoDelSistema: 0, parametro: 1, respaldo: 0 } });
+    expect(primera).toMatchObject({ insertados: CASOS_DEL_SISTEMA.length });
     expect(segunda.insertados).toBe(0);
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'consentimiento_aviso' } })).texto).toBe('Texto del negocio. ¿Aceptas?');
     expect(await prisma.casoAsistente.count({ where: { claveSistema: 'aviso_datos' } })).toBe(0);
-    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe('Texto viejo de parametro. ¿Aceptas?');
+    expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(0);
   });
 
   it('CAS14 — La semilla antes de la migración no pierde el texto editado de aviso_datos', async () => {
@@ -245,8 +227,9 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     await sembrar.ejecutar();
 
-    const sembrado = await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } });
+    const sembrado = await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'consentimiento_aviso' } });
     expect(sembrado.texto).toBe(TEXTO);
+    expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(0);
     expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'aviso_datos' } })).texto).toBe(TEXTO);
 
     const cliente = new Client({ connectionString: urlPostgresDePrueba() });
@@ -258,8 +241,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
     }
 
     expect(await prisma.casoAsistente.count({ where: { claveSistema: 'aviso_datos' } })).toBe(0);
-    expect((await prisma.casoAsistente.findFirstOrThrow({ where: { titulo: 'Tratamiento de datos' } })).texto).toBe(TEXTO);
-    expect(await prisma.casoAsistente.count({ where: { titulo: 'Tratamiento de datos' } })).toBe(1);
+    expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'consentimiento_aviso' } })).texto).toBe(TEXTO);
   });
 
   it('CAS6 — Sembrar dos veces no pisa una edición e informa que no insertó casos nuevos', async () => {
@@ -270,7 +252,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
 
     const resultado = await sembrar.ejecutar();
 
-    expect(resultado).toMatchObject({ insertados: 0, existentes: CASOS_DEL_SISTEMA.length + 1 });
+    expect(resultado).toMatchObject({ insertados: 0, existentes: CASOS_DEL_SISTEMA.length });
     expect((await prisma.casoAsistente.findUniqueOrThrow({ where: { claveSistema: 'mensaje_techo_gasto' } })).texto).toBe('EDITADO-EN-LA-PANTALLA');
     // La fila que reapareció no se copió, así que no se retira.
     expect(await prisma.parametro.findUnique({ where: { clave: 'mensaje_techo_gasto' } })).not.toBeNull();
@@ -310,7 +292,7 @@ describe('SembrarCasos (Fase 12, T4, integración)', () => {
       leerEstiloInicial: () => Promise.resolve('# Estilo\n'),
     });
 
-    expect(informe).toEqual({ limpio: true, mensaje: `casos:sembrar: ${String(CASOS_DEL_SISTEMA.length + 1)} insertados, 0 ya existían.\ntexto inicial de «Tratamiento de datos»: 0 del caso aviso_datos, 0 de parametro, 1 de respaldo\nestilo: ya existía` });
+    expect(informe).toEqual({ limpio: true, mensaje: `casos:sembrar: ${String(CASOS_DEL_SISTEMA.length)} insertados, 0 ya existían.\nestilo: ya existía` });
     for (const espia of espiados) expect(JSON.stringify(espia.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
     expect(JSON.stringify(salida.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
   });
@@ -364,7 +346,7 @@ describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', ()
 
     const indice = await casos.indice();
 
-    expect(indice.map((e) => e.titulo)).toEqual(['Garantía', 'Tratamiento de datos']);
+    expect(indice.map((e) => e.titulo)).toEqual(['Garantía']);
     expect(indice[0]).toEqual({ titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.' });
     expect(JSON.stringify(indice)).not.toContain('Cubre ocho días');
   });
@@ -376,7 +358,7 @@ describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', ()
 
     const indice = await casos.indice();
 
-    expect(indice.map((e) => e.titulo)).toEqual(['Tratamiento de datos']);
+    expect(indice).toEqual([]);
     for (const definicion of CASOS_DEL_SISTEMA) expect(indice.map((e) => e.titulo)).not.toContain(definicion.titulo);
   });
 

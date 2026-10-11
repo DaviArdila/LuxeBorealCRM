@@ -1,7 +1,7 @@
 /**
  * La lista cerrada de casos del sistema (CAS4, D2 de la Fase 12): los textos que el **código** envía solo, sin pasar
- * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco y el ADR-0028 le suma los cuatro textos de la barrera de consentimiento y los dos títulos de sus botones: «Contra entrega», «Sin cobertura de envío» y la captura completa
- * son casos de uso del dueño; el aviso de datos es el caso «Tratamiento de datos»; los dos traspasos los reemplaza el aviso
+ * por el LLM. En la Fase 12d (CAS4, CAS14) quedó en cinco; el ADR-0028 le suma los cuatro textos de la barrera de consentimiento y los dos títulos de sus botones (once en total): «Contra entrega», «Sin cobertura de envío» y la captura completa
+ * son casos de uso del dueño; el aviso de datos es `consentimiento_aviso`, que envía la barrera (el caso de intención «Tratamiento de datos» se retiró de la semilla); los dos traspasos los reemplaza el aviso
  * al asesor. El código ya no lee esas claves. El título de respaldo de un caso nuevo es el de aquí; una base existente
  * conserva el que tiene guardado. Es la única
  * lista que el código necesita: una situación nueva exige código que la detecte, así que no se crea desde la API. Los

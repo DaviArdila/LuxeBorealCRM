@@ -8,8 +8,8 @@ import { SembrarCasos } from './sembrar-casos.js';
 
 // CAS6 (Fase 12, T4): el caso de uso solo orquesta; la transacción real se prueba contra Postgres.
 
-/** Una base nueva recibe los casos del sistema y «Tratamiento de datos» (CAS13), nada más (12d). */
-const BASE = CASOS_DEL_SISTEMA.length + 1;
+/** Una base nueva recibe solo los casos del sistema (CAS13): ningún caso de intención. */
+const BASE = CASOS_DEL_SISTEMA.length;
 
 class RepositorioSemillaFalso implements RepositorioSemilla {
   planes: PlanSemilla[] = [];
@@ -69,19 +69,13 @@ describe('asistente/aplicacion — SembrarCasos (CAS6)', () => {
     expect(repositorio.planes[0]?.casos).toHaveLength(BASE + 1);
   });
 
-  it('CAS13 — Informa con qué texto se planificó «Tratamiento de datos», solo en cantidades', async () => {
-    const delCaso = crear({}, 1, 'TEXTO-DEL-DUEÑO ¿Aceptas?');
-    const deParametro = crear({ aviso_datos: 'TEXTO-DE-PARAMETRO ¿Aceptas?' }, 1);
-    const deRespaldo = crear({}, 1);
+  it('CAS13 — El resultado informa solo cantidades, sin orígenes de texto ni textos', async () => {
+    const { sembrar } = crear({ aviso_datos: 'TEXTO-DE-PARAMETRO ¿Aceptas?' }, 1, 'TEXTO-DEL-DUEÑO ¿Aceptas?');
 
-    const a = await delCaso.sembrar.ejecutar();
-    const b = await deParametro.sembrar.ejecutar();
-    const c = await deRespaldo.sembrar.ejecutar();
+    const resultado = await sembrar.ejecutar();
 
-    expect(a.origenesDeTexto).toEqual({ casoDelSistema: 1, parametro: 0, respaldo: 0 });
-    expect(b.origenesDeTexto).toEqual({ casoDelSistema: 0, parametro: 1, respaldo: 0 });
-    expect(c.origenesDeTexto).toEqual({ casoDelSistema: 0, parametro: 0, respaldo: 1 });
-    expect(JSON.stringify(a)).not.toContain('TEXTO-DEL-DUEÑO');
+    expect(Object.keys(resultado).sort()).toEqual(['existentes', 'insertados']);
+    expect(JSON.stringify(resultado)).not.toContain('TEXTO-DEL-DUEÑO');
   });
 
   it('sube la versión compartida solo si insertó algo', async () => {
