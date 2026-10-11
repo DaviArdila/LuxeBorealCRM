@@ -36,7 +36,8 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma, versionC
     data: {
       chatwootContactId: 800_000 + secuencia * 7 + Math.floor(Math.random() * 5),
       nombre: caso.contacto?.nombre ?? null,
-      ...(caso.contacto?.consentimiento === 'aceptado' ? { consentimientoDatosEn: new Date('2026-10-09T10:00:00.000Z') } : {}),
+      // ADR-0028: la barrera de consentimiento corta antes del modelo, así que un caso sin `consentimiento` parte de un contacto que ya aceptó.
+      ...((caso.contacto?.consentimiento ?? 'aceptado') === 'aceptado' ? { consentimientoDatosEn: new Date('2026-10-09T10:00:00.000Z') } : {}),
       ...(caso.contacto?.consentimiento === 'rechazado' ? { consentimientoRechazadoEn: new Date('2026-10-09T10:00:00.000Z') } : {}),
     },
   });

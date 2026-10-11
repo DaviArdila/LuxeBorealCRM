@@ -12,24 +12,24 @@ mínimo, redactado.
 ### Requirement: R14 — Datos personales
 
 Antes de guardar datos personales del cliente (nombre completo, dirección, localidad o teléfono alterno) o de registrar un
-lead, el sistema MUST contar con la aceptación del tratamiento de datos de ese contacto (PRV1). Sin ella, el bot MUST seguir
-respondiendo información general y MUST NOT guardar ningún dato ni registrar ningún lead. Los logs MUST NOT incluir contenido
+lead, el sistema MUST contar con la aceptación del tratamiento de datos de ese contacto (PRV1). Sin ella, el bot MUST NOT
+conversar con el modelo (PRV7, ADR-0028) y, como defensa en profundidad, las herramientas MUST NOT guardar ningún dato ni registrar ningún lead. Los logs MUST NOT incluir contenido
 de mensajes, números de teléfono completos, cédula ni correo. El contenido de los mensajes MUST NOT persistirse en la base
 propia (vive en Chatwoot): el inbox de eventos MUST guardar el evento entrante **redactado** — solo ids, tipo de evento y
 metadatos, nunca el texto del mensaje ni adjuntos. Al reprocesar un evento, el sistema MUST releer el contenido desde la API
 de Chatwoot en vez de leerlo del payload persistido. El resumen de un lead (`lead.resumen`) MUST NOT incluir datos personales
 (teléfono, cédula, correo ni dirección).
 
-(Previously: el primer mensaje del bot MUST incluir un aviso de que es un asistente automatizado y de cómo se usan los datos;
+(Previously: sin aceptación el bot seguía respondiendo información general y solo bloqueaba guardar datos; antes de eso, el primer mensaje del bot MUST incluir un aviso de que es un asistente automatizado y de cómo se usan los datos;
 el cliente no aceptaba nada y sus datos se guardaban igual.)
 
-Fase que lo implementa: todas; 12d (consentimiento en lugar del aviso fijo)
+Fase que lo implementa: todas; 12d (consentimiento en lugar del aviso fijo); consentimiento-obligatorio (barrera previa al modelo)
 
 #### Scenario: Sin aceptar no se guardan datos personales
 
 - Dado un contacto que todavía no aceptó el tratamiento de datos,
-- Cuando el bot intenta guardar su nombre y su dirección,
-- Entonces no se guarda ningún dato, el bot recibe que falta el consentimiento y sigue respondiendo información general.
+- Cuando una herramienta intenta guardar su nombre y su dirección,
+- Entonces no se guarda ningún dato y la herramienta devuelve que falta el consentimiento (la barrera de PRV7 ya impide que el modelo converse con él).
 
 #### Scenario: Con la aceptación los datos se guardan
 
@@ -116,3 +116,58 @@ Fase que lo implementa: 12d
 - Dado un contacto que acepta,
 - Cuando se inspeccionan los logs del turno,
 - Entonces no contienen el texto de su mensaje ni su teléfono completo.
+
+### Requirement: PRV7 — Sin aceptar el tratamiento de datos, el contacto no conversa con el modelo
+
+Todo contacto con consentimiento pendiente o rechazado MUST recibir un texto fijo de autorización y MUST NOT llegar al modelo
+hasta aceptar. Un contacto pendiente MUST recibir el aviso, que lo presenta como asistente automatizado, informa para qué se usan
+sus datos y pide responder SÍ o NO; uno que rechazó MUST recibir un recordatorio con la misma pregunta. Un SÍ MUST registrar la
+aceptación (PRV1) y confirmar; un NO MUST registrar el rechazo y decir que sin autorización no se puede continuar; cualquier otra
+respuesta MUST repetir el aviso o el recordatorio y no registrar nada. Quien rechazó MAY aceptar después con un SÍ. Si no se puede
+leer o registrar el estado, el sistema MUST fallar cerrado: responde el recordatorio y no llama al modelo. Los audios, imágenes y
+stickers MUST seguir resolviéndose por R12 sin llegar al modelo. Los textos MUST ser casos del sistema editables (R15) y la
+barrera MUST NOT escribir contenido de mensajes en logs (R14). Es la primera línea de defensa; la puerta de AGT26 se conserva.
+
+Fase que lo implementa: consentimiento-obligatorio (ADR-0028)
+
+#### Scenario: Un contacto nuevo recibe el aviso y no llega al modelo
+
+- Dado un contacto sin respuesta de consentimiento,
+- Cuando escribe cualquier mensaje distinto de SÍ o NO,
+- Entonces recibe el aviso con la pregunta «Responde SÍ o NO» y el modelo no se llama.
+
+#### Scenario: Un sí registra la aceptación y confirma
+
+- Dado un contacto sin respuesta,
+- Cuando responde «sí», «acepto» o «1»,
+- Entonces queda con la aceptación fechada, recibe la confirmación y el siguiente mensaje sigue el flujo normal.
+
+#### Scenario: Un no registra el rechazo y no continúa
+
+- Dado un contacto sin respuesta,
+- Cuando responde «no» o «2»,
+- Entonces queda con el rechazo fechado y recibe que sin su autorización no se puede continuar.
+
+#### Scenario: Quien rechazó recibe el recordatorio y puede aceptar después
+
+- Dado un contacto que rechazó,
+- Cuando vuelve a escribir algo distinto de SÍ,
+- Entonces recibe el recordatorio y el modelo no se llama; si responde «sí», queda con la aceptación y sin rechazo.
+
+#### Scenario: Una respuesta ambigua repite el aviso
+
+- Dado un contacto sin respuesta,
+- Cuando responde «claro, pero antes dime el precio»,
+- Entonces no se registra nada y recibe de nuevo el aviso.
+
+#### Scenario: Si falla la lectura del estado no pasa al modelo
+
+- Dado que leer el consentimiento del contacto falla,
+- Cuando el contacto escribe,
+- Entonces recibe el recordatorio y el modelo no se llama.
+
+#### Scenario: Un contacto que ya aceptó pasa al modelo
+
+- Dado un contacto que aceptó,
+- Cuando escribe,
+- Entonces la barrera lo deja pasar sin escribir nada.

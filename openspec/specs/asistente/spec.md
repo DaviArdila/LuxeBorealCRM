@@ -126,10 +126,12 @@ Fase que lo implementa: 12
 
 Los casos que el **código** dispara solo, porque el LLM no puede o no debe hablar, MUST ser una lista cerrada en
 `asistente/dominio/sistema.ts`, cada uno con su clave, su descripción de cuándo se envía y su texto de respaldo. La lista MUST
-contener exactamente cinco casos: `mensaje_pedir_texto_audio` («Audio recibido»), `mensaje_imagen_no_procesada` («Imagen sin
+contener exactamente nueve casos: `mensaje_pedir_texto_audio` («Audio recibido»), `mensaje_imagen_no_procesada` («Imagen sin
 texto»), `mensaje_error_llm` («Falla técnica del modelo»), `mensaje_techo_gasto` («Techo de gasto alcanzado») y
 `mensaje_espera_handoff` («Espera del asesor»: lo que el cliente lee mientras la conversación espera a un asesor tras una falla
-técnica, el techo de gasto o el tope de turnos). Un caso con clave del sistema MUST poder editarse (texto, categoría, título y
+técnica, el techo de gasto o el tope de turnos) y los cuatro de la barrera de consentimiento (ADR-0028, AGT29):
+`consentimiento_aviso` («Aviso de tratamiento de datos»), `consentimiento_recordatorio`, `consentimiento_aceptado` y
+`consentimiento_rechazado`. Un caso con clave del sistema MUST poder editarse (texto, categoría, título y
 «cuándo aplica») y MUST NOT borrarse ni desactivarse. El título MUST seguir siendo único (CAS1) aunque se edite: el código
 encuentra el caso por su clave, nunca por su título. La API MUST NOT permitir crear un caso con una clave del sistema ni cambiar
 la clave de uno existente: una situación nueva necesita código que la detecte. Siempre MUST existir un texto para cada clave: el
@@ -138,13 +140,13 @@ guardado, o el de respaldo si falta.
 (Previously: la lista tenía once casos —los diez mensajes fijos más `contra_entrega`—, incluidos el aviso de datos, los dos
 traspasos, la captura completa, la falta de cobertura y la contra entrega.)
 
-Fase que lo implementa: 12; 12d (de once a cinco casos)
+Fase que lo implementa: 12; 12d (de once a cinco casos); consentimiento-obligatorio (nueve casos)
 
 #### Scenario: Los casos del sistema existen después de sembrar
 
 - Dado una base recién migrada,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces existen cinco casos con clave del sistema, cada uno con el texto de respaldo de su clave.
+- Entonces existen nueve casos con clave del sistema, cada uno con el texto de respaldo de su clave.
 
 #### Scenario: Un caso del sistema se edita
 
@@ -242,8 +244,8 @@ Fase que lo implementa: 12
 
 ### Requirement: CAS6 — La semilla carga los casos de hoy sin pisar lo editado
 
-`npm run casos:sembrar` MUST crear, de forma idempotente, las categorías «Sistema» y «Políticas», los cinco casos del
-sistema (con el texto que ya haya en `parametro` bajo su clave y, si no hay, el de respaldo), el caso de uso inicial
+`npm run casos:sembrar` MUST crear, de forma idempotente, las categorías «Sistema» y «Políticas», los nueve casos del
+sistema (con el texto que ya haya en `parametro` bajo su clave y, si no hay, el de respaldo; el aviso de consentimiento hereda además el texto que el dueño editó en `aviso_datos`), el caso de uso inicial
 «Tratamiento de datos» de CAS13 y un caso de intención por cada fila `politica_<tema>` de `parametro`. MUST NOT crear ningún otro
 caso de negocio (contra entrega, cobertura, captura, fotos, envío, ubicación, saludo): esos los crea el dueño. El caso inicial
 MUST crearse solo si no existe ya un caso con ese título (sin distinguir mayúsculas ni acentos). Después de crear un
@@ -301,7 +303,7 @@ Fase que lo implementa: 12; 12d (cinco casos del sistema y un solo caso de uso i
 ### Requirement: CAS7 — Un único puerto entrega el texto de un caso del sistema, y rige al instante
 
 `asistente` MUST exportar un puerto `TextosAsistente` con `textoDelSistema(clave)` que MUST devolver siempre un texto
-(nunca lanzar): el del caso si existe y no está vacío, y si no el de respaldo del código. La clave MUST ser una de las cinco de
+(nunca lanzar): el del caso si existe y no está vacío, y si no el de respaldo del código. La clave MUST ser una de las nueve de
 CAS4. Los módulos `agente`, `conversaciones` y `llm` MUST pedir sus textos al cliente por ese puerto y MUST NOT leer
 `parametro` para obtener un texto. El puerto MUST guardar una copia en memoria mientras la versión compartida en Redis no
 cambie (el mismo mecanismo que el estilo, AGT19); toda escritura de un caso o categoría MUST subir esa versión, y un caso
@@ -582,7 +584,7 @@ Fase que lo implementa: 12d
 
 - Dado una base recién migrada sin ningún caso,
 - Cuando se corre `npm run casos:sembrar`,
-- Entonces existen los cinco casos del sistema y un solo caso de intención, «Tratamiento de datos», sin clave del sistema.
+- Entonces existen los nueve casos del sistema y un solo caso de intención, «Tratamiento de datos», sin clave del sistema.
 
 #### Scenario: «Tratamiento de datos» es editable y borrable
 

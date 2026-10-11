@@ -13,7 +13,7 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
 | **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
-| **Caso del sistema** | Un texto que el código envía en una situación fija. Son cinco: audio, imagen, falla técnica del modelo, techo de gasto y espera del asesor | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
+| **Caso del sistema** | Un texto que el código envía en una situación fija. Son nueve: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor y los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) | Tú lo editas (texto, categoría, título y «cuándo aplica»); la lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
@@ -21,7 +21,7 @@ El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»]
 
 ## Cargar los casos de hoy (una vez)
 
-`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los cinco casos del sistema (con el texto que ya
+`npm run casos:sembrar` crea las categorías «Sistema» y «Políticas», los nueve casos del sistema (con el texto que ya
 hubiera en `parametro` o, si no, el de respaldo), el caso de uso «Tratamiento de datos» y un caso de intención por cada política `politica_<tema>` que hubiera.
 Es idempotente: nunca pisa un caso ya creado ni editado. Informa solo cuántos casos insertó y cuántos ya existían.
 
@@ -39,6 +39,14 @@ crees; mientras no existan, el bot no tiene esa conducta y, si el cliente pregun
 asesor. La cotización de envío (`cotizar_envio`) devuelve solo datos (rango, días, si hay contra entrega, o que no hay
 cobertura) y el bot consulta tu caso con `consultar_caso`. Si tu caso de contra entrega o de cobertura sigue ahí, nada cambia
 para el cliente salvo que ahora lo cita el bot en vez de pegarlo el código.
+
+**La autorización de datos es una barrera, no una sugerencia al modelo** (ADR-0028). Un contacto que aún no respondió o que
+rechazó no llega al modelo: recibe el «Aviso de tratamiento de datos» (o el «Recordatorio» si ya rechazó) y solo avanza al
+responder **SÍ**. Con **NO** recibe «Tratamiento de datos rechazado» y puede aceptar después. Los cuatro textos se editan
+como cualquier caso del sistema y todos piden «Responde SÍ o NO»: si reescribes el aviso o el recordatorio, conserva esa
+instrucción, porque el sistema reconoce la respuesta por el texto (sí, si, acepto, autorizo, 1, ok / no, no acepto, 2). En una
+base nueva, el aviso toma tu texto de `aviso_datos` si existía; en una base ya migrada nace con el texto de respaldo y lo
+cambias desde el admin. El caso de uso «Tratamiento de datos» queda como respaldo del modelo.
 
 **Qué pasó con el aviso de datos y los traspasos** (Fase 12d). La lista de casos del sistema bajó de once a cinco. En una base
 que ya existía, la migración `20261009140000_casos_del_sistema_minimos` hizo esto, una sola vez y sin perder tu texto:

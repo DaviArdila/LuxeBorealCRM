@@ -1444,6 +1444,9 @@ Fase que lo implementa: 12d
 
 ### Requirement: AGT27 — El bot pide la aceptación con el caso «Tratamiento de datos» antes de tomar datos
 
+Desde ADR-0028 la primera vía es la barrera de AGT29: un contacto sin aceptar ya no llega al modelo, así que este requisito
+rige solo como respaldo (por ejemplo, si el estado cambia a mitad de la conversación).
+
 El contexto del turno MUST informar al modelo, como un hecho, el estado del consentimiento del contacto (aceptó, rechazó o sin
 respuesta). La conducta de pedir la aceptación MUST venir del caso de uso «Tratamiento de datos» (el único caso de negocio que
 se siembra, CAS13): su «cuándo aplica» nombra la señal (vas a tomar datos de despacho o a registrar el interés de compra y el
@@ -1518,3 +1521,49 @@ Fase que lo implementa: 12d
 - Dado una conversación con el asesor avisado y un cliente que pide apartar el producto, en la eval guionada,
 - Cuando el modelo responde,
 - Entonces informa el producto y dice que el asesor confirma el apartado, sin afirmar que quedó apartado.
+
+### Requirement: AGT29 — Barrera de consentimiento antes del modelo
+
+`PoliticaConsentimiento` MUST ser la primera política del pipeline (AGT1), antes de los mensajes no textuales (R12), el tope de
+turnos y `ContenidoLlm`. Con el consentimiento aceptado MUST dejar pasar sin escribir nada. Con el consentimiento pendiente o
+rechazado MUST responder sin llamar al modelo, según PRV7: el aviso (pendiente) o el recordatorio (rechazado) para cualquier
+mensaje que no sea SÍ ni NO, la confirmación con el registro de la aceptación para un SÍ y la negativa con el registro del
+rechazo para un NO. El SÍ y el NO MUST reconocerse sobre el último texto de la ráfaga, normalizado (sin acentos, mayúsculas ni
+signos), por frase completa: «sí», «si», «acepto», «autorizo», «1», «ok» y similares son SÍ; «no», «2», «no acepto» y similares son
+NO. Si falla la lectura o el registro del estado, MUST responder el recordatorio y no pasar al modelo. Un audio, imagen o sticker
+de un contacto sin aceptar MUST dejar pasar a R12 (que no llama al modelo); una ubicación sola MUST recibir el aviso. Sus
+respuestas MUST NOT consumir turnos de la sesión (R13), MUST salir por el punto único de salida (R5) y sus textos MUST salir de
+los casos del sistema `consentimiento_aviso`, `consentimiento_recordatorio`, `consentimiento_aceptado` y
+`consentimiento_rechazado` (R15). El aviso MUST heredar el texto que el dueño ya editó en `aviso_datos` al sembrar.
+
+Fase que lo implementa: consentimiento-obligatorio (ADR-0028)
+
+#### Scenario: Un contacto pendiente no llega al modelo
+
+- Dado un contacto sin respuesta de consentimiento,
+- Cuando el motor evalúa su turno,
+- Entonces responde el aviso con «Responde SÍ o NO», no cuenta turno y no llama a las políticas siguientes.
+
+#### Scenario: Sí, no y ambiguo
+
+- Dado un contacto sin respuesta,
+- Cuando responde «sí», «no» o una frase ambigua,
+- Entonces se registra la aceptación, se registra el rechazo o se repite el aviso, respectivamente.
+
+#### Scenario: Falla cerrado
+
+- Dado que la lectura del consentimiento falla,
+- Cuando el contacto escribe,
+- Entonces recibe el recordatorio y el turno no pasa al modelo.
+
+#### Scenario: Los mensajes no textuales siguen en R12
+
+- Dado un contacto sin aceptar que envía un audio, una imagen o un sticker,
+- Cuando el motor evalúa su turno,
+- Entonces la barrera deja pasar a R12 y el modelo no se llama.
+
+#### Scenario: Los textos son casos del sistema
+
+- Dado que se siembra el asistente en una base con `aviso_datos` editado,
+- Cuando se planifica la semilla,
+- Entonces el aviso nace con ese texto y los otros tres textos con su respaldo.

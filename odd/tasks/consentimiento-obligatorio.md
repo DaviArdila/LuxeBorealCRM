@@ -14,7 +14,7 @@ tests y evals. Sin cambios al esquema de datos.
 - [x] T1 ADR (propuesta) que reabre la alternativa B del ADR-0027 + nota en PREGUNTAS_ABIERTAS. (ADR-0028 y P76; hash: ver Evidencia)
 - [x] T2 `PoliticaConsentimiento` + registro en `POLITICAS_TURNO` antes de `contenido-llm` (TDD).
 - [x] T3 Textos del aviso/recordatorio/confirmaciones como datos y siembra idempotente.
-- [ ] T4 Specs (`privacidad`, `agente`), evals y e2e ajustados.
+- [x] T4 Specs (`privacidad`, `agente`), evals y e2e ajustados.
 - [ ] T5 Batería completa local.
 
 ## Ruta
@@ -25,3 +25,4 @@ Delegada: un writer (más de 2 archivos no triviales y lectura previa a la escri
 - T1: `docs/adr/0028-consentimiento-previo-al-llm.md`, indice del README de ADR y P76 en PREGUNTAS_ABIERTAS. Passive (solo documentos): lectura estructural. Commit: ver Evidencia final.
 - T2: RED observado (politica-consentimiento.spec.ts fallaba: modulo inexistente); GREEN: `npx vitest run --project unit politica-consentimiento`: 25 pasan. Primera politica del pipeline; las 4 claves `consentimiento_*` se definen en `sistema.ts` (necesarias para compilar). `typecheck` y `eslint` limpios sobre agente/asistente. Ruta: delegada (writer unico).
 - T3: `planificarSemilla` siembra los 4 textos (idempotente por clave/titulo) y el aviso hereda `aviso_datos` (fila legada, luego parametro). `npx vitest run --project unit asistente`: 13 archivos, 156 pasan; typecheck y eslint limpios. Excepcion TDD: la implementacion se escribio antes de las pruebas de herencia (sin RED observado para T3). Nota: en una base ya migrada el texto editado vive en el caso «Tratamiento de datos»; el aviso nuevo nace con el respaldo y se edita desde el admin.
+- T4: specs `privacidad` (PRV7, R14), `agente` (AGT29, nota en AGT27) y `asistente` (CAS4: nueve casos); `docs/operacion/casos-del-asistente.md`; los 4 casos de evals de consentimiento reescritos a la barrera, el arnes de evals parte de un contacto que ya acepto salvo `consentimiento: pendiente|rechazado`; e2e: `turno()` acepta por defecto y 4 pruebas AGT29 reemplazan AGT26/LDS2/AGT25 (la puerta de herramientas sigue cubierta por `con-consentimiento.spec.ts`). Sin Docker en esta maquina: e2e y evals NO se pudieron ejecutar (solo typecheck, eslint y unit `test/evals`: 54 pasan).

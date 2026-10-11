@@ -112,8 +112,11 @@ const caso = z
     contacto: z
       .object({
         nombre: z.string().min(1).optional(),
-        /** Respuesta previa del contacto al tratamiento de datos (PRV1); sin ella nace sin respuesta. */
-        consentimiento: z.enum(['aceptado', 'rechazado']).optional(),
+        /**
+         * Respuesta previa del contacto al tratamiento de datos (PRV1). Sin este campo el contacto ya aceptó (ADR-0028: la barrera
+         * de consentimiento corta antes del modelo); `pendiente` lo deja sin respuesta para probar la barrera.
+         */
+        consentimiento: z.enum(['aceptado', 'pendiente', 'rechazado']).optional(),
       })
       .strict()
       .optional(),
