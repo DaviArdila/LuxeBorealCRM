@@ -54,6 +54,9 @@ export const CASOS_INICIALES_DE_INTENCION: readonly CasoInicial[] = [
   },
 ];
 
+/** Clave del sistema cuyo texto hereda el que el dueño ya editó para `aviso_datos` (ADR-0028). */
+const CLAVE_AVISO_CONSENTIMIENTO = 'consentimiento_aviso';
+
 const PREFIJO_POLITICA = 'politica_';
 const PATRON_TEMA = /^[a-z0-9_]+$/;
 
@@ -88,6 +91,21 @@ export function planificarSemilla(
   const delSistema: CasoPlan[] = CASOS_DEL_SISTEMA.map((definicion) => {
     const claveParametro = definicion.clave;
     const guardado = textoValido(filas.get(claveParametro));
+    // ADR-0028: el aviso de la barrera respeta el texto del dueño (aviso_datos: fila legada del sistema o parametro) antes del respaldo.
+    const delDueno = definicion.clave === CLAVE_AVISO_CONSENTIMIENTO && guardado === null ? (textoValido(textoLegadoDelAviso) ?? textoValido(filas.get(CLAVE_LEGADA_AVISO_DATOS))) : null;
+    if (delDueno !== null) {
+      return {
+        claveSistema: definicion.clave,
+        titulo: definicion.titulo,
+        cuandoAplica: definicion.descripcion,
+        disparador: definicion.disparador,
+        modo: 'literal',
+        categoria: definicion.categoriaInicial,
+        texto: delDueno,
+        // La fila de origen (aviso_datos) la retira «Tratamiento de datos», que la lee primero; este caso no la borra.
+        claveParametro: null,
+      };
+    }
     return {
       claveSistema: definicion.clave,
       titulo: definicion.titulo,
