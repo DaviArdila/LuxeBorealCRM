@@ -12,9 +12,11 @@ export function definirHerramienta<Esquema extends z.ZodType>(
   descripcion: string,
   esquema: Esquema,
   ejecutar: (argumentos: z.output<Esquema>, ctx: ContextoHerramienta) => Promise<ResultadoHerramientaAgente>,
+  opciones: { readonly concurrente?: boolean } = {},
 ): Herramienta {
   return {
     definicion: { nombre, descripcion, esquema, esquemaJson: z.toJSONSchema(esquema) },
     ejecutar: (argumentos, ctx) => ejecutar(esquema.parse(argumentos), ctx),
+    ...(opciones.concurrente === true ? { concurrente: true } : {}),
   };
 }

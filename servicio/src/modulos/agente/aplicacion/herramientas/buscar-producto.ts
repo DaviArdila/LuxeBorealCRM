@@ -28,5 +28,7 @@ export function crearBuscarProducto(buscar: BuscarProductos): Herramienta {
         efectos: [],
       };
     },
+    // Solo lee: puede correr junto a las otras concurrentes del paso.
+    { concurrente: true },
   );
 }

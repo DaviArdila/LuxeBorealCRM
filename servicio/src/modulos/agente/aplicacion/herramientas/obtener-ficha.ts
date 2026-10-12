@@ -42,5 +42,7 @@ export function crearObtenerFicha(ficha: ObtenerFichaProducto): Herramienta {
         throw error;
       }
     },
+    // Solo lee: puede correr junto a las otras concurrentes del paso.
+    { concurrente: true },
   );
 }
