@@ -2,7 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ejecutarHerramienta, IMAGEN_OASDIFF, resolverRaizRepositorio } from './herramientas.js';
+import {
+  ejecutarHerramienta,
+  entornoSinUbicacionGit,
+  IMAGEN_OASDIFF,
+  resolverRaizRepositorio,
+} from './herramientas.js';
 
 /**
  * `contrato:diff` (CI9, API10, D11 de `openspec/changes/fase-00b-ci-contrato-api/design.md`).
@@ -55,6 +60,7 @@ function resolverRamaBase(raiz: string): string | null {
     try {
       execFileSync('git', ['-C', raiz, 'rev-parse', '--verify', '--quiet', ref], {
         encoding: 'utf8',
+        env: entornoSinUbicacionGit(),
       });
       return ref;
     } catch {
@@ -72,6 +78,7 @@ function contenidoEnRamaBase(raiz: string, ref: string): string | null {
   try {
     return execFileSync('git', ['-C', raiz, 'show', `${ref}:${ARCHIVO_PUBLICO}`], {
       encoding: 'utf8',
+      env: entornoSinUbicacionGit(),
       maxBuffer: 1024 * 1024 * 32,
     });
   } catch (error) {

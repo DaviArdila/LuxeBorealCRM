@@ -20,6 +20,41 @@ export const IMAGEN_ACTIONLINT =
   'rhysd/actionlint:1.7.7@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9';
 
 /**
+ * Variables con las que git ubica el repositorio sobre el que trabaja: la salida de
+ * `git rev-parse --local-env-vars`. Git las exporta a sus hooks (`pre-push`, `commit-msg`), y con
+ * ellas puestas un `git -C <otra carpeta>` sigue apuntando al repositorio del hook.
+ */
+export const VARIABLES_UBICACION_GIT = [
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_CONFIG',
+  'GIT_CONFIG_PARAMETERS',
+  'GIT_CONFIG_COUNT',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_IMPLICIT_WORK_TREE',
+  'GIT_GRAFT_FILE',
+  'GIT_INDEX_FILE',
+  'GIT_NO_REPLACE_OBJECTS',
+  'GIT_REPLACE_REF_BASE',
+  'GIT_PREFIX',
+  'GIT_SHALLOW_FILE',
+  'GIT_COMMON_DIR',
+] as const;
+
+/**
+ * Copia de `entorno` sin `VARIABLES_UBICACION_GIT`: con ella, git ubica el repositorio solo por el
+ * `cwd` o el `-C` de la llamada. Todo `git` que lanzan estos scripts la usa.
+ */
+export function entornoSinUbicacionGit(entorno: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const limpio = { ...entorno };
+  for (const nombre of VARIABLES_UBICACION_GIT) {
+    delete limpio[nombre];
+  }
+  return limpio;
+}
+
+/**
  * Resuelve la raíz absoluta del repositorio con `git rev-parse --show-toplevel` (matriz de amenazas
  * de `tasks.md`: "Selección del repositorio git"). Nunca usa `process.cwd()` directamente ni acepta
  * la raíz por argumento del script que la llama — siempre se resuelve una vez, aquí, con git. Si se
@@ -33,6 +68,7 @@ export function resolverRaizRepositorio(directorioDesdeDondeResolver: string = p
     salida = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: directorioDesdeDondeResolver,
       encoding: 'utf8',
+      env: entornoSinUbicacionGit(),
     });
   } catch (error) {
     throw new Error(

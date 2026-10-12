@@ -3,6 +3,11 @@ import { writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { buscarSecretosEnArbol } from '../../scripts/buscar-secretos.js';
+import { aislarDeGitDelHook } from '../soporte/git-aislado.js';
+
+// Git exporta GIT_DIR a sus hooks: sin esto, `ci:hook` dentro de `pre-push` escribiría en el
+// repositorio real al crear los repositorios de prueba de este archivo.
+aislarDeGitDelHook();
 
 /**
  * `scripts/buscar-secretos.ts` (CI3, D8, D10). Se ejercita contra un repositorio git aislado y

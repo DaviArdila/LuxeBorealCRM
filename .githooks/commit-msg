@@ -11,4 +11,7 @@ case "$1" in
   *) mensaje="$raiz/$1" ;;
 esac
 cd "$raiz/servicio" || exit 1
+# Igual que en pre-push: sin las variables de ubicación que git exporta a sus hooks, lo que corra
+# desde aquí encuentra el repositorio por el directorio actual.
+unset $(git rev-parse --local-env-vars)
 npx --no-install commitlint --edit "$mensaje"

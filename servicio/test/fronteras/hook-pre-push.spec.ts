@@ -4,6 +4,11 @@ import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { aislarDeGitDelHook } from '../soporte/git-aislado.js';
+
+// Git exporta GIT_DIR a sus hooks: sin esto, `ci:hook` dentro de `pre-push` escribiría en el
+// repositorio real al crear los repositorios de prueba de este archivo.
+aislarDeGitDelHook();
 
 /**
  * `.githooks/pre-push` real (CI1, D9). Estos tres escenarios exigen un `git push` de verdad, no
@@ -120,6 +125,37 @@ describe('.githooks/pre-push — CI1 (repositorio git aislado, git push real)', 
     // también usan Docker/subprocesos reales, 30 s no bastó en una corrida real de `npm run ci`
     // (falló por timeout, no por el mecanismo bajo prueba — confirmado corriendo el archivo solo,
     // en verde, varias veces).
+    90_000,
+  );
+
+  it(
+    'CI1 — ci:hook corre sin las variables con las que git ubica el repositorio del hook',
+    async () => {
+      // Git exporta GIT_DIR (y GIT_INDEX_FILE, GIT_WORK_TREE…) a sus hooks; si llegan a `ci:hook`,
+      // los tests que crean repositorios de prueba escriben en el repositorio que se empuja.
+      const repo = await crearRepoConHookYRemoto(
+        { lint: 'node -e "process.exit(process.env.GIT_DIR === undefined ? 0 : 1)"' },
+        ['npm run lint'],
+      );
+      // Desde un worktree, git exporta GIT_DIR al hook (desde el checkout principal no siempre).
+      const worktreeDir = await mkdtemp(path.join(tmpdir(), 'luxe-prepush-worktree-'));
+      const worktree = path.join(worktreeDir, 'wt');
+      try {
+        execFileSync('git', ['worktree', 'add', '--quiet', '-b', 'otra', worktree], {
+          cwd: repo.origen,
+        });
+        const resultado = spawnSync('git', ['push', 'origin', 'otra'], {
+          cwd: worktree,
+          encoding: 'utf8',
+        });
+
+        expect(`${resultado.stdout ?? ''}${resultado.stderr ?? ''}`).not.toContain('FALLÓ');
+        expect(resultado.status).toBe(0);
+      } finally {
+        await limpiar(repo);
+        await rm(worktreeDir, { recursive: true, force: true });
+      }
+    },
     90_000,
   );
 

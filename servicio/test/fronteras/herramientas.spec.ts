@@ -8,6 +8,11 @@ import {
   resolverRaizRepositorio,
   resolverRaizServicio,
 } from '../../scripts/herramientas.js';
+import { aislarDeGitDelHook } from '../soporte/git-aislado.js';
+
+// Git exporta GIT_DIR a sus hooks: sin esto, `ci:hook` dentro de `pre-push` escribiría en el
+// repositorio real al crear los repositorios de prueba de este archivo.
+aislarDeGitDelHook();
 
 /**
  * El servicio vive en `servicio/` dentro del repositorio (ADR-0023): lo que es del repositorio

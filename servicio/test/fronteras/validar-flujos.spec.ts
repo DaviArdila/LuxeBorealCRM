@@ -3,6 +3,11 @@ import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { validarFlujos } from '../../scripts/validar-flujos.js';
+import { aislarDeGitDelHook } from '../soporte/git-aislado.js';
+
+// Git exporta GIT_DIR a sus hooks: sin esto, `ci:hook` dentro de `pre-push` escribiría en el
+// repositorio real al crear los repositorios de prueba de este archivo.
+aislarDeGitDelHook();
 
 /**
  * `scripts/validar-flujos.ts` (CI6, D10). Se ejercita contra un repositorio git aislado y real en
