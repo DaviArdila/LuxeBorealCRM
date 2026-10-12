@@ -302,7 +302,7 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
     ]);
   }, 40_000);
 
-  it('CAS8 — Un caso creado por un admin llega al modelo en el índice y por consultar_caso, sin reiniciar', async () => {
+  it('CAS8 — Un caso creado por un admin llega al modelo en el prompt con su texto y por consultar_caso, sin reiniciar', async () => {
     const aplicacion = await arrancar();
     const prisma = aplicacion.get(PrismaService);
     const texto = 'Aceptamos transferencia bancaria y pago contra entrega en las ciudades con cobertura.';
@@ -314,9 +314,9 @@ describe('Agente con LLM y herramientas de punta a punta (T9 de la Fase 07b)', (
 
     const [unico] = await esperarMensajes(chatwootFalso, idConversacion, 1);
     expect(contenido(unico)).toContain(texto);
-    // El índice del prompt trae el título y el «cuándo aplica», nunca el texto del caso.
-    expect(llm.solicitudes[0]?.systemPrompt).toContain('- Medios de pago: Cuando el cliente pregunta cómo puede pagar.');
-    expect(llm.solicitudes[0]?.systemPrompt).not.toContain(texto);
+    // Con textos que caben en el tope, el prompt trae cada caso con lo mismo que devolvería consultar_caso.
+    const comoConsultarCaso = JSON.stringify({ encontrado: true, titulo: 'Medios de pago', modo: 'literal', texto });
+    expect(llm.solicitudes[0]?.systemPrompt).toContain(`- Medios de pago: Cuando el cliente pregunta cómo puede pagar.\n  ${comoConsultarCaso}`);
     expect(resultadosDe(llm, 1)[0]?.resultado).toEqual({ encontrado: true, titulo: 'Medios de pago', modo: 'literal', texto });
   }, 40_000);
 
