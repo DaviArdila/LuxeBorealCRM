@@ -6,7 +6,7 @@
 set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIR="$RAIZ/infra/chatwoot"
-COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name luxeborealcrm-chatwoot)
+COMPOSE=(docker compose -f "$DIR/docker-compose.yml" --project-name chatwoot-local)
 
 PASS="$(grep -E '^LUXEBOREAL_DB_PASSWORD=' "$DIR/.env" | cut -d= -f2-)"
 if [ -z "$PASS" ]; then
