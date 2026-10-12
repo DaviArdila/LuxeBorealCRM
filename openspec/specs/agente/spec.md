@@ -369,16 +369,17 @@ Fase que lo implementa: 07b
 
 `buscar_producto`, `obtener_ficha`, `cotizar_envio` y `consultar_caso` MUST envolver los casos de
 uso de `catalogo` sin recalcular nada (R2): `buscar_producto` devuelve hasta 5 resultados `{id,
-nombre, descripcion_corta}`; cuando la búsqueda da un único resultado (coincidencia clara), ese resultado MUST
-traer en `ficha` exactamente lo que devolvería `obtener_ficha` para ese producto, y con varios resultados MUST NOT
-traer ninguna ficha ni dinero; si la ficha no se puede leer, el resultado sale sin ella; `obtener_ficha` devuelve `precio_texto` y `tiene_fotos`, y un
+nombre, descripcion_corta}`; cada uno de los primeros 3 resultados MUST traer en `ficha` exactamente lo que devolvería
+`obtener_ficha` para ese producto (leídas en paralelo), y del cuarto en adelante MUST NOT traer ficha ni dinero; si la
+ficha de un resultado no se puede leer, ese resultado sale sin ella y los demás no cambian; `obtener_ficha` devuelve `precio_texto` y `tiene_fotos`, y un
 error explícito si el producto no existe o está inactivo; `cotizar_envio` recibe `id_producto`,
 `departamento` y `ciudad` opcional y devuelve `rango_texto`, `dias_texto` y `contraentrega_disponible`, o
 `cobertura: false` con el efecto `sin-cobertura`; no devuelve ningún texto de política ni de falta de cobertura: el agente consulta el caso que corresponda con `consultar_caso` (CAS8, CAS12); `consultar_caso` devuelve el texto y el modo del caso o la lista de casos
 disponibles si el título no existe (CAS8).
 
 (Previously: `cotizar_envio` devolvía además `politica_contraentrega_texto` y el mensaje de fuera de cobertura;
-`buscar_producto` nunca traía la ficha y el precio solo salía de `obtener_ficha`.)
+`buscar_producto` nunca traía la ficha y el precio solo salía de `obtener_ficha`; después la traía solo con un único
+resultado.)
 
 Fase que lo implementa: 07b; 12d (`cotizar_envio` ya no adjunta textos); `odd/tasks/latencia-bot.md` (ficha en
 `buscar_producto`)
@@ -390,11 +391,23 @@ Fase que lo implementa: 07b; 12d (`cotizar_envio` ya no adjunta textos); `odd/ta
 - Entonces ese resultado trae en `ficha` lo mismo que devolvería `obtener_ficha` para ese producto, con el
   `precio_texto` ya formateado y sin SKU, y un monto citado de esa ficha cuenta como rastro (R1).
 
-#### Scenario: buscar_producto con varios resultados no trae ninguna ficha ni dinero
+#### Scenario: buscar_producto con varios resultados trae la ficha de cada uno de los primeros 3
 
-- Dado una búsqueda que encuentra dos productos o más,
+- Dado una búsqueda que encuentra dos o tres productos,
 - Cuando el modelo llama `buscar_producto`,
-- Entonces cada resultado trae solo `id`, `nombre` y `descripcion_corta`.
+- Entonces cada resultado trae en `ficha` lo mismo que devolvería `obtener_ficha` para su producto.
+
+#### Scenario: buscar_producto con más de 3 resultados no trae ficha del cuarto en adelante
+
+- Dado una búsqueda que encuentra cinco productos,
+- Cuando el modelo llama `buscar_producto`,
+- Entonces los tres primeros traen su `ficha` y el cuarto y el quinto traen solo `id`, `nombre` y `descripcion_corta`.
+
+#### Scenario: Si falla la ficha de un resultado, solo ese sale sin ella
+
+- Dado una búsqueda con varios resultados cuya segunda ficha no se puede leer,
+- Cuando el modelo llama `buscar_producto`,
+- Entonces el segundo resultado sale sin `ficha` y los demás de los tres primeros la traen.
 
 #### Scenario: obtener_ficha devuelve el precio ya formateado
 

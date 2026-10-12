@@ -53,7 +53,7 @@ Medido desde el código, sin telemetría de producción:
 Segunda ronda. El dueño la autorizó el 2026-10-12, tras medir 8–15 s en el servidor y 2–4 vueltas por turno:
 - [x] T7 — El texto de los casos de intención va en la parte estable del prompt, con un tope de 8.000 caracteres;
   `consultar_caso` queda por compatibilidad. Ruta: delegada (varios archivos no triviales en `agente` y `asistente`).
-- [ ] T8 — `buscar_producto` trae la ficha de los primeros 3 resultados. Ruta: delegada.
+- [x] T8 — `buscar_producto` trae la ficha de los primeros 3 resultados. Ruta: delegada.
 - [ ] T9 — El valor por defecto de `DEBOUNCE_MS` baja de 3000 a 1500. Ruta: delegada.
 - [ ] T10 — Una instrucción para pedir juntas las herramientas independientes. Ruta: delegada.
 
@@ -81,7 +81,8 @@ Rama creada desde `main` (3787889).
 | T3 | delegada | `6cf5ac4` | Coincidencia clara = la búsqueda devuelve un único producto: ese resultado trae en `ficha` lo mismo que `obtener_ficha` (AGT8). El rastro de dinero ya serializa todo resultado de herramienta, así que la reconoce sin cambios. |
 | T4 | delegada | `2125b78` | `claveCache` = `luxe-agente-<prompt>-e<estilo>` en cada llamada; OpenAI la recibe como `promptCacheKey` y OpenRouter como `prompt_cache_key` en el cuerpo; catálogo desempatado por id (AGT13, CAT4). |
 | T5 | delegada | — | Omitida, ver abajo. |
-| T7 | delegada | `T7HASH` | `ConsultaCasos.casosDelPrompt()`: los casos del índice con texto y modo si suman ≤ 8.000 caracteres; si no, solo el índice y el aviso `asistente.textos-fuera-del-prompt` (conteos). Cada caso va antes del catálogo con su línea del índice y el mismo JSON de `consultar_caso`. `seguridad.v2.md` (la política sale de un caso de uso), prompt `v6` (CAS8, AGT13, R1). El tope es constante de código, como los del índice, y no variable de entorno: `.env.example` está fuera del alcance de escritura del agente. Evals guionadas sin cambios: siguen llamando `consultar_caso`, que responde igual. |
+| T7 | delegada | `73354fb` | `ConsultaCasos.casosDelPrompt()`: los casos del índice con texto y modo si suman ≤ 8.000 caracteres; si no, solo el índice y el aviso `asistente.textos-fuera-del-prompt` (conteos). Cada caso va antes del catálogo con su línea del índice y el mismo JSON de `consultar_caso`. `seguridad.v2.md` (la política sale de un caso de uso), prompt `v6` (CAS8, AGT13, R1). El tope es constante de código, como los del índice, y no variable de entorno: `.env.example` está fuera del alcance de escritura del agente. Evals guionadas sin cambios: siguen llamando `consultar_caso`, que responde igual. |
+| T8 | delegada | `T8HASH` | Los primeros 3 resultados (`FICHAS_POR_BUSQUEDA`) traen la ficha de `obtener_ficha`, leídas con `Promise.all`; una ficha que falla deja solo ese resultado sin ella (AGT8). El rastro de dinero ya serializa todo el resultado. |
 
 **T5, por qué se omite.** En el código de Chatwoot (`develop`, 2026-10-12), `toggle_typing_status` solo despacha
 `CONVERSATION_TYPING_ON/OFF` (`app/services/conversations/typing_status_manager.rb`), y los únicos que escuchan esos eventos
