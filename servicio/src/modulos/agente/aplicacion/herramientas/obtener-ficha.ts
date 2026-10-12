@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ProductoNoDisponible, type ObtenerFichaProducto } from '../../../catalogo/index.js';
 import type { Herramienta } from '../../dominio/herramienta.js';
+import { fichaParaElModelo } from './contrato-modelo.js';
 import { definirHerramienta } from './definir-herramienta.js';
 
 const esquema = z.object({
@@ -20,18 +21,7 @@ export function crearObtenerFicha(ficha: ObtenerFichaProducto): Herramienta {
     esquema,
     async ({ id_producto }) => {
       try {
-        const resultado = await ficha.ejecutar(id_producto);
-        return {
-          paraElModelo: {
-            id: resultado.id,
-            nombre: resultado.nombre,
-            descripcion_larga: resultado.descripcionLarga,
-            precio_texto: resultado.precioTexto,
-            tiene_fotos: resultado.tieneFotos,
-            angulos_fotos: resultado.angulosFotos,
-          },
-          efectos: [],
-        };
+        return { paraElModelo: fichaParaElModelo(await ficha.ejecutar(id_producto)), efectos: [] };
       } catch (error) {
         if (error instanceof ProductoNoDisponible) {
           return {

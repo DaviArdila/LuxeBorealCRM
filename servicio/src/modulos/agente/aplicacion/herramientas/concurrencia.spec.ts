@@ -14,7 +14,7 @@ describe('modulos/agente/aplicacion/herramientas — qué herramientas son concu
   it('las cuatro de consulta son concurrentes y las cinco que escriben o avisan no', () => {
     const nada = {} as never;
     const herramientas = [
-      crearBuscarProducto(nada),
+      crearBuscarProducto(nada, nada),
       crearObtenerFicha(nada),
       crearCotizarEnvio(nada),
       crearConsultarCaso(nada),

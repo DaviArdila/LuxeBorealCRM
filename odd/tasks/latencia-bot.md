@@ -43,7 +43,7 @@ Medido desde el código, sin telemetría de producción:
   (SUM y parámetro) en paralelo. Ruta: delegada (varios archivos no triviales).
 - [x] T2 — Herramientas de solo lectura en paralelo dentro de un paso, conservando el orden de los resultados.
   Ruta: delegada.
-- [ ] T3 — `buscar_producto` con coincidencia única devuelve la ficha; spec del agente o del catálogo en el mismo
+- [x] T3 — `buscar_producto` con coincidencia única devuelve la ficha; spec del agente o del catálogo en el mismo
   commit. Ruta: delegada.
 - [ ] T4 — `prompt_cache_key` por proveedor y desempate del catálogo por `id`. Ruta: delegada.
 - [ ] T5 — Indicador de «escribiendo…» vía Chatwoot (solo si Chatwoot lo reenvía a WhatsApp Cloud; si no, se
