@@ -2,7 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ejecutarHerramienta, IMAGEN_GITLEAKS, resolverRaizRepositorio } from './herramientas.js';
+import {
+  ejecutarHerramienta,
+  entornoSinUbicacionGit,
+  IMAGEN_GITLEAKS,
+  resolverRaizRepositorio,
+} from './herramientas.js';
 import type { ResultadoHerramienta } from './herramientas.js';
 
 /**
@@ -29,7 +34,7 @@ function listarArchivosDelArbol(raiz: string): string[] {
   const salida = execFileSync(
     'git',
     ['-C', raiz, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 64 },
+    { encoding: 'utf8', maxBuffer: 1024 * 1024 * 64, env: entornoSinUbicacionGit() },
   );
   return salida.split('\0').filter((ruta) => ruta.length > 0);
 }

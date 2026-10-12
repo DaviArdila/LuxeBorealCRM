@@ -2,7 +2,11 @@ import load from '@commitlint/load';
 import lint from '@commitlint/lint';
 import type { ParserOptions } from 'conventional-commits-parser';
 import { execFileSync } from 'node:child_process';
-import { resolverRaizRepositorio, resolverRaizServicio } from './herramientas.js';
+import {
+  entornoSinUbicacionGit,
+  resolverRaizRepositorio,
+  resolverRaizServicio,
+} from './herramientas.js';
 
 /**
  * `commits` (CI2, D8, D13). Verifica con `commitlint` cada commit del rango
@@ -30,6 +34,7 @@ function resolverRamaBase(raiz: string): string {
     try {
       execFileSync('git', ['-C', raiz, 'rev-parse', '--verify', '--quiet', ref], {
         encoding: 'utf8',
+        env: entornoSinUbicacionGit(),
       });
       return ref;
     } catch {
@@ -48,6 +53,7 @@ function calcularDesde(raiz: string): string {
   }
   return execFileSync('git', ['-C', raiz, 'merge-base', resolverRamaBase(raiz), 'HEAD'], {
     encoding: 'utf8',
+    env: entornoSinUbicacionGit(),
   }).trim();
 }
 
@@ -60,6 +66,7 @@ export function resolverRangoDeCommits(raiz: string = resolverRaizRepositorio())
   const desde = calcularDesde(raiz);
   const salida = execFileSync('git', ['-C', raiz, 'rev-list', '--reverse', `${desde}..HEAD`], {
     encoding: 'utf8',
+    env: entornoSinUbicacionGit(),
   });
   return salida
     .split('\n')
@@ -70,6 +77,7 @@ export function resolverRangoDeCommits(raiz: string = resolverRaizRepositorio())
 function obtenerMensajeCommit(raiz: string, sha: string): string {
   return execFileSync('git', ['-C', raiz, 'log', '-1', '--format=%B', sha], {
     encoding: 'utf8',
+    env: entornoSinUbicacionGit(),
   });
 }
 

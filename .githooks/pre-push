@@ -7,6 +7,10 @@
 # `ci:hook` es del servicio (ADR-0023): el hook entra a `servicio/` desde la raíz del repositorio.
 echo "pre-push: corriendo lint, typecheck, tests unitarios, secretos y commitlint (npm run ci:hook)..."
 cd "$(git rev-parse --show-toplevel)/servicio" || exit 1
+# Git exporta a sus hooks las variables con las que ubica el repositorio (GIT_DIR, GIT_INDEX_FILE…).
+# Se quitan antes de correr los tests: con ellas, los repositorios de prueba que crean escribirían
+# en este repositorio. Git lo sigue encontrando por el directorio actual.
+unset $(git rev-parse --local-env-vars)
 npm run ci:hook
 codigo=$?
 if [ "$codigo" -ne 0 ]; then

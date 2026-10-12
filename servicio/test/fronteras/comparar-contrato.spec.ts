@@ -4,6 +4,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { compararContrato, MENSAJE_SIN_BASE } from '../../scripts/comparar-contrato.js';
 import type { ResultadoHerramienta } from '../../scripts/herramientas.js';
+import { aislarDeGitDelHook } from '../soporte/git-aislado.js';
+
+// Git exporta GIT_DIR a sus hooks: sin esto, `ci:hook` dentro de `pre-push` escribiría en el
+// repositorio real al crear los repositorios de prueba de este archivo.
+aislarDeGitDelHook();
 
 /**
  * `scripts/comparar-contrato.ts` (CI9, API10, D11). Cuatro ramas de la política "sin base de
