@@ -59,6 +59,22 @@ interface LlamadaResuelta {
   readonly herramienta: Herramienta | undefined;
 }
 
+interface ResumenLlamada {
+  readonly nombre: string;
+  readonly resultados?: number;
+  readonly conFicha?: boolean;
+  readonly fallo?: true;
+}
+
+/** Resumen sin contenido de una llamada para el log: cuántos resultados trajo y si alguno incluyó la ficha. */
+function resumirLlamada(nombre: string, paraElModelo: unknown): ResumenLlamada {
+  if (!Array.isArray(paraElModelo)) {
+    return { nombre };
+  }
+  const conFicha = paraElModelo.some((item) => typeof item === 'object' && item !== null && 'ficha' in item);
+  return { nombre, resultados: paraElModelo.length, ...(conFicha ? { conFicha } : {}) };
+}
+
 /**
  * Agrupa las llamadas de un paso en lotes que conservan su orden: las concurrentes seguidas forman un lote que corre
  * en paralelo; cada una que no lo es va sola. Así una herramienta que escribe nunca se solapa con otra y una
@@ -155,6 +171,7 @@ export class BucleHerramientas {
         // se deriva. Riesgo conocido: un falso positivo cuesta una llamada más o, si persiste, un traspaso.
         const montos = contarMontosSinRastro(texto, resultadosParaElModelo, entrada.textosDelCliente);
         if (montos === 0) {
+          this.logger.log({ evento: 'agente.vueltas', vueltas: vuelta + 1, final: 'texto' });
           return { tipo: 'texto', texto, efectos, resultadosParaElModelo };
         }
         // D9, R14: solo la cantidad y si hubo reintento; el texto de la respuesta nunca va al log.
@@ -182,6 +199,7 @@ export class BucleHerramientas {
       }
 
       const resueltas = validas.map((llamada) => ({ llamada, herramienta: this.registro.obtener(llamada.nombre) }));
+      const resumen: ResumenLlamada[] = [];
       for (const lote of lotesDelPaso(resueltas)) {
         const efectosPrevios = [...efectos];
         const salidas = await Promise.all(lote.map((resuelta) => this.ejecutarLlamada(resuelta, entrada, efectosPrevios)));
@@ -189,14 +207,17 @@ export class BucleHerramientas {
         lote.forEach(({ llamada }, i) => {
           const salida = salidas[i];
           if (salida === undefined || salida.tipo === 'inexistente') {
+            resumen.push({ nombre: llamada.nombre, fallo: true });
             invalidas += 1;
             resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" no existe.`));
             return;
           }
           if (salida.tipo === 'fallo') {
+            resumen.push({ nombre: llamada.nombre, fallo: true });
             resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" falló; sigue sin ella.`));
             return;
           }
+          resumen.push(resumirLlamada(llamada.nombre, salida.resultado.paraElModelo));
           efectos.push(...salida.resultado.efectos);
           resultadosParaElModelo.push(salida.resultado.paraElModelo);
           resultados.push({
@@ -207,6 +228,8 @@ export class BucleHerramientas {
           });
         });
       }
+      // Latencia: cuántas vueltas cuesta un turno y por qué. R14: solo nombres y conteos, nunca el contenido.
+      this.logger.log({ evento: 'agente.vuelta', vuelta: vuelta + 1, herramientas: resumen });
       if (invalidas >= INVALIDAS_PARA_DERIVAR) {
         return { tipo: 'derivar', motivo: 'argumentos-invalidos' };
       }
