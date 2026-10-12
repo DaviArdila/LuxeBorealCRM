@@ -55,6 +55,14 @@ describe('catalogo/dominio/producto', () => {
   });
 
   describe('armarCatalogoCompacto', () => {
+    it('CAT4 — Dos productos con el mismo nombre salen siempre en el mismo orden', () => {
+      const a: ProductoResumen = { id: 'b-2', sku: 'SKU-2', nombre: 'Anillo', descripcionCorta: 'segundo' };
+      const b: ProductoResumen = { id: 'a-1', sku: 'SKU-1', nombre: 'Anillo', descripcionCorta: 'primero' };
+
+      expect(armarCatalogoCompacto([a, b])).toBe(armarCatalogoCompacto([b, a]));
+      expect(armarCatalogoCompacto([a, b]).split('\n')).toEqual(['- a-1: Anillo — primero', '- b-2: Anillo — segundo']);
+    });
+
     it('CAT4 — El catálogo compacto no lleva precios y solo lista productos activos ordenados por nombre', () => {
       const productos: ProductoResumen[] = [
         { id: '3', sku: 'SKU-Z', nombre: 'Zapato', descripcionCorta: 'zapato corto' },

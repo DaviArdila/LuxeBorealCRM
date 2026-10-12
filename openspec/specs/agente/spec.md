@@ -589,7 +589,9 @@ código, como contrato técnico neutro y sin criterio de negocio, y cuándo usar
 respaldo del estilo (`estilo.v4.md`) MUST ser mínimo y sin prohibiciones («Eres un asistente de atención por chat. Responde en
 español, con mensajes cortos y claros.») y solo rige si la base no tiene secciones de estilo. El prefijo (seguridad + estilo +
 catálogo) MUST ser idéntico entre turnos de conversaciones distintas mientras no cambien el estilo publicado ni el catálogo,
-para aprovechar la caché de prompts (ADR-0002). La versión del prompt y la del estilo MUST quedar en un log estructurado del
+para aprovechar la caché de prompts (ADR-0002). Cada llamada del turno al LLM MUST llevar una clave de caché estable
+(`luxe-agente-<versión del prompt>-e<versión del estilo>`) que el proveedor recibe como `prompt_cache_key`; la clave MUST NOT
+contener nada del turno ni del cliente (R14). La versión del prompt y la del estilo MUST quedar en un log estructurado del
 turno (sin contenido).
 
 (Previously: el prompt empezaba con `reglas.v4.md`, que mezclaba las reglas de datos con reglas de negocio —una sola foto, el
@@ -603,6 +605,13 @@ Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la
 - Dado dos turnos de conversaciones distintas con el mismo catálogo y el mismo estilo publicado,
 - Cuando se arma el prompt de cada uno,
 - Entonces ambos empiezan con exactamente el mismo texto hasta el final del catálogo compacto.
+
+#### Scenario: La clave de caché es la misma entre conversaciones y no lleva nada del turno
+
+- Dado dos turnos de conversaciones distintas con el mismo prompt y el mismo estilo publicado,
+- Cuando se arma el prompt de cada uno,
+- Entonces los dos llevan la misma clave de caché, sin el nombre del cliente ni ninguna instrucción del turno, y
+  publicar otra versión del estilo la cambia.
 
 #### Scenario: El prompt no contiene precios
 

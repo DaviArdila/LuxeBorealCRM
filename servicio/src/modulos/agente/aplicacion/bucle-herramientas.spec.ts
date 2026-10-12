@@ -524,3 +524,24 @@ describe('modulos/agente/aplicacion — BucleHerramientas: herramientas concurre
     await expect(bucle.ejecutar(ENTRADA)).resolves.toMatchObject({ tipo: 'texto', texto: 'Cuesta $389.000' });
   });
 });
+
+describe('modulos/agente/aplicacion — BucleHerramientas: clave de caché (latencia)', () => {
+  it('cada llamada al LLM del turno lleva la clave de caché del prompt', async () => {
+    const { llm, bucle } = crear([herramienta('buscar')]);
+    llm.encolar(pideHerramientas(llamada('c1', 'buscar')), texto('listo'));
+
+    await bucle.ejecutar({ ...ENTRADA, claveCache: 'luxe-agente-v1-e3' });
+
+    expect(llm.solicitudes.map((s) => s.claveCache)).toEqual(['luxe-agente-v1-e3', 'luxe-agente-v1-e3']);
+  });
+
+  it('sin clave la solicitud no la lleva', async () => {
+    const { llm, bucle } = crear([]);
+    llm.encolar(texto('listo'));
+
+    await bucle.ejecutar(ENTRADA);
+
+    expect(llm.solicitudes[0]).not.toHaveProperty('claveCache');
+  });
+});
+

@@ -37,6 +37,8 @@ export interface EntradaBucle {
    * cuentan como rastro en la auditoría de dinero; el historial previo y lo que dijo el bot no (R1/R2).
    */
   readonly textosDelCliente?: readonly string[];
+  /** Clave estable del prefijo del prompt para la caché del proveedor (sin datos del cliente, R14). */
+  readonly claveCache?: string;
 }
 
 export type MotivoDerivacionBucle =
@@ -135,6 +137,7 @@ export class BucleHerramientas {
           herramientas: definiciones,
           conversacionId: entrada.sesion.conversacionId,
           plazoMs,
+          ...(entrada.claveCache === undefined ? {} : { claveCache: entrada.claveCache }),
         });
       } catch (error) {
         return { tipo: 'derivar', motivo: this.motivoDeFallo(error, restanteMs()) };

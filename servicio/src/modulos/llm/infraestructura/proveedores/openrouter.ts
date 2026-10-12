@@ -30,6 +30,9 @@ export function crearProveedorOpenRouter(configuracion: ConfigProveedorOpenRoute
   return {
     nombre: 'openrouter',
     crearModelo: (modelo) => openrouter(modelo, { usage: { include: true } }),
+    // OpenRouter copia `providerOptions.openrouter` tal cual al cuerpo; `prompt_cache_key` le sirve de llave de
+    // enrutamiento fijo al mismo proveedor (https://openrouter.ai/docs/guides/best-practices/prompt-caching).
+    opcionesDeCache: (claveCache) => ({ openrouter: { prompt_cache_key: claveCache } }),
     // `prompt_tokens` de OpenRouter incluye los tokens servidos desde caché: se separan para que el
     // costo estimado (D6) cobre cada grupo con su precio.
     normalizarUso(usoSdk: UsoSdk, metadatos: unknown): UsoReportado {

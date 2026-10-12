@@ -19,7 +19,7 @@ import {
   type ResultadoAdaptador,
 } from '../puertos/adaptador-llm.js';
 
-type ProviderOptions = NonNullable<
+export type ProviderOptions = NonNullable<
   Extract<ModelMessage, { role: 'assistant' }>['providerOptions']
 >;
 
@@ -40,6 +40,8 @@ export interface ProveedorLlm {
   crearModelo(modelo: string): LanguageModel;
   /** LLM18: `tokensEntrada` sin los tokens servidos desde caché; `tokensCache` 0 si no se informa. */
   normalizarUso(usoSdk: UsoSdk, metadatos: unknown): UsoReportado;
+  /** Cómo pide este proveedor la caché de prompts con una clave estable; sin él, la clave no se envía. */
+  opcionesDeCache?(claveCache: string): ProviderOptions;
 }
 
 const ERROR_ABORTO = 'AbortError';
@@ -122,9 +124,12 @@ export class AdaptadorAiSdk {
     solicitud: SolicitudGeneracion,
     limite: LimiteIntento,
   ): Promise<ResultadoAdaptador> {
+    const opcionesDeCache =
+      solicitud.claveCache === undefined ? undefined : proveedor.opcionesDeCache?.(solicitud.claveCache);
     try {
       const resultado = await generateText({
         model: proveedor.crearModelo(modelo),
+        ...(opcionesDeCache === undefined ? {} : { providerOptions: opcionesDeCache }),
         system: solicitud.systemPrompt,
         messages: aMensajesSdk(solicitud.mensajes),
         tools: aHerramientasSdk(solicitud),
