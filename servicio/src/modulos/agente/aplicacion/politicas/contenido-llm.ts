@@ -10,7 +10,7 @@ import { HISTORIAL_CONVERSACION, type HistorialConversacion } from '../../puerto
 import { TEXTOS_ASISTENTE, type TextosAsistente } from '../../../asistente/index.js';
 import { BucleHerramientas, type MotivoDerivacionBucle } from '../bucle-herramientas.js';
 import { ArmarContextoInicial } from '../armar-contexto-inicial.js';
-import { EnsamblarPrompt } from '../ensamblar-prompt.js';
+import { EnsamblarPrompt, type PromptEnsamblado } from '../ensamblar-prompt.js';
 
 function pasosDeImagen(efectos: readonly EfectoTurno[]): PasoRespuesta[] {
   const pasos: PasoRespuesta[] = [];
@@ -66,17 +66,13 @@ export class ContenidoLlm implements PoliticaTurno {
 
     const { conversacionId, contactoId, version } = solicitud.contexto;
     const sesion = { conversacionId, version };
-    const prompt = await this.prompt.ensamblar({
-      instruccionesTurno: await this.contextoInicial.ejecutar({
-        sesion,
-        contactoId,
-        textoCliente,
-        ...(turno.avisoPedido === undefined ? {} : { avisoPedido: turno.avisoPedido }),
-      }),
-    });
+    // El historial no depende del prompt: se lee mientras se arma (latencia).
+    const [prompt, previos] = await Promise.all([
+      this.armarPrompt(sesion, contactoId, textoCliente, turno),
+      this.historial.leer(sesion, this.configuracion.AGENTE_HISTORIAL_TURNOS),
+    ]);
     // AGT13: solo las versiones del prompt y del estilo al log, nunca su contenido (R14).
     this.logger.log({ evento: 'agente.prompt', version: prompt.version, versionEstilo: prompt.versionEstilo });
-    const previos = await this.historial.leer(sesion, this.configuracion.AGENTE_HISTORIAL_TURNOS);
     const resultado = await this.bucle.ejecutar({
       sesion,
       contactoId,
@@ -109,6 +105,23 @@ export class ContenidoLlm implements PoliticaTurno {
       },
       cuentaTurno: true,
     };
+  }
+
+  private async armarPrompt(
+    sesion: { readonly conversacionId: string; readonly version: number },
+    contactoId: string,
+    textoCliente: string,
+    turno: EstadoTurno,
+  ): Promise<PromptEnsamblado> {
+    return this.prompt.ensamblar({
+      instruccionesTurno: await this.contextoInicial.ejecutar({
+        sesion,
+        contactoId,
+        textoCliente,
+        ...(turno.avisoPedido === undefined ? {} : { avisoPedido: turno.avisoPedido }),
+        ...(turno.consentimiento === undefined ? {} : { consentimiento: turno.consentimiento }),
+      }),
+    });
   }
 
   private async derivar(motivo: MotivoDerivacionBucle): Promise<RespuestaTurno> {

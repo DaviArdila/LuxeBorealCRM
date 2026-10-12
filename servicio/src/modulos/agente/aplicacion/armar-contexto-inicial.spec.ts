@@ -39,6 +39,8 @@ function crear() {
   };
   return {
     caso: new ArmarContextoInicial(ficha, contactos, contadores, capturaLead, asesorAvisado),
+    asesorAvisado,
+    capturaLead,
     avisado,
     contadores,
     contactos,
@@ -274,5 +276,35 @@ describe('modulos/agente/aplicacion — ArmarContextoInicial (AGT12, D7)', () =>
       expect(texto).toMatch(/pagos, apartados ni descuentos/);
       expect(texto).not.toMatch(/pidió hablar con una persona/i);
     });
+  });
+});
+
+describe('modulos/agente/aplicacion — ArmarContextoInicial: lecturas del turno (latencia)', () => {
+  it('reutiliza el consentimiento que la barrera ya leyó en el turno, sin volver a consultarlo', async () => {
+    const { caso, contactos } = crear();
+    const consulta = vi.spyOn(contactos, 'consentimientoDe');
+
+    const instrucciones = await caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola', consentimiento: 'aceptado' });
+
+    expect(instrucciones).toEqual(['El cliente aceptó el tratamiento de datos.']);
+    expect(consulta).not.toHaveBeenCalled();
+  });
+
+  it('las lecturas independientes arrancan juntas, sin esperar una a otra', async () => {
+    const { caso, contactos, capturaLead, asesorAvisado } = crear();
+    let liberarNombre: (nombre: string | null) => void = () => undefined;
+    vi.spyOn(contactos, 'leerNombre').mockReturnValue(new Promise((resolver) => (liberarNombre = resolver)));
+    const captura = vi.spyOn(capturaLead, 'pendiente');
+    const aviso = vi.spyOn(asesorAvisado, 'estaAvisado');
+    const consentimiento = vi.spyOn(contactos, 'consentimientoDe');
+
+    const resultado = caso.ejecutar({ sesion: SESION, contactoId: 'k', textoCliente: 'hola' });
+    await new Promise((resolver) => setImmediate(resolver));
+
+    expect(captura).toHaveBeenCalledOnce();
+    expect(aviso).toHaveBeenCalledOnce();
+    expect(consentimiento).toHaveBeenCalledOnce();
+    liberarNombre('Laura');
+    await expect(resultado).resolves.toEqual(['El cliente se llama Laura.', HECHO_PENDIENTE]);
   });
 });

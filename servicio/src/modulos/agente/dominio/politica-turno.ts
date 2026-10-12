@@ -1,4 +1,5 @@
 import type { MotivoAviso, RespuestaTurno, SolicitudTurno } from '../../conversaciones/index.js';
+import type { EstadoConsentimiento } from '../puertos/repositorio-contacto-agente.js';
 
 /**
  * Resultado de una política (D6 de la Fase 07a): o deja pasar al siguiente eslabón del pipeline, o
@@ -15,6 +16,12 @@ export type DecisionPolitica =
  */
 export interface EstadoTurno {
   avisoPedido?: MotivoAviso;
+  /**
+   * Consentimiento que la barrera leyó al empezar el turno (AGT29): las políticas siguientes y el contexto inicial lo
+   * reutilizan en vez de volver a consultarlo. Ausente si la lectura falló. La puerta de las herramientas que escriben
+   * (AGT26) no lo usa: lee de nuevo, porque `registrar_consentimiento` puede cambiarlo a mitad del turno.
+   */
+  consentimiento?: EstadoConsentimiento;
 }
 
 /** Una pieza del pipeline del turno (AGT1). Agregar una política no exige tocar las demás (A5). */

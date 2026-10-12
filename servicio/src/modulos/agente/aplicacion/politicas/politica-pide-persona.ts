@@ -31,14 +31,18 @@ export class PoliticaPidePersona implements PoliticaTurno {
     }
 
     const { conversacionId, contactoId } = solicitud.contexto;
-    if (await this.aceptoElTratamiento(contactoId)) {
+    if (await this.aceptoElTratamiento(contactoId, turno)) {
       await this.registrarPidePersona.ejecutar({ conversacionId, contactoId });
     }
     turno.avisoPedido = 'pide-persona';
     return { decision: 'seguir' };
   }
 
-  private async aceptoElTratamiento(contactoId: string): Promise<boolean> {
+  /** Reutiliza el estado que la barrera ya leyó en el turno; solo consulta si no lo hay. */
+  private async aceptoElTratamiento(contactoId: string, turno: EstadoTurno): Promise<boolean> {
+    if (turno.consentimiento !== undefined) {
+      return turno.consentimiento === 'aceptado';
+    }
     try {
       return (await this.contactos.consentimientoDe(contactoId)) === 'aceptado';
     } catch {

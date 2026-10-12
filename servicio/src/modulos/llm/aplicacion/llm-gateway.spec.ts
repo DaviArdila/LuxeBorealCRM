@@ -1056,3 +1056,20 @@ describe('modulos/llm/aplicacion — LlmGateway v3: techo mensual de gasto (LLM7
     errorLog.mockRestore();
   });
 });
+
+describe('modulos/llm/aplicacion — LlmGateway: lecturas del techo en paralelo (latencia)', () => {
+  it('el gasto del mes y el techo del parámetro se piden juntos antes de cada llamada', async () => {
+    const { gateway, adaptador, uso, parametros } = crearGateway({ NODE_ENV: 'development' });
+    let liberarGasto: (usd: number) => void = () => undefined;
+    vi.spyOn(uso, 'gastoMensual').mockReturnValue(new Promise((resolver) => (liberarGasto = resolver)));
+    const techo = vi.spyOn(parametros, 'obtenerTechoMensualUsd');
+    adaptador.programar(MODELO, { resultado: OK });
+
+    const respuesta = gateway.generar(SOLICITUD);
+    await new Promise((resolver) => setImmediate(resolver));
+
+    expect(techo).toHaveBeenCalledOnce();
+    liberarGasto(2);
+    await expect(respuesta).resolves.toMatchObject({ texto: 'respuesta' });
+  });
+});

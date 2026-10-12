@@ -151,3 +151,17 @@ describe('modulos/agente/aplicacion/politicas — PoliticaPidePersona (AGT14, D6
     expect(registros).toEqual([]);
   });
 });
+
+describe('modulos/agente/aplicacion/politicas — PoliticaPidePersona: consentimiento del turno (latencia)', () => {
+  it('usa el consentimiento que la barrera ya leyó en el turno, sin volver a consultarlo', async () => {
+    const { politica, registros, contactos } = crear('derivar', 'pendiente');
+    const consulta = vi.spyOn(contactos, 'consentimientoDe');
+    const estado: EstadoTurno = { consentimiento: 'aceptado' };
+
+    await politica.evaluar(turno('pásame con un humano'), estado);
+
+    expect(registros).toEqual([{ conversacionId: 'conv-1', contactoId: 'contacto-1' }]);
+    expect(consulta).not.toHaveBeenCalled();
+  });
+});
+

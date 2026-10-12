@@ -25,6 +25,8 @@ export interface EntradaContextoInicial {
   readonly textoCliente: string;
   /** Aviso que una política acaba de pedir en este turno y que todavía no tiene marca (AGT14, AGT28). */
   readonly avisoPedido?: MotivoAviso;
+  /** Consentimiento que la barrera ya leyó en el turno (AGT29): si viene, no se vuelve a consultar. */
+  readonly consentimiento?: EstadoConsentimiento;
 }
 
 /**
@@ -47,24 +49,29 @@ export class ArmarContextoInicial {
   ) {}
 
   async ejecutar(entrada: EntradaContextoInicial): Promise<readonly string[]> {
+    // Lecturas independientes en paralelo (latencia): cada una degrada sola a `null` y nunca rechaza, así que el
+    // resultado y el orden de las instrucciones son los mismos que en serie.
+    const [producto, nombre, consentimiento, capturaPendiente, aviso] = await Promise.all([
+      this.productoDeEntrada(entrada),
+      this.nombreDelContacto(entrada.contactoId),
+      entrada.consentimiento ?? this.estadoDelConsentimiento(entrada.contactoId),
+      this.instruccionDeCaptura(entrada.sesion.conversacionId),
+      this.instruccionesDelAviso(entrada),
+    ]);
     const instrucciones: string[] = [];
-    const producto = await this.productoDeEntrada(entrada);
     if (producto !== null) {
       instrucciones.push(`El cliente llegó desde el producto «${producto.nombre}» (id: ${producto.id}).`);
     }
-    const nombre = await this.nombreDelContacto(entrada.contactoId);
     if (nombre !== null) {
       instrucciones.push(`El cliente se llama ${nombre}.`);
     }
-    const consentimiento = await this.estadoDelConsentimiento(entrada.contactoId);
     if (consentimiento !== null) {
       instrucciones.push(HECHOS_CONSENTIMIENTO[consentimiento]);
     }
-    const capturaPendiente = await this.instruccionDeCaptura(entrada.sesion.conversacionId);
     if (capturaPendiente !== null) {
       instrucciones.push(capturaPendiente);
     }
-    instrucciones.push(...(await this.instruccionesDelAviso(entrada)));
+    instrucciones.push(...aviso);
     return instrucciones;
   }
 

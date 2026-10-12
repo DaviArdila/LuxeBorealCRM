@@ -37,10 +37,13 @@ export class EnsamblarPrompt {
   ) {}
 
   async ensamblar(entrada: EntradaPrompt): Promise<PromptEnsamblado> {
-    const estilo = await this.proveedorEstilo.obtener();
-    const indice = await this.casos.indice();
-    const catalogo = await this.catalogoCompacto.ejecutar();
-    const dentro = await this.horario.estaDentroDeHorario();
+    // Cuatro lecturas independientes en paralelo (latencia); si una falla, el ensamblado falla igual que en serie.
+    const [estilo, indice, catalogo, dentro] = await Promise.all([
+      this.proveedorEstilo.obtener(),
+      this.casos.indice(),
+      this.catalogoCompacto.ejecutar(),
+      this.horario.estaDentroDeHorario(),
+    ]);
     const variable = this.cargador.turno
       .replace(
         '{{horario}}',

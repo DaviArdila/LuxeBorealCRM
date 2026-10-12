@@ -1,6 +1,7 @@
 import { RepositorioContactoAgenteEnMemoria } from '../../../../../test/fakes/repositorio-contacto-agente-en-memoria.js';
 import { TextosAsistenteEnMemoria } from '../../../../../test/fakes/textos-asistente-en-memoria.js';
 import type { MensajeTurno, SolicitudTurno, TipoContenidoTurno } from '../../../conversaciones/index.js';
+import type { EstadoTurno } from '../../dominio/politica-turno.js';
 import { PoliticaConsentimiento } from './politica-consentimiento.js';
 
 // Escenarios AGT29 y PRV7-PRV8 (ADR-0028): la barrera previa al LLM.
@@ -172,3 +173,25 @@ describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento (ADR-00
     await expect(politica.evaluar(solicitud('no'))).resolves.toEqual(texto('consentimiento_rechazado'));
   });
 });
+
+describe('modulos/agente/aplicacion/politicas — PoliticaConsentimiento: estado del turno (latencia)', () => {
+  it('un contacto que aceptó deja su estado en el turno para que nadie lo vuelva a leer', async () => {
+    const { politica } = crear('aceptado');
+    const turno: EstadoTurno = {};
+
+    await expect(politica.evaluar(solicitud('hola'), turno)).resolves.toEqual({ decision: 'seguir' });
+
+    expect(turno.consentimiento).toBe('aceptado');
+  });
+
+  it('si la lectura falla no deja ningún estado en el turno', async () => {
+    const { politica, contactos } = crear('aceptado');
+    contactos.fallo = new Error('base caída');
+    const turno: EstadoTurno = {};
+
+    await politica.evaluar(solicitud('audio'), turno);
+
+    expect(turno.consentimiento).toBeUndefined();
+  });
+});
+
