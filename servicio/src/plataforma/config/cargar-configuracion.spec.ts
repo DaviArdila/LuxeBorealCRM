@@ -603,10 +603,10 @@ describe('cargarConfiguracion', () => {
   });
 
   describe('Variables DEBOUNCE_MS/CONVERSACIONES_CONCURRENCIA (fase-05-conversaciones, T4, D6/D7)', () => {
-    it('usa los valores calibrados del prototipo por defecto cuando ninguna variable viene', () => {
+    it('usa los valores por defecto cuando ninguna variable viene (debounce de 1,5 s, latencia del bot)', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
-      expect(configuracion.DEBOUNCE_MS).toBe(3000);
+      expect(configuracion.DEBOUNCE_MS).toBe(1500);
       expect(configuracion.CONVERSACIONES_CONCURRENCIA).toBe(10);
     });
 

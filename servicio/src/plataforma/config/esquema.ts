@@ -139,8 +139,8 @@ export const esquemaConfiguracion = z
     RATE_LIMIT_POR_HORA: z.coerce.number().int().min(1).default(20),
     /** Tope de mensajes por contacto en el día en curso (R13). */
     RATE_LIMIT_POR_DIA: z.coerce.number().int().min(1).default(60),
-    /** `ColaTurno` (Fase 05, T4, D6): ventana de debounce que agrupa una ráfaga de mensajes. */
-    DEBOUNCE_MS: z.coerce.number().int().min(500).default(3000),
+    /** `ColaTurno` (Fase 05, T4, D6): ventana de debounce que agrupa una ráfaga de mensajes; 1,5 s desde la latencia del bot. */
+    DEBOUNCE_MS: z.coerce.number().int().min(500).default(1500),
     /** `ProcesadorTurno` (T4, D7): conversaciones distintas procesadas en paralelo. */
     CONVERSACIONES_CONCURRENCIA: z.coerce.number().int().min(1).default(10),
     /** `BarridoVencimientos` (T7, D11): cada cuánto se devuelven a `bot` las filas vencidas. */
