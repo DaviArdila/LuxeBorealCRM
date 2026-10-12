@@ -1,5 +1,0 @@
-# Este turno
-
-{{horario}}
-
-{{instrucciones}}

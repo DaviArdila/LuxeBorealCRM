@@ -97,7 +97,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     const resultado = await ensamblar.ensamblar({ instruccionesTurno: [] });
 
-    expect(resultado).toMatchObject({ version: 'v6', versionEstilo: 5 });
+    expect(resultado).toMatchObject({ version: 'v7', versionEstilo: 5 });
     expect(JSON.stringify({ version: resultado.version, versionEstilo: resultado.versionEstilo })).not.toContain('ESTILO-PUBLICADO');
   });
 
@@ -153,6 +153,17 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.estilo).not.toMatch(/(nunca|no |sin |jamás)/i);
   });
 
+  it('AGT13 — El prompt pide en un mismo paso las herramientas independientes', async () => {
+    const { ensamblar, cargador } = crear();
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(cargador.turno).toMatch(/varias herramientas que no dependen una de otra/);
+    expect(cargador.turno).toMatch(/en el mismo paso/);
+    expect(texto).toMatch(/varias herramientas que no dependen una de otra/);
+    expect(cargador.seguridad).not.toMatch(/mismo paso/);
+  });
+
   it('la parte variable dice si es horario de atención', async () => {
     const dentro = await crear(CATALOGO, true).ensamblar.ensamblar({ instruccionesTurno: [] });
     const fuera = await crear(CATALOGO, false).ensamblar.ensamblar({ instruccionesTurno: [] });
@@ -164,7 +175,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   it('entrega la versión del prompt para el log del turno', async () => {
     const { ensamblar } = crear();
 
-    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v6' });
+    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v7' });
   });
 
   const INDICE: readonly EntradaIndice[] = [

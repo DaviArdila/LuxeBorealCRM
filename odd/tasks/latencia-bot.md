@@ -55,7 +55,7 @@ Segunda ronda. El dueño la autorizó el 2026-10-12, tras medir 8–15 s en el s
   `consultar_caso` queda por compatibilidad. Ruta: delegada (varios archivos no triviales en `agente` y `asistente`).
 - [x] T8 — `buscar_producto` trae la ficha de los primeros 3 resultados. Ruta: delegada.
 - [x] T9 — El valor por defecto de `DEBOUNCE_MS` baja de 3000 a 1500. Ruta: delegada.
-- [ ] T10 — Una instrucción para pedir juntas las herramientas independientes. Ruta: delegada.
+- [x] T10 — Una instrucción para pedir juntas las herramientas independientes. Ruta: delegada.
 
 ## Criterios de aceptación
 - Una pregunta de precio sobre un producto inequívoco se resuelve con una llamada menos al LLM.
@@ -83,7 +83,8 @@ Rama creada desde `main` (3787889).
 | T5 | delegada | — | Omitida, ver abajo. |
 | T7 | delegada | `73354fb` | `ConsultaCasos.casosDelPrompt()`: los casos del índice con texto y modo si suman ≤ 8.000 caracteres; si no, solo el índice y el aviso `asistente.textos-fuera-del-prompt` (conteos). Cada caso va antes del catálogo con su línea del índice y el mismo JSON de `consultar_caso`. `seguridad.v2.md` (la política sale de un caso de uso), prompt `v6` (CAS8, AGT13, R1). El tope es constante de código, como los del índice, y no variable de entorno: `.env.example` está fuera del alcance de escritura del agente. Evals guionadas sin cambios: siguen llamando `consultar_caso`, que responde igual. |
 | T8 | delegada | `78cbf0b` | Los primeros 3 resultados (`FICHAS_POR_BUSQUEDA`) traen la ficha de `obtener_ficha`, leídas con `Promise.all`; una ficha que falla deja solo ese resultado sin ella (AGT8). El rastro de dinero ya serializa todo el resultado. |
-| T9 | delegada | `T9HASH` | Default de `DEBOUNCE_MS` en 1500 (mínimo 500 intacto). Ni `servicio/.env` ni `servicio/.env.example` se tocaron (fuera del alcance de escritura del agente): si alguno fija `DEBOUNCE_MS=3000`, ese valor sigue mandando y el dueño debe cambiarlo. Ninguna spec ni guía de operación citaba los 3 s. |
+| T9 | delegada | `707d376` | Default de `DEBOUNCE_MS` en 1500 (mínimo 500 intacto). Ni `servicio/.env` ni `servicio/.env.example` se tocaron (fuera del alcance de escritura del agente): si alguno fija `DEBOUNCE_MS=3000`, ese valor sigue mandando y el dueño debe cambiarlo. Ninguna spec ni guía de operación citaba los 3 s. |
+| T10 | delegada | ver el commit `perf(agente): el prompt pide juntas las herramientas independientes` | Una línea al inicio de `turno.v4.md`, la plantilla del turno; no en `seguridad`, que por AGT13 solo trae los seis límites y ningún manual de herramientas. Es texto fijo, así que no rompe el prefijo cacheado. Prompt `v7`. |
 
 **T5, por qué se omite.** En el código de Chatwoot (`develop`, 2026-10-12), `toggle_typing_status` solo despacha
 `CONVERSATION_TYPING_ON/OFF` (`app/services/conversations/typing_status_manager.rb`), y los únicos que escuchan esos eventos

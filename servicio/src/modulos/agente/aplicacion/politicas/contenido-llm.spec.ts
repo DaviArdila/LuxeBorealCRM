@@ -418,7 +418,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v6', versionEstilo: 3 });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v7', versionEstilo: 3 });
     // R14: ningún registro del turno lleva el texto del estilo.
     expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });
