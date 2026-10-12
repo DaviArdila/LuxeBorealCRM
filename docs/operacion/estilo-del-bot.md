@@ -3,7 +3,7 @@
 **Resumen.** El estilo del bot (tono, longitud, formato, emojis) es una lista de **secciones** que el admin crea, edita,
 ordena y apaga desde la pantalla «Estilo del bot» (`/asistente/estilo`), sin desplegar y con vuelta atrás. El bot recibe
 todas las secciones activas juntas, como un solo bloque. Cada versión guarda **quién la publicó**. Solo el estilo es
-editable: los seis límites de seguridad (`seguridad.v1.md`: datos solo de herramientas, nada de dinero calculado) no se pueden tocar. Antes de exponer un estilo nuevo a clientes, se
+editable: los seis límites de seguridad (`seguridad.v2.md`: datos solo de herramientas y casos de uso, nada de dinero calculado) no se pueden tocar. Antes de exponer un estilo nuevo a clientes, se
 mide con los evals reales. Decisiones de fondo:
 [ADR-0020](../adr/0020-estilo-del-agente-editable-desde-la-base-de-datos.md) y
 [ADR-0026](../adr/0026-estilo-del-bot-en-secciones.md).

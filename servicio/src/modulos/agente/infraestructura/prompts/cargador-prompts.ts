@@ -4,10 +4,11 @@ import { Injectable, type OnModuleInit } from '@nestjs/common';
 
 /**
  * Versión del prompt que se registra en cada turno. Un cambio de prompt sube la versión. Cada archivo lleva el sufijo de la
- * última versión en que cambió: `seguridad.v1.md` y `estilo.v4.md` (Fase 12d) y `turno.v3.md`.
+ * última versión en que cambió: `seguridad.v2.md` (latencia del bot: las políticas salen de los casos de uso),
+ * `estilo.v4.md` (Fase 12d) y `turno.v3.md`.
  */
-const VERSION_PROMPT = 'v5';
-const VERSION_SEGURIDAD = 'v1';
+const VERSION_PROMPT = 'v6';
+const VERSION_SEGURIDAD = 'v2';
 const VERSION_ESTILO = 'v4';
 const VERSION_TURNO = 'v3';
 

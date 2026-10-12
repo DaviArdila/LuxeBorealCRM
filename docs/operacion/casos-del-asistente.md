@@ -12,12 +12,18 @@ desplegar y rigen desde el siguiente mensaje. Decisión de fondo: [ADR-0024](../
 
 | Pieza | Qué es | Quién la escribe |
 |---|---|---|
-| **Caso de intención** | Un texto que el LLM puede consultar con `consultar_caso` cuando coincide con su «cuándo aplica» | Tú, desde «Casos de uso» o la API |
+| **Caso de intención** | Un texto que el LLM usa cuando el cliente pide algo que coincide con su «cuándo aplica». Viaja dentro del prompt (ver abajo) o lo consulta con `consultar_caso` | Tú, desde «Casos de uso» o la API |
 | **Caso del sistema** | Un texto que el código envía en una situación fija. Son once: audio, imagen, falla técnica del modelo, techo de gasto, espera del asesor, los cuatro textos de la autorización de datos (aviso, recordatorio, aceptado y rechazado) y los dos títulos de sus botones («Sí» y «No») | Tú editas solo el texto; título, categoría y «cuándo aplica» quedan fijos porque el código lo dispara por su clave. La lista es cerrada y no se crean ni se borran |
 | **Categoría** | Agrupa casos para encontrarlos; tiene nombre y orden | Tú |
 | **Modo** | `literal`: el bot cita el texto palabra por palabra. `guia`: es base para redactar, sin agregar datos que el caso no trae | Tú (los del sistema son siempre `literal`) |
 
 El estilo del bot (tono y formato) **no** es un caso: va en [«Estilo del bot»](estilo-del-bot.md).
+
+**Los textos de tus casos viajan en el prompt mientras quepan.** Si la suma de los textos de los casos de intención
+activos no pasa de 8.000 caracteres, el bot los recibe todos al empezar cada turno y responde sin una consulta extra (una
+vuelta menos al modelo). Si la pasan, recibe solo títulos y «cuándo aplica» y consulta cada texto con `consultar_caso`: la
+respuesta es la misma, pero tarda una vuelta más. El servidor deja en el log `asistente.textos-fuera-del-prompt` con el
+conteo, nunca el texto. Para volver a la vía rápida, acorta o desactiva casos.
 
 ## Cargar los casos de hoy (una vez)
 

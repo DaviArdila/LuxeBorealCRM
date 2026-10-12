@@ -5,7 +5,14 @@
  */
 export { AsistenteModule } from './asistente.module.js';
 export { SembrarCasos, type ResultadoSemilla } from './aplicacion/sembrar-casos.js';
-export { CONSULTA_CASOS, type ConsultaCasos, type ModoCaso, type ResultadoCaso } from './puertos/consulta-casos.js';
+export {
+  CONSULTA_CASOS,
+  type CasoDelPrompt,
+  type CasosDelPrompt,
+  type ConsultaCasos,
+  type ModoCaso,
+  type ResultadoCaso,
+} from './puertos/consulta-casos.js';
 export { lineaDeIndice, type EntradaIndice } from './dominio/indice.js';
 export { TEXTOS_ASISTENTE, type TextosAsistente } from './puertos/textos-asistente.js';
 export {

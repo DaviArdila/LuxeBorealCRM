@@ -16,7 +16,7 @@ describe('Prompts versionados en el build (T8, D8)', () => {
     execFileSync(process.execPath, [cliNest, 'build'], { cwd: RAIZ, stdio: 'pipe' });
 
     const carpeta = path.join(RAIZ, 'dist', 'modulos', 'agente', 'prompts');
-    expect(existsSync(path.join(carpeta, 'seguridad.v1.md'))).toBe(true);
+    expect(existsSync(path.join(carpeta, 'seguridad.v2.md'))).toBe(true);
     expect(existsSync(path.join(carpeta, 'estilo.v4.md'))).toBe(true);
     expect(existsSync(path.join(carpeta, 'turno.v3.md'))).toBe(true);
 
@@ -29,6 +29,6 @@ describe('Prompts versionados en el build (T8, D8)', () => {
     expect(cargador.seguridad.length).toBeGreaterThan(100);
     expect(cargador.estilo.length).toBeGreaterThan(20);
     expect(cargador.turno).toContain('{{instrucciones}}');
-    expect(cargador.version).toBe('v5');
+    expect(cargador.version).toBe('v6');
   }, 180_000);
 });

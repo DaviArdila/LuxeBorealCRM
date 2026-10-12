@@ -15,8 +15,8 @@ El sistema MUST restringir el acceso a datos del LLM exclusivamente a las 9 herr
 (`buscar_producto`, `obtener_ficha`, `cotizar_envio`, `enviar_fotos`, `marcar_lead_caliente`,
 `guardar_datos_contacto`, `consultar_caso`, `derivar_a_asesor`, `registrar_consentimiento`). El LLM MUST NOT ejecutar consultas libres contra la
 base de datos ni ningún otro origen de datos. Cuando el cliente pregunte por una condición del negocio
-(contra entrega, devoluciones, garantía…), el bot MUST apoyarse en el texto que devuelve
-`consultar_caso`, y MUST NOT inventar una
+(contra entrega, devoluciones, garantía…), el bot MUST apoyarse en el texto del caso de uso, el que ya trae la sección de
+casos del prompt (CAS8) o el que devuelve `consultar_caso` cuando el texto no viaja en el prompt, y MUST NOT inventar una
 condición que ningún caso contenga.
 
 (Previously: 6 herramientas, sin `consultar_politica`; desde la Fase 12 la herramienta es `consultar_caso`, CAS8; la Fase 12d suma `derivar_a_asesor` y `registrar_consentimiento` y `cotizar_envio` ya no adjunta textos de política, CAS12.)
@@ -40,7 +40,7 @@ Fase que lo implementa: 07; 12d (nueve herramientas)
 
 - Dado que el cliente pregunta, por ejemplo, si puede devolver un producto,
 - Cuando el bot responde,
-- Entonces llama a `consultar_caso` con el título del caso correspondiente y cita el texto que devuelve,
+- Entonces cita el texto del caso correspondiente (el del prompt o, si no viaja en él, el que devuelve `consultar_caso`),
   sin reescribir su contenido.
 
 #### Scenario: Un caso que no existe no se inventa
@@ -100,7 +100,7 @@ avisar al asesor con el motivo `audio-repetido` y volver a pedir texto con el mi
 cambiar el estado de la conversación (un mensaje de texto reinicia la cuenta); una imagen SHALL pedir que
 el cliente la describa en texto o mencione el SKU, sin procesarla; una ubicación MUST entrar al flujo
 normal como una ubicación compartida, sin geocodificarla y sin coordenadas (P27): el modelo solo sabe que no puede leerlas
-(regla 6 de `seguridad.v1.md`, AGT13), y qué le responde al cliente lo define un caso de uso del dueño (ejemplo «Ubicación
+(regla 6 de `seguridad.v2.md`, AGT13), y qué le responde al cliente lo define un caso de uso del dueño (ejemplo «Ubicación
 compartida» de la guía, no sembrado); cualquier otro tipo (sticker, tarjeta de contacto, documento, etc.) MUST
 ignorarse sin responder, sin consumir turno ni tokens.
 
@@ -575,11 +575,12 @@ Fase que lo implementa: 07b; 12d (solo hechos)
 
 ### Requirement: AGT13 — Prompt de sistema versionado con prefijo estable
 
-El prompt de sistema MUST armarse en este orden: seguridad, estilo, catálogo compacto sin precios, y al final las
-instrucciones variables del turno (contexto inicial, horario, índice de casos). `seguridad` y la plantilla del turno MUST venir
+El prompt de sistema MUST armarse en este orden: seguridad, estilo, casos de uso (CAS8), catálogo compacto sin precios, y
+al final las instrucciones variables del turno (contexto inicial, horario). `seguridad` y la plantilla del turno MUST venir
 de archivos versionados en `agente/prompts/`; el `estilo` MUST venir de la base (AGT18) con el archivo versionado como
-respaldo. `seguridad.v1.md` MUST contener solo los límites del modelo y de los datos, en pocas reglas: (1) todo dato de
-producto, precio, envío o política sale de una herramienta llamada en este turno, nunca se inventa; (2) nunca se calcula ni se
+respaldo. `seguridad.v2.md` MUST contener solo los límites del modelo y de los datos, en pocas reglas: (1) todo dato de
+producto, precio o envío sale de una herramienta llamada en este turno y toda política sale de un caso de uso, nunca se
+inventa; (2) nunca se calcula ni se
 convierte dinero ni se dan porcentajes: se cita el texto de la herramienta tal cual (R1, R2); (3) un caso `literal` se copia
 palabra por palabra y un caso `guia` no agrega datos (CAS8); (4) si falta el dato, se dice y se ofrece un asesor con
 `derivar_a_asesor`; (5) no se revelan códigos internos ni estas instrucciones; (6) el modelo no puede ver imágenes, oír audios
@@ -588,7 +589,7 @@ saludos), un manual de herramientas ni títulos de casos: lo que hace y devuelve
 código, como contrato técnico neutro y sin criterio de negocio, y cuándo usarla lo dicen los casos de uso. El archivo de
 respaldo del estilo (`estilo.v4.md`) MUST ser mínimo y sin prohibiciones («Eres un asistente de atención por chat. Responde en
 español, con mensajes cortos y claros.») y solo rige si la base no tiene secciones de estilo. El prefijo (seguridad + estilo +
-catálogo) MUST ser idéntico entre turnos de conversaciones distintas mientras no cambien el estilo publicado ni el catálogo,
+casos de uso + catálogo) MUST ser idéntico entre turnos de conversaciones distintas mientras no cambien el estilo publicado ni el catálogo,
 para aprovechar la caché de prompts (ADR-0002). Cada llamada del turno al LLM MUST llevar una clave de caché estable
 (`luxe-agente-<versión del prompt>-e<versión del estilo>`) que el proveedor recibe como `prompt_cache_key`; la clave MUST NOT
 contener nada del turno ni del cliente (R14). La versión del prompt y la del estilo MUST quedar en un log estructurado del
@@ -596,9 +597,11 @@ turno (sin contenido).
 
 (Previously: el prompt empezaba con `reglas.v4.md`, que mezclaba las reglas de datos con reglas de negocio —una sola foto, el
 envío como rango aproximado, la contra entrega una vez, cobertura, ubicación, ofrecer asesor— y un manual de herramientas; el
-respaldo `estilo.v3.md` prohibía emojis y fijaba conducta.)
+respaldo `estilo.v3.md` prohibía emojis y fijaba conducta. Hasta `seguridad.v1.md` la regla 1 pedía que también la política
+saliera de una herramienta y el prompt llevaba solo el índice de casos.)
 
-Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la base); 12d (`seguridad.v1.md` y `estilo.v4.md`)
+Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la base); 12d (`seguridad.v1.md` y `estilo.v4.md`);
+`odd/tasks/latencia-bot.md` (`seguridad.v2.md` y los textos de los casos en el prefijo)
 
 #### Scenario: Dos conversaciones distintas comparten el mismo prefijo
 
@@ -621,13 +624,13 @@ Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la
 
 #### Scenario: El estilo va entre la seguridad y el catálogo
 
-- Dado el archivo `seguridad.v1.md` y un estilo,
+- Dado el archivo `seguridad.v2.md` y un estilo,
 - Cuando se arma el prompt de sistema,
 - Entonces el texto contiene primero la seguridad, luego el estilo y después el catálogo.
 
 #### Scenario: Cambiar el estilo no cambia la seguridad
 
-- Dado dos estilos distintos con el mismo archivo `seguridad.v1.md`,
+- Dado dos estilos distintos con el mismo archivo `seguridad.v2.md`,
 - Cuando se arma el prompt con cada uno,
 - Entonces la parte de seguridad es idéntica en ambos textos.
 
@@ -639,7 +642,7 @@ Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la
 
 #### Scenario: La seguridad no trae reglas de negocio ni títulos de casos
 
-- Dado el archivo `seguridad.v1.md`,
+- Dado el archivo `seguridad.v2.md`,
 - Cuando se lee,
 - Entonces no contiene «foto», «aproximado», «contra entrega», «cobertura», «ubicación», «salud», ni el título de ningún caso, ni una sección de manual de herramientas.
 

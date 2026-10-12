@@ -1,4 +1,4 @@
-import type { ResultadoCaso } from '../../../asistente/index.js';
+import { lineaDeIndice, type CasoDelPrompt, type ResultadoCaso } from '../../../asistente/index.js';
 import type { FichaProducto, ResultadoCotizacion } from '../../../catalogo/index.js';
 
 /**
@@ -34,4 +34,13 @@ export function casoParaElModelo(caso: ResultadoCaso): Record<string, unknown> {
   return caso.encontrado
     ? { encontrado: true, titulo: caso.titulo, modo: caso.modo, texto: caso.texto }
     : { encontrado: false, titulos_disponibles: caso.titulosDisponibles };
+}
+
+/**
+ * Un caso dentro del prompt (CAS8): su línea del índice y, debajo, exactamente lo que devolvería `consultar_caso`, así
+ * `literal` y `guia` se presentan igual por las dos vías y la regla 3 de seguridad rige sin cambios.
+ */
+export function casoEnPrompt(caso: CasoDelPrompt): string {
+  const resultado = casoParaElModelo({ encontrado: true, titulo: caso.titulo, modo: caso.modo, texto: caso.texto });
+  return `${lineaDeIndice(caso)}\n  ${JSON.stringify(resultado)}`;
 }

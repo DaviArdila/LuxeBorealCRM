@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClockFalso } from '../../../../test/fakes/clock-falso.js';
+import { MAX_CARACTERES_TEXTOS_EN_PROMPT } from '../dominio/indice.js';
 import { textoDeRespaldo } from '../dominio/sistema.js';
 import type { CasoDeIntencion, RepositorioCasos } from '../puertos/repositorio-casos.js';
 import type { VersionAsistente } from '../puertos/version-asistente.js';
@@ -226,5 +227,55 @@ describe('asistente/aplicacion — ProveedorTextos (CAS7)', () => {
 
     expect(await proveedor.indice()).toEqual([]);
     expect(await proveedor.consultar('Garantía')).toEqual({ encontrado: false, titulosDisponibles: [] });
+  });
+
+  it('CAS8 — Los casos del prompt traen su texto y su modo cuando la suma de los textos cabe en el tope', async () => {
+    const { proveedor } = crear({}, [caso('Garantía', { modo: 'literal' }), caso('Saludo', { modo: 'guia', texto: 'Saluda.' })]);
+
+    expect(await proveedor.casosDelPrompt()).toEqual({
+      conTextos: true,
+      casos: [
+        { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por garantía.', modo: 'literal', texto: 'Texto de Garantía.' },
+        { titulo: 'Saludo', cuandoAplica: 'Cuando preguntan por saludo.', modo: 'guia', texto: 'Saluda.' },
+      ],
+    });
+  });
+
+  it('CAS8 — Si los textos pasan el tope, el prompt lleva solo el índice y se avisa con conteos', async () => {
+    const largo = 'x'.repeat(MAX_CARACTERES_TEXTOS_EN_PROMPT);
+    const { proveedor } = crear({}, [caso('Garantía', { texto: largo }), caso('Saludo', { texto: 'TEXTO-CONFIDENCIAL' })]);
+
+    const resultado = await proveedor.casosDelPrompt();
+
+    expect(resultado).toEqual({
+      conTextos: false,
+      casos: [
+        { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por garantía.' },
+        { titulo: 'Saludo', cuandoAplica: 'Cuando preguntan por saludo.' },
+      ],
+    });
+    expect(avisos).toHaveBeenCalledWith({
+      evento: 'asistente.textos-fuera-del-prompt',
+      casos: 2,
+      caracteres: MAX_CARACTERES_TEXTOS_EN_PROMPT + 'TEXTO-CONFIDENCIAL'.length,
+    });
+    expect(JSON.stringify(avisos.mock.calls)).not.toContain('TEXTO-CONFIDENCIAL');
+  });
+
+  it('CAS8 — Los casos del prompt son los mismos del índice recortado', async () => {
+    const setenta = Array.from({ length: 70 }, (_, i) => caso(`Caso ${String(i + 1).padStart(3, '0')}`, { texto: 't' }));
+    const { proveedor } = crear({}, setenta);
+
+    const resultado = await proveedor.casosDelPrompt();
+
+    expect(resultado.conTextos).toBe(true);
+    expect(resultado.casos).toHaveLength(60);
+  });
+
+  it('CAS8 — Una base caída deja los casos del prompt vacíos', async () => {
+    const { proveedor, repositorio } = crear({}, [caso('Garantía')]);
+    repositorio.falla = true;
+
+    expect(await proveedor.casosDelPrompt()).toEqual({ conTextos: true, casos: [] });
   });
 });

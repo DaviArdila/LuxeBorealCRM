@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CONSULTA_CASOS, lineaDeIndice, type ConsultaCasos } from '../../asistente/index.js';
+import { CONSULTA_CASOS, lineaDeIndice, type CasosDelPrompt, type ConsultaCasos } from '../../asistente/index.js';
 import { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
 import { HORARIO, type Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
+import { casoEnPrompt } from './herramientas/contrato-modelo.js';
 import { ProveedorEstilo } from './proveedor-estilo.js';
 
 /** Instrucciones variables del turno (contexto inicial): siempre al final del prompt (AGT13). */
@@ -23,8 +24,28 @@ export interface PromptEnsamblado {
 }
 
 /**
+ * La sección de casos de uso (CAS8): con los textos, cada caso trae lo mismo que devolvería `consultar_caso` y el modelo
+ * no necesita llamarla; si los textos no caben, solo el índice y la instrucción de consultarlos. Sin casos, no hay sección.
+ */
+function seccionDeCasos(delPrompt: CasosDelPrompt): string[] {
+  if (delPrompt.casos.length === 0) return [];
+  if (delPrompt.conTextos) {
+    return [
+      '# Casos de uso\n\nEstos casos ya traen su texto y su modo, igual que los devolvería `consultar_caso`: usa un caso solo ' +
+        'cuando lo que pide el cliente coincida con su «cuándo aplica», sin llamar `consultar_caso` para él. ' +
+        `Casos disponibles:\n\n${delPrompt.casos.map(casoEnPrompt).join('\n')}`,
+    ];
+  }
+  return [
+    '# Casos de uso\n\nConsulta un caso con `consultar_caso` solo cuando lo que pide el cliente coincida con su «cuándo aplica». ' +
+      `Casos disponibles:\n\n${delPrompt.casos.map(lineaDeIndice).join('\n')}`,
+  ];
+}
+
+/**
  * Arma el prompt de sistema en el orden que fija AGT13 (D8 de la Fase 07b, D1 de la 08b, 12d): seguridad (los seis
- * límites del modelo y de los datos), estilo, el índice de casos de uso (título y «cuándo aplica», CAS8: sin sus textos ni precios), catálogo
+ * límites del modelo y de los datos), estilo, los casos de uso (CAS8: con sus textos si caben en el tope, o solo título y
+ * «cuándo aplica»; nunca precios), catálogo
  * compacto sin precios y, al final, la parte variable del turno (horario e
  * instrucciones del contexto inicial). El estilo lo entrega `ProveedorEstilo` (base con respaldo en archivo,
  * Fase 08c); `seguridad` y `turno` siguen siendo archivos. Las cuatro primeras piezas no dependen de la conversación, así que el prefijo es idéntico entre turnos
@@ -43,9 +64,9 @@ export class EnsamblarPrompt {
 
   async ensamblar(entrada: EntradaPrompt): Promise<PromptEnsamblado> {
     // Cuatro lecturas independientes en paralelo (latencia); si una falla, el ensamblado falla igual que en serie.
-    const [estilo, indice, catalogo, dentro] = await Promise.all([
+    const [estilo, delPrompt, catalogo, dentro] = await Promise.all([
       this.proveedorEstilo.obtener(),
-      this.casos.indice(),
+      this.casos.casosDelPrompt(),
       this.catalogoCompacto.ejecutar(),
       this.horario.estaDentroDeHorario(),
     ]);
@@ -58,13 +79,7 @@ export class EnsamblarPrompt {
       )
       .replace('{{instrucciones}}', entrada.instruccionesTurno.join('\n'))
       .trim();
-    const casos =
-      indice.length === 0
-        ? []
-        : [
-            '# Casos de uso\n\nConsulta un caso con `consultar_caso` solo cuando lo que pide el cliente coincida con su «cuándo aplica». ' +
-              `Casos disponibles:\n\n${indice.map(lineaDeIndice).join('\n')}`,
-          ];
+    const casos = seccionDeCasos(delPrompt);
     const texto = [this.cargador.seguridad.trim(), estilo.texto.trim(), ...casos, `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
     return {
       texto,
