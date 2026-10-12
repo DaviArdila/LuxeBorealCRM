@@ -85,5 +85,12 @@ el cliente de WhatsApp nunca vería los puntos. Mostrarlos exigiría llamar a la
 (puede mencionarlo antes). OpenRouter usa `prompt_cache_key` como llave de enrutamiento fijo, no como orden de caché: el
 ahorro se ve en `uso_llm.tokens_cache`.
 
+**Revisión nativa.** Corrió sobre el rango `3787889..aa5220d`. Riesgo medio; consentimiento otorgado.
+Resultado: aprobada con una lente (confiabilidad), y la autoridad quedó consumida (`review-8aec9180fa1d70dd`).
+Dejó tres observaciones no bloqueantes para trabajo posterior:
+- el armado del contexto en `contenido-llm.ts:111-123` no tiene test;
+- la instantánea del consentimiento en `politica-consentimiento.ts:70-71`;
+- la promesa del techo en `llm-gateway.ts:164-165`, que no rechaza nunca por diseño.
+
 ## Siguiente paso
 T6 por parte del dueño: probar desde WhatsApp y comparar los tiempos y `tokens_cache` en `uso_llm`.
