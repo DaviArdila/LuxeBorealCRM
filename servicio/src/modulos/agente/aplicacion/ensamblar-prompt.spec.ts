@@ -219,3 +219,30 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(b.texto).toBe(a.texto);
   });
 });
+
+describe('modulos/agente/aplicacion — EnsamblarPrompt: lecturas en paralelo (latencia)', () => {
+  it('estilo, índice de casos, catálogo y horario se piden juntos', async () => {
+    const cargador = new CargadorPrompts();
+    cargador.onModuleInit();
+    const pedidos: string[] = [];
+    let liberarEstilo: (estilo: EstiloVigente) => void = () => undefined;
+    const proveedor = {
+      obtener: () => {
+        pedidos.push('estilo');
+        return new Promise<EstiloVigente>((resolver) => (liberarEstilo = resolver));
+      },
+    } as unknown as ProveedorEstilo;
+    const casos = { indice: () => (pedidos.push('casos'), Promise.resolve([])) } as unknown as ConsultaCasos;
+    const compacto = { ejecutar: () => (pedidos.push('catalogo'), Promise.resolve(CATALOGO)) } as unknown as ObtenerCatalogoCompacto;
+    const horario: Horario = { estaDentroDeHorario: () => (pedidos.push('horario'), Promise.resolve(true)) };
+    const ensamblar = new EnsamblarPrompt(cargador, proveedor, compacto, horario, casos);
+
+    const resultado = ensamblar.ensamblar({ instruccionesTurno: [] });
+    await new Promise((resolver) => setImmediate(resolver));
+
+    expect(pedidos).toEqual(['estilo', 'casos', 'catalogo', 'horario']);
+    liberarEstilo({ texto: cargador.estilo, version: 0, origen: 'archivo' });
+    await expect(resultado).resolves.toMatchObject({ versionEstilo: 0 });
+  });
+});
+

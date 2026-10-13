@@ -161,6 +161,8 @@ export class LlmGateway implements LlmPort {
       return;
     }
     const desde = inicioMesUTC(this.clock.ahora());
+    // El techo del parámetro se lee mientras corre la suma del mes (latencia); `techoEfectivoUsd` nunca rechaza.
+    const techo = this.techoEfectivoUsd();
     let gastoUsd: number;
     try {
       gastoUsd = await this.repositorioUso.gastoMensual(desde);
@@ -170,7 +172,7 @@ export class LlmGateway implements LlmPort {
       return;
     }
 
-    const techoUsd = await this.techoEfectivoUsd();
+    const techoUsd = await techo;
     if (gastoUsd < (techoUsd * c.LLM_UMBRAL_AVISO_PCT) / 100) {
       return;
     }

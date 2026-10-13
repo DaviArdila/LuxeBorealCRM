@@ -3,7 +3,7 @@ import { normalizarLugar } from '../../../../compartido/texto/index.js';
 import { validarOpcionesBotones, type SolicitudTurno } from '../../../conversaciones/index.js';
 import { TEXTOS_ASISTENTE, textoDeRespaldo, type ClaveSistema, type TextosAsistente } from '../../../asistente/index.js';
 import { decidirNoTextuales } from '../../dominio/decidir-no-textuales.js';
-import type { DecisionPolitica, PoliticaTurno } from '../../dominio/politica-turno.js';
+import type { DecisionPolitica, EstadoTurno, PoliticaTurno } from '../../dominio/politica-turno.js';
 import {
   REPOSITORIO_CONTACTO_AGENTE,
   type EstadoConsentimiento,
@@ -59,7 +59,7 @@ export class PoliticaConsentimiento implements PoliticaTurno {
     @Inject(TEXTOS_ASISTENTE) private readonly textos: TextosAsistente,
   ) {}
 
-  async evaluar(solicitud: SolicitudTurno): Promise<DecisionPolitica> {
+  async evaluar(solicitud: SolicitudTurno, turno: EstadoTurno = {}): Promise<DecisionPolitica> {
     const { contactoId } = solicitud.contexto;
     let estado: EstadoConsentimiento | null;
     try {
@@ -67,6 +67,8 @@ export class PoliticaConsentimiento implements PoliticaTurno {
     } catch {
       estado = null;
     }
+    // Si el turno sigue, el resto del pipeline reutiliza esta lectura en vez de repetirla (una sola por turno).
+    if (estado !== null) turno.consentimiento = estado;
     if (estado === 'aceptado') return { decision: 'seguir' };
 
     // R12 resuelve audio, imagen y sticker sin llegar al modelo; solo la ubicación sola sigue hacia el LLM.
