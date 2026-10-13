@@ -40,8 +40,7 @@
         ],
         "textoLiteral": [
           {
-            "herramienta": "consultar_caso",
-            "campo": "texto"
+            "caso": "Devoluciones"
           }
         ],
         "sinSku": true

@@ -13,26 +13,11 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "consultar_caso",
-              "argumentos": {
-                "titulo": "Criptomonedas"
-              }
-            }
-          ]
-        },
-        {
           "texto": "No tengo información sobre pagos con criptomonedas. Si quieres, te paso con un asesor para que te la confirme."
         }
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "herramientasEsperadas": [
-          {
-            "nombre": "consultar_caso"
-          }
-        ],
         "menciona": [
           "asesor"
         ],

@@ -1,7 +1,7 @@
 import { normalizarTexto } from '../../../src/compartido/texto/index.js';
 import { contarMontosSinRastro } from '../../../src/modulos/agente/dominio/auditar-dinero.js';
 import type { MotivoHandoff } from '../../../src/modulos/conversaciones/index.js';
-import type { AsercionesTurno, NombreAsercion } from './esquema-caso.js';
+import type { AsercionesTurno, FuenteLiteral, HerramientaEsperada, NombreAsercion } from './esquema-caso.js';
 
 /** Lo que el arnés observa de un turno, igual en modo guionado y real (D2). */
 export interface GrabacionTurno {
@@ -12,6 +12,11 @@ export interface GrabacionTurno {
   readonly handoff: MotivoHandoff | null;
   /** Motivo del aviso al asesor que trajo la respuesta (AGT24), o `null` si no trajo ninguno. */
   readonly aviso: string | null;
+}
+
+/** Lo que el caso de eval sabe además de la grabación: los textos de los casos de uso que sembró, por título. */
+export interface ContextoAserciones {
+  readonly textosDeCasos?: ReadonlyMap<string, string>;
 }
 
 export interface ResultadoAsercion {
@@ -34,13 +39,54 @@ function coincideParcial(argumentos: unknown, esperados: Readonly<Record<string,
   return Object.entries(esperados).every(([clave, valor]) => JSON.stringify(reales[clave]) === JSON.stringify(valor));
 }
 
+/** Los textos en `ruta` (con puntos) de un valor; una lista se recorre elemento por elemento. */
+function textosEnRuta(valor: unknown, ruta: readonly string[]): string[] {
+  if (Array.isArray(valor)) return valor.flatMap((elemento) => textosEnRuta(elemento, ruta));
+  const [clave, ...resto] = ruta;
+  if (clave === undefined) return typeof valor === 'string' ? [valor] : [];
+  if (typeof valor !== 'object' || valor === null) return [];
+  return textosEnRuta((valor as Record<string, unknown>)[clave], resto);
+}
+
 function camposDeResultados(g: GrabacionTurno, herramienta: string, campo: string): string[] {
-  return g.resultados
-    .filter((r) => r.nombre === herramienta && !r.esError)
-    .flatMap((r) => {
-      const valor = (r.resultado as Record<string, unknown> | null)?.[campo];
-      return typeof valor === 'string' ? [valor] : [];
-    });
+  return g.resultados.filter((r) => r.nombre === herramienta && !r.esError).flatMap((r) => textosEnRuta(r.resultado, campo.split('.')));
+}
+
+const alternativas = <T extends object>(esperada: T | { readonly algunaDe: readonly T[] }): readonly T[] =>
+  'algunaDe' in esperada ? esperada.algunaDe : [esperada];
+
+/** Un salto de línea o un doble espacio no cambian una palabra del texto citado. */
+const sinEspaciosExtra = (texto: string): string => texto.replace(/\s+/g, ' ').trim();
+
+function nombreDeFuente(fuente: FuenteLiteral): string {
+  return 'caso' in fuente ? `caso «${fuente.caso}»` : `${fuente.herramienta}.${fuente.campo}`;
+}
+
+/**
+ * `textoLiteral` de una expectativa: `null` si ninguna de sus fuentes existe en el turno (la herramienta no se llamó: eso
+ * ya lo vigila `herramientasEsperadas`, no se penaliza dos veces); si no, si la respuesta cita sin cambios alguno de sus
+ * textos. Un caso que no se sembró es un error del caso de eval y falla siempre.
+ */
+function evaluarLiteral(g: GrabacionTurno, fuentes: readonly FuenteLiteral[], contexto: ContextoAserciones): { ok: boolean; detalle: string } | null {
+  const nombre = fuentes.map(nombreDeFuente).join(' o ');
+  const noSembrados = fuentes.filter((f): f is { caso: string } => 'caso' in f && contexto.textosDeCasos?.get(f.caso) === undefined);
+  if (noSembrados.length === fuentes.length) {
+    return { ok: false, detalle: `${nombre} (no sembrado)` };
+  }
+  const textos = fuentes.flatMap((fuente) => {
+    if (!('caso' in fuente)) return camposDeResultados(g, fuente.herramienta, fuente.campo);
+    const texto = contexto.textosDeCasos?.get(fuente.caso);
+    return texto === undefined ? [] : [texto];
+  });
+  if (textos.length === 0) return null;
+  const respuesta = sinEspaciosExtra(g.textoFinal);
+  return { ok: textos.some((texto) => respuesta.includes(sinEspaciosExtra(texto))), detalle: nombre };
+}
+
+function llamoA(g: GrabacionTurno, esperada: HerramientaEsperada): boolean {
+  return g.llamadas.some(
+    (llamada) => llamada.nombre === esperada.nombre && (esperada.argumentos === undefined || coincideParcial(llamada.argumentos, esperada.argumentos)),
+  );
 }
 
 /**
@@ -50,21 +96,23 @@ function camposDeResultados(g: GrabacionTurno, herramienta: string, campo: strin
  * estilo (`sinSku`; Fase 08b) no son críticas: vigilan una preferencia del dueño, no una
  * regla invariante.
  */
-export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: AsercionesTurno): readonly ResultadoAsercion[] {
+export function evaluarAserciones(
+  grabacion: GrabacionTurno,
+  aserciones: AsercionesTurno,
+  contexto: ContextoAserciones = {},
+): readonly ResultadoAsercion[] {
   const resultados: ResultadoAsercion[] = [];
   const agregar = (nombre: NombreAsercion, ok: boolean, critica: boolean, detalle: string) =>
     resultados.push({ nombre, ok, critica, detalle });
 
   if (aserciones.herramientasEsperadas !== undefined) {
-    const faltantes = aserciones.herramientasEsperadas.filter(
-      (esperada) =>
-        !grabacion.llamadas.some(
-          (llamada) =>
-            llamada.nombre === esperada.nombre &&
-            (esperada.argumentos === undefined || coincideParcial(llamada.argumentos, esperada.argumentos)),
-        ),
+    const faltantes = aserciones.herramientasEsperadas.map(alternativas).filter((opciones) => !opciones.some((esperada) => llamoA(grabacion, esperada)));
+    agregar(
+      'herramientasEsperadas',
+      faltantes.length === 0,
+      false,
+      faltantes.length === 0 ? 'herramientas esperadas llamadas' : `no se llamó: ${faltantes.map((opciones) => opciones.map((f) => f.nombre).join(' o ')).join(', ')}`,
     );
-    agregar('herramientasEsperadas', faltantes.length === 0, false, faltantes.length === 0 ? 'herramientas esperadas llamadas' : `no se llamó: ${faltantes.map((f) => f.nombre).join(', ')}`);
   }
   if (aserciones.herramientasProhibidas !== undefined) {
     const llamadas = grabacion.llamadas.filter((l) => aserciones.herramientasProhibidas?.includes(l.nombre)).map((l) => l.nombre);
@@ -108,11 +156,11 @@ export function evaluarAserciones(grabacion: GrabacionTurno, aserciones: Asercio
     agregar('aviso', hubo === esperado, false, hubo === esperado ? 'aviso como se esperaba' : hubo ? 'aviso inesperado' : 'faltó el aviso esperado');
   }
   if (aserciones.textoLiteral !== undefined) {
-    const faltas = aserciones.textoLiteral.filter(({ herramienta, campo }) => {
-      const valores = camposDeResultados(grabacion, herramienta, campo);
-      return valores.length === 0 || !valores.every((valor) => grabacion.textoFinal.includes(valor));
-    });
-    agregar('textoLiteral', faltas.length === 0, false, faltas.length === 0 ? 'textos literales presentes' : `no aparece literal: ${faltas.map((f) => `${f.herramienta}.${f.campo}`).join(', ')}`);
+    const evaluadas = aserciones.textoLiteral.map((esperada) => evaluarLiteral(grabacion, alternativas(esperada), contexto)).filter((e) => e !== null);
+    if (evaluadas.length > 0) {
+      const faltas = evaluadas.filter((e) => !e.ok);
+      agregar('textoLiteral', faltas.length === 0, false, faltas.length === 0 ? 'textos literales presentes' : `no aparece literal: ${faltas.map((f) => f.detalle).join(', ')}`);
+    }
   }
   if (aserciones.textoAusente !== undefined) {
     const presentes = aserciones.textoAusente.filter((texto) => grabacion.textoFinal.includes(texto));

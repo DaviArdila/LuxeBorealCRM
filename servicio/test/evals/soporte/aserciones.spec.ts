@@ -80,7 +80,51 @@ describe('test/evals — evaluarAserciones', () => {
 
     expect(unica(grabacion({ textoFinal: 'Ojo: Se suma al total.', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(true);
     expect(unica(grabacion({ textoFinal: 'se suma al total', resultados: [resultado] }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(false);
-    expect(unica(grabacion({ textoFinal: 'x' }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] }).ok).toBe(false);
+  });
+
+  it('textoLiteral no aplica si la herramienta no se llamó: la ausencia ya la vigila herramientasEsperadas', () => {
+    expect(evaluarAserciones(grabacion({ textoFinal: 'x' }), { textoLiteral: [{ herramienta: 'consultar_caso', campo: 'texto' }] })).toEqual([]);
+  });
+
+  it('CAS8 — textoLiteral acepta el texto del caso sembrado, venga del prompt o de consultar_caso', () => {
+    const contexto = { textosDeCasos: new Map([['Medios de pago', 'Aceptamos transferencia.\nY contra entrega.']]) };
+    const aserciones = { textoLiteral: [{ caso: 'Medios de pago' }] };
+
+    // Sin llamar consultar_caso: el texto ya viajaba en el prompt. Los saltos de línea no cuentan como cambio.
+    expect(evaluarAserciones(grabacion({ textoFinal: 'Claro: Aceptamos transferencia. Y contra entrega.' }), aserciones, contexto)).toEqual([
+      expect.objectContaining({ nombre: 'textoLiteral', ok: true, critica: false }),
+    ]);
+    expect(evaluarAserciones(grabacion({ textoFinal: 'Aceptamos transferencias.' }), aserciones, contexto)[0]?.ok).toBe(false);
+  });
+
+  it('textoLiteral con un caso que no se sembró falla nombrándolo: es un error del caso de eval', () => {
+    const [r] = evaluarAserciones(grabacion(), { textoLiteral: [{ caso: 'Garantía' }] }, { textosDeCasos: new Map() });
+
+    expect(r).toMatchObject({ ok: false, detalle: 'no aparece literal: caso «Garantía» (no sembrado)' });
+  });
+
+  it('AGT8 — textoLiteral con algunaDe acepta el precio de obtener_ficha o el de la ficha que trae buscar_producto', () => {
+    const aserciones = {
+      textoLiteral: [{ algunaDe: [{ herramienta: 'obtener_ficha', campo: 'precio_texto' }, { herramienta: 'buscar_producto', campo: 'ficha.precio_texto' }] }],
+    };
+    const busqueda = {
+      nombre: 'buscar_producto',
+      resultado: [{ id: 'a', ficha: { precio_texto: '$389.000' } }, { id: 'b', ficha: { precio_texto: '$149.000' } }, { id: 'c' }],
+      esError: false,
+    };
+
+    expect(unica(grabacion({ textoFinal: 'El Anillo Aurora cuesta $389.000.', resultados: [busqueda] }), aserciones).ok).toBe(true);
+    expect(unica(grabacion({ textoFinal: 'Cuesta poco.', resultados: [busqueda] }), aserciones).ok).toBe(false);
+  });
+
+  it('herramientasEsperadas con algunaDe pasa si se llamó cualquiera de las alternativas', () => {
+    const aserciones = { herramientasEsperadas: [{ algunaDe: [{ nombre: 'obtener_ficha' }, { nombre: 'buscar_producto' }] }] };
+
+    expect(unica(grabacion({ llamadas: [{ nombre: 'buscar_producto', argumentos: { query: 'anillo' } }] }), aserciones).ok).toBe(true);
+    expect(unica(grabacion({ llamadas: [{ nombre: 'cotizar_envio', argumentos: {} }] }), aserciones)).toMatchObject({
+      ok: false,
+      detalle: 'no se llamó: obtener_ficha o buscar_producto',
+    });
   });
 
   it('textoAusente falla si aparece un texto que no debía citarse', () => {

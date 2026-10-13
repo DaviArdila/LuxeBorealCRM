@@ -38,7 +38,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 | ID | Tarea | Ruta | Estado |
 |---|---|---|---|
 | T1 | Arnés real: un `it` por caso con plazo calculado, ejecución en serie, resumen siempre impreso, fallas por repetición | delegada (writer) | [x] |
-| T2 | Aserciones alineadas con el contrato: `textoLiteral` con fuente `caso` y alternativas, sin doble penalización; `herramientasEsperadas` con alternativas; casos de uso y fichas | delegada (writer) | [ ] |
+| T2 | Aserciones alineadas con el contrato: `textoLiteral` con fuente `caso` y alternativas, sin doble penalización; `herramientasEsperadas` con alternativas; casos de uso y fichas | delegada (writer) | [x] |
 | T3 | Premisas de guion (`soloGuionado` o mensaje reescrito) y `menciona` con alternativas | delegada (writer) | [ ] |
 | T4 | Pregunta del dueño sobre `agt28` y guía de evals reales | delegada (writer) | [ ] |
 
@@ -46,9 +46,9 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 
 - [x] El modo real crea un `it` por caso con plazo `repeticiones × turnos × 2 × LOCK_TURNO_TTL_S + margen` y un `it` final
   que imprime el resumen aunque un caso falle o se corte.
-- [ ] Ningún caso exige `consultar_caso` para un texto que ya está en el prompt ni `obtener_ficha` cuando basta la ficha de
+- [x] Ningún caso exige `consultar_caso` para un texto que ya está en el prompt ni `obtener_ficha` cuando basta la ficha de
   `buscar_producto`; el único caso que ejercita la consulta es `caso-indice-grande`, con textos que no caben en el prompt.
-- [ ] `textoLiteral` no falla si su fuente no existe en el turno y acepta el texto del caso sembrado como fuente.
+- [x] `textoLiteral` no falla si su fuente no existe en el turno y acepta el texto del caso sembrado como fuente.
 - [ ] Los casos cuya premisa vive en el guion son `soloGuionado` o traen la premisa en el mensaje del cliente.
 - [ ] `npm run evals` (guionado) en verde y unitarios de `test/evals` con RED observado antes del GREEN.
 
@@ -61,7 +61,11 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 - T1: `plazo-real.ts` (plazo por caso), `iniciarCorridaReal` (sesión con casos en serie y `incompletos`), resumen con
   fallas por repetición, un `it` por caso en `agente.evals.ts`. RED observado: `plazo-real.spec.ts` (módulo inexistente) y
   2 pruebas nuevas de `resumen.spec.ts`; GREEN: `npx vitest run --project unit test/evals` 59 pasan. `npm run evals`
-  guionado: 49 pasan, 35 omitidas (las del modo real), veredicto APROBADA 100 %. Commit: ver `git log` (T1).
+  guionado: 49 pasan, 35 omitidas (las del modo real), veredicto APROBADA 100 %. Commit: 077e36b.
+- T2: `textoLiteral` con fuente `caso`, rutas con puntos y `algunaDe`, sin doble penalización; `herramientasEsperadas`
+  con `algunaDe`; relleno largo (`casosDeRelleno`) para que `caso-indice-grande` sea el único que consulta. 15 casos
+  ajustados (tabla en la guía). RED: 8 pruebas nuevas en `aserciones`, `esquema-caso` y `sembrar`; GREEN: 68 pasan.
+  `npm run evals` guionado: 49 pasan, APROBADA 100 %. Commit: ver `git log` (T2).
 
 ## Siguiente paso
 

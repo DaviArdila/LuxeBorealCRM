@@ -29,7 +29,14 @@
         "handoff": "prohibido",
         "herramientasEsperadas": [
           {
-            "nombre": "obtener_ficha"
+            "algunaDe": [
+              {
+                "nombre": "obtener_ficha"
+              },
+              {
+                "nombre": "buscar_producto"
+              }
+            ]
           }
         ],
         "dineroConRastro": true,

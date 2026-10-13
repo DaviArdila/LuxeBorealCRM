@@ -21,16 +21,6 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "consultar_caso",
-              "argumentos": {
-                "titulo": "Contra entrega"
-              }
-            }
-          ]
-        },
-        {
           "texto": "Tu pedido se envía contra entrega: pagas cuando lo recibes. El recargo por contra entrega se suma al total de tu compra."
         }
       ],
@@ -39,8 +29,7 @@
         "dineroConRastro": true,
         "textoLiteral": [
           {
-            "herramienta": "consultar_caso",
-            "campo": "texto"
+            "caso": "Contra entrega"
           }
         ],
         "menciona": [

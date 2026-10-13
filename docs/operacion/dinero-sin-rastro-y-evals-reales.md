@@ -72,6 +72,24 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
 
 El resumen se imprime siempre, al final, aunque haya casos en rojo. Nunca trae texto del cliente ni de la respuesta (R14).
 
+## Qué exigen los casos
+
+Los casos miden al bot contra el prompt y las herramientas **vigentes**. Si un caso pide algo que el prompt prohíbe, el
+caso está mal, no el modelo.
+
+| Regla del contrato | Cómo la respeta el caso |
+|---|---|
+| Con pocos casos de uso, su texto ya viaja en el prompt y el modelo **no** llama `consultar_caso` (CAS8) | Ningún caso exige `consultar_caso` salvo `caso-indice-grande`, cuyo relleno no cabe en el prompt |
+| `buscar_producto` trae la ficha de sus 3 primeros resultados; no se llama `obtener_ficha` para ellos (AGT8) | Los casos de precio aceptan `obtener_ficha` **o** `buscar_producto` (`algunaDe`) |
+| Si no hay caso para lo que se pregunta, se dice y se ofrece un asesor (regla 4 de seguridad) | Los casos «inexistentes» no exigen herramienta: piden no inventar y ofrecer el asesor |
+
+Dos aserciones cambiaron de forma:
+
+- **`textoLiteral`** acepta como fuente el texto de un caso sembrado (`{ "caso": "Devoluciones" }`), venga del prompt o de
+  `consultar_caso`, y alternativas (`algunaDe`). Si la herramienta de la fuente no se llamó, **no cuenta**: esa ausencia
+  ya la vigila `herramientasEsperadas`. Un salto de línea no cuenta como cambio; una palabra sí.
+- **`herramientasEsperadas`** acepta alternativas: `{ "algunaDe": [{ "nombre": "obtener_ficha" }, { "nombre": "buscar_producto" }] }`.
+
 ## Resultado de la corrida real del 2026-10-02
 
 Modelo `openai:gpt-6-luna`, con el arnés corregido y las guardas de este change.

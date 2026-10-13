@@ -14,17 +14,33 @@
   },
   "turnos": [
     {
-      "mensajes": [{ "tipoContenido": "texto", "texto": "¿Me mandas fotos del collar?" }],
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Me mandas fotos del collar?"
+        }
+      ],
       "guion": [
-        { "llamadas": [{ "nombre": "consultar_caso", "argumentos": { "titulo": "Fotos" } }] },
-        { "llamadas": [{ "nombre": "enviar_fotos", "argumentos": { "id_producto": "SKU-EVAL-COLLAR" } }] },
-        { "texto": "Claro, te comparto la foto del Collar Luna. Si quieres verlo desde otro ángulo, dime." }
+        {
+          "llamadas": [
+            {
+              "nombre": "enviar_fotos",
+              "argumentos": {
+                "id_producto": "SKU-EVAL-COLLAR"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Claro, te comparto la foto del Collar Luna. Si quieres verlo desde otro ángulo, dime."
+        }
       ],
       "aserciones": {
         "handoff": "prohibido",
         "herramientasEsperadas": [
-          { "nombre": "consultar_caso", "argumentos": { "titulo": "Fotos" } },
-          { "nombre": "enviar_fotos" }
+          {
+            "nombre": "enviar_fotos"
+          }
         ],
         "sinSku": true
       }
