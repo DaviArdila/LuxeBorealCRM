@@ -1,6 +1,9 @@
 # 0002. Pasarela de LLM: puerto propio + AI SDK sobre OpenRouter, GPT-5.6 Luna como principal
 
-- Estado: aceptada (matizada por [0019](0019-proveedores-llm-configurables.md) en cuanto a OpenRouter)
+- Estado: aceptada; reemplazada en parte por [0029](0029-proveedor-anthropic-y-retiro-de-openrouter.md): OpenRouter
+  se retiró y solo quedan OpenAI y Anthropic directos (antes, matizada por
+  [0019](0019-proveedores-llm-configurables.md)). El modelo principal vigente es `openai:gpt-6-luna`; `gpt-5.6-luna`
+  se retiró
 - Fecha: 2026-09-22
 
 ## Contexto

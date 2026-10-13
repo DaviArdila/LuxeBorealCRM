@@ -16,7 +16,7 @@ import { GENERADOR_RESPUESTA, type GeneradorRespuesta } from '../../src/modulos/
 import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
-import { SimuladorOpenRouter } from '../soporte/simulador-openrouter.js';
+import { SimuladorOpenAi } from '../soporte/simulador-openai.js';
 import { ejecutarCorridaReal, iniciarCorridaReal, leerLlmRealDeEntorno, type SesionCorridaReal } from './soporte/corrida-real.js';
 import { componerAgente } from './soporte/componer-agente.js';
 import { cargarCasos, parsearCaso, separarPorModoReal } from './soporte/esquema-caso.js';
@@ -38,7 +38,7 @@ const negativos = cargarCasos(path.join(CARPETA_CASOS, 'sinteticos', 'negativos'
 const dorado = existsSync(path.join(CARPETA_CASOS, 'dorado')) ? cargarCasos(path.join(CARPETA_CASOS, 'dorado')) : [];
 
 describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintéticos (modo guionado)', () => {
-  const simulador = { valor: undefined as SimuladorOpenRouter | undefined };
+  const simulador = { valor: undefined as SimuladorOpenAi | undefined };
   const grabador = new GrabadorLlm(new FakePuertoLlm());
   let contexto: INestApplicationContext;
   let generador: GeneradorRespuesta;
@@ -47,8 +47,8 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
   const resumenes: CasoResumen[] = [];
 
   beforeAll(async () => {
-    simulador.valor = await SimuladorOpenRouter.iniciar();
-    contexto = await componerAgente({ llm: grabador, urlOpenRouter: simulador.valor.url });
+    simulador.valor = await SimuladorOpenAi.iniciar();
+    contexto = await componerAgente({ llm: grabador, urlOpenAi: simulador.valor.url });
     generador = contexto.get<GeneradorRespuesta>(GENERADOR_RESPUESTA);
     prisma = contexto.get(PrismaService);
     versionCasos = contexto.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false });
@@ -143,7 +143,6 @@ describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo dema
     const llmReal = leerLlmRealDeEntorno(process.env);
     sesion = await iniciarCorridaReal({
       casos: casosReales,
-      apiKey: process.env['OPENROUTER_API_KEY'] ?? '',
       openaiApiKey: process.env['OPENAI_API_KEY'] ?? '',
       estiloCandidato: leerEstiloCandidato(process.env),
       ...llmReal,
@@ -179,8 +178,8 @@ describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo dema
 
 describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del modo real contra un simulador (EVL4)', () => {
   it('EVL4 — La corrida real imprime su costo y el modelo de cada caso', async () => {
-    const simulador = await SimuladorOpenRouter.iniciar();
-    simulador.responderTexto('¡Hola! ¿En qué te ayudo?', { tokensEntrada: 1000, tokensSalida: 500 });
+    const simulador = await SimuladorOpenAi.iniciar();
+    simulador.responderTexto('¡Hola! ¿En qué te ayudo?', { tokensEntrada: 2000, tokensSalida: 1000 });
     try {
       const caso = parsearCaso(
         {
@@ -207,17 +206,17 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del mod
 
       const corrida = await ejecutarCorridaReal({
         casos: [caso, soloGuionado],
-        apiKey: 'clave-de-prueba',
-        modelos: ['openai/gpt-5.6-luna'],
-        precios: { 'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
-        urlOpenRouter: simulador.url,
+        openaiApiKey: 'clave-de-prueba',
+        modelos: ['openai:gpt-6-luna'],
+        precios: { 'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 } },
+        urlOpenAi: simulador.url,
       });
 
       expect(corrida.veredicto.aprobada).toBe(true);
       expect(simulador.intentos).toBe(3);
-      expect(corrida.costoUsd).toBeCloseTo(3 * 0.0008, 6);
-      expect(corrida.texto).toContain('Costo estimado: 0.0024 USD');
-      expect(corrida.texto).toContain('openai/gpt-5.6-luna');
+      expect(corrida.costoUsd).toBeCloseTo(3 * 0.0007, 6);
+      expect(corrida.texto).toContain('Costo estimado: 0.0021 USD');
+      expect(corrida.texto).toContain('openai:gpt-6-luna');
       expect(corrida.omitidos).toEqual(['premisa-de-guion']);
       expect(corrida.incompletos).toEqual([]);
       expect(corrida.texto).toContain('Casos omitidos: 1 (solo guionado');

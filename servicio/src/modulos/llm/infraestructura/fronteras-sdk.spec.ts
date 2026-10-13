@@ -35,13 +35,17 @@ describe('modulos/llm/infraestructura — SDK de cada proveedor en un solo archi
     const paquetes = new Set(
       archivosDeProduccion(RAIZ)
         .flatMap(paquetesImportados)
-        .filter((paquete) => /^(@ai-sdk|@openrouter)\//.test(paquete)),
+        .filter((paquete) => /^@ai-sdk\//.test(paquete)),
     );
 
     expect(paquetes.size).toBeGreaterThan(0);
     for (const paquete of paquetes) {
       expect(archivosQueImportan(new RegExp(`^${paquete}$`)), paquete).toHaveLength(1);
     }
+  });
+
+  it('LLM20 — `@ai-sdk/anthropic` solo aparece en el proveedor Anthropic', () => {
+    expect(archivosQueImportan(/^@ai-sdk\/anthropic$/)).toEqual(['proveedores/anthropic.ts']);
   });
 
   it('LLM20 — `ai` solo aparece en el adaptador genérico', () => {

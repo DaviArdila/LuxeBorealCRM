@@ -190,7 +190,7 @@ describe('cargarConfiguracion', () => {
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
         TELEGRAM_BOT_TOKEN: 'token-telegram',
         TELEGRAM_CHAT_ID: '-100123',
-        OPENROUTER_API_KEY: 'clave-real',
+        OPENAI_API_KEY: 'clave-real',
       });
 
       expect(configuracion.DOCS_HABILITADO).toBe(false);
@@ -289,7 +289,7 @@ describe('cargarConfiguracion', () => {
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
         TELEGRAM_BOT_TOKEN: 'token-telegram',
         TELEGRAM_CHAT_ID: '123',
-        OPENROUTER_API_KEY: 'clave-real',
+        OPENAI_API_KEY: 'clave-real',
       });
 
       expect(configuracion.CHATWOOT_API_TOKEN_LECTURA).toBeUndefined();
@@ -355,7 +355,7 @@ describe('cargarConfiguracion', () => {
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
         TELEGRAM_BOT_TOKEN: 'token-telegram',
         TELEGRAM_CHAT_ID: '-100123',
-        OPENROUTER_API_KEY: 'clave-real',
+        OPENAI_API_KEY: 'clave-real',
       };
 
       expect(() => cargarConfiguracion(fuenteValidaProduccion)).not.toThrow();
@@ -426,7 +426,7 @@ describe('cargarConfiguracion', () => {
         NODE_ENV: 'production',
         CHATWOOT_BOT_TOKEN: 'token-real',
         CHATWOOT_WEBHOOK_SECRETO: 'secreto-real',
-        OPENROUTER_API_KEY: 'clave-real',
+        OPENAI_API_KEY: 'clave-real',
       };
       const sinTelegram = variablesRechazadas(fuenteProduccion);
 
@@ -675,7 +675,7 @@ describe('cargarConfiguracion', () => {
     });
   });
 
-  describe('Variables LLM_*/OPENROUTER_* (fase-06-pasarela-llm, T3, D3/D12, R15)', () => {
+  describe('Variables LLM_* (fase-06-pasarela-llm, T3, D3/D12, R15)', () => {
     function variablesRechazadas(
       fuente: Readonly<Record<string, string | undefined>>,
     ): readonly VariableInvalida[] {
@@ -693,11 +693,11 @@ describe('cargarConfiguracion', () => {
     it('usa los valores de D12 por defecto cuando ninguna variable LLM_* viene', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
       expect(configuracion.LLM_CONVERSACION_TIMEOUT_MS).toBe(15000);
       expect(configuracion.LLM_CONVERSACION_MAX_TOKENS).toBe(400);
       expect(configuracion.LLM_CONVERSACION_MAX_REINTENTOS).toBe(2);
-      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['openai:gpt-6-luna']);
       expect(configuracion.LLM_EVALS_TIMEOUT_MS).toBe(30000);
       expect(configuracion.LLM_TECHO_MENSUAL_USD).toBe(10);
       expect(configuracion.LLM_UMBRAL_AVISO_PCT).toBe(80);
@@ -705,25 +705,28 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.LLM_REINTENTO_MAX_MS).toBe(2000);
       expect(configuracion.LLM_CB_UMBRAL_FALLOS).toBe(5);
       expect(configuracion.LLM_CB_VENTANA_S).toBe(60);
-      expect(configuracion.OPENROUTER_API_KEY).toBe('');
-      expect(configuracion.OPENROUTER_BASE_URL).toBe('https://openrouter.ai/api/v1');
+      expect(configuracion).not.toHaveProperty('OPENROUTER_API_KEY');
+      expect(configuracion).not.toHaveProperty('OPENROUTER_BASE_URL');
+      // Solo se usan por ahora gpt-6-luna y claude-haiku-5-5 (ADR-0029). El precio de gpt-6-luna es el
+      // del dueño; el cache de Haiku es una estimación.
       expect(configuracion.LLM_PRECIOS_USD_JSON).toEqual({
-        'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+        'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
       });
     });
 
     it('interpreta las listas de modelos como CSV en orden de prioridad, sin espacios sobrantes', () => {
       const configuracion = cargarConfiguracion({
         ...fuenteValida,
-        LLM_CONVERSACION_MODELOS: ' modelo-a , modelo-b ',
+        LLM_CONVERSACION_MODELOS: ' openai:modelo-a , anthropic:modelo-b ',
         LLM_PRECIOS_USD_JSON: JSON.stringify({
-          'modelo-a': { entrada: 1, salida: 2, cache: 0 },
-          'modelo-b': { entrada: 3, salida: 4, cache: 0 },
-          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:modelo-a': { entrada: 1, salida: 2, cache: 0 },
+          'anthropic:modelo-b': { entrada: 3, salida: 4, cache: 0 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         }),
       });
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['modelo-a', 'modelo-b']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:modelo-a', 'anthropic:modelo-b']);
     });
 
     it('LLM3 — Timeout de conversación por debajo del TTL del lock de turno', () => {
@@ -778,7 +781,7 @@ describe('cargarConfiguracion', () => {
     it('LLM12 — un modelo de un perfil sin precio declarado impide el arranque sin imprimir su valor', () => {
       const fuenteInvalida = {
         ...fuenteValida,
-        LLM_EVALS_MODELOS: 'openai/gpt-5.6-luna,modelo-secreto-sin-precio',
+        LLM_EVALS_MODELOS: 'openai:gpt-6-luna,openai:modelo-secreto-sin-precio',
       };
 
       expect(variablesRechazadas(fuenteInvalida)).toContainEqual({
@@ -798,21 +801,21 @@ describe('cargarConfiguracion', () => {
 
     it('acepta dos perfiles que solo difieren en la lista de modelos (LLM12, R15)', () => {
       const precios = JSON.stringify({
-        'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
-        'otra/marca': { entrada: 0.5, salida: 2, cache: 0.05 },
+        'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+        'anthropic:otra-marca': { entrada: 0.5, salida: 2, cache: 0.05 },
       });
 
       const configuracion = cargarConfiguracion({
         ...fuenteValida,
         LLM_PRECIOS_USD_JSON: precios,
-        LLM_EVALS_MODELOS: 'otra/marca',
+        LLM_EVALS_MODELOS: 'anthropic:otra-marca',
       });
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
-      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['otra/marca']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
+      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['anthropic:otra-marca']);
     });
 
-    it('OPENROUTER_API_KEY vacía en production lanza ConfiguracionInvalidaError', () => {
+    it('OPENAI_API_KEY vacía en production con los modelos por defecto lanza ConfiguracionInvalidaError', () => {
       const fuenteProduccion = {
         ...fuenteValida,
         NODE_ENV: 'production',
@@ -823,11 +826,11 @@ describe('cargarConfiguracion', () => {
       };
 
       expect(variablesRechazadas(fuenteProduccion)).toContainEqual({
-        nombre: 'OPENROUTER_API_KEY',
+        nombre: 'OPENAI_API_KEY',
         problema: 'valor',
       });
       expect(() =>
-        cargarConfiguracion({ ...fuenteProduccion, OPENROUTER_API_KEY: 'clave-real' }),
+        cargarConfiguracion({ ...fuenteProduccion, OPENAI_API_KEY: 'clave-real' }),
       ).not.toThrow();
     });
   });
@@ -861,11 +864,11 @@ describe('cargarConfiguracion', () => {
       throw new Error('La configuración se aceptó y debía rechazarse');
     }
 
-    it('LLM15 — sin configuración nueva OPENAI_API_KEY queda vacía y todo va a OpenRouter', () => {
+    it('LLM15 — sin configuración OPENAI_API_KEY queda vacía y el modelo por defecto es openai:', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
       expect(configuracion.OPENAI_API_KEY).toBe('');
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai/gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
     });
 
     it('LLM16 — Un prefijo de proveedor desconocido impide el arranque', () => {
@@ -880,24 +883,26 @@ describe('cargarConfiguracion', () => {
       expect(error.variables).toContainEqual({ nombre: 'LLM_CONVERSACION_MODELOS', problema: 'valor' });
     });
 
-    it('LLM16 — Un id de OpenRouter con barra o sufijo :free se acepta como está', () => {
-      const configuracion = cargarConfiguracion({
+    it.each([
+      ['sin prefijo', 'modelo-simple'],
+      ['con barra al estilo de OpenRouter', 'openai/gpt-6-luna'],
+      ['con sufijo :free', 'meta-llama/llama-3-8b:free'],
+      ['con el prefijo openrouter retirado', 'openrouter:openai/gpt-6-luna'],
+    ])('LLM26 — Un id %s impide el arranque aunque tenga precio', (_caso, id) => {
+      const error = rechazo({
         ...fuenteValida,
-        LLM_CONVERSACION_MODELOS: 'meta-llama/llama-3-8b:free,openai/gpt-5.6-luna',
+        LLM_EVALS_MODELOS: id,
         LLM_PRECIOS_USD_JSON: JSON.stringify({
-          'meta-llama/llama-3-8b:free': { entrada: 0, salida: 0, cache: 0 },
-          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+          [id]: { entrada: 0, salida: 0, cache: 0 },
         }),
       });
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual([
-        'meta-llama/llama-3-8b:free',
-        'openai/gpt-5.6-luna',
-      ]);
+      expect(error.variables).toContainEqual({ nombre: 'LLM_EVALS_MODELOS', problema: 'valor' });
     });
 
     it('LLM17 — Producción exige la clave de cada proveedor usado', () => {
-      const error = rechazo({ ...fuenteSoloOpenai, OPENROUTER_API_KEY: 'clave-openrouter' });
+      const error = rechazo({ ...fuenteSoloOpenai, ANTHROPIC_API_KEY: 'clave-anthropic' });
 
       expect(error.variables).toContainEqual({ nombre: 'OPENAI_API_KEY', problema: 'valor' });
       expect(() =>
@@ -906,16 +911,10 @@ describe('cargarConfiguracion', () => {
     });
 
     it('LLM17 — Un proveedor sin uso no exige clave', () => {
-      const conOpenrouter = cargarConfiguracion({
-        ...fuenteProduccion,
-        OPENROUTER_API_KEY: 'clave-openrouter',
-      });
+      const soloOpenai = cargarConfiguracion({ ...fuenteSoloOpenai, OPENAI_API_KEY: 'clave-openai' });
 
-      expect(conOpenrouter.OPENAI_API_KEY).toBe('');
-      // Con todos los modelos en OpenAI, la clave de OpenRouter deja de ser obligatoria.
-      expect(() =>
-        cargarConfiguracion({ ...fuenteSoloOpenai, OPENAI_API_KEY: 'clave-openai' }),
-      ).not.toThrow();
+      // Con todos los modelos en OpenAI, la clave de Anthropic no es obligatoria.
+      expect(soloOpenai.ANTHROPIC_API_KEY).toBe('');
     });
 
     it('LLM17 — Fuera de production ninguna clave es obligatoria', () => {
@@ -929,22 +928,59 @@ describe('cargarConfiguracion', () => {
       ).not.toThrow();
     });
 
-    it('LLM17 — un perfil mixto exige la clave de OpenRouter y la de OpenAI', () => {
+    it('LLM17 — un perfil mixto exige la clave de Anthropic y la de OpenAI', () => {
       const mixta = {
         ...fuenteProduccion,
-        LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo,openai/gpt-5.6-luna',
+        LLM_CONVERSACION_MODELOS: 'openai:gpt-modelo,anthropic:claude-haiku-5-5',
         LLM_PRECIOS_USD_JSON: JSON.stringify({
           'openai:gpt-modelo': { entrada: 1, salida: 2, cache: 0.1 },
-          'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         }),
       };
 
       expect(rechazo(mixta).variables).toEqual(
         expect.arrayContaining([
-          { nombre: 'OPENROUTER_API_KEY', problema: 'valor' },
+          { nombre: 'ANTHROPIC_API_KEY', problema: 'valor' },
           { nombre: 'OPENAI_API_KEY', problema: 'valor' },
         ]),
       );
+    });
+
+    describe('proveedor anthropic (LLM25)', () => {
+      const fuenteSoloAnthropic = {
+        ...fuenteProduccion,
+        LLM_CONVERSACION_MODELOS: 'anthropic:claude-haiku-5-5',
+        LLM_EVALS_MODELOS: 'anthropic:claude-haiku-5-5',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+        }),
+      };
+
+      it('LLM25 — sin configuración ANTHROPIC_API_KEY queda vacía y no se exige', () => {
+        expect(cargarConfiguracion(fuenteValida).ANTHROPIC_API_KEY).toBe('');
+        expect(() =>
+          cargarConfiguracion({ ...fuenteProduccion, OPENAI_API_KEY: 'clave-openai' }),
+        ).not.toThrow();
+      });
+
+      it('LLM17 — Producción exige ANTHROPIC_API_KEY cuando un perfil usa anthropic:', () => {
+        const error = rechazo(fuenteSoloAnthropic);
+
+        expect(error.variables).toContainEqual({ nombre: 'ANTHROPIC_API_KEY', problema: 'valor' });
+        expect(error.variables).not.toContainEqual({ nombre: 'OPENAI_API_KEY', problema: 'valor' });
+        expect(
+          cargarConfiguracion({ ...fuenteSoloAnthropic, ANTHROPIC_API_KEY: 'clave-anthropic' })
+            .LLM_CONVERSACION_MODELOS,
+        ).toEqual(['anthropic:claude-haiku-5-5']);
+      });
+
+      it('LLM24 — El error de ANTHROPIC_API_KEY nunca imprime el valor de otra clave', () => {
+        const error = rechazo({ ...fuenteSoloAnthropic, OPENAI_API_KEY: 'sk-oa-valor-secreto-2' });
+
+        expect(error.message).toContain('ANTHROPIC_API_KEY');
+        expect(error.message).not.toContain('sk-oa-valor-secreto-2');
+      });
     });
 
     it('LLM19 — Un perfil con un modelo sin precio impide el arranque', () => {
@@ -974,14 +1010,14 @@ describe('cargarConfiguracion', () => {
     it('LLM24 — El error nombra la variable y nunca imprime el valor de una clave', () => {
       const error = rechazo({
         ...fuenteSoloOpenai,
-        OPENROUTER_API_KEY: 'sk-or-valor-secreto-1',
+        ANTHROPIC_API_KEY: 'sk-ant-valor-secreto-1',
         OPENAI_API_KEY: '',
         LLM_CONVERSACION_MODELOS: 'desconocido:modelo-x,openai:gpt-modelo',
       });
 
       expect(error.message).toContain('OPENAI_API_KEY');
-      expect(error.message).not.toContain('sk-or-valor-secreto-1');
-      expect(JSON.stringify(error.variables)).not.toContain('sk-or-valor-secreto-1');
+      expect(error.message).not.toContain('sk-ant-valor-secreto-1');
+      expect(JSON.stringify(error.variables)).not.toContain('sk-ant-valor-secreto-1');
     });
   });
 

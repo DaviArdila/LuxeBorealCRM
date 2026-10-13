@@ -39,40 +39,36 @@ class GenericoFalso {
 function crear() {
   const generico = new GenericoFalso();
   const enrutador = new AdaptadorEnrutador(
-    [proveedorFalso('openrouter'), proveedorFalso('openai')],
+    [proveedorFalso('anthropic'), proveedorFalso('openai')],
     generico as unknown as AdaptadorAiSdk,
   );
   return { generico, enrutador };
 }
 
-describe('modulos/llm/infraestructura — AdaptadorEnrutador (LLM15, LLM16)', () => {
-  it('LLM15 — Un id sin prefijo se llama a OpenRouter como hoy', async () => {
-    const { generico, enrutador } = crear();
-
-    const resultado = await enrutador.generarConModelo('openai/gpt-5.6-luna', SOLICITUD, LIMITE);
-
-    expect(resultado).toBe(RESULTADO);
-    expect(generico.llamadas).toEqual([{ proveedor: 'openrouter', modelo: 'openai/gpt-5.6-luna' }]);
-  });
-
+describe('modulos/llm/infraestructura — AdaptadorEnrutador (LLM15, LLM16, LLM26)', () => {
   it('LLM15 — Un id con prefijo se llama directo al proveedor indicado', async () => {
     const { generico, enrutador } = crear();
 
-    await enrutador.generarConModelo('openai:gpt-6-luna', SOLICITUD, LIMITE);
+    const resultado = await enrutador.generarConModelo('openai:gpt-6-luna', SOLICITUD, LIMITE);
+    await enrutador.generarConModelo('anthropic:claude-haiku-5-5', SOLICITUD, LIMITE);
 
-    expect(generico.llamadas).toEqual([{ proveedor: 'openai', modelo: 'gpt-6-luna' }]);
+    expect(resultado).toBe(RESULTADO);
+    expect(generico.llamadas).toEqual([
+      { proveedor: 'openai', modelo: 'gpt-6-luna' },
+      { proveedor: 'anthropic', modelo: 'claude-haiku-5-5' },
+    ]);
   });
 
-  it('LLM16 — Un id de OpenRouter con barra o sufijo no se toma por prefijo', async () => {
+  it('LLM26 — Un id sin prefijo registrado se rechaza sin llamar a ningún proveedor', async () => {
     const { generico, enrutador } = crear();
 
-    await enrutador.generarConModelo('meta-llama/llama-3-8b:free', SOLICITUD, LIMITE);
-    await enrutador.generarConModelo('openai/gpt-5.6-luna', SOLICITUD, LIMITE);
-
-    expect(generico.llamadas).toEqual([
-      { proveedor: 'openrouter', modelo: 'meta-llama/llama-3-8b:free' },
-      { proveedor: 'openrouter', modelo: 'openai/gpt-5.6-luna' },
-    ]);
+    await expect(
+      enrutador.generarConModelo('meta-llama/llama-3-8b:free', SOLICITUD, LIMITE),
+    ).rejects.toThrow(/proveedor registrado/);
+    await expect(enrutador.generarConModelo('openai/gpt-6-luna', SOLICITUD, LIMITE)).rejects.toThrow(
+      /proveedor registrado/,
+    );
+    expect(generico.llamadas).toHaveLength(0);
   });
 
   it('propaga tal cual el error del adaptador genérico, sin envolverlo ni reintentar', async () => {
@@ -88,7 +84,7 @@ describe('modulos/llm/infraestructura — AdaptadorEnrutador (LLM15, LLM16)', ()
   it('un proveedor que no se construyó falla sin llamar al SDK y sin nombrar secretos', async () => {
     const generico = new GenericoFalso();
     const enrutador = new AdaptadorEnrutador(
-      [proveedorFalso('openrouter')],
+      [proveedorFalso('anthropic')],
       generico as unknown as AdaptadorAiSdk,
     );
 

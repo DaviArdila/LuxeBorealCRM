@@ -694,7 +694,7 @@ Fase que lo implementa: 07c
 
 - Dado el conjunto de evals en su modo por defecto,
 - Cuando se ejecuta `npm run evals`,
-- Entonces ningún caso hace una llamada HTTP a OpenRouter y no se escribe ninguna fila de costo real.
+- Entonces ningún caso hace una llamada HTTP a un proveedor de LLM y no se escribe ninguna fila de costo real.
 
 #### Scenario: Dos corridas guionadas dan el mismo resultado
 
@@ -757,7 +757,8 @@ Fase que lo implementa: 07c
 ### Requirement: EVL4 — Modo real bajo demanda con perfil evals y costo visible
 
 Las evals MUST poder correr contra el LLM real solo cuando se pide explícitamente (variable de modo) y
-hay una clave de OpenRouter configurada, usando el perfil `evals` (LLM12). Sin clave, el modo real MUST
+está configurada la clave de cada proveedor que usan sus modelos (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; LLM17,
+ADR-0029), usando el perfil `evals` (LLM12). Sin clave, el modo real MUST
 negarse con un mensaje claro, sin intentar llamar. Al terminar, MUST imprimir el costo estimado de la
 corrida sumado desde `uso_llm` y el modelo que respondió cada caso. Nunca corre en CI.
 
@@ -765,7 +766,7 @@ Fase que lo implementa: 07c
 
 #### Scenario: El modo real sin clave se niega sin llamar
 
-- Dado el modo real pedido y ninguna clave de OpenRouter configurada,
+- Dado el modo real pedido y sin la clave del proveedor de los modelos del perfil `evals`,
 - Cuando se ejecuta `npm run evals`,
 - Entonces el comando termina con un error que explica que falta la clave y no hace ninguna llamada.
 

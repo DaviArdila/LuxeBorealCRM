@@ -9,7 +9,7 @@ contrato de herramientas **vigentes**, no contra un guion. El modo guionado sigu
 
 ## Problema (corridas reales del 2026-10-13)
 
-`openai:gpt-5.6-luna` (5 críticas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %) reprueban
+`openai:gpt-5.6-luna` (retirado después; 5 críticas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %) reprueban
 con resultados idénticos en 24 de 32 casos. Una auditoría atribuye la mayoría de las fallas al diseño de las evals:
 
 | # | Causa | Evidencia |
@@ -31,7 +31,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 - Sin cambios a prompts, descripciones de herramientas, estilo ni comportamiento del bot: es decisión del dueño.
 - `agt28-asesor-confirma-apartado` no se toca: su contradicción con R9 va como pregunta del dueño.
 - No se inventan casos dorados. El modo real no se puede correr aquí (sin clave): se verifica guionado y unitario.
-- Ediciones mínimas a `agente.evals.ts`, `modo-evals.ts` y `corrida-real.ts` (otro writer los toca para retirar OpenRouter).
+- Ediciones mínimas a `agente.evals.ts`, `modo-evals.ts` y `corrida-real.ts` (el retiro de OpenRouter ya se fusionó en `main`; el merge conservó ambos lados).
 
 ## Tareas
 

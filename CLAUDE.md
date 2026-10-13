@@ -179,8 +179,8 @@ secretos o configuración del repo).
 - **Prisma** sobre **PostgreSQL 16** (mismo servidor que Chatwoot, base y rol propios — ADR-001 del
   prototipo). Llaves UUID v7 (ADR-0007). Diseño en `MODELO_DATOS.md`.
 - **Redis** + **BullMQ** (`@nestjs/bullmq`) para colas, debounce, locks, dedupe y cachés.
-- **AI SDK** (`ai`) + `@openrouter/ai-sdk-provider` detrás de un puerto propio `LlmPort`; modelo
-  principal **GPT-5.6 Luna** vía OpenRouter con modelos de respaldo.
+- **AI SDK** (`ai`) + `@ai-sdk/openai` y `@ai-sdk/anthropic` detrás de un puerto propio `LlmPort`: OpenAI y
+  Anthropic directos (ADR-0029); por ahora solo `openai:gpt-6-luna` (principal) y `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se retiró.
 - `zod` para validar configuración y payloads; `sharp` para imágenes; `nestjs-pino` para logs.
 - **Vitest** (ESM, decisión 2026-09-23) + Supertest para e2e; Postgres y Redis reales en integración.
 - Observabilidad inicial: logs JSON a stdout, Sentry (plan gratis), Uptime Kuma, tabla `uso_llm`.
@@ -248,7 +248,7 @@ Fases 00a, 00b y 01:
 | `npm run auditoria` | `npm audit` filtrado por el umbral `high` y las excepciones versionadas de `auditoria-excepciones.json`; `-- --directorio <carpeta>` audita otra aplicación con sus propias excepciones |
 | `npm run flujos` | Valida estáticamente `.github/workflows/` con `actionlint` |
 | `npm run changelog` | Regenera `CHANGELOG.md` con `git-cliff` desde los commits de Conventional Commits (`cliff.toml`); nunca se edita a mano |
-| `npm run evals` | Vitest, proyecto `evals`: casos JSON contra el agente completo (Postgres + Redis reales) con un LLM guionado, sin red ni costo; umbral 100 % (Fase 07c). `EVALS_MODO=real` (con `OPENROUTER_API_KEY`, nunca en CI) lo corre contra el LLM real, 3 repeticiones, e imprime el costo; `EVALS_ESTILO=<ruta>` publica ese estilo candidato en la base de la corrida para medirlo antes de publicarlo con `prompt:estilo` |
+| `npm run evals` | Vitest, proyecto `evals`: casos JSON contra el agente completo (Postgres + Redis reales) con un LLM guionado, sin red ni costo; umbral 100 % (Fase 07c). `EVALS_MODO=real` (con la clave del proveedor de los modelos configurados, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY`; nunca en CI) lo corre contra el LLM real, 3 repeticiones, e imprime el costo; `EVALS_ESTILO=<ruta>` publica ese estilo candidato en la base de la corrida para medirlo antes de publicarlo con `prompt:estilo` |
 | `npm run evals:anonimizar` | Convierte una conversación cruda de Chatwoot (`.evals-crudo/`, ignorado por git) en un caso del set dorado con marcadores estables; no escribe nada si sobrevive un dato personal (R14) |
 | `npm run prompt:estilo` | Edita el estilo del bot sin desplegar (Fase 08c): `-- ver`, `-- historial`, `-- secciones` (solo lectura, sin textos), `-- publicar --archivo <ruta>` y `-- restaurar --version <n>`; valida el texto, guarda las últimas 10 versiones y no escribe el texto en logs. Tras publicar, correr los evals reales (EVL3) |
 | `npm run usuario:crear` | Crea un usuario del back office (Fase 11a): `-- --email <correo> --nombre <nombre> --rol admin\|asesor`; pide la contraseña dos veces sin mostrarla (mínimo 12 caracteres), exige una terminal interactiva, guarda solo el hash argon2id y no pisa un correo existente |

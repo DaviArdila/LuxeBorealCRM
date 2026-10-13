@@ -38,8 +38,8 @@ async function crearRepositorio() {
 }
 
 const EXITO: FilaUsoLlm = {
-  proveedor: 'openrouter',
-  modelo: 'openai/gpt-5.6-luna',
+  proveedor: 'openai',
+  modelo: 'openai:gpt-6-luna',
   tokensEntrada: 1000,
   tokensSalida: 500,
   tokensCache: 200,
@@ -61,8 +61,8 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     const filas = await prisma.usoLlm.findMany();
     expect(filas).toHaveLength(1);
     expect(filas[0]).toMatchObject({
-      proveedor: 'openrouter',
-      modelo: 'openai/gpt-5.6-luna',
+      proveedor: 'openai',
+      modelo: 'openai:gpt-6-luna',
       tokensEntrada: 1000,
       tokensSalida: 500,
       tokensCache: 200,
@@ -79,7 +79,7 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
 
     await repositorio.registrarUso(
       fila({
-        modelo: 'modelo/que-fallo',
+        modelo: 'openai:modelo-que-fallo',
         tokensEntrada: 0,
         tokensSalida: 0,
         tokensCache: 0,
@@ -92,7 +92,7 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     const filas = await prisma.usoLlm.findMany();
     expect(filas).toHaveLength(1);
     expect(filas[0]).toMatchObject({
-      modelo: 'modelo/que-fallo',
+      modelo: 'openai:modelo-que-fallo',
       tokensEntrada: 0,
       latenciaMs: 15_000,
       exito: false,
@@ -113,7 +113,7 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     expect(error).toHaveBeenCalledTimes(1);
     const registrado = JSON.stringify(error.mock.calls[0]);
     expect(registrado).toContain('llm.uso-no-registrado');
-    expect(registrado).toContain('openai/gpt-5.6-luna');
+    expect(registrado).toContain('openai:gpt-6-luna');
     expect(registrado).not.toContain('00000000-0000-7000-8000-000000000000');
     error.mockRestore();
   });
@@ -135,10 +135,10 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
           creado: new Date(creado),
         },
       });
-    await insertar('2026-08-31T23:59:59.999Z', 'openrouter', 'modelo/a', '9.000000');
-    await insertar('2026-09-01T00:00:00.000Z', 'openrouter', 'modelo/a', '0.000123');
-    await insertar('2026-09-20T10:00:00.000Z', 'openrouter', 'modelo/a', '0.000456');
-    await insertar('2026-09-21T10:00:00.000Z', 'openrouter', 'modelo/b', '1.000000');
+    await insertar('2026-08-31T23:59:59.999Z', 'openai', 'openai:modelo-a', '9.000000');
+    await insertar('2026-09-01T00:00:00.000Z', 'openai', 'openai:modelo-a', '0.000123');
+    await insertar('2026-09-20T10:00:00.000Z', 'openai', 'openai:modelo-a', '0.000456');
+    await insertar('2026-09-21T10:00:00.000Z', 'openai', 'openai:modelo-b', '1.000000');
     await insertar('2026-09-22T10:00:00.000Z', 'pasarela', 'techo-alcanzado', '0.000000');
 
     const total = await repositorio.gastoMensual(desde);
@@ -146,8 +146,8 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
 
     expect(total).toBe(1.000579);
     expect(porModelo).toEqual([
-      { proveedor: 'openrouter', modelo: 'modelo/a', costoUsd: 0.000579 },
-      { proveedor: 'openrouter', modelo: 'modelo/b', costoUsd: 1 },
+      { proveedor: 'openai', modelo: 'openai:modelo-a', costoUsd: 0.000579 },
+      { proveedor: 'openai', modelo: 'openai:modelo-b', costoUsd: 1 },
       { proveedor: 'pasarela', modelo: 'techo-alcanzado', costoUsd: 0 },
     ]);
     expect(porModelo.reduce((suma, grupo) => suma + grupo.costoUsd, 0)).toBeCloseTo(total, 6);
@@ -157,8 +157,8 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     const { repositorio, prisma } = await crearRepositorio();
     await prisma.usoLlm.create({
       data: {
-        proveedor: 'openrouter',
-        modelo: 'modelo/a',
+        proveedor: 'openai',
+        modelo: 'openai:modelo-a',
         tokensEntrada: 1,
         tokensSalida: 1,
         tokensCache: 0,

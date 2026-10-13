@@ -56,8 +56,40 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
 - Vitest no carga el `.env` solo: por eso `--env-file=.env`. No imprimas ni pegues el `.env`.
 - Ya no hace falta `--testTimeout`: cada caso es una prueba propia con su plazo, `repeticiones × turnos × 2 × 60 s + 30 s`
   (`plazoCasoRealMs`). Un caso lento o colgado falla solo, y el resto sigue.
+- La clave que hace falta es la del proveedor de los modelos de `LLM_EVALS_MODELOS`: `OPENAI_API_KEY` para `openai:`
+  (el valor por defecto es `openai:gpt-6-luna`) y `ANTHROPIC_API_KEY` para `anthropic:`. Un id sin uno de esos
+  prefijos hace que la corrida se niegue antes de llamar: OpenRouter se retiró ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
+- Modelos soportados por ahora: `openai:gpt-6-luna` (por defecto) y `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se
+  retiró. Para correrlas con cada uno, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY` y, si hace falta, `LLM_EVALS_MODELOS`.
+- Precios por defecto de `LLM_PRECIOS_USD_JSON` (USD por millón de tokens: entrada / salida / lectura de caché):
+  `gpt-6-luna` 0,10 / 0,50 / 0,01, dados por el dueño (contexto 1.050.000, salida máxima 128.000, razonamiento
+  none/low/medium por defecto/high/xhigh/max), y Haiku 0,10 / 0,50 / 0,01, donde el `cache` es una **estimación
+  pendiente de confirmar** (10 % de la entrada). El costo impreso de la corrida depende de ellos.
+- La tabla de precios **no tiene campo de escritura en caché**: la escritura (0,125 en `gpt-6-luna`; 1,25 veces la
+  entrada en Anthropic) no se cobra aparte en el cálculo, así que el costo queda levemente subestimado.
 - Cuesta cerca de **0,01 USD** por corrida con `openai:gpt-6-luna`. Tope autorizado: **2 USD por sesión de evals**.
 - Para medir un estilo candidato sin publicarlo, ver [estilo del bot](estilo-del-bot.md).
+
+### Con Claude Haiku 5.5 (Anthropic directo)
+
+El proveedor `anthropic` habla directo con la API de Anthropic ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
+Para correr las evals reales con Claude Haiku 5.5, agrega a `servicio/.env` estas tres variables:
+
+```
+ANTHROPIC_API_KEY=<tu clave de Anthropic>
+LLM_EVALS_MODELOS=anthropic:claude-haiku-5-5
+LLM_PRECIOS_USD_JSON={"anthropic:claude-haiku-5-5":{"entrada":0.1,"salida":0.5,"cache":0.01}}
+```
+
+Después corre el mismo comando de arriba. Si falta `ANTHROPIC_API_KEY`, la corrida se niega antes de hacer una sola
+llamada y nombra la variable.
+
+| Dato | Valor |
+|---|---|
+| Precio de entrada, salida y lectura de caché | 0,10 / 0,50 / 0,01 USD por millón de tokens, para prompts de hasta 100 000 tokens. **Verifica** los valores en la página de precios de Anthropic antes de cargarlos: el precio es del dueño, no del código (R2) |
+| Escritura en caché | Anthropic la cobra a 1,25 veces la entrada; aquí se registra al precio de entrada, así que el costo queda un poco por debajo del real |
+| Razonamiento | Cada llamada pide esfuerzo `low`: Haiku 5.5 razona por defecto y ese razonamiento cuenta dentro de `max_tokens` (400 en el perfil de conversación) |
+| Caché | Se marca un punto de corte en el prompt de sistema. Si `tokensCache` sigue en cero tras varias llamadas, el prefijo cambió entre llamadas o es más corto que el mínimo que el modelo cachea |
 
 ### Cómo leer el resultado
 
@@ -111,7 +143,7 @@ anonimizadas, solo casos sintéticos (P30).
 
 ## Corridas reales del 2026-10-13
 
-`openai:gpt-5.6-luna` (5 críticas fallidas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %)
+`openai:gpt-5.6-luna` (modelo ya retirado; 5 críticas fallidas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %)
 reprobaron con resultados idénticos en 24 de 32 casos. La causa principal fue el diseño de los casos, no los modelos: se
 corrigió en `odd/tasks/rediseno-evals-reales.md`. Hace falta **una corrida nueva** para saber cómo queda. Una crítica
 sigue abierta como decisión del dueño: `agt28-asesor-confirma-apartado` prohíbe marcar el lead caliente (P77).

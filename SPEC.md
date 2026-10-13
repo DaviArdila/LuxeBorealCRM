@@ -58,8 +58,8 @@ reglas de código.
 4. **Entrega al menos una vez + idempotencia**: todo evento entrante se registra antes de
    confirmarse; toda salida lleva clave de idempotencia; los efectos secundarios que deben
    sobrevivir una caída pasan por outbox (ADR-0004).
-5. **El proveedor de LLM es configuración**, no código (ADR-0002): GPT-5.6 Luna vía OpenRouter con
-   modelos de respaldo.
+5. **El proveedor de LLM es configuración**, no código (ADR-0002, ADR-0029): OpenAI y Anthropic directos,
+   hoy solo `openai:gpt-6-luna` (principal) y `anthropic:claude-haiku-5-5`.
 6. **Delegar antes de construir**: lo que Chatwoot Community ya resuelve no se construye (ADR-0005).
 7. **Núcleo agnóstico al canal**: el agente no pregunta por el canal; lo que cambia por canal vive en
    un perfil de capacidades en el borde (`docs/analisis/05-multicanal.md`).

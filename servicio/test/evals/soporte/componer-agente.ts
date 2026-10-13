@@ -5,18 +5,19 @@ import { LLM_PORT, type LlmPort } from '../../../src/modulos/llm/index.js';
 import { CONFIGURACION, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_AUTH_DE_PRUEBA } from '../../soporte/configuracion-auth-de-prueba.js';
+import { ADAPTADOR_LLM, adaptadorLlmContraSimuladorOpenAi } from '../../soporte/adaptador-llm-simulado.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 import { prefijoRedisDePrueba, urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
 export interface OpcionesComposicion {
   readonly llm: LlmPort;
-  /** Apunta el adaptador de OpenRouter a un simulador: centinela de que ninguna llamada sale a la red (EVL1). */
-  readonly urlOpenRouter?: string;
+  /** Apunta el proveedor `openai` a un simulador: centinela de que ninguna llamada sale a la red (EVL1). */
+  readonly urlOpenAi?: string;
   readonly sobrescribir?: Partial<Configuracion>;
 }
 
 /** Configuración completa de la aplicación para las evals: sin workers de colas ni red externa. */
-export function configuracionEvals(opciones: Pick<OpcionesComposicion, 'urlOpenRouter' | 'sobrescribir'>): Configuracion {
+export function configuracionEvals(opciones: Pick<OpcionesComposicion, 'sobrescribir'>): Configuracion {
   return {
     NODE_ENV: 'test',
     PORT: 3000,
@@ -62,7 +63,6 @@ export function configuracionEvals(opciones: Pick<OpcionesComposicion, 'urlOpenR
     ...CONFIGURACION_AGENTE_DE_PRUEBA,
     ...CONFIGURACION_LLM_DE_PRUEBA,
     ...CONFIGURACION_AUTH_DE_PRUEBA,
-    ...(opciones.urlOpenRouter === undefined ? {} : { OPENROUTER_BASE_URL: opciones.urlOpenRouter }),
     ...opciones.sobrescribir,
   };
 }
@@ -73,12 +73,15 @@ export function configuracionEvals(opciones: Pick<OpcionesComposicion, 'urlOpenR
  * workers de colas: las evals llaman directo al generador del turno, no pasan por el webhook.
  */
 export async function componerAgente(opciones: OpcionesComposicion): Promise<INestApplicationContext> {
-  const modulo = await Test.createTestingModule({ imports: [AppModule] })
+  const constructor = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIGURACION)
     .useValue(configuracionEvals(opciones))
     .overrideProvider(LLM_PORT)
-    .useValue(opciones.llm)
-    .compile();
+    .useValue(opciones.llm);
+  if (opciones.urlOpenAi !== undefined) {
+    constructor.overrideProvider(ADAPTADOR_LLM).useFactory(adaptadorLlmContraSimuladorOpenAi(opciones.urlOpenAi));
+  }
+  const modulo = await constructor.compile();
   await modulo.init();
   return modulo;
 }

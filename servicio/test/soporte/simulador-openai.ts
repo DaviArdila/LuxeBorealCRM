@@ -33,7 +33,7 @@ type RespuestaOpenAi =
       readonly uso: UsoOpenAiSimulado;
       readonly llamadas: readonly LlamadaOpenAiSimulada[];
     }
-  | { readonly tipo: 'error'; readonly estado: number };
+  | { readonly tipo: 'error'; readonly estado: number; readonly mensaje: string };
 
 /**
  * Servidor HTTP local con el formato de la API Responses de OpenAI (T4 de `proveedores-llm-
@@ -76,8 +76,9 @@ export class SimuladorOpenAi {
     this.respuesta = { tipo: 'exito', texto: '', uso, llamadas };
   }
 
-  responderError(estado: number): void {
-    this.respuesta = { tipo: 'error', estado };
+  /** `mensaje` permite comprobar que el texto de un error del proveedor nunca llega a los logs (LLM10). */
+  responderError(estado: number, mensaje = 'error simulado'): void {
+    this.respuesta = { tipo: 'error', estado, mensaje };
   }
 
   ultima(): SolicitudOpenAiRecibida {
@@ -108,7 +109,7 @@ export class SimuladorOpenAi {
       res.writeHead(respuesta.estado, { 'content-type': 'application/json' });
       res.end(
         JSON.stringify({
-          error: { message: 'error simulado', type: 'simulado', param: null, code: 'simulado' },
+          error: { message: respuesta.mensaje, type: 'simulado', param: null, code: 'simulado' },
         }),
       );
       return;

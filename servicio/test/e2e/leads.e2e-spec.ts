@@ -1,7 +1,7 @@
 /**
  * E2E de la Fase 08: leads y handoff de punta a punta, con la app real (`AppModule`), BullMQ consumiendo de
  * verdad y Postgres + Redis reales. Cada escenario entra por un webhook firmado de Chatwoot → inbox → turno →
- * pipeline del agente (con un `FakePuertoLlm` sobre `LLM_PORT`, nunca OpenRouter) → outbox → `ChatwootFalso`.
+ * pipeline del agente (con un `FakePuertoLlm` sobre `LLM_PORT`, nunca un proveedor real) → outbox → `ChatwootFalso`.
  */
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';

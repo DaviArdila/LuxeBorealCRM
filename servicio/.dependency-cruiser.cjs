@@ -167,8 +167,8 @@ module.exports = {
     {
       name: 'ai-solo-en-infraestructura-llm',
       comment:
-        'ADR-0002 / LLM11 (Fase 06): el AI SDK (`ai`) y los providers de proveedores (OpenRouter y ' +
-        '`@ai-sdk/*`, ADR-0019 / LLM20) solo se ' +
+        'ADR-0002 / LLM11 (Fase 06): el AI SDK (`ai`) y los providers de proveedores ' +
+        '(`@ai-sdk/*`, ADR-0019 / ADR-0029 / LLM20) solo se ' +
         'importan desde modulos/llm/infraestructura/, el único lugar que conoce a un proveedor. ' +
         'Cubre el specifier bare y la ruta resuelta en node_modules (mismo criterio que la regla ' +
         '4 con @prisma/client). Numerada 14 porque la 13 ya es solo-conversaciones-importa-canales.',
@@ -177,10 +177,8 @@ module.exports = {
       to: {
         path: [
           '^ai$',
-          '^@openrouter/',
           '^@ai-sdk/',
           '(^|/)node_modules/ai(/|$)',
-          '(^|/)node_modules/@openrouter/',
           '(^|/)node_modules/@ai-sdk/',
         ],
       },

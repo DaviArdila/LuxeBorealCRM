@@ -17,7 +17,8 @@ import { TEMPORIZADOR_LLM } from './puertos/temporizador-llm.js';
 
 /**
  * Módulo de la pasarela de LLM (ADR-0002): compone `LlmGateway` detrás de `LLM_PORT` con el enrutador
- * de proveedores (OpenRouter por defecto y los directos que un perfil use, ADR-0019), los repositorios de `uso_llm` y `parametro` y el temporizador real. Exporta
+ * de proveedores directos que un perfil use (ADR-0019, ADR-0029), los repositorios de `uso_llm` y
+ * `parametro` y el temporizador real. Exporta
  * `LLM_PORT` y el caso de uso `ObtenerMensajeTechoGasto` (Fase 07b); el adaptador, los repositorios y
  * el temporizador son internos. `AgenteModule` lo importa y compone el bucle de herramientas encima.
  */
