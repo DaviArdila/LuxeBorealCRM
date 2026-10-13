@@ -40,7 +40,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 | T1 | Arnés real: un `it` por caso con plazo calculado, ejecución en serie, resumen siempre impreso, fallas por repetición | delegada (writer) | [x] |
 | T2 | Aserciones alineadas con el contrato: `textoLiteral` con fuente `caso` y alternativas, sin doble penalización; `herramientasEsperadas` con alternativas; casos de uso y fichas | delegada (writer) | [x] |
 | T3 | Premisas de guion (`soloGuionado` o mensaje reescrito) y `menciona` con alternativas | delegada (writer) | [x] |
-| T4 | Pregunta del dueño sobre `agt28` y guía de evals reales | delegada (writer) | [ ] |
+| T4 | Pregunta del dueño sobre `agt28` y guía de evals reales | delegada (writer) | [x] |
 
 ## Criterios de aceptación
 
@@ -50,7 +50,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
   `buscar_producto`; el único caso que ejercita la consulta es `caso-indice-grande`, con textos que no caben en el prompt.
 - [x] `textoLiteral` no falla si su fuente no existe en el turno y acepta el texto del caso sembrado como fuente.
 - [x] Los casos cuya premisa vive en el guion son `soloGuionado` o traen la premisa en el mensaje del cliente.
-- [ ] `npm run evals` (guionado) en verde y unitarios de `test/evals` con RED observado antes del GREEN.
+- [x] `npm run evals` (guionado) en verde y unitarios de `test/evals` con RED observado antes del GREEN.
 
 ## Comprobaciones
 
@@ -69,7 +69,13 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 - T3: `lead-escala-no-confirmada` pasa a `soloGuionado`; teléfono en el mensaje de los dos casos de datos;
   `menciona` de `entrada-sku-inexistente` con alternativas; retirado `menciona` de `r2-cotizacion-con-cobertura`.
   Excepción TDD: solo datos de casos (JSON), sin RED posible; comprobación funcional: `npm run evals` guionado 49 pasan,
-  34 omitidas, APROBADA 100 %. Commit: ver `git log` (T3).
+  34 omitidas, APROBADA 100 %. Commit: 7102d22.
+- T4: P77 en `docs/PREGUNTAS_ABIERTAS.md` (agt28 frente a R9) y resumen de las corridas del 2026-10-13 en la guía.
+  Solo documentos: lectura estructural. Commit: ver `git log` (T4).
+- Cierre (en `servicio/`): `lint`, `typecheck`, `fronteras` (615 módulos) limpios; `commits`: 4 válidos; `npm test`: 211
+  archivos, 1821 pasan; `npm run evals` (guionado): 49 pasan, 34 omitidas (modo real), APROBADA 100 %;
+  `npm run test:integracion`: 71 archivos, 499 pasan. El modo real no se corrió (sin clave en esta máquina).
+- Revisión nativa: no corrida por el writer; la decide el orquestador.
 
 ## Siguiente paso
 

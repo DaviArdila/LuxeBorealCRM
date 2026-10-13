@@ -109,6 +109,13 @@ El modo real ignora el guion: un caso cuya premisa es lo que «dice» el guion n
 **Set dorado.** La carpeta `test/evals/casos/dorado` no existe todavía: ninguna corrida real ha medido conversaciones reales
 anonimizadas, solo casos sintéticos (P30).
 
+## Corridas reales del 2026-10-13
+
+`openai:gpt-5.6-luna` (5 críticas fallidas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %)
+reprobaron con resultados idénticos en 24 de 32 casos. La causa principal fue el diseño de los casos, no los modelos: se
+corrigió en `odd/tasks/rediseno-evals-reales.md`. Hace falta **una corrida nueva** para saber cómo queda. Una crítica
+sigue abierta como decisión del dueño: `agt28-asesor-confirma-apartado` prohíbe marcar el lead caliente (P77).
+
 ## Resultado de la corrida real del 2026-10-02
 
 Modelo `openai:gpt-6-luna`, con el arnés corregido y las guardas de este change.
