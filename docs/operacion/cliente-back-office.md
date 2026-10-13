@@ -24,6 +24,14 @@ El cliente reenvía todo lo que empieza con `/api` a la API (`cliente/proxy.conf
 cambia también el destino de ese archivo. Con `NODE_ENV=development` (el valor de `.env.example`) la cookie de sesión
 funciona por `http://localhost`; fuera de desarrollo exige HTTPS.
 
+### Abrirlo desde `https://app.luxeboreal.com`
+
+Con el cliente y la API levantados, el túnel `servidor-local` de Cloudflare publica el servidor de desarrollo en
+`https://app.luxeboreal.com`. La ruta del túnel (Zero Trust → Networks → Tunnels → Published application routes)
+apunta a `http://localhost:4200`. Solo se expone el cliente: `/api` sigue pasando por el proxy de `ng serve`, así que
+el navegador ve un solo origen y no hace falta publicar la API. El host permitido está en `allowedHosts` de
+`cliente/angular.json`; otro subdominio hay que agregarlo ahí o `ng serve` responde «Blocked request».
+
 ## Qué puedes hacer
 
 | Pantalla | Qué hace | Qué no hace |
