@@ -36,10 +36,6 @@
             "campo": "rango_texto"
           }
         ],
-        "menciona": [
-          "aproximad",
-          "transportadora"
-        ],
         "sinSku": true
       }
     }

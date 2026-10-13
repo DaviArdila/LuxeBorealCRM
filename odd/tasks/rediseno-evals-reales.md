@@ -39,7 +39,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 |---|---|---|---|
 | T1 | Arnés real: un `it` por caso con plazo calculado, ejecución en serie, resumen siempre impreso, fallas por repetición | delegada (writer) | [x] |
 | T2 | Aserciones alineadas con el contrato: `textoLiteral` con fuente `caso` y alternativas, sin doble penalización; `herramientasEsperadas` con alternativas; casos de uso y fichas | delegada (writer) | [x] |
-| T3 | Premisas de guion (`soloGuionado` o mensaje reescrito) y `menciona` con alternativas | delegada (writer) | [ ] |
+| T3 | Premisas de guion (`soloGuionado` o mensaje reescrito) y `menciona` con alternativas | delegada (writer) | [x] |
 | T4 | Pregunta del dueño sobre `agt28` y guía de evals reales | delegada (writer) | [ ] |
 
 ## Criterios de aceptación
@@ -49,7 +49,7 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 - [x] Ningún caso exige `consultar_caso` para un texto que ya está en el prompt ni `obtener_ficha` cuando basta la ficha de
   `buscar_producto`; el único caso que ejercita la consulta es `caso-indice-grande`, con textos que no caben en el prompt.
 - [x] `textoLiteral` no falla si su fuente no existe en el turno y acepta el texto del caso sembrado como fuente.
-- [ ] Los casos cuya premisa vive en el guion son `soloGuionado` o traen la premisa en el mensaje del cliente.
+- [x] Los casos cuya premisa vive en el guion son `soloGuionado` o traen la premisa en el mensaje del cliente.
 - [ ] `npm run evals` (guionado) en verde y unitarios de `test/evals` con RED observado antes del GREEN.
 
 ## Comprobaciones
@@ -65,7 +65,11 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
 - T2: `textoLiteral` con fuente `caso`, rutas con puntos y `algunaDe`, sin doble penalización; `herramientasEsperadas`
   con `algunaDe`; relleno largo (`casosDeRelleno`) para que `caso-indice-grande` sea el único que consulta. 15 casos
   ajustados (tabla en la guía). RED: 8 pruebas nuevas en `aserciones`, `esquema-caso` y `sembrar`; GREEN: 68 pasan.
-  `npm run evals` guionado: 49 pasan, APROBADA 100 %. Commit: ver `git log` (T2).
+  `npm run evals` guionado: 49 pasan, APROBADA 100 %. Commit: 9375d7d.
+- T3: `lead-escala-no-confirmada` pasa a `soloGuionado`; teléfono en el mensaje de los dos casos de datos;
+  `menciona` de `entrada-sku-inexistente` con alternativas; retirado `menciona` de `r2-cotizacion-con-cobertura`.
+  Excepción TDD: solo datos de casos (JSON), sin RED posible; comprobación funcional: `npm run evals` guionado 49 pasan,
+  34 omitidas, APROBADA 100 %. Commit: ver `git log` (T3).
 
 ## Siguiente paso
 

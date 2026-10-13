@@ -90,6 +90,25 @@ Dos aserciones cambiaron de forma:
   ya la vigila `herramientasEsperadas`. Un salto de línea no cuenta como cambio; una palabra sí.
 - **`herramientasEsperadas`** acepta alternativas: `{ "algunaDe": [{ "nombre": "obtener_ficha" }, { "nombre": "buscar_producto" }] }`.
 
+## Qué casos corren en modo real
+
+El modo real ignora el guion: un caso cuya premisa es lo que «dice» el guion no se puede reproducir con un modelo de verdad.
+
+| Caso | En modo real | Por qué |
+|---|---|---|
+| `r1-monto-sin-rastro-corregido`, `r1-monto-sin-rastro-persiste` | Omitido (`soloGuionado`) | Su premisa es que el modelo invente un monto |
+| `lead-escala-no-confirmada` | Omitido (`soloGuionado`) | Su premisa es que el modelo proponga «caliente» con una señal débil; la escala que lo frena se prueba con el guion |
+| `consentimiento-con-si-se-registra-y-guarda`, `tratamiento-datos-acepta-y-guarda` | Corre | El cliente ahora da su teléfono en el mensaje; antes solo estaba en el guion y lo correcto era pedirlo |
+| `entrada-sku-inexistente` | Corre | `menciona` acepta «no encuentro», «no tenemos», «no aparece», «no está»… en vez de la frase exacta del guion |
+| `r2-cotizacion-con-cobertura` | Corre | Se retiró `menciona: aproximad, transportadora`: ninguna instrucción del prompt ni caso sembrado se lo pide al modelo (ver abajo) |
+
+> **R2 sin instrucción.** La spec de R2 pide citar el envío «como un rango aproximado» que «confirma la transportadora», pero
+> desde ADR-0027 esa conducta vive en un caso de uso del dueño, y las evals no siembran ninguno. Mientras el dueño no lo cree,
+> ningún modelo tiene de dónde sacarlo.
+
+**Set dorado.** La carpeta `test/evals/casos/dorado` no existe todavía: ninguna corrida real ha medido conversaciones reales
+anonimizadas, solo casos sintéticos (P30).
+
 ## Resultado de la corrida real del 2026-10-02
 
 Modelo `openai:gpt-6-luna`, con el arnés corregido y las guardas de este change.
