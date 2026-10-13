@@ -10,13 +10,15 @@ const esquema = z.object({
 
 /**
  * `consultar_caso` (AGT8, CAS8): envuelve `ConsultaCasos` y devuelve el texto y el modo del caso, sin interpretarlo (R1, R2).
+ * Cuando los textos caben en el tope ya viajan en el prompt con este mismo formato; la herramienta queda para cuando no.
  * Un título que no existe lista los disponibles: el modelo no debe inventar un caso que el
  * negocio no definió.
  */
 export function crearConsultarCaso(casos: ConsultaCasos): Herramienta {
   return definirHerramienta(
     'consultar_caso',
-    'Devuelve el texto y el modo (literal o guía) de un caso de uso del índice. Si el título no existe, lista los disponibles.',
+    'Devuelve el texto y el modo (literal o guía) de un caso de uso del índice. Si el título no existe, lista los ' +
+      'disponibles. Úsala solo para un caso cuyo texto no aparezca ya en la sección de casos de uso del prompt.',
     esquema,
     async ({ titulo }) => ({ paraElModelo: casoParaElModelo(await casos.consultar(titulo)), efectos: [] }),
     { concurrente: true },

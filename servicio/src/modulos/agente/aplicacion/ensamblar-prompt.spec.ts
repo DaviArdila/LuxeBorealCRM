@@ -3,7 +3,7 @@ import path from 'node:path';
 import { normalizarTexto } from '../../../compartido/texto/index.js';
 import { componerEstilo, dividirEstilo } from '../dominio/secciones-estilo.js';
 import type { ObtenerCatalogoCompacto } from '../../catalogo/index.js';
-import type { ConsultaCasos, EntradaIndice } from '../../asistente/index.js';
+import type { CasosDelPrompt, ConsultaCasos, EntradaIndice } from '../../asistente/index.js';
 import type { Horario } from '../../horario/index.js';
 import { CargadorPrompts } from '../infraestructura/prompts/cargador-prompts.js';
 import { EnsamblarPrompt } from './ensamblar-prompt.js';
@@ -13,7 +13,12 @@ import type { EstiloVigente, ProveedorEstilo } from './proveedor-estilo.js';
 
 const CATALOGO = '- SKU-1: Anillo Aurora — Oro laminado\n- SKU-2: Collar Luna — Plata 925';
 
-function crear(catalogo = CATALOGO, dentroDeHorario = true, estilo?: Partial<EstiloVigente>, indice: readonly EntradaIndice[] = []) {
+function crear(
+  catalogo = CATALOGO,
+  dentroDeHorario = true,
+  estilo?: Partial<EstiloVigente>,
+  delPrompt: readonly EntradaIndice[] | CasosDelPrompt = [],
+) {
   const cargador = new CargadorPrompts();
   cargador.onModuleInit();
   const compacto = { ejecutar: () => Promise.resolve(catalogo) } as unknown as ObtenerCatalogoCompacto;
@@ -21,7 +26,8 @@ function crear(catalogo = CATALOGO, dentroDeHorario = true, estilo?: Partial<Est
   // El proveedor entrega por defecto el estilo del archivo (origen `archivo`); cada test lo cambia si lo necesita.
   const vigente: EstiloVigente = { texto: cargador.estilo, version: 0, origen: 'archivo', ...estilo };
   const proveedor = { obtener: () => Promise.resolve(vigente) } as unknown as ProveedorEstilo;
-  const casos = { indice: () => Promise.resolve(indice) } as unknown as ConsultaCasos;
+  const entrega: CasosDelPrompt = 'conTextos' in delPrompt ? delPrompt : { conTextos: false, casos: delPrompt };
+  const casos = { casosDelPrompt: () => Promise.resolve(entrega) } as unknown as ConsultaCasos;
   return { ensamblar: new EnsamblarPrompt(cargador, proveedor, compacto, horario, casos), cargador };
 }
 
@@ -91,7 +97,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     const resultado = await ensamblar.ensamblar({ instruccionesTurno: [] });
 
-    expect(resultado).toMatchObject({ version: 'v5', versionEstilo: 5 });
+    expect(resultado).toMatchObject({ version: 'v8', versionEstilo: 5 });
     expect(JSON.stringify({ version: resultado.version, versionEstilo: resultado.versionEstilo })).not.toContain('ESTILO-PUBLICADO');
   });
 
@@ -115,6 +121,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
 
     expect(limites).toHaveLength(6);
     expect(cargador.seguridad).toMatch(/herramienta llamada en este turno/i);
+    expect(cargador.seguridad).toMatch(/política sale de un caso de uso/i);
     expect(cargador.seguridad).toMatch(/Nunca calcules/);
     expect(cargador.seguridad).toMatch(/modo `literal`/);
     expect(cargador.seguridad).toMatch(/modo `guia`/);
@@ -146,6 +153,29 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(cargador.estilo).not.toMatch(/(nunca|no |sin |jamás)/i);
   });
 
+  it('AGT13 — El prompt pide en un mismo paso las herramientas independientes', async () => {
+    const { ensamblar, cargador } = crear();
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(cargador.turno).toMatch(/varias herramientas que no dependen una de otra/);
+    expect(cargador.turno).toMatch(/en el mismo paso/);
+    expect(texto).toMatch(/varias herramientas que no dependen una de otra/);
+    expect(cargador.seguridad).not.toMatch(/mismo paso/);
+  });
+
+  it('AGT13 — El prompt pide responder las preguntas generales del catálogo con la lista que ya trae', async () => {
+    const { ensamblar, cargador } = crear();
+
+    const { texto, version } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(cargador.turno).toMatch(/preguntas generales sobre el catálogo/);
+    expect(cargador.turno).toMatch(/sección «Catálogo»/);
+    expect(texto).toMatch(/preguntas generales sobre el catálogo/);
+    expect(version).toBe('v8');
+    expect(cargador.seguridad).not.toMatch(/catálogo/i);
+  });
+
   it('la parte variable dice si es horario de atención', async () => {
     const dentro = await crear(CATALOGO, true).ensamblar.ensamblar({ instruccionesTurno: [] });
     const fuera = await crear(CATALOGO, false).ensamblar.ensamblar({ instruccionesTurno: [] });
@@ -157,7 +187,7 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
   it('entrega la versión del prompt para el log del turno', async () => {
     const { ensamblar } = crear();
 
-    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v5' });
+    await expect(ensamblar.ensamblar({ instruccionesTurno: [] })).resolves.toMatchObject({ version: 'v8' });
   });
 
   const INDICE: readonly EntradaIndice[] = [
@@ -207,6 +237,47 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt (D8, AGT13)', () => {
     expect(b.texto.slice(0, fin)).toBe(a.texto.slice(0, fin));
   });
 
+  const CON_TEXTOS: CasosDelPrompt = {
+    conTextos: true,
+    casos: [
+      { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan por la garantía.', modo: 'literal', texto: 'Cubre 8 días.\nSin uso.' },
+      { titulo: 'Saludo', cuandoAplica: 'Al empezar la conversación.', modo: 'guia', texto: 'Saluda con calidez.' },
+    ],
+  };
+
+  it('CAS8 — Con textos que caben, cada caso trae su texto y su modo como los devolvería consultar_caso', async () => {
+    const { ensamblar } = crear(CATALOGO, true, undefined, CON_TEXTOS);
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    const literal = JSON.stringify({ encontrado: true, titulo: 'Garantía', modo: 'literal', texto: 'Cubre 8 días.\nSin uso.' });
+    const guia = JSON.stringify({ encontrado: true, titulo: 'Saludo', modo: 'guia', texto: 'Saluda con calidez.' });
+    expect(texto).toContain(`- Garantía: Cuando preguntan por la garantía.\n  ${literal}`);
+    expect(texto).toContain(`- Saludo: Al empezar la conversación.\n  ${guia}`);
+    expect(texto).toMatch(/ya traen su texto/i);
+  });
+
+  it('CAS8 — Los textos de los casos van en la parte estable, antes del catálogo', async () => {
+    const { ensamblar } = crear(CATALOGO, true, undefined, CON_TEXTOS);
+
+    const a = await ensamblar.ensamblar({ instruccionesTurno: ['El cliente se llama Laura.'] });
+    const b = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    const fin = a.texto.indexOf(CATALOGO) + CATALOGO.length;
+    expect(a.texto.indexOf('Saluda con calidez.')).toBeLessThan(a.texto.indexOf(CATALOGO));
+    expect(b.texto.slice(0, fin)).toBe(a.texto.slice(0, fin));
+  });
+
+  it('CAS8 — Si los textos no caben, el prompt lleva solo el índice y pide consultar_caso', async () => {
+    const { ensamblar } = crear(CATALOGO, true, undefined, INDICE);
+
+    const { texto } = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(texto).toContain('- Garantía: Cuando el cliente pregunta por la garantía.');
+    expect(texto).not.toContain('"encontrado"');
+    expect(texto).toMatch(/Consulta un caso con `consultar_caso`/);
+  });
+
   it('EST-S1 — El prompt con las secciones sembradas es idéntico al del estilo inicial', async () => {
     const inicial = readFileSync(path.join(import.meta.dirname, '../../../../prisma/datos/estilo-inicial.md'), 'utf8');
     const sembradas = componerEstilo(dividirEstilo(inicial).map((seccion, orden) => ({ ...seccion, orden, activo: true })));
@@ -232,7 +303,9 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt: lecturas en paralelo (l
         return new Promise<EstiloVigente>((resolver) => (liberarEstilo = resolver));
       },
     } as unknown as ProveedorEstilo;
-    const casos = { indice: () => (pedidos.push('casos'), Promise.resolve([])) } as unknown as ConsultaCasos;
+    const casos = {
+      casosDelPrompt: () => (pedidos.push('casos'), Promise.resolve({ conTextos: false, casos: [] })),
+    } as unknown as ConsultaCasos;
     const compacto = { ejecutar: () => (pedidos.push('catalogo'), Promise.resolve(CATALOGO)) } as unknown as ObtenerCatalogoCompacto;
     const horario: Horario = { estaDentroDeHorario: () => (pedidos.push('horario'), Promise.resolve(true)) };
     const ensamblar = new EnsamblarPrompt(cargador, proveedor, compacto, horario, casos);

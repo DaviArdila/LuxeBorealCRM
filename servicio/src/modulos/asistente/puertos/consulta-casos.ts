@@ -11,6 +11,20 @@ export type ResultadoCaso =
   | { readonly encontrado: true; readonly titulo: string; readonly modo: ModoCaso; readonly texto: string }
   | { readonly encontrado: false; readonly titulosDisponibles: readonly string[] };
 
+/** Un caso del índice con su texto y su modo, tal como entra al prompt cuando los textos caben (CAS8). */
+export interface CasoDelPrompt extends EntradaIndice {
+  readonly modo: ModoCaso;
+  readonly texto: string;
+}
+
+/**
+ * Los casos que van en la parte estable del prompt (CAS8): con sus textos si la suma cabe en el tope, o solo el índice
+ * (`conTextos: false`) si no cabe, y entonces el modelo los consulta con `consultar_caso`.
+ */
+export type CasosDelPrompt =
+  | { readonly conTextos: true; readonly casos: readonly CasoDelPrompt[] }
+  | { readonly conTextos: false; readonly casos: readonly EntradaIndice[] };
+
 /**
  * Lo que el agente conoce de los casos de intención (CAS8, D3 de la Fase 12): el índice del prompt y la consulta por título.
  * Nunca lanza: si la base falla el índice sale vacío y la consulta no encuentra nada, y el turno sigue.
@@ -18,6 +32,8 @@ export type ResultadoCaso =
 export interface ConsultaCasos {
   /** Los casos de intención activos, por orden de categoría y título, acotados a 60 casos y 6.000 caracteres. */
   indice(): Promise<readonly EntradaIndice[]>;
+  /** Los mismos casos del índice, con su texto y su modo si la suma de los textos cabe en 8.000 caracteres. */
+  casosDelPrompt(): Promise<CasosDelPrompt>;
   /** Busca por título sin distinguir mayúsculas ni acentos entre los casos de intención activos. */
   consultar(titulo: string): Promise<ResultadoCaso>;
 }

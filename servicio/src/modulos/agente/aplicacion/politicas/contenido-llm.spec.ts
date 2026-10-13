@@ -68,7 +68,7 @@ function crear(herramientas: readonly Herramienta[] = [], historialTurnos = 6) {
     { obtener: () => Promise.resolve({ texto: cargador.estilo, version: 3, origen: 'base' as const }) } as unknown as ProveedorEstilo,
     { ejecutar: () => Promise.resolve('- SKU-1: Anillo') } as unknown as ObtenerCatalogoCompacto,
     { estaDentroDeHorario: () => Promise.resolve(true) },
-    { indice: () => Promise.resolve([]) } as unknown as ConsultaCasos,
+    { casosDelPrompt: () => Promise.resolve({ conTextos: false, casos: [] }) } as unknown as ConsultaCasos,
   );
   const contactos = new RepositorioContactoAgenteEnMemoria();
   const asesorAvisado = { valor: false };
@@ -418,7 +418,7 @@ describe('modulos/agente/aplicacion/politicas — ContenidoLlm', () => {
 
     await politica.evaluar(turno(HOLA));
 
-    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v5', versionEstilo: 3 });
+    expect(log).toHaveBeenCalledWith({ evento: 'agente.prompt', version: 'v8', versionEstilo: 3 });
     // R14: ningún registro del turno lleva el texto del estilo.
     expect(JSON.stringify(log.mock.calls)).not.toContain('Cómo escribes');
   });

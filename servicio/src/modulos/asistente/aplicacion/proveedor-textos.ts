@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK } from '../../../plataforma/reloj/index.js';
 import type { Clock } from '../../../plataforma/reloj/index.js';
-import { construirIndice, type EntradaIndice } from '../dominio/indice.js';
+import { caracteresDeTextos, construirIndice, MAX_CARACTERES_TEXTOS_EN_PROMPT, type EntradaIndice } from '../dominio/indice.js';
 import { normalizarNombre } from '../dominio/normalizar.js';
 import { textoDeRespaldo, type ClaveSistema } from '../dominio/sistema.js';
-import type { ConsultaCasos, ResultadoCaso } from '../puertos/consulta-casos.js';
+import type { CasosDelPrompt, ConsultaCasos, ResultadoCaso } from '../puertos/consulta-casos.js';
 import { REPOSITORIO_CASOS, type CasoDeIntencion, type RepositorioCasos } from '../puertos/repositorio-casos.js';
 import type { TextosAsistente } from '../puertos/textos-asistente.js';
 import { VERSION_ASISTENTE, type VersionAsistente } from '../puertos/version-asistente.js';
@@ -54,12 +54,17 @@ export class ProveedorTextos implements TextosAsistente, ConsultaCasos {
   }
 
   async indice(): Promise<readonly EntradaIndice[]> {
-    const { intencion } = await this.datos();
-    const indice = construirIndice(intencion);
-    if (indice.recortado) {
-      this.logger.warn({ evento: 'asistente.indice-recortado', total: indice.total, incluidos: indice.entradas.length });
+    return this.casosDelIndice(await this.datos()).map(({ titulo, cuandoAplica }) => ({ titulo, cuandoAplica }));
+  }
+
+  async casosDelPrompt(): Promise<CasosDelPrompt> {
+    const casos = this.casosDelIndice(await this.datos());
+    const caracteres = caracteresDeTextos(casos);
+    if (caracteres > MAX_CARACTERES_TEXTOS_EN_PROMPT) {
+      this.logger.warn({ evento: 'asistente.textos-fuera-del-prompt', casos: casos.length, caracteres });
+      return { conTextos: false, casos: casos.map(({ titulo, cuandoAplica }) => ({ titulo, cuandoAplica })) };
     }
-    return indice.entradas.map(({ titulo, cuandoAplica }) => ({ titulo, cuandoAplica }));
+    return { conTextos: true, casos: casos.map(({ titulo, cuandoAplica, modo, texto }) => ({ titulo, cuandoAplica, modo, texto })) };
   }
 
   async consultar(titulo: string): Promise<ResultadoCaso> {
@@ -69,6 +74,16 @@ export class ProveedorTextos implements TextosAsistente, ConsultaCasos {
     return caso === undefined
       ? { encontrado: false, titulosDisponibles: intencion.map((candidato) => candidato.titulo) }
       : { encontrado: true, titulo: caso.titulo, modo: caso.modo, texto: caso.texto };
+  }
+
+  /** Los casos de intención que caben en el índice (CAS8), recortados por orden; avisa del recorte solo con conteos. */
+  private casosDelIndice({ intencion }: Datos): readonly CasoDeIntencion[] {
+    const indice = construirIndice(intencion);
+    if (indice.recortado) {
+      this.logger.warn({ evento: 'asistente.indice-recortado', total: indice.total, incluidos: indice.entradas.length });
+    }
+    // `construirIndice` toma un prefijo de la lista en su orden: los incluidos son los primeros casos.
+    return intencion.slice(0, indice.entradas.length);
   }
 
   private async datos(): Promise<Datos> {

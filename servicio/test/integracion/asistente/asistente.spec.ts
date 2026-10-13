@@ -363,6 +363,19 @@ describe('ConsultaCasos contra Postgres y Redis (Fase 12, T6, integración)', ()
     for (const definicion of CASOS_DEL_SISTEMA) expect(indice.map((e) => e.titulo)).not.toContain(definicion.titulo);
   });
 
+  it('CAS8 — Los casos del prompt traen el texto y el modo de los activos, sin los del sistema', async () => {
+    const { casos, sembrar, prisma, version } = await crearContexto();
+    await sembrar.ejecutar();
+    await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', texto: 'Cubre ocho días.', modo: 'guia' });
+    await crearCasoDeIntencion(prisma, { titulo: 'Oferta vieja', cuandoAplica: 'Cuando preguntan.', texto: 'Ya no existe.', activo: false });
+    await version.incrementar();
+
+    expect(await casos.casosDelPrompt()).toEqual({
+      conTextos: true,
+      casos: [{ titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', modo: 'guia', texto: 'Cubre ocho días.' }],
+    });
+  });
+
   it('CAS8 — consultar_caso encuentra por título sin acentos ni mayúsculas, y lista los disponibles si no existe', async () => {
     const { casos, prisma, version } = await crearContexto();
     await crearCasoDeIntencion(prisma, { titulo: 'Garantía', cuandoAplica: 'Cuando preguntan.', texto: 'Cubre ocho días.', modo: 'guia' });

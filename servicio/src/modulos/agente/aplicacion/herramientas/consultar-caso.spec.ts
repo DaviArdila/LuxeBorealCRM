@@ -46,6 +46,7 @@ describe('modulos/agente/aplicacion/herramientas — consultar_caso', () => {
     const { definicion } = crearConsultarCaso({} as ConsultaCasos);
 
     expect(definicion.nombre).toBe('consultar_caso');
+    expect(definicion.descripcion).toMatch(/no aparezca ya en la sección de casos de uso del prompt/);
     expect(definicion.esquema.safeParse({ titulo: 'Garantía' }).success).toBe(true);
     expect(definicion.esquema.safeParse({}).success).toBe(false);
   });

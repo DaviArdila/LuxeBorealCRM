@@ -359,16 +359,20 @@ Fase que lo implementa: 12; 12d (cinco claves y sin consumo desde `catalogo`)
 El prompt de cada turno MUST incluir un **índice** de los casos de intención activos (título y «cuándo aplica»), acotado
 a 60 casos y 6.000 caracteres; si se excede, MUST recortarse por orden de categoría y avisar en el log sin contenido. Los
 casos que la migración convierte (CAS14) y los que sembró una política (CAS6) entran al índice como cualquier otro
-caso de intención. La
+caso de intención. Si la suma de los textos de los casos del índice cabe en 8.000 caracteres (constante de código), cada
+caso del índice MUST viajar en la parte estable del prompt con su texto y su modo, presentados exactamente como los
+devolvería `consultar_caso`, para que el modelo no gaste una vuelta en consultarlo; si no cabe, el prompt MUST llevar solo
+el índice y avisar en el log con conteos, sin textos. La
 herramienta `consultar_caso({ titulo })` MUST reemplazar a `consultar_politica`: devuelve el texto y el modo del caso (sin
 distinguir mayúsculas ni acentos), un caso inexistente o inactivo MUST devolver la lista de títulos disponibles, y el LLM
 MUST NOT inventar un caso que no existe (R1, R2). En modo `literal` el texto MUST citarse palabra por palabra (regla de
 cita de AGT8); en modo `guia` MUST usarse como base sin agregar datos que el caso no trae. El índice y los casos MUST
 leerse con el mismo mecanismo de versión que CAS7, de modo que un caso editado rija en el siguiente turno.
 
-(Previously: el índice excluía a `contra_entrega` solo por ser de intención con clave; ahora ningún caso de intención tiene clave.)
+(Previously: el índice excluía a `contra_entrega` solo por ser de intención con clave; ahora ningún caso de intención tiene clave.
+Hasta `odd/tasks/latencia-bot.md` el prompt llevaba solo el índice y cada texto se pedía con `consultar_caso`.)
 
-Fase que lo implementa: 12; 12d (los casos convertidos entran al índice)
+Fase que lo implementa: 12; 12d (los casos convertidos entran al índice); `odd/tasks/latencia-bot.md` (textos en el prompt)
 
 #### Scenario: El índice lista los casos de intención activos
 
@@ -387,6 +391,19 @@ Fase que lo implementa: 12; 12d (los casos convertidos entran al índice)
 - Dado una base de la Fase 12 migrada con CAS14,
 - Cuando se arma el índice,
 - Entonces trae «Contra entrega», «Sin cobertura de envío» y «Datos completos fuera de horario» con su «cuándo aplica».
+
+#### Scenario: Los textos que caben viajan en el prompt
+
+- Dado dos casos de intención activos, uno `literal` y otro `guia`, cuyos textos suman menos de 8.000 caracteres,
+- Cuando se arma el prompt del turno,
+- Entonces cada caso trae, antes del catálogo, su línea del índice y lo mismo que devolvería `consultar_caso`.
+
+#### Scenario: Si los textos no caben, el prompt lleva solo el índice
+
+- Dado casos de intención cuyos textos suman más de 8.000 caracteres,
+- Cuando se arma el prompt del turno,
+- Entonces trae solo el título y el «cuándo aplica» de cada caso, pide usar `consultar_caso` y se registra un aviso con
+  conteos, sin textos.
 
 #### Scenario: consultar_caso devuelve el texto y el modo
 
@@ -528,7 +545,7 @@ Fase que lo implementa: 12
 cobertura, `cobertura: false` y el efecto `sin-cobertura` sin mensaje (AGT8, CAT10, CAT11). Ninguna parte fija del prompt MUST
 ordenar consultar un caso de contra entrega o de cobertura ni nombrar su título (AGT13): si el dueño tiene un caso para eso, el
 modelo lo elige del índice (CAS8) por su «cuándo aplica». Si no existe o está inactivo, el modelo MUST informar con sus palabras
-la falta de cobertura o la condición disponible sin inventar la política (reglas 1 y 4 de `seguridad.v1.md`). El sistema MUST
+la falta de cobertura o la condición disponible sin inventar la política (reglas 1 y 4 de `seguridad.v2.md`). El sistema MUST
 NOT reemplazar el texto del modelo por el del caso después de generarlo (se retira `asegurarMensajeLiteral`).
 
 Fase que lo implementa: 12d
