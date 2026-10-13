@@ -1,16 +1,17 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
-import { SimuladorOpenRouter } from '../../soporte/simulador-openrouter.js';
+import { SimuladorOpenAi } from '../../soporte/simulador-openai.js';
 
-// T1 (fase-06-pasarela-llm, D11d): verifica que `ai` + `@openrouter/ai-sdk-provider` cargan y
-// funcionan bajo NestJS 12 ESM ("type": "module") contra un servidor local, sin API key real.
+// T1 (fase-06-pasarela-llm, D11d): verifica que `ai` y un provider del AI SDK (`@ai-sdk/openai`, desde
+// ADR-0029) cargan y funcionan bajo NestJS 12 ESM ("type": "module") contra un servidor local, sin API
+// key real.
 
 describe('llm — compatibilidad del AI SDK con NestJS 12 ESM', () => {
-  let simulador: SimuladorOpenRouter;
+  let simulador: SimuladorOpenAi;
 
   beforeAll(async () => {
-    simulador = await SimuladorOpenRouter.iniciar();
+    simulador = await SimuladorOpenAi.iniciar();
   });
 
   afterAll(async () => {
@@ -22,10 +23,10 @@ describe('llm — compatibilidad del AI SDK con NestJS 12 ESM', () => {
       tokensEntrada: 12,
       tokensSalida: 5,
     });
-    const openrouter = createOpenRouter({ baseURL: simulador.url, apiKey: 'clave-de-prueba' });
+    const openai = createOpenAI({ baseURL: simulador.url, apiKey: 'clave-de-prueba' });
 
     const resultado = await generateText({
-      model: openrouter('openai/gpt-5.6-luna'),
+      model: openai('gpt-5.6-luna'),
       system: 'Eres un asistente de pruebas.',
       messages: [{ role: 'user', content: 'hola' }],
       maxOutputTokens: 50,
@@ -39,22 +40,19 @@ describe('llm — compatibilidad del AI SDK con NestJS 12 ESM', () => {
 
   it('el simulador recibe el modelo, el prompt de sistema y el tope de tokens pedidos', async () => {
     simulador.responderTexto('otra respuesta', { tokensEntrada: 3, tokensSalida: 2 });
-    const openrouter = createOpenRouter({ baseURL: simulador.url, apiKey: 'clave-de-prueba' });
+    const openai = createOpenAI({ baseURL: simulador.url, apiKey: 'clave-de-prueba' });
 
     await generateText({
-      model: openrouter('otro/modelo'),
+      model: openai('otro-modelo'),
       system: 'Prompt de sistema distinto.',
       messages: [{ role: 'user', content: 'segunda pregunta' }],
       maxOutputTokens: 77,
     });
 
-    const cuerpo = simulador.ultimoCuerpo();
-    expect(cuerpo.model).toBe('otro/modelo');
-    expect(cuerpo.max_tokens).toBe(77);
-    expect(cuerpo.messages[0]).toEqual({
-      role: 'system',
-      content: [{ type: 'text', text: 'Prompt de sistema distinto.' }],
-    });
-    expect(cuerpo.messages[1]).toEqual({ role: 'user', content: 'segunda pregunta' });
+    const { cuerpo } = simulador.ultima();
+    expect(cuerpo.model).toBe('otro-modelo');
+    expect(cuerpo['max_output_tokens']).toBe(77);
+    expect(JSON.stringify(cuerpo.input[0])).toContain('Prompt de sistema distinto.');
+    expect(JSON.stringify(cuerpo.input[1])).toContain('segunda pregunta');
   });
 });

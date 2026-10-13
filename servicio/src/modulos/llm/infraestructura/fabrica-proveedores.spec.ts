@@ -5,8 +5,6 @@ function config(conversacion: string[], evals: string[] = conversacion) {
   return {
     LLM_CONVERSACION_MODELOS: conversacion,
     LLM_EVALS_MODELOS: evals,
-    OPENROUTER_API_KEY: 'clave-openrouter',
-    OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
     OPENAI_API_KEY: '',
     ANTHROPIC_API_KEY: '',
   };
@@ -24,12 +22,11 @@ describe('modulos/llm/infraestructura — fábrica de proveedores usados (LLM17)
   });
 
   it('LLM17 — Un proveedor sin uso no se construye', () => {
-    expect(nombres(['openai/gpt-5.6-luna', 'meta-llama/llama-3-8b:free'])).toEqual(['openrouter']);
+    expect(nombres(['openai:gpt-5.6-luna', 'openai:gpt-6-luna'])).toEqual(['openai']);
   });
 
-  it('un perfil con prefijo construye ese proveedor y solo los que algún perfil usa', () => {
-    expect(nombres(['openai:gpt-6-luna'])).toEqual(['openai']);
-    expect(nombres(['openai:gpt-6-luna', 'openai/gpt-5.6-luna'])).toEqual(['openrouter', 'openai']);
+  it('LLM26 — un id sin prefijo registrado no construye nada y lanza', () => {
+    expect(() => nombres(['openai/gpt-5.6-luna'])).toThrow(/proveedor registrado/);
   });
 
   it('un perfil con prefijo anthropic: construye el proveedor Anthropic', () => {
@@ -38,6 +35,6 @@ describe('modulos/llm/infraestructura — fábrica de proveedores usados (LLM17)
   });
 
   it('cuenta también los modelos del perfil de evals', () => {
-    expect(nombres(['openai/gpt-5.6-luna'], ['openai:gpt-6-luna'])).toEqual(['openrouter', 'openai']);
+    expect(nombres(['anthropic:claude-haiku-5-5'], ['openai:gpt-6-luna'])).toEqual(['openai', 'anthropic']);
   });
 });

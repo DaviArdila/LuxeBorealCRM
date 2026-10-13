@@ -1,28 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   PROVEEDORES_LLM_REGISTRADOS,
-  prefijoNoRegistrado,
   resolverModelo,
+  tieneProveedorRegistrado,
 } from './resolver-modelo.js';
 
 const registrados = PROVEEDORES_LLM_REGISTRADOS;
 
 describe('resolverModelo', () => {
-  it('registra openrouter, openai y anthropic (P37)', () => {
-    expect([...registrados].sort()).toEqual(['anthropic', 'openai', 'openrouter']);
+  it('registra solo los proveedores directos openai y anthropic (ADR-0029)', () => {
+    expect([...registrados].sort()).toEqual(['anthropic', 'openai']);
   });
 
   it('LLM25 — Un id con prefijo anthropic: se llama directo a Anthropic', () => {
     expect(resolverModelo('anthropic:claude-haiku-5-5', registrados)).toEqual({
       proveedor: 'anthropic',
       modelo: 'claude-haiku-5-5',
-    });
-  });
-
-  it('LLM15 — Un id sin prefijo se llama a OpenRouter como hoy', () => {
-    expect(resolverModelo('modelo-simple', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'modelo-simple',
     });
   });
 
@@ -33,34 +26,6 @@ describe('resolverModelo', () => {
     });
   });
 
-  it('LLM15 — el prefijo openrouter explícito también se recorta', () => {
-    expect(resolverModelo('openrouter:openai/gpt-5.6-luna', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'openai/gpt-5.6-luna',
-    });
-  });
-
-  it('LLM16 — Un id de OpenRouter con barra no se toma por prefijo', () => {
-    expect(resolverModelo('openai/gpt-5.6-luna', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'openai/gpt-5.6-luna',
-    });
-  });
-
-  it('LLM16 — Un id de OpenRouter con sufijo :free no se toma por prefijo', () => {
-    expect(resolverModelo('meta-llama/llama-3-8b:free', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'meta-llama/llama-3-8b:free',
-    });
-  });
-
-  it('LLM16 — un prefijo con barra nunca cuenta aunque su inicio sea un proveedor', () => {
-    expect(resolverModelo('openai/x:y', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'openai/x:y',
-    });
-  });
-
   it('LLM16 — se corta en la primera dos puntos y el resto del id queda intacto', () => {
     expect(resolverModelo('openai:ft:gpt:org:id', registrados)).toEqual({
       proveedor: 'openai',
@@ -68,35 +33,35 @@ describe('resolverModelo', () => {
     });
   });
 
-  it('LLM16 — un prefijo desconocido resuelve a OpenRouter con el id completo', () => {
-    expect(resolverModelo('desconocido:modelo', registrados)).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'desconocido:modelo',
-    });
+  it.each([
+    ['sin prefijo', 'modelo-simple'],
+    ['con barra al estilo de OpenRouter', 'openai/gpt-5.6-luna'],
+    ['con sufijo :free', 'meta-llama/llama-3-8b:free'],
+    ['con prefijo desconocido', 'desconocido:modelo'],
+    ['con prefijo openrouter retirado', 'openrouter:openai/gpt-5.6-luna'],
+    ['vacío', ''],
+  ])('LLM26 — un id %s es un error, nunca una llamada a un proveedor por defecto', (_caso, id) => {
+    expect(() => resolverModelo(id, registrados)).toThrow(/proveedor registrado/);
   });
 
-  it('LLM16 — una cadena vacía resuelve a OpenRouter sin recortar', () => {
-    expect(resolverModelo('', registrados)).toEqual({ proveedor: 'openrouter', modelo: '' });
+  it('LLM26 — el error nombra el id y los proveedores admitidos', () => {
+    expect(() => resolverModelo('modelo-simple', registrados)).toThrow(
+      'Id de modelo de LLM sin prefijo de proveedor registrado: "modelo-simple" (se admite openai:, anthropic:).',
+    );
   });
 
   it('LLM16 — solo cuentan los proveedores que se le pasan como registrados', () => {
-    expect(resolverModelo('openai:gpt-5.6-luna', ['openrouter'])).toEqual({
-      proveedor: 'openrouter',
-      modelo: 'openai:gpt-5.6-luna',
-    });
+    expect(() => resolverModelo('openai:gpt-5.6-luna', ['anthropic'])).toThrow(/proveedor registrado/);
   });
 });
 
-describe('prefijoNoRegistrado', () => {
-  it('LLM16 — devuelve el prefijo con forma de proveedor que no está registrado', () => {
-    expect(prefijoNoRegistrado('desconocido:modelo', registrados)).toBe('desconocido');
-  });
-
-  it('LLM16 — no señala ids de OpenRouter, sin prefijo ni con prefijo registrado', () => {
-    expect(prefijoNoRegistrado('openai/gpt-5.6-luna', registrados)).toBeNull();
-    expect(prefijoNoRegistrado('meta-llama/llama-3-8b:free', registrados)).toBeNull();
-    expect(prefijoNoRegistrado('modelo-simple', registrados)).toBeNull();
-    expect(prefijoNoRegistrado('openai:gpt-5.6-luna', registrados)).toBeNull();
-    expect(prefijoNoRegistrado('', registrados)).toBeNull();
+describe('tieneProveedorRegistrado', () => {
+  it('LLM26 — acepta solo ids con prefijo de un proveedor registrado', () => {
+    expect(tieneProveedorRegistrado('openai:gpt-5.6-luna', registrados)).toBe(true);
+    expect(tieneProveedorRegistrado('anthropic:claude-haiku-5-5', registrados)).toBe(true);
+    expect(tieneProveedorRegistrado('openai/gpt-5.6-luna', registrados)).toBe(false);
+    expect(tieneProveedorRegistrado('desconocido:modelo', registrados)).toBe(false);
+    expect(tieneProveedorRegistrado('modelo-simple', registrados)).toBe(false);
+    expect(tieneProveedorRegistrado('', registrados)).toBe(false);
   });
 });

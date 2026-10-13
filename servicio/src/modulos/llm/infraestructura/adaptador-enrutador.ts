@@ -28,7 +28,14 @@ export class AdaptadorEnrutador implements AdaptadorLlm {
     solicitud: SolicitudGeneracion,
     limite: LimiteIntento,
   ): Promise<ResultadoAdaptador> {
-    const { proveedor: nombre, modelo } = resolverModelo(idModelo, PROVEEDORES_LLM_REGISTRADOS);
+    let resuelto: ReturnType<typeof resolverModelo>;
+    try {
+      resuelto = resolverModelo(idModelo, PROVEEDORES_LLM_REGISTRADOS);
+    } catch (error) {
+      // LLM26: un id sin prefijo registrado se rechaza como cualquier fallo del intento, sin llamar.
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+    const { proveedor: nombre, modelo } = resuelto;
     const proveedor = this.proveedores.get(nombre);
     if (proveedor === undefined) {
       // La configuración solo construye los proveedores que algún perfil usa (LLM17), así que esto

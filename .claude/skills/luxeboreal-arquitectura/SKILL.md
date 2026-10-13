@@ -121,7 +121,7 @@ modulos/<m>/
   | 11 | `scripts-solo-barriles-de-plataforma` | `scripts/` importando algo de `plataforma/` que no sea el `index.ts` público de un submódulo (Fase 00b D12) |
   | 12 | `prisma-service-solo-en-infraestructura` | `PrismaService` (barril de `plataforma/prisma`) importado desde `aplicacion/`, `puertos/` o `interfaz/` de un módulo — solo su `infraestructura/` puede (Fase 01) |
   | 13 | `solo-conversaciones-importa-canales` | cualquier módulo distinto de `conversaciones` (y `AppModule`) importando el barril de `modulos/canales` (Fases 04-05) |
-  | 14 | `ai-solo-en-infraestructura-llm` | el AI SDK (`ai`) y `@openrouter/*` importados fuera de `modulos/llm/infraestructura/` (Fase 06) |
+  | 14 | `ai-solo-en-infraestructura-llm` | el AI SDK (`ai`) y los providers `@ai-sdk/*` importados fuera de `modulos/llm/infraestructura/` (Fase 06, ADR-0029) |
   | 15 | `conversaciones-no-conoce-agente` | `modulos/conversaciones/` importando `modulos/agente/`: la dependencia va solo de `agente` a `conversaciones`, y `AppModule` compone con `ConversacionesModule.conGenerador(AgenteModule)` (ADR-0016, Fase 07a) |
 
 ## 3. Inyección de dependencias

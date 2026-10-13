@@ -54,6 +54,9 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
 ```
 
 - Vitest no carga el `.env` solo: por eso `--env-file=.env`. No imprimas ni pegues el `.env`.
+- La clave que hace falta es la del proveedor de los modelos de `LLM_EVALS_MODELOS`: `OPENAI_API_KEY` para `openai:`
+  (el valor por defecto es `openai:gpt-5.6-luna`) y `ANTHROPIC_API_KEY` para `anthropic:`. Un id sin uno de esos
+  prefijos hace que la corrida se niegue antes de llamar: OpenRouter se retiró ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
 - Cuesta cerca de **0,01 USD** por corrida con `openai:gpt-6-luna`. Tope autorizado: **2 USD por sesión de evals**.
 - Cada caso corre 3 veces. Las aserciones **críticas** (dinero con rastro, recargo sin porcentaje, herramienta prohibida,
   handoff no esperado) deben pasar el 100 %; el resto, al menos el 90 % (EVL3).

@@ -407,7 +407,7 @@ export class LlmGateway implements LlmPort {
       ? salida.resultado.uso
       : { tokensEntrada: 0, tokensSalida: 0, tokensCache: 0 };
     return {
-      // LLM15: el proveedor real sale del prefijo del id configurado (sin prefijo, OpenRouter).
+      // LLM15: el proveedor real sale del prefijo del id configurado (LLM26: sin proveedor por defecto).
       proveedor: resolverModelo(modelo, PROVEEDORES_LLM_REGISTRADOS).proveedor,
       modelo,
       tokensEntrada: uso.tokensEntrada,

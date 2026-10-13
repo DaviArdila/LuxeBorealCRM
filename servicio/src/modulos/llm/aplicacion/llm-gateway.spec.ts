@@ -18,9 +18,9 @@ import { LlmGateway } from './llm-gateway.js';
 // Escenarios LLM1, LLM3, LLM4 y LLM5 de `openspec/changes/fase-06-pasarela-llm/specs/llm/spec.md`.
 // Las primeras suites cubren el camino de un solo modelo (T4); las de fallback y circuito, T5.
 
-const MODELO = 'openai/gpt-5.6-luna';
-const MODELO_A = 'modelo/a';
-const MODELO_B = 'modelo/b';
+const MODELO = 'openai:gpt-5.6-luna';
+const MODELO_A = 'openai:modelo-a';
+const MODELO_B = 'openai:modelo-b';
 const PRECIO = { entrada: 0.2, salida: 1.2, cache: 0.02 };
 const DOS_MODELOS: Partial<ConfigGatewayLlm> = {
   LLM_CONVERSACION_MODELOS: [MODELO_A, MODELO_B],
@@ -107,7 +107,7 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
     expect(adaptador.llamadas[0]?.limite.maxTokens).toBe(400);
     expect(uso.filas).toEqual([
       {
-        proveedor: 'openrouter',
+        proveedor: 'openai',
         modelo: MODELO,
         tokensEntrada: 1000,
         tokensSalida: 500,
@@ -122,7 +122,7 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
 
   it('el perfil evals usa sus propios modelos y su propio tope de tokens', async () => {
     const { gateway, adaptador } = crearGateway({
-      LLM_EVALS_MODELOS: ['openai/gpt-5.6-luna', 'otro/modelo'],
+      LLM_EVALS_MODELOS: [MODELO, 'openai:otro-modelo'],
       LLM_EVALS_MAX_TOKENS: 123,
     });
     adaptador.programar(MODELO, { resultado: OK });
@@ -135,14 +135,14 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
 
   it('un modelo sin precio registra costo cero y avisa sin tumbar la respuesta (D6)', async () => {
     const aviso = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
-    const { gateway, adaptador, uso } = crearGateway({ LLM_CONVERSACION_MODELOS: ['sin/precio'] });
-    adaptador.programar('sin/precio', { resultado: OK });
+    const { gateway, adaptador, uso } = crearGateway({ LLM_CONVERSACION_MODELOS: ['openai:sin-precio'] });
+    adaptador.programar('openai:sin-precio', { resultado: OK });
 
     const respuesta = await gateway.generar(SOLICITUD);
 
     expect(respuesta.texto).toBe('respuesta');
     expect(uso.filas[0]?.costoEstimadoUsd).toBe(0);
-    expect(aviso).toHaveBeenCalledWith({ evento: 'llm.precio-desconocido', modelo: 'sin/precio' });
+    expect(aviso).toHaveBeenCalledWith({ evento: 'llm.precio-desconocido', modelo: 'openai:sin-precio' });
     aviso.mockRestore();
   });
 
@@ -168,16 +168,6 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
 });
 
 describe('modulos/llm/aplicacion — LlmGateway: proveedor real de la fila (LLM15, LLM19)', () => {
-  it('LLM15 — Un id sin prefijo se llama a OpenRouter como hoy', async () => {
-    const { gateway, adaptador, uso } = crearGateway();
-    adaptador.programar(MODELO, { resultado: OK });
-
-    await gateway.generar(SOLICITUD);
-
-    expect(adaptador.llamadas[0]?.modelo).toBe(MODELO);
-    expect(uso.filas[0]).toMatchObject({ proveedor: 'openrouter', modelo: MODELO });
-  });
-
   it('LLM15 — Un id con prefijo se llama directo al proveedor indicado', async () => {
     const id = 'openai:gpt-6-luna';
     const { gateway, adaptador, uso } = crearGateway({
@@ -194,7 +184,7 @@ describe('modulos/llm/aplicacion — LlmGateway: proveedor real de la fila (LLM1
   });
 
   it('LLM15 — El intento fallido de un proveedor directo también lleva su proveedor', async () => {
-    const id = 'openai:gpt-6-luna';
+    const id = 'anthropic:claude-haiku-5-5';
     const { gateway, adaptador, uso } = crearGateway({
       LLM_CONVERSACION_MODELOS: [id, MODELO],
       LLM_CONVERSACION_MAX_REINTENTOS: 0,
@@ -206,8 +196,8 @@ describe('modulos/llm/aplicacion — LlmGateway: proveedor real de la fila (LLM1
     await gateway.generar(SOLICITUD);
 
     expect(uso.filas.map((fila) => [fila.proveedor, fila.exito])).toEqual([
-      ['openai', false],
-      ['openrouter', true],
+      ['anthropic', false],
+      ['openai', true],
     ]);
   });
 
@@ -244,7 +234,7 @@ describe('modulos/llm/aplicacion — LlmGateway v1: timeout (LLM3)', () => {
     expect(adaptador.llamadas[0]?.limite.abort.aborted).toBe(true);
     expect(uso.filas).toHaveLength(1);
     expect(uso.filas[0]).toMatchObject({
-      proveedor: 'openrouter',
+      proveedor: 'openai',
       modelo: MODELO,
       tokensEntrada: 0,
       tokensSalida: 0,
@@ -495,7 +485,7 @@ describe('modulos/llm/aplicacion — LlmGateway v1: presupuesto total derivado d
 });
 
 describe('modulos/llm/aplicacion — LlmGateway: fallback entre proveedores (LLM21, ADR-0014, ADR-0019)', () => {
-  const DIRECTO = 'openai:gpt-6-luna';
+  const DIRECTO = 'anthropic:claude-haiku-5-5';
   const PERFIL_MIXTO: Partial<ConfigGatewayLlm> = {
     LLM_CONVERSACION_MODELOS: [DIRECTO, MODELO],
     LLM_CONVERSACION_MAX_REINTENTOS: 0,
@@ -511,8 +501,8 @@ describe('modulos/llm/aplicacion — LlmGateway: fallback entre proveedores (LLM
 
     expect(respuesta.texto).toBe('respuesta');
     expect(uso.filas.map((fila) => [fila.proveedor, fila.exito])).toEqual([
-      ['openai', false],
-      ['openrouter', true],
+      ['anthropic', false],
+      ['openai', true],
     ]);
   });
 
@@ -527,7 +517,7 @@ describe('modulos/llm/aplicacion — LlmGateway: fallback entre proveedores (LLM
     expect(adaptador.llamadas.map((llamada) => llamada.modelo)).toEqual([DIRECTO, MODELO]);
   });
 
-  it('el circuito es por id completo: abrir el de un proveedor directo no bloquea a OpenRouter', async () => {
+  it('el circuito es por id completo: abrir el de un proveedor no bloquea al de otro', async () => {
     const { gateway, adaptador } = crearGateway({ ...PERFIL_MIXTO, LLM_CB_UMBRAL_FALLOS: 1 });
     adaptador.programar(DIRECTO, { error: http(503, 'reintentable') });
     adaptador.programar(MODELO, { resultado: OK }, { resultado: OK });
@@ -535,7 +525,7 @@ describe('modulos/llm/aplicacion — LlmGateway: fallback entre proveedores (LLM
     await gateway.generar(SOLICITUD);
     await gateway.generar(SOLICITUD);
 
-    // La segunda solicitud salta el circuito abierto de `openai:` y va directo al siguiente.
+    // La segunda solicitud salta el circuito abierto de `anthropic:` y va directo al siguiente.
     expect(adaptador.llamadas.map((llamada) => llamada.modelo)).toEqual([DIRECTO, MODELO, MODELO]);
   });
 });
@@ -742,7 +732,7 @@ describe('modulos/llm/aplicacion — LlmGateway v2: circuit breaker por modelo (
 describe('modulos/llm/aplicacion — LlmGateway v2: error tipado y nivel 2 pospuesto (LLM1, LLM5, Q4)', () => {
   const SIN_RESPUESTA = new AdaptadorLlmError('reintentable', 'sin-respuesta');
 
-  it('LLM5 — Caída total de OpenRouter devuelve error tipado sin proveedor directo', async () => {
+  it('LLM5 — Caída de todos los modelos del perfil devuelve error tipado sin último recurso', async () => {
     const { gateway, adaptador, uso } = crearGateway({
       ...DOS_MODELOS,
       LLM_CONVERSACION_MAX_REINTENTOS: 0,

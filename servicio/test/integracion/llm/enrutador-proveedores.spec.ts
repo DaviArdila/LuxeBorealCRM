@@ -3,14 +3,14 @@ import { Logger } from '@nestjs/common';
 import { LlmGateway } from '../../../src/modulos/llm/aplicacion/llm-gateway.js';
 import type { ConfigGatewayLlm } from '../../../src/modulos/llm/aplicacion/config-gateway-llm.js';
 import { AdaptadorEnrutador } from '../../../src/modulos/llm/infraestructura/adaptador-enrutador.js';
+import { crearProveedorAnthropic } from '../../../src/modulos/llm/infraestructura/proveedores/anthropic.js';
 import { crearProveedorOpenAi } from '../../../src/modulos/llm/infraestructura/proveedores/openai.js';
-import { crearProveedorOpenRouter } from '../../../src/modulos/llm/infraestructura/proveedores/openrouter.js';
 import { ClockFalso } from '../../fakes/clock-falso.js';
 import { RepositorioParametroLlmEnMemoria } from '../../fakes/repositorio-parametro-llm-en-memoria.js';
 import { RepositorioUsoLlmEnMemoria } from '../../fakes/repositorio-uso-llm-en-memoria.js';
 import { TemporizadorLlmFalso } from '../../fakes/temporizador-llm-falso.js';
+import { SimuladorAnthropic } from '../../soporte/simulador-anthropic.js';
 import { SimuladorOpenAi } from '../../soporte/simulador-openai.js';
-import { SimuladorOpenRouter } from '../../soporte/simulador-openrouter.js';
 import { CONFIGURACION_AGENTE_DE_PRUEBA } from '../../soporte/configuracion-agente-de-prueba.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 
@@ -18,30 +18,30 @@ import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-
 // proveedor. Prueba de punta a punta LLM15, LLM19 y LLM21 sin claves reales ni gasto.
 
 const DIRECTO = 'openai:gpt-6-luna';
-const OPENROUTER = 'openai/gpt-5.6-luna';
+const OTRO_PROVEEDOR = 'anthropic:claude-haiku-5-5';
 const PRECIO = { entrada: 1, salida: 2, cache: 0.5 };
 
 describe('llm — enrutador de proveedores con el gateway (LLM15, LLM19, LLM21)', () => {
   let openai: SimuladorOpenAi;
-  let openrouter: SimuladorOpenRouter;
+  let anthropic: SimuladorAnthropic;
 
   beforeAll(async () => {
     Logger.overrideLogger(false);
     openai = await SimuladorOpenAi.iniciar();
-    openrouter = await SimuladorOpenRouter.iniciar();
+    anthropic = await SimuladorAnthropic.iniciar();
   });
 
   afterAll(async () => {
     await openai.cerrar();
-    await openrouter.cerrar();
+    await anthropic.cerrar();
   });
 
   function crear(modelos: string[]) {
     const clock = new ClockFalso(new Date('2026-09-30T12:00:00.000Z'));
     const uso = new RepositorioUsoLlmEnMemoria();
     const adaptador = new AdaptadorEnrutador([
-      crearProveedorOpenRouter({ OPENROUTER_API_KEY: 'clave-or', OPENROUTER_BASE_URL: openrouter.url }),
       crearProveedorOpenAi({ OPENAI_API_KEY: 'clave-oa' }, { baseURL: openai.url }),
+      crearProveedorAnthropic({ ANTHROPIC_API_KEY: 'clave-an' }, { baseURL: anthropic.url }),
     ]);
     const configuracion: ConfigGatewayLlm = {
       ...CONFIGURACION_AGENTE_DE_PRUEBA,
@@ -70,14 +70,14 @@ describe('llm — enrutador de proveedores con el gateway (LLM15, LLM19, LLM21)'
 
   it('LLM15 — Un id con prefijo se llama directo al proveedor y LLM19 costea con el id configurado', async () => {
     openai.responderTexto('desde openai', { tokensEntrada: 1000, tokensSalida: 500, tokensCache: 400 });
-    const antes = openrouter.intentos;
+    const antes = anthropic.intentos;
     const { gateway, uso } = crear([DIRECTO]);
 
     const respuesta = await gateway.generar(SOLICITUD);
 
     expect(respuesta.texto).toBe('desde openai');
     expect(openai.ultima().cuerpo.model).toBe('gpt-6-luna');
-    expect(openrouter.intentos).toBe(antes);
+    expect(anthropic.intentos).toBe(antes);
     // (600 * 1 + 500 * 2 + 400 * 0.5) / 1e6
     expect(uso.filas).toEqual([
       expect.objectContaining({
@@ -94,16 +94,16 @@ describe('llm — enrutador de proveedores con el gateway (LLM15, LLM19, LLM21)'
 
   it('LLM21 — La caída de un proveedor deriva al modelo de otro proveedor', async () => {
     openai.responderError(503);
-    openrouter.responderTexto('desde openrouter', { tokensEntrada: 10, tokensSalida: 5 });
-    const { gateway, uso } = crear([DIRECTO, OPENROUTER]);
+    anthropic.responderTexto('desde anthropic', { entrada: 10, salida: 5 });
+    const { gateway, uso } = crear([DIRECTO, OTRO_PROVEEDOR]);
 
     const respuesta = await gateway.generar(SOLICITUD);
 
-    expect(respuesta.texto).toBe('desde openrouter');
-    expect(openrouter.ultimoCuerpo().model).toBe(OPENROUTER);
+    expect(respuesta.texto).toBe('desde anthropic');
+    expect(anthropic.ultima().cuerpo.model).toBe('claude-haiku-5-5');
     expect(uso.filas.map((fila) => [fila.proveedor, fila.exito])).toEqual([
       ['openai', false],
-      ['openrouter', true],
+      ['anthropic', true],
     ]);
   });
 });

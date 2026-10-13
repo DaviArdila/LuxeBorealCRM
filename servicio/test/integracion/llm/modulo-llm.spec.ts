@@ -11,11 +11,12 @@ import {
 } from '../../../src/plataforma/config/index.js';
 import { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { RelojModule } from '../../../src/plataforma/reloj/index.js';
-import { SimuladorOpenRouter } from '../../soporte/simulador-openrouter.js';
+import { ADAPTADOR_LLM, adaptadorLlmContraSimuladorOpenAi } from '../../soporte/adaptador-llm-simulado.js';
+import { SimuladorOpenAi } from '../../soporte/simulador-openai.js';
 import { urlPostgresDePrueba, urlRedisDePrueba } from '../../soporte/infraestructura.js';
 
 // T9 (fase-06-pasarela-llm): el módulo `llm` compuesto de punta a punta contra el simulador de
-// OpenRouter y Postgres real. LLM10 (R14) y LLM12 (R15) son los escenarios primarios.
+// OpenAI (ADR-0029) y Postgres real. LLM10 (R14) y LLM12 (R15) son los escenarios primarios.
 
 const PROMPT = 'PROMPT-SECRETO-XYZ';
 const TELEFONO = '3001234567';
@@ -25,9 +26,9 @@ const RESPUESTA = 'RESPUESTA-SECRETA-ABC';
 const CONTENIDO_SENSIBLE = [PROMPT, TELEFONO, CORREO, CEDULA, RESPUESTA, 'ARGUMENTO-SECRETO'];
 
 const PRECIOS = JSON.stringify({
-  'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
-  'modelo/uno': { entrada: 0.1, salida: 0.5, cache: 0.01 },
-  'modelo/dos': { entrada: 0.3, salida: 1.5, cache: 0.03 },
+  'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+  'openai:modelo-uno': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+  'openai:modelo-dos': { entrada: 0.3, salida: 1.5, cache: 0.03 },
 });
 
 const SOLICITUD: SolicitudGeneracion = {
@@ -59,11 +60,11 @@ class LoggerCapturado implements LoggerService {
 }
 
 describe('llm — módulo compuesto (T9, integración)', () => {
-  let simulador: SimuladorOpenRouter;
+  let simulador: SimuladorOpenAi;
   let modulo: TestingModule | undefined;
 
   beforeAll(async () => {
-    simulador = await SimuladorOpenRouter.iniciar();
+    simulador = await SimuladorOpenAi.iniciar();
   });
 
   afterAll(async () => {
@@ -82,8 +83,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
       NODE_ENV: 'development',
       DATABASE_URL: urlPostgresDePrueba(),
       REDIS_URL: urlRedisDePrueba(),
-      OPENROUTER_API_KEY: 'clave-de-prueba',
-      OPENROUTER_BASE_URL: simulador.url,
+      OPENAI_API_KEY: 'clave-de-prueba',
       LLM_PRECIOS_USD_JSON: PRECIOS,
       LLM_REINTENTO_BASE_MS: '1',
       LLM_REINTENTO_MAX_MS: '1',
@@ -92,6 +92,8 @@ describe('llm — módulo compuesto (T9, integración)', () => {
     modulo = await Test.createTestingModule({ imports: [ConfiguracionModule, RelojModule, LlmModule] })
       .overrideProvider(CONFIGURACION)
       .useValue(configuracion)
+      .overrideProvider(ADAPTADOR_LLM)
+      .useFactory(adaptadorLlmContraSimuladorOpenAi(simulador.url))
       .compile();
     if (logger !== undefined) {
       Logger.overrideLogger(logger);
@@ -108,8 +110,8 @@ describe('llm — módulo compuesto (T9, integración)', () => {
     const gastar = (costo: string) =>
       prisma.usoLlm.create({
         data: {
-          proveedor: 'openrouter',
-          modelo: 'openai/gpt-5.6-luna',
+          proveedor: 'openai',
+          modelo: 'openai:gpt-5.6-luna',
           tokensEntrada: 1,
           tokensSalida: 1,
           tokensCache: 0,
@@ -122,7 +124,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
     simulador.responderTexto(RESPUESTA, { tokensEntrada: 40, tokensSalida: 10 });
     await llm.generar(SOLICITUD);
     simulador.responderLlamadas(
-      [{ id: 'c1', nombre: 'buscar', argumentos: '{"consulta":"ARGUMENTO-SECRETO"}' }],
+      [{ idItem: 'fc_1', idLlamada: 'c1', nombre: 'buscar', argumentos: '{"consulta":"ARGUMENTO-SECRETO"}' }],
       { tokensEntrada: 5, tokensSalida: 5 },
     );
     await llm.generar(SOLICITUD);
@@ -165,7 +167,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
         'tokensSalida',
       ].sort(),
     );
-    expect(filas[0]).toMatchObject({ modelo: 'openai/gpt-5.6-luna', tokensEntrada: 1000, exito: true });
+    expect(filas[0]).toMatchObject({ proveedor: 'openai', modelo: 'openai:gpt-5.6-luna', tokensEntrada: 1000, exito: true });
     expect(filas[0]?.costoEstimadoUsd.toString()).toBe('0.0008');
     const guardado = JSON.stringify(filas);
     for (const sensible of CONTENIDO_SENSIBLE) {
@@ -178,7 +180,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
     const usados: string[] = [];
     const respuestas = [];
 
-    for (const modelo of ['modelo/uno', 'modelo/dos']) {
+    for (const modelo of ['openai:modelo-uno', 'openai:modelo-dos']) {
       const { llm, prisma } = await compilar({
         LLM_CONVERSACION_MODELOS: modelo,
         LLM_PRECIOS_USD_JSON: PRECIOS,
@@ -187,16 +189,16 @@ describe('llm — módulo compuesto (T9, integración)', () => {
 
       respuestas.push(await llm.generar(solicitud));
 
-      usados.push(simulador.ultimoCuerpo().model);
+      usados.push(simulador.ultima().cuerpo.model);
       expect((await prisma.usoLlm.findMany()).map((fila) => fila.modelo)).toEqual([modelo]);
       await modulo?.close();
       modulo = undefined;
     }
 
-    expect(usados).toEqual(['modelo/uno', 'modelo/dos']);
+    expect(usados).toEqual(['modelo-uno', 'modelo-dos']);
     expect(respuestas.map((respuesta) => respuesta.texto)).toEqual([
-      'respuesta de modelo/uno',
-      'respuesta de modelo/dos',
+      'respuesta de openai:modelo-uno',
+      'respuesta de openai:modelo-dos',
     ]);
     expect(respuestas.every((respuesta) => respuesta.uso?.tokensEntrada === 100)).toBe(true);
   });

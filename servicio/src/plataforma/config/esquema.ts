@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import {
   PROVEEDORES_LLM_REGISTRADOS,
-  prefijoNoRegistrado,
   resolverModelo,
+  tieneProveedorRegistrado,
 } from '../../compartido/llm/index.js';
 
-/** Precios por millón de tokens del modelo principal (ADR-0002); se refrescan al desplegar. */
+/** Precios por millón de tokens del modelo principal (ADR-0029); se refrescan al desplegar. */
 const PRECIOS_LLM_POR_DEFECTO = JSON.stringify({
-  'openai/gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+  'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
 });
 
 /** Lista CSV en orden de prioridad (fallback nivel 1, ADR-0014); al menos un modelo. */
@@ -152,13 +152,13 @@ export const esquemaConfiguracion = z
     /** `BarridoEsperas` (Fase 08d, D5): cada cuánto se revisan los clientes que esperan respuesta. */
     ESPERA_CLIENTE_BARRIDO_MS: z.coerce.number().int().min(10000).default(60000),
     /** `modulos/llm` (Fase 06, T3, D12, R15): perfil `conversacion`; cambiar de modelo es cambiar datos. */
-    LLM_CONVERSACION_MODELOS: listaDeModelos('openai/gpt-5.6-luna'),
+    LLM_CONVERSACION_MODELOS: listaDeModelos('openai:gpt-5.6-luna'),
     /** Por debajo de `LOCK_TURNO_TTL_S · 1000` (LLM3, `superRefine` abajo). */
     LLM_CONVERSACION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(15000),
     LLM_CONVERSACION_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
     LLM_CONVERSACION_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),
     /** Perfil `evals`: sin la presión del lock de turno, admite más tiempo. */
-    LLM_EVALS_MODELOS: listaDeModelos('openai/gpt-5.6-luna'),
+    LLM_EVALS_MODELOS: listaDeModelos('openai:gpt-5.6-luna'),
     LLM_EVALS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
     LLM_EVALS_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
     LLM_EVALS_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),
@@ -189,10 +189,6 @@ export const esquemaConfiguracion = z
       .transform((valor) => valor === 'true'),
     /** Fotos individuales máximas por sesión (Fase 07b, D10, AGT9). */
     AGENTE_FOTOS_INDIVIDUALES_MAX: z.coerce.number().int().min(1).max(10).default(4),
-    /** Vacía por defecto; obligatoria no vacía en production (`superRefine` abajo). */
-    OPENROUTER_API_KEY: z.string().default(''),
-    /** Override hacia el simulador local en las pruebas (D11). */
-    OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
     /** Proveedor `openai` directo (LLM17); obligatoria en production solo si un perfil usa `openai:`. */
     OPENAI_API_KEY: z.string().default(''),
     /** Proveedor `anthropic` directo (LLM25); obligatoria en production solo si un perfil usa `anthropic:`. */
@@ -281,14 +277,18 @@ export const esquemaConfiguracion = z
     ] as const;
     const proveedoresUsados = new Set<string>();
     for (const [variable, modelos] of perfiles) {
-      if (modelos.some((modelo) => prefijoNoRegistrado(modelo, PROVEEDORES_LLM_REGISTRADOS) !== null)) {
+      // LLM26: sin proveedor por defecto, un id sin prefijo registrado no sabría a quién llamar.
+      const conProveedor = modelos.filter((modelo) =>
+        tieneProveedorRegistrado(modelo, PROVEEDORES_LLM_REGISTRADOS),
+      );
+      if (conProveedor.length < modelos.length) {
         ctx.addIssue({
           code: 'custom',
           path: [variable],
-          message: `${variable} MUST usar solo prefijos de proveedores registrados (LLM16).`,
+          message: `${variable} MUST usar ids proveedor:modelo con un proveedor registrado (LLM16, LLM26).`,
         });
       }
-      for (const modelo of modelos) {
+      for (const modelo of conProveedor) {
         proveedoresUsados.add(resolverModelo(modelo, PROVEEDORES_LLM_REGISTRADOS).proveedor);
       }
       if (modelos.some((modelo) => !(modelo in datos.LLM_PRECIOS_USD_JSON))) {
@@ -302,7 +302,6 @@ export const esquemaConfiguracion = z
     // LLM17: en production solo se exige la clave de los proveedores que algún perfil usa.
     if (datos.NODE_ENV === 'production') {
       const claves: Readonly<Record<string, [string, string]>> = {
-        openrouter: ['OPENROUTER_API_KEY', datos.OPENROUTER_API_KEY],
         openai: ['OPENAI_API_KEY', datos.OPENAI_API_KEY],
         anthropic: ['ANTHROPIC_API_KEY', datos.ANTHROPIC_API_KEY],
       };

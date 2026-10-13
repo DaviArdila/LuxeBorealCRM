@@ -59,7 +59,7 @@ function configuracion(nodeEnv: Configuracion['NODE_ENV']): Configuracion {
     CHATWOOT_WEBHOOK_SECRETO: SECRETO_WEBHOOK,
     // `production` exige estos secretos al validar; aquí solo importa el atributo Secure de la cookie (USR2).
     ...(nodeEnv === 'production'
-      ? { CHATWOOT_BOT_TOKEN: 'ficticio', TELEGRAM_BOT_TOKEN: 'ficticio', TELEGRAM_CHAT_ID: '-1', OPENROUTER_API_KEY: 'ficticia' }
+      ? { CHATWOOT_BOT_TOKEN: 'ficticio', TELEGRAM_BOT_TOKEN: 'ficticio', TELEGRAM_CHAT_ID: '-1', OPENAI_API_KEY: 'ficticia' }
       : {}),
   });
 }

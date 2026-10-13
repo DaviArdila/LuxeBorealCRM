@@ -28,7 +28,7 @@ afterEach(async () => {
   modulo = undefined;
 });
 
-const MODELO = 'openai/gpt-5.6-luna';
+const MODELO = 'openai:gpt-5.6-luna';
 const SOLICITUD: SolicitudGeneracion = {
   perfil: 'conversacion',
   mensajes: [{ rol: 'usuario', texto: 'hola' }],
@@ -61,7 +61,7 @@ async function preparar() {
 async function gastar(prisma: PrismaService, costo: string, creado: string): Promise<void> {
   await prisma.usoLlm.create({
     data: {
-      proveedor: 'openrouter',
+      proveedor: 'openai',
       modelo: MODELO,
       tokensEntrada: 1,
       tokensSalida: 1,
