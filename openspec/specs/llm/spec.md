@@ -318,7 +318,7 @@ Fase que lo implementa: 06
 ### Requirement: LLM12 — Configuración por perfil validada con Zod (R15)
 
 La configuración del LLM MUST organizarse por perfil de uso (`conversacion`, `evals`): lista de
-modelos en orden de prioridad (principal `openai:gpt-5.6-luna`, ADR-0002 y ADR-0029; los respaldos concretos
+modelos en orden de prioridad (principal `openai:gpt-6-luna`, ADR-0002 y ADR-0029; los respaldos concretos
 los elige la Fase 07 con las evals), timeout, `max_tokens` y reintentos — más
 `LLM_TECHO_MENSUAL_USD` y `LLM_UMBRAL_AVISO_PCT` — validada con Zod en `plataforma/config` y
 documentada en `.env.example` sin secretos (**R15**: cambiar de modelo es cambiar datos + correr
@@ -428,18 +428,20 @@ de modelo de un perfil MUST tener la forma `proveedor:modelo` con un proveedor r
 defecto: un id sin ese prefijo (sin `:`, con el estilo `marca/modelo` de OpenRouter o con un prefijo desconocido)
 MUST impedir el arranque nombrando la variable del perfil, y la resolución del proveedor MUST fallar con un error que
 nombra el id en lugar de llamar a un tercero. Los valores por defecto de `LLM_CONVERSACION_MODELOS`,
-`LLM_EVALS_MODELOS` y `LLM_PRECIOS_USD_JSON` MUST usar `openai:gpt-5.6-luna`.
+`LLM_EVALS_MODELOS` MUST usar `openai:gpt-6-luna`, y `LLM_PRECIOS_USD_JSON` MUST declarar por defecto el precio de
+`openai:gpt-6-luna` y de `anthropic:claude-haiku-5-5`, los dos modelos que el proyecto usa por ahora. Esos precios
+están pendientes de confirmar por el dueño.
 
 Fase que lo implementa: fuera de fase (`odd/tasks/proveedores-directos-llm.md`, T3)
 
 #### Scenario: LLM26 — Un id sin prefijo impide el arranque aunque tenga precio
 
-- Dado `LLM_EVALS_MODELOS=openai/gpt-5.6-luna` con su precio en `LLM_PRECIOS_USD_JSON`,
+- Dado `LLM_EVALS_MODELOS=openai/gpt-6-luna` con su precio en `LLM_PRECIOS_USD_JSON`,
 - Cuando arranca la aplicación,
 - Entonces la configuración se rechaza nombrando `LLM_EVALS_MODELOS` y no se construye ningún proveedor.
 
-#### Scenario: LLM26 — Sin configuración el modelo por defecto es openai:gpt-5.6-luna
+#### Scenario: LLM26 — Sin configuración el modelo por defecto es openai:gpt-6-luna
 
 - Dado un entorno sin variables `LLM_*`,
 - Cuando se carga la configuración,
-- Entonces ambos perfiles usan `openai:gpt-5.6-luna` y su precio por defecto está declarado con ese mismo id.
+- Entonces ambos perfiles usan `openai:gpt-6-luna` y los precios por defecto declaran ese id y `anthropic:claude-haiku-5-5`.

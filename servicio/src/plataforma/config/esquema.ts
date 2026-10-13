@@ -5,9 +5,14 @@ import {
   tieneProveedorRegistrado,
 } from '../../compartido/llm/index.js';
 
-/** Precios por millón de tokens del modelo principal (ADR-0029); se refrescan al desplegar. */
+/**
+ * Precios por millón de tokens de los dos modelos que el proyecto usa por ahora (ADR-0029); se
+ * refrescan al desplegar. PENDIENTE DE CONFIRMAR por el dueño: el precio de `openai:gpt-6-luna`
+ * arrastra el del modelo anterior y el `cache` de Haiku es una estimación (10 % de la entrada).
+ */
 const PRECIOS_LLM_POR_DEFECTO = JSON.stringify({
-  'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+  'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+  'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
 });
 
 /** Lista CSV en orden de prioridad (fallback nivel 1, ADR-0014); al menos un modelo. */
@@ -152,13 +157,13 @@ export const esquemaConfiguracion = z
     /** `BarridoEsperas` (Fase 08d, D5): cada cuánto se revisan los clientes que esperan respuesta. */
     ESPERA_CLIENTE_BARRIDO_MS: z.coerce.number().int().min(10000).default(60000),
     /** `modulos/llm` (Fase 06, T3, D12, R15): perfil `conversacion`; cambiar de modelo es cambiar datos. */
-    LLM_CONVERSACION_MODELOS: listaDeModelos('openai:gpt-5.6-luna'),
+    LLM_CONVERSACION_MODELOS: listaDeModelos('openai:gpt-6-luna'),
     /** Por debajo de `LOCK_TURNO_TTL_S · 1000` (LLM3, `superRefine` abajo). */
     LLM_CONVERSACION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(15000),
     LLM_CONVERSACION_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
     LLM_CONVERSACION_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),
     /** Perfil `evals`: sin la presión del lock de turno, admite más tiempo. */
-    LLM_EVALS_MODELOS: listaDeModelos('openai:gpt-5.6-luna'),
+    LLM_EVALS_MODELOS: listaDeModelos('openai:gpt-6-luna'),
     LLM_EVALS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
     LLM_EVALS_MAX_TOKENS: z.coerce.number().int().min(1).max(8000).default(400),
     LLM_EVALS_MAX_REINTENTOS: z.coerce.number().int().min(0).max(2).default(2),

@@ -25,7 +25,7 @@ const esquemaEntorno = z.object({
   EVALS_MODO: z.enum(['guionado', 'real']).default('guionado'),
   OPENAI_API_KEY: z.string().default(''),
   ANTHROPIC_API_KEY: z.string().default(''),
-  LLM_EVALS_MODELOS: z.string().default('openai:gpt-5.6-luna'),
+  LLM_EVALS_MODELOS: z.string().default('openai:gpt-6-luna'),
   CI: z.string().optional(),
 });
 

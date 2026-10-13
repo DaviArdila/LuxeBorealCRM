@@ -12,7 +12,7 @@ un id de modelo sin prefijo de proveedor registrado es un **error de arranque**,
 | Slice | Qué cambia | Estado |
 |---|---|---|
 | 1 | Proveedor `anthropic`, `ANTHROPIC_API_KEY`, caché por punto de corte, esfuerzo `low` | este ADR |
-| 2 | Retiro de OpenRouter: proveedor, dependencia, variables y tests; ids sin prefijo como error; valores por defecto `openai:gpt-5.6-luna` | hecho (T3 de `odd/tasks/proveedores-directos-llm.md`) |
+| 2 | Retiro de OpenRouter: proveedor, dependencia, variables y tests; ids sin prefijo como error; valores por defecto `openai:gpt-6-luna` | hecho (T3 de `odd/tasks/proveedores-directos-llm.md`) |
 
 ## Contexto
 
@@ -47,6 +47,11 @@ Se elige **A**:
 4. El uso sigue LLM18: la lectura de caché va a `tokensCache` y la escritura en caché queda dentro de `tokensEntrada`.
 5. El precio sale de `LLM_PRECIOS_USD_JSON` (R2). El código no fija precios de Anthropic.
 6. En el slice siguiente se retira OpenRouter y un id sin prefijo registrado pasa a ser error de arranque.
+7. **Modelos vigentes (dueño, 2026-10-13):** por ahora el proyecto usa solo `openai:gpt-6-luna` y
+   `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se retira. `openai:gpt-6-luna` es el valor por defecto de ambos
+   perfiles y `LLM_PRECIOS_USD_JSON` lleva por defecto el precio de los dos. **Pendiente de confirmar por el dueño:**
+   el precio de `gpt-6-luna` (0,20 / 1,20 / 0,02 USD por millón, heredado del modelo anterior, sin verificar) y el
+   `cache` de Haiku (0,01 USD, estimado como el 10 % de la entrada).
 
 ## Consecuencias
 

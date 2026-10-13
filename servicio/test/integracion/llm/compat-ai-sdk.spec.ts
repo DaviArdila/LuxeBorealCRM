@@ -26,7 +26,7 @@ describe('llm — compatibilidad del AI SDK con NestJS 12 ESM', () => {
     const openai = createOpenAI({ baseURL: simulador.url, apiKey: 'clave-de-prueba' });
 
     const resultado = await generateText({
-      model: openai('gpt-5.6-luna'),
+      model: openai('gpt-6-luna'),
       system: 'Eres un asistente de pruebas.',
       messages: [{ role: 'user', content: 'hola' }],
       maxOutputTokens: 50,

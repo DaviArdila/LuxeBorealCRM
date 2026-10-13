@@ -18,7 +18,7 @@ import { LlmGateway } from './llm-gateway.js';
 // Escenarios LLM1, LLM3, LLM4 y LLM5 de `openspec/changes/fase-06-pasarela-llm/specs/llm/spec.md`.
 // Las primeras suites cubren el camino de un solo modelo (T4); las de fallback y circuito, T5.
 
-const MODELO = 'openai:gpt-5.6-luna';
+const MODELO = 'openai:gpt-6-luna';
 const MODELO_A = 'openai:modelo-a';
 const MODELO_B = 'openai:modelo-b';
 const PRECIO = { entrada: 0.2, salida: 1.2, cache: 0.02 };

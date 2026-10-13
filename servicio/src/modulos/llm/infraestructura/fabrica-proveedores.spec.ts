@@ -22,11 +22,11 @@ describe('modulos/llm/infraestructura — fábrica de proveedores usados (LLM17)
   });
 
   it('LLM17 — Un proveedor sin uso no se construye', () => {
-    expect(nombres(['openai:gpt-5.6-luna', 'openai:gpt-6-luna'])).toEqual(['openai']);
+    expect(nombres(['openai:gpt-6-luna', 'openai:gpt-6-luna-mini'])).toEqual(['openai']);
   });
 
   it('LLM26 — un id sin prefijo registrado no construye nada y lanza', () => {
-    expect(() => nombres(['openai/gpt-5.6-luna'])).toThrow(/proveedor registrado/);
+    expect(() => nombres(['openai/gpt-6-luna'])).toThrow(/proveedor registrado/);
   });
 
   it('un perfil con prefijo anthropic: construye el proveedor Anthropic', () => {

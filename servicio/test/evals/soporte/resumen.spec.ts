@@ -25,11 +25,11 @@ describe('test/evals — armarResumen (EVL1 determinismo)', () => {
       [{ id: 'a', titulo: 'Caso A', resultados: [OK('menciona')] }],
       { aprobada: true, criticasFallidas: 0, porcentajeNoCriticas: 1 },
       'real',
-      { costoUsd: 0.1234, modelosPorCaso: { a: ['openai:gpt-5.6-luna'] } },
+      { costoUsd: 0.1234, modelosPorCaso: { a: ['openai:gpt-6-luna'] } },
     );
 
     expect(resumen).toContain('Costo estimado: 0.1234 USD');
-    expect(resumen).toContain('openai:gpt-5.6-luna');
+    expect(resumen).toContain('openai:gpt-6-luna');
   });
 
   it('en modo real dice cuántos casos se omitieron y por qué', () => {

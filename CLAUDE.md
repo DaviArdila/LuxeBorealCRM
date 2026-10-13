@@ -180,7 +180,7 @@ secretos o configuración del repo).
   prototipo). Llaves UUID v7 (ADR-0007). Diseño en `MODELO_DATOS.md`.
 - **Redis** + **BullMQ** (`@nestjs/bullmq`) para colas, debounce, locks, dedupe y cachés.
 - **AI SDK** (`ai`) + `@ai-sdk/openai` y `@ai-sdk/anthropic` detrás de un puerto propio `LlmPort`: OpenAI y
-  Anthropic directos (ADR-0029); modelo principal **GPT-5.6 Luna** (`openai:gpt-5.6-luna`) con modelos de respaldo.
+  Anthropic directos (ADR-0029); por ahora solo `openai:gpt-6-luna` (principal) y `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se retiró.
 - `zod` para validar configuración y payloads; `sharp` para imágenes; `nestjs-pino` para logs.
 - **Vitest** (ESM, decisión 2026-09-23) + Supertest para e2e; Postgres y Redis reales en integración.
 - Observabilidad inicial: logs JSON a stdout, Sentry (plan gratis), Uptime Kuma, tabla `uso_llm`.

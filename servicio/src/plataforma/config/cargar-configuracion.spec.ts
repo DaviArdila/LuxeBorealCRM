@@ -693,11 +693,11 @@ describe('cargarConfiguracion', () => {
     it('usa los valores de D12 por defecto cuando ninguna variable LLM_* viene', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
       expect(configuracion.LLM_CONVERSACION_TIMEOUT_MS).toBe(15000);
       expect(configuracion.LLM_CONVERSACION_MAX_TOKENS).toBe(400);
       expect(configuracion.LLM_CONVERSACION_MAX_REINTENTOS).toBe(2);
-      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['openai:gpt-5.6-luna']);
+      expect(configuracion.LLM_EVALS_MODELOS).toEqual(['openai:gpt-6-luna']);
       expect(configuracion.LLM_EVALS_TIMEOUT_MS).toBe(30000);
       expect(configuracion.LLM_TECHO_MENSUAL_USD).toBe(10);
       expect(configuracion.LLM_UMBRAL_AVISO_PCT).toBe(80);
@@ -707,8 +707,11 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.LLM_CB_VENTANA_S).toBe(60);
       expect(configuracion).not.toHaveProperty('OPENROUTER_API_KEY');
       expect(configuracion).not.toHaveProperty('OPENROUTER_BASE_URL');
+      // Solo se usan por ahora gpt-6-luna y claude-haiku-5-5 (ADR-0029); ambos precios están pendientes
+      // de confirmar por el dueño.
       expect(configuracion.LLM_PRECIOS_USD_JSON).toEqual({
-        'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
       });
     });
 
@@ -719,7 +722,7 @@ describe('cargarConfiguracion', () => {
         LLM_PRECIOS_USD_JSON: JSON.stringify({
           'openai:modelo-a': { entrada: 1, salida: 2, cache: 0 },
           'anthropic:modelo-b': { entrada: 3, salida: 4, cache: 0 },
-          'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
         }),
       });
 
@@ -778,7 +781,7 @@ describe('cargarConfiguracion', () => {
     it('LLM12 — un modelo de un perfil sin precio declarado impide el arranque sin imprimir su valor', () => {
       const fuenteInvalida = {
         ...fuenteValida,
-        LLM_EVALS_MODELOS: 'openai:gpt-5.6-luna,openai:modelo-secreto-sin-precio',
+        LLM_EVALS_MODELOS: 'openai:gpt-6-luna,openai:modelo-secreto-sin-precio',
       };
 
       expect(variablesRechazadas(fuenteInvalida)).toContainEqual({
@@ -798,7 +801,7 @@ describe('cargarConfiguracion', () => {
 
     it('acepta dos perfiles que solo difieren en la lista de modelos (LLM12, R15)', () => {
       const precios = JSON.stringify({
-        'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
         'anthropic:otra-marca': { entrada: 0.5, salida: 2, cache: 0.05 },
       });
 
@@ -808,7 +811,7 @@ describe('cargarConfiguracion', () => {
         LLM_EVALS_MODELOS: 'anthropic:otra-marca',
       });
 
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
       expect(configuracion.LLM_EVALS_MODELOS).toEqual(['anthropic:otra-marca']);
     });
 
@@ -865,7 +868,7 @@ describe('cargarConfiguracion', () => {
       const configuracion = cargarConfiguracion(fuenteValida);
 
       expect(configuracion.OPENAI_API_KEY).toBe('');
-      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-5.6-luna']);
+      expect(configuracion.LLM_CONVERSACION_MODELOS).toEqual(['openai:gpt-6-luna']);
     });
 
     it('LLM16 — Un prefijo de proveedor desconocido impide el arranque', () => {
@@ -882,15 +885,15 @@ describe('cargarConfiguracion', () => {
 
     it.each([
       ['sin prefijo', 'modelo-simple'],
-      ['con barra al estilo de OpenRouter', 'openai/gpt-5.6-luna'],
+      ['con barra al estilo de OpenRouter', 'openai/gpt-6-luna'],
       ['con sufijo :free', 'meta-llama/llama-3-8b:free'],
-      ['con el prefijo openrouter retirado', 'openrouter:openai/gpt-5.6-luna'],
+      ['con el prefijo openrouter retirado', 'openrouter:openai/gpt-6-luna'],
     ])('LLM26 — Un id %s impide el arranque aunque tenga precio', (_caso, id) => {
       const error = rechazo({
         ...fuenteValida,
         LLM_EVALS_MODELOS: id,
         LLM_PRECIOS_USD_JSON: JSON.stringify({
-          'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
           [id]: { entrada: 0, salida: 0, cache: 0 },
         }),
       });
@@ -932,7 +935,7 @@ describe('cargarConfiguracion', () => {
         LLM_PRECIOS_USD_JSON: JSON.stringify({
           'openai:gpt-modelo': { entrada: 1, salida: 2, cache: 0.1 },
           'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
-          'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
         }),
       };
 

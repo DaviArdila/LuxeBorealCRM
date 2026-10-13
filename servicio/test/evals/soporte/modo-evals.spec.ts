@@ -67,10 +67,10 @@ describe('test/evals — la clave exigida es la del proveedor del modelo elegido
 
   it('LLM26 — un id sin prefijo de proveedor registrado se niega nombrando la variable, sin llamar', () => {
     expect(() =>
-      leerModoEvals({ ...REAL, LLM_EVALS_MODELOS: 'openai/gpt-5.6-luna', OPENAI_API_KEY: 'sk-oa' }),
+      leerModoEvals({ ...REAL, LLM_EVALS_MODELOS: 'openai/gpt-6-luna', OPENAI_API_KEY: 'sk-oa' }),
     ).toThrow(ErrorModoEvals);
     expect(() =>
-      leerModoEvals({ ...REAL, LLM_EVALS_MODELOS: 'openai/gpt-5.6-luna', OPENAI_API_KEY: 'sk-oa' }),
+      leerModoEvals({ ...REAL, LLM_EVALS_MODELOS: 'openai/gpt-6-luna', OPENAI_API_KEY: 'sk-oa' }),
     ).toThrow(/LLM_EVALS_MODELOS/);
   });
 

@@ -65,7 +65,7 @@ describe('modulos/llm/infraestructura — AdaptadorEnrutador (LLM15, LLM16, LLM2
     await expect(
       enrutador.generarConModelo('meta-llama/llama-3-8b:free', SOLICITUD, LIMITE),
     ).rejects.toThrow(/proveedor registrado/);
-    await expect(enrutador.generarConModelo('openai/gpt-5.6-luna', SOLICITUD, LIMITE)).rejects.toThrow(
+    await expect(enrutador.generarConModelo('openai/gpt-6-luna', SOLICITUD, LIMITE)).rejects.toThrow(
       /proveedor registrado/,
     );
     expect(generico.llamadas).toHaveLength(0);

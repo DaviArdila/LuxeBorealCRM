@@ -20,9 +20,9 @@ describe('resolverModelo', () => {
   });
 
   it('LLM15 — Un id con prefijo se llama directo al proveedor indicado', () => {
-    expect(resolverModelo('openai:gpt-5.6-luna', registrados)).toEqual({
+    expect(resolverModelo('openai:gpt-6-luna', registrados)).toEqual({
       proveedor: 'openai',
-      modelo: 'gpt-5.6-luna',
+      modelo: 'gpt-6-luna',
     });
   });
 
@@ -35,10 +35,10 @@ describe('resolverModelo', () => {
 
   it.each([
     ['sin prefijo', 'modelo-simple'],
-    ['con barra al estilo de OpenRouter', 'openai/gpt-5.6-luna'],
+    ['con barra al estilo de OpenRouter', 'openai/gpt-6-luna'],
     ['con sufijo :free', 'meta-llama/llama-3-8b:free'],
     ['con prefijo desconocido', 'desconocido:modelo'],
-    ['con prefijo openrouter retirado', 'openrouter:openai/gpt-5.6-luna'],
+    ['con prefijo openrouter retirado', 'openrouter:openai/gpt-6-luna'],
     ['vacío', ''],
   ])('LLM26 — un id %s es un error, nunca una llamada a un proveedor por defecto', (_caso, id) => {
     expect(() => resolverModelo(id, registrados)).toThrow(/proveedor registrado/);
@@ -51,15 +51,15 @@ describe('resolverModelo', () => {
   });
 
   it('LLM16 — solo cuentan los proveedores que se le pasan como registrados', () => {
-    expect(() => resolverModelo('openai:gpt-5.6-luna', ['anthropic'])).toThrow(/proveedor registrado/);
+    expect(() => resolverModelo('openai:gpt-6-luna', ['anthropic'])).toThrow(/proveedor registrado/);
   });
 });
 
 describe('tieneProveedorRegistrado', () => {
   it('LLM26 — acepta solo ids con prefijo de un proveedor registrado', () => {
-    expect(tieneProveedorRegistrado('openai:gpt-5.6-luna', registrados)).toBe(true);
+    expect(tieneProveedorRegistrado('openai:gpt-6-luna', registrados)).toBe(true);
     expect(tieneProveedorRegistrado('anthropic:claude-haiku-5-5', registrados)).toBe(true);
-    expect(tieneProveedorRegistrado('openai/gpt-5.6-luna', registrados)).toBe(false);
+    expect(tieneProveedorRegistrado('openai/gpt-6-luna', registrados)).toBe(false);
     expect(tieneProveedorRegistrado('desconocido:modelo', registrados)).toBe(false);
     expect(tieneProveedorRegistrado('modelo-simple', registrados)).toBe(false);
     expect(tieneProveedorRegistrado('', registrados)).toBe(false);

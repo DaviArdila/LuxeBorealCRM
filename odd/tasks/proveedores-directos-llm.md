@@ -47,6 +47,10 @@ Estrategia `auto-chain`, cadena `stacked-to-main`. Pronóstico: ~350 líneas el 
 - [x] **T3. Retiro de OpenRouter.** Proveedor, dependencia, variables, tests, ids sin prefijo como error, valores
   por defecto `openai:gpt-5.6-luna`, ADR-0002/0019 reemplazados en parte, SPEC.md y CLAUDE.md. Ruta: delegada.
 
+- [x] **T4. Modelos vigentes.** El dueño pide quitar `gpt-5.6-luna`: por ahora solo `openai:gpt-6-luna` (por defecto)
+  y `anthropic:claude-haiku-5-5`. Defaults de código, precios por defecto de los dos modelos, tests y documentos vivos.
+  Los precios quedan **pendientes de confirmar por el dueño**. Ruta: delegada (mismo escritor).
+
 ## Comprobaciones
 
 `npm run lint`, `typecheck`, `fronteras`, `contrato:deriva`, `commits` y Vitest `unit`, `integracion`, `e2e`,
@@ -90,8 +94,8 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 |---|---|---|
 | `servicio/.env.example` | `ANTHROPIC_API_KEY=` junto a `OPENAI_API_KEY=` | El permiso de la herramienta niega leer y editar el archivo |
 | `servicio/scripts/generar-contrato.ts` | `ANTHROPIC_API_KEY: '',` junto a `OPENAI_API_KEY` | Fuera de las superficies autorizadas del escritor |
-| `servicio/.env.example` (T3) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; ids de `LLM_CONVERSACION_MODELOS`, `LLM_EVALS_MODELOS` y claves de `LLM_PRECIOS_USD_JSON` con prefijo (`openai:gpt-6-luna`) | El permiso de la herramienta niega leer y editar el archivo |
-| `servicio/src/plataforma/config/env-example.spec.ts:41` (T3) | Esperar `['openai:gpt-6-luna']` en lugar de `['openai/gpt-6-luna']` | Fuera de las superficies autorizadas del escritor |
+| `servicio/.env.example` (T3, T4) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; `openai:gpt-6-luna` (con dos puntos) en ambos perfiles y en las claves de `LLM_PRECIOS_USD_JSON`, más la entrada de `anthropic:claude-haiku-5-5` | El permiso de la herramienta niega leer y editar el archivo |
+| `servicio/src/plataforma/config/env-example.spec.ts:41` (T3) | Hecho en T4: espera `['openai:gpt-6-luna']` | — |
 
 ## Siguiente paso
 

@@ -39,7 +39,7 @@ async function crearRepositorio() {
 
 const EXITO: FilaUsoLlm = {
   proveedor: 'openai',
-  modelo: 'openai:gpt-5.6-luna',
+  modelo: 'openai:gpt-6-luna',
   tokensEntrada: 1000,
   tokensSalida: 500,
   tokensCache: 200,
@@ -62,7 +62,7 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     expect(filas).toHaveLength(1);
     expect(filas[0]).toMatchObject({
       proveedor: 'openai',
-      modelo: 'openai:gpt-5.6-luna',
+      modelo: 'openai:gpt-6-luna',
       tokensEntrada: 1000,
       tokensSalida: 500,
       tokensCache: 200,
@@ -113,7 +113,7 @@ describe('llm — RepositorioUsoLlmPrisma (T7, integración)', () => {
     expect(error).toHaveBeenCalledTimes(1);
     const registrado = JSON.stringify(error.mock.calls[0]);
     expect(registrado).toContain('llm.uso-no-registrado');
-    expect(registrado).toContain('openai:gpt-5.6-luna');
+    expect(registrado).toContain('openai:gpt-6-luna');
     expect(registrado).not.toContain('00000000-0000-7000-8000-000000000000');
     error.mockRestore();
   });

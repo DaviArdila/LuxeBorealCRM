@@ -26,7 +26,7 @@ const RESPUESTA = 'RESPUESTA-SECRETA-ABC';
 const CONTENIDO_SENSIBLE = [PROMPT, TELEFONO, CORREO, CEDULA, RESPUESTA, 'ARGUMENTO-SECRETO'];
 
 const PRECIOS = JSON.stringify({
-  'openai:gpt-5.6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+  'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
   'openai:modelo-uno': { entrada: 0.1, salida: 0.5, cache: 0.01 },
   'openai:modelo-dos': { entrada: 0.3, salida: 1.5, cache: 0.03 },
 });
@@ -111,7 +111,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
       prisma.usoLlm.create({
         data: {
           proveedor: 'openai',
-          modelo: 'openai:gpt-5.6-luna',
+          modelo: 'openai:gpt-6-luna',
           tokensEntrada: 1,
           tokensSalida: 1,
           tokensCache: 0,
@@ -167,7 +167,7 @@ describe('llm — módulo compuesto (T9, integración)', () => {
         'tokensSalida',
       ].sort(),
     );
-    expect(filas[0]).toMatchObject({ proveedor: 'openai', modelo: 'openai:gpt-5.6-luna', tokensEntrada: 1000, exito: true });
+    expect(filas[0]).toMatchObject({ proveedor: 'openai', modelo: 'openai:gpt-6-luna', tokensEntrada: 1000, exito: true });
     expect(filas[0]?.costoEstimadoUsd.toString()).toBe('0.0008');
     const guardado = JSON.stringify(filas);
     for (const sensible of CONTENIDO_SENSIBLE) {
