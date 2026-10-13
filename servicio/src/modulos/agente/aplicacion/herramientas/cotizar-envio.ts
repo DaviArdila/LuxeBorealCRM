@@ -28,5 +28,7 @@ export function crearCotizarEnvio(cotizar: CotizarEnvio): Herramienta {
         efectos: cotizacion.cobertura ? [] : [{ tipo: 'sin-cobertura' }],
       };
     },
+    // Sin cobertura anota un evento que ninguna herramienta del turno lee; su efecto lo ven las que escriben después.
+    { concurrente: true },
   );
 }

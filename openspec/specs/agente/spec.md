@@ -232,10 +232,14 @@ aplican al final del turno; `avisar-asesor` MUST convertirse en el `aviso` de la
 varias herramientas lo emitan. Una llamada a una herramienta desconocida o con argumentos inválidos MUST
 devolverse al modelo como error de herramienta; la segunda llamada inválida del mismo turno MUST
 terminar el turno en handoff con motivo `argumentos-invalidos` y el texto `mensaje_error_llm`.
+Cuando el modelo pide varias herramientas en un mismo paso, las que se declaran concurrentes (las cuatro de
+consulta de AGT8) y van seguidas MAY ejecutarse en paralelo; las demás (las que escriben o avisan) MUST ejecutarse
+de a una, en el orden pedido y sin solaparse con ninguna otra. Los resultados y los efectos MUST volver al modelo
+en el orden de las llamadas, no en el que terminaron.
 
-(Previously: los efectos no incluían `avisar-asesor` y el bucle citaba siete herramientas.)
+(Previously: los efectos no incluían `avisar-asesor`, el bucle citaba siete herramientas y todas corrían en serie.)
 
-Fase que lo implementa: 07b; 12d (efecto `avisar-asesor`)
+Fase que lo implementa: 07b; 12d (efecto `avisar-asesor`); `odd/tasks/latencia-bot.md` (concurrencia)
 
 #### Scenario: El modelo encadena herramientas y termina con texto
 
@@ -275,6 +279,19 @@ Fase que lo implementa: 07b; 12d (efecto `avisar-asesor`)
 - Dado un modelo que llama `derivar_a_asesor` y `marcar_lead_caliente` confirmado en el mismo turno,
 - Cuando se procesa el turno,
 - Entonces la respuesta trae un único aviso.
+
+#### Scenario: Las herramientas de consulta de un paso corren juntas y vuelven en orden
+
+- Dado un modelo que pide en un mismo paso dos herramientas concurrentes y la primera tarda más,
+- Cuando el bucle las ejecuta,
+- Entonces las dos arrancan sin esperarse y sus resultados vuelven al modelo en el orden en que se pidieron.
+
+#### Scenario: Las herramientas que escriben no se solapan
+
+- Dado un modelo que pide en un mismo paso dos herramientas que no son concurrentes,
+- Cuando el bucle las ejecuta,
+- Entonces la segunda empieza solo cuando la primera terminó, y una concurrente pedida después de ellas ve sus
+  efectos.
 
 ### Requirement: AGT5 — El turno respeta un plazo compartido y un tope de vueltas (ADR-0018)
 

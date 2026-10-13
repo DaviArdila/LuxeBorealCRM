@@ -10,7 +10,7 @@ import type {
 } from '../../llm/index.js';
 import { contarMontosSinRastro } from '../dominio/auditar-dinero.js';
 import type { EfectoTurno } from '../dominio/efectos.js';
-import type { SesionHerramienta } from '../dominio/herramienta.js';
+import type { Herramienta, ResultadoHerramientaAgente, SesionHerramienta } from '../dominio/herramienta.js';
 import { RegistroHerramientas } from './registro-herramientas.js';
 
 /** Margen que el turno deja del lock para registrar el uso y liberarlo (ADR-0018). */
@@ -47,6 +47,37 @@ export type MotivoDerivacionBucle =
   /** R1/R2: el texto final citó dinero sin rastro en las herramientas aun después del único reintento. */
   | 'dinero-sin-rastro';
 
+type SalidaLlamada =
+  | { readonly tipo: 'inexistente' }
+  | { readonly tipo: 'fallo' }
+  | { readonly tipo: 'ok'; readonly resultado: ResultadoHerramientaAgente };
+
+interface LlamadaResuelta {
+  readonly llamada: LlamadaHerramienta;
+  readonly herramienta: Herramienta | undefined;
+}
+
+/**
+ * Agrupa las llamadas de un paso en lotes que conservan su orden: las concurrentes seguidas forman un lote que corre
+ * en paralelo; cada una que no lo es va sola. Así una herramienta que escribe nunca se solapa con otra y una
+ * concurrente pedida después de ella la ve terminada. Una llamada a una herramienta inexistente no ejecuta nada.
+ */
+function lotesDelPaso(llamadas: readonly LlamadaResuelta[]): LlamadaResuelta[][] {
+  const lotes: LlamadaResuelta[][] = [];
+  let actual: LlamadaResuelta[] = [];
+  for (const resuelta of llamadas) {
+    if (resuelta.herramienta === undefined || resuelta.herramienta.concurrente === true) {
+      actual.push(resuelta);
+      continue;
+    }
+    if (actual.length > 0) lotes.push(actual);
+    lotes.push([resuelta]);
+    actual = [];
+  }
+  if (actual.length > 0) lotes.push(actual);
+  return lotes;
+}
+
 export type ResultadoBucle =
   | {
       readonly tipo: 'texto';
@@ -60,7 +91,8 @@ export type ResultadoBucle =
 /**
  * Bucle de herramientas del agente (D1-D2 de la Fase 07b, AGT4-AGT6): llama a `LLM_PORT` con las
  * definiciones del registro, ejecuta lo que el modelo pida y le devuelve los resultados hasta obtener
- * un texto final. No conoce el nombre de ninguna herramienta (A4): solo el registro. Respeta un plazo
+ * un texto final. No conoce el nombre de ninguna herramienta (A4): solo el registro. Las herramientas concurrentes
+ * seguidas de un mismo paso corren en paralelo; las demás, de a una y en su orden. Respeta un plazo
  * de turno de `LOCK_TURNO_TTL_S − 5` s medido con el `Clock` y un tope de vueltas; cualquier fallo se
  * convierte en una derivación tipada, nunca en una excepción hacia `conversaciones`.
  */
@@ -146,31 +178,31 @@ export class BucleHerramientas {
         return { tipo: 'derivar', motivo: 'argumentos-invalidos' };
       }
 
-      for (const llamada of validas) {
-        const herramienta = this.registro.obtener(llamada.nombre);
-        if (herramienta === undefined) {
-          invalidas += 1;
-          resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" no existe.`));
-          continue;
-        }
-        try {
-          const resultado = await herramienta.ejecutar(llamada.argumentos, {
-            sesion: entrada.sesion,
-            contactoId: entrada.contactoId,
-            efectosPrevios: [...efectos],
-          });
-          efectos.push(...resultado.efectos);
-          resultadosParaElModelo.push(resultado.paraElModelo);
+      const resueltas = validas.map((llamada) => ({ llamada, herramienta: this.registro.obtener(llamada.nombre) }));
+      for (const lote of lotesDelPaso(resueltas)) {
+        const efectosPrevios = [...efectos];
+        const salidas = await Promise.all(lote.map((resuelta) => this.ejecutarLlamada(resuelta, entrada, efectosPrevios)));
+        // Efectos y resultados se suman en el orden de las llamadas, no en el que terminaron.
+        lote.forEach(({ llamada }, i) => {
+          const salida = salidas[i];
+          if (salida === undefined || salida.tipo === 'inexistente') {
+            invalidas += 1;
+            resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" no existe.`));
+            return;
+          }
+          if (salida.tipo === 'fallo') {
+            resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" falló; sigue sin ella.`));
+            return;
+          }
+          efectos.push(...salida.resultado.efectos);
+          resultadosParaElModelo.push(salida.resultado.paraElModelo);
           resultados.push({
             idLlamada: llamada.id,
             nombre: llamada.nombre,
-            resultado: resultado.paraElModelo,
+            resultado: salida.resultado.paraElModelo,
             esError: false,
           });
-        } catch {
-          // Nunca se propaga ni se copia el mensaje: podría traer datos del cliente (R14).
-          resultados.push(errorDeHerramienta(llamada, `La herramienta "${llamada.nombre}" falló; sigue sin ella.`));
-        }
+        });
       }
       if (invalidas >= INVALIDAS_PARA_DERIVAR) {
         return { tipo: 'derivar', motivo: 'argumentos-invalidos' };
@@ -178,6 +210,27 @@ export class BucleHerramientas {
       mensajes.push({ rol: 'usuario', resultadosHerramienta: resultados });
     }
     return { tipo: 'derivar', motivo: 'plazo-agotado' };
+  }
+
+  private async ejecutarLlamada(
+    { llamada, herramienta }: LlamadaResuelta,
+    entrada: EntradaBucle,
+    efectosPrevios: readonly EfectoTurno[],
+  ): Promise<SalidaLlamada> {
+    if (herramienta === undefined) {
+      return { tipo: 'inexistente' };
+    }
+    try {
+      const resultado = await herramienta.ejecutar(llamada.argumentos, {
+        sesion: entrada.sesion,
+        contactoId: entrada.contactoId,
+        efectosPrevios,
+      });
+      return { tipo: 'ok', resultado };
+    } catch {
+      // Nunca se propaga ni se copia el mensaje: podría traer datos del cliente (R14).
+      return { tipo: 'fallo' };
+    }
   }
 
   private motivoDeFallo(error: unknown, restanteMs: number): MotivoDerivacionBucle {

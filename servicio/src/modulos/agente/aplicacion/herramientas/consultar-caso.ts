@@ -19,5 +19,6 @@ export function crearConsultarCaso(casos: ConsultaCasos): Herramienta {
     'Devuelve el texto y el modo (literal o guía) de un caso de uso del índice. Si el título no existe, lista los disponibles.',
     esquema,
     async ({ titulo }) => ({ paraElModelo: casoParaElModelo(await casos.consultar(titulo)), efectos: [] }),
+    { concurrente: true },
   );
 }

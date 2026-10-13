@@ -25,11 +25,16 @@ export interface ResultadoHerramientaAgente {
 }
 
 /**
- * Una de las ocho herramientas del agente (R1). Envuelve un caso de uso de otro módulo; el bucle
+ * Una de las nueve herramientas del agente (R1). Envuelve un caso de uso de otro módulo; el bucle
  * solo la conoce por su `definicion.nombre`.
  */
 export interface Herramienta {
   readonly definicion: DefinicionHerramienta;
+  /**
+   * `true` si puede correr a la vez que otras concurrentes del mismo paso del modelo: no cambia nada que otra
+   * herramienta del turno lea y no depende de `efectosPrevios`. Las demás corren de a una y en su orden.
+   */
+  readonly concurrente?: boolean;
   ejecutar(argumentos: unknown, ctx: ContextoHerramienta): Promise<ResultadoHerramientaAgente>;
 }
 

@@ -41,7 +41,7 @@ Medido desde el código, sin telemetría de producción:
 ## Tareas
 - [x] T1 — Lecturas en paralelo antes del LLM (`Promise.all`), consentimiento y nombre en una sola lectura, techo
   (SUM y parámetro) en paralelo. Ruta: delegada (varios archivos no triviales).
-- [ ] T2 — Herramientas de solo lectura en paralelo dentro de un paso, conservando el orden de los resultados.
+- [x] T2 — Herramientas de solo lectura en paralelo dentro de un paso, conservando el orden de los resultados.
   Ruta: delegada.
 - [ ] T3 — `buscar_producto` con coincidencia única devuelve la ficha; spec del agente o del catálogo en el mismo
   commit. Ruta: delegada.

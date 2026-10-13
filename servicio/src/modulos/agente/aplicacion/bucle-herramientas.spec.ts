@@ -416,3 +416,111 @@ describe('modulos/agente/aplicacion — BucleHerramientas, guarda de dinero sin 
     expect(llm.solicitudes).toHaveLength(2);
   });
 });
+
+describe('modulos/agente/aplicacion — BucleHerramientas: herramientas concurrentes de un mismo paso (latencia)', () => {
+  /** Una herramienta que no termina hasta que el test la libera; registra cuándo empezó. */
+  function pausada(nombre: string, inicios: string[], concurrente: boolean) {
+    let liberar: () => void = () => undefined;
+    const espera = new Promise<void>((resolver) => (liberar = resolver));
+    const base = herramienta(nombre, async () => {
+      inicios.push(nombre);
+      await espera;
+      inicios.push(`fin:${nombre}`);
+      return { paraElModelo: { ok: nombre }, efectos: [{ tipo: 'sin-cobertura' }] };
+    });
+    return { herramienta: { ...base, concurrente }, liberar: () => liberar() };
+  }
+
+  const vaciarCola = () => new Promise((resolver) => setImmediate(resolver));
+
+  it('AGT4 — Las herramientas de consulta de un paso corren juntas y vuelven en orden', async () => {
+    const inicios: string[] = [];
+    const lenta = pausada('lenta', inicios, true);
+    const rapida = pausada('rapida', inicios, true);
+    const { llm, bucle } = crear([lenta.herramienta, rapida.herramienta]);
+    llm.encolar(pideHerramientas(llamada('c1', 'lenta'), llamada('c2', 'rapida')), texto('listo'));
+
+    const resultado = bucle.ejecutar(ENTRADA);
+    await vaciarCola();
+    expect(inicios).toEqual(['lenta', 'rapida']);
+    rapida.liberar();
+    await vaciarCola();
+    lenta.liberar();
+
+    await expect(resultado).resolves.toMatchObject({ tipo: 'texto', resultadosParaElModelo: [{ ok: 'lenta' }, { ok: 'rapida' }] });
+    const devueltos = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta?.map((r) => r.idLlamada);
+    expect(devueltos).toEqual(['c1', 'c2']);
+  });
+
+  it('AGT4 — Las herramientas que escriben no se solapan', async () => {
+    const inicios: string[] = [];
+    const primera = pausada('primera', inicios, false);
+    const segunda = pausada('segunda', inicios, false);
+    const { llm, bucle } = crear([primera.herramienta, segunda.herramienta]);
+    llm.encolar(pideHerramientas(llamada('c1', 'primera'), llamada('c2', 'segunda')), texto('listo'));
+
+    const resultado = bucle.ejecutar(ENTRADA);
+    await vaciarCola();
+    expect(inicios).toEqual(['primera']);
+    primera.liberar();
+    await vaciarCola();
+    expect(inicios).toEqual(['primera', 'fin:primera', 'segunda']);
+    segunda.liberar();
+
+    await expect(resultado).resolves.toMatchObject({ tipo: 'texto' });
+  });
+
+  it('una concurrente pedida después de una que escribe espera a que esta termine y ve sus efectos', async () => {
+    const inicios: string[] = [];
+    const antes = pausada('antes', inicios, true);
+    const escribe = pausada('escribe', inicios, false);
+    const previosVistos: number[] = [];
+    const despues = {
+      ...herramienta('despues', (_argumentos, ctx) => {
+        inicios.push('despues');
+        previosVistos.push(ctx.efectosPrevios.length);
+        return Promise.resolve({ paraElModelo: { ok: 'despues' }, efectos: [] });
+      }),
+      concurrente: true,
+    };
+    const { llm, bucle } = crear([antes.herramienta, escribe.herramienta, despues]);
+    llm.encolar(pideHerramientas(llamada('c1', 'antes'), llamada('c2', 'escribe'), llamada('c3', 'despues')), texto('listo'));
+
+    const resultado = bucle.ejecutar(ENTRADA);
+    await vaciarCola();
+    expect(inicios).toEqual(['antes']);
+    antes.liberar();
+    await vaciarCola();
+    expect(inicios).toEqual(['antes', 'fin:antes', 'escribe']);
+    escribe.liberar();
+
+    await expect(resultado).resolves.toMatchObject({ tipo: 'texto', efectos: [{ tipo: 'sin-cobertura' }, { tipo: 'sin-cobertura' }] });
+    expect(inicios.at(-1)).toBe('despues');
+    expect(previosVistos).toEqual([2]);
+  });
+
+  it('el fallo de una concurrente no afecta a las demás del lote y conserva su lugar', async () => {
+    const fallida = { ...herramienta('fallida', () => Promise.reject(new Error('dato del cliente'))), concurrente: true };
+    const sana = { ...herramienta('sana'), concurrente: true };
+    const { llm, bucle } = crear([fallida, sana]);
+    llm.encolar(pideHerramientas(llamada('c1', 'fallida'), llamada('c2', 'sana')), texto('listo'));
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toMatchObject({ tipo: 'texto' });
+
+    const devueltos = llm.solicitudes[1]?.mensajes.at(-1)?.resultadosHerramienta;
+    expect(devueltos?.map((r) => [r.idLlamada, r.esError])).toEqual([
+      ['c1', true],
+      ['c2', false],
+    ]);
+    expect(JSON.stringify(devueltos)).not.toContain('dato del cliente');
+  });
+
+  it('R1 — un monto que llegó por una herramienta concurrente cuenta como rastro', async () => {
+    const ficha = { ...herramienta('ficha', () => Promise.resolve({ paraElModelo: { precio_texto: '$389.000' }, efectos: [] })), concurrente: true };
+    const otra = { ...herramienta('otra'), concurrente: true };
+    const { llm, bucle } = crear([ficha, otra]);
+    llm.encolar(pideHerramientas(llamada('c1', 'ficha'), llamada('c2', 'otra')), texto('Cuesta $389.000'));
+
+    await expect(bucle.ejecutar(ENTRADA)).resolves.toMatchObject({ tipo: 'texto', texto: 'Cuesta $389.000' });
+  });
+});
