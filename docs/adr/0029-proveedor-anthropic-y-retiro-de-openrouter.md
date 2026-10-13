@@ -12,7 +12,7 @@ un id de modelo sin prefijo de proveedor registrado es un **error de arranque**,
 | Slice | Qué cambia | Estado |
 |---|---|---|
 | 1 | Proveedor `anthropic`, `ANTHROPIC_API_KEY`, caché por punto de corte, esfuerzo `low` | este ADR |
-| 2 | Retiro de OpenRouter: proveedor, dependencia, variables y tests; ids sin prefijo como error; valores por defecto `openai:gpt-5.6-luna` | pendiente (T3 de `odd/tasks/proveedores-directos-llm.md`) |
+| 2 | Retiro de OpenRouter: proveedor, dependencia, variables y tests; ids sin prefijo como error; valores por defecto `openai:gpt-5.6-luna` | hecho (T3 de `odd/tasks/proveedores-directos-llm.md`) |
 
 ## Contexto
 

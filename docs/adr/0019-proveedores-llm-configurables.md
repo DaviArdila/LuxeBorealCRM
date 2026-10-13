@@ -1,6 +1,7 @@
 # 0019. Proveedores de LLM configurables: conexión directa además de OpenRouter
 
-- Estado: aceptada
+- Estado: aceptada; reemplazada en parte por [0029](0029-proveedor-anthropic-y-retiro-de-openrouter.md): OpenRouter
+  ya no es valor por defecto ni respaldo, y un id sin prefijo de proveedor registrado impide el arranque
 - Fecha: 2026-09-30
 
 > **Aceptada el 2026-09-30, con alcance inicial OpenAI.** El usuario aprobó el diseño híbrido
