@@ -32,6 +32,12 @@ Fuera de alcance: Google y el genérico compatible con OpenAI; precio propio de 
 
 Estrategia `auto-chain`, cadena `stacked-to-main`. Pronóstico: ~350 líneas el slice 1, ~400 el slice 2.
 
+**Excepción de tamaño (slice 2).** El slice 2 pasó de ~400 a ~1.700 líneas cambiadas (598 añadidas, 1.122 borradas,
+61 archivos). Casi todo es borrado: el proveedor y el simulador de OpenRouter, sus tests y la dependencia. No se
+parte porque un retiro a medias dejaría la rama sin compilar. La revisión nativa se hizo en tres tramos
+(`0e9bc28..c3a60af`, `..58df800`, `..d01f2ec`), porque el conjunto no cabía en el presupuesto de contexto de un solo
+revisor.
+
 | Slice | Rama | Tareas |
 |---|---|---|
 | 1 | `feat/proveedores-directos-llm` | T1, T2 |
@@ -44,8 +50,13 @@ Estrategia `auto-chain`, cadena `stacked-to-main`. Pronóstico: ~350 líneas el 
   de sistema, normalización del uso y esfuerzo `low`. Ruta: delegada (escritor único, 2+ archivos no triviales).
 - [ ] **T2. Documentación del slice 1.** ADR-0029, P37, spec de dominio `llm`, guía de evals reales.
   Ruta: dentro del mismo escritor de T1.
-- [ ] **T3. Retiro de OpenRouter.** Proveedor, dependencia, variables, tests, ids sin prefijo como error, valores
+- [x] **T3. Retiro de OpenRouter.** Proveedor, dependencia, variables, tests, ids sin prefijo como error, valores
   por defecto `openai:gpt-5.6-luna`, ADR-0002/0019 reemplazados en parte, SPEC.md y CLAUDE.md. Ruta: delegada.
+
+- [x] **T4. Modelos vigentes.** El dueño pide quitar `gpt-5.6-luna`: por ahora solo `openai:gpt-6-luna` (por defecto)
+  y `anthropic:claude-haiku-5-5`. Defaults de código, precios por defecto de los dos modelos, tests y documentos vivos.
+  Precio de `gpt-6-luna` dado por el dueño: 0,10 / 0,50 / 0,01 USD por millón (escritura en caché 0,125, sin cobrar aparte).
+  El `cache` de Haiku (0,01) sigue **pendiente de confirmar**. Ruta: delegada (mismo escritor).
 
 ## Comprobaciones
 
@@ -71,6 +82,18 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
     GREEN: unitarios 1824/1825 (falla `env-example.spec.ts`, ver «Bloqueos»); integración `test/integracion/llm`
     64/64 (incluye `proveedor-anthropic.spec.ts`, escrito después del GREEN); evals guionadas 49 + 1 omitido.
   - Lint, fronteras y `contrato:deriva` en verde; `typecheck` falla solo en `scripts/generar-contrato.ts`.
+- 2026-10-13, T3 (ruta delegada: escritor único en el worktree `retiro-openrouter`; disparador: 2+ archivos no
+  triviales). Rama `feat/proveedores-directos-llm-p2-retiro-openrouter` sobre `0e9bc28`.
+  - Commits: `c3a60af` refactor(test): simulador de anthropic compartido; `58df800` feat(llm)!: retira openrouter
+    y exige prefijo de proveedor registrado; el commit de documentación de ADR y P6/P38 que sigue.
+  - RED observado: 24 tests de `resolverModelo` y configuración, 1 del enrutador y 4 de `leerModoEvals`. GREEN después.
+  - Decisión: un id sin prefijo registrado es error (LLM26, nueva en `openspec/specs/llm/spec.md`). Los tests que
+    componen `LlmModule` cablean el `SimuladorOpenAi` por DI sobre `ADAPTADOR_LLM` (`test/soporte/adaptador-llm-simulado.ts`):
+    la URL de un proveedor directo no es configuración. `simulador-openrouter.ts` se borró: hablaba `chat/completions`
+    y el proveedor `openai` usa la API Responses.
+  - Comprobaciones: lint, typecheck, fronteras, `contrato:deriva` y commits en verde; integración 496/496; e2e
+    122/122; evals guionadas 49 + 1 omitido; unitarios 1819/1821 (fallan los 2 de `env-example.spec.ts`, ver
+    «Bloqueos»). `npm uninstall` solo quitó `@openrouter/ai-sdk-provider` del lockfile (15 líneas).
 
 ## Bloqueos
 
@@ -78,6 +101,8 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 |---|---|---|
 | `servicio/.env.example` | `ANTHROPIC_API_KEY=` junto a `OPENAI_API_KEY=` | El permiso de la herramienta niega leer y editar el archivo |
 | `servicio/scripts/generar-contrato.ts` | `ANTHROPIC_API_KEY: '',` junto a `OPENAI_API_KEY` | Fuera de las superficies autorizadas del escritor |
+| `servicio/.env.example` (T3, T4) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; `openai:gpt-6-luna` (con dos puntos) en ambos perfiles y en las claves de `LLM_PRECIOS_USD_JSON`, con los precios del dueño (ver el JSON exacto en el reporte de T4) | El permiso de la herramienta niega leer y editar el archivo |
+| `servicio/src/plataforma/config/env-example.spec.ts:41` (T3) | Hecho en T4: espera `['openai:gpt-6-luna']` | — |
 
 ## Siguiente paso
 

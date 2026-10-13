@@ -1,5 +1,5 @@
 // Fixture de fronteras (regla 14 — ai-solo-en-infraestructura-llm, violación): tampoco el provider
-// de OpenRouter puede importarse fuera de `modulos/llm/infraestructura/`.
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+// de un proveedor (`@ai-sdk/*`) puede importarse fuera de `modulos/llm/infraestructura/`.
+import { createAnthropic } from '@ai-sdk/anthropic';
 
-export const casoUsoProviderLlm = createOpenRouter;
+export const casoUsoProviderLlm = createAnthropic;

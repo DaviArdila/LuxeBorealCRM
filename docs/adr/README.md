@@ -7,7 +7,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | # | Decisión | Estado | Fecha |
 |---|---|---|---|
 | [0001](0001-monolito-modular-nestjs.md) | Monolito modular en NestJS con fronteras verificadas | aceptada | 2026-09-22 |
-| [0002](0002-pasarela-llm.md) | Pasarela de LLM: puerto propio + AI SDK sobre OpenRouter, GPT-5.6 Luna | aceptada | 2026-09-22 |
+| [0002](0002-pasarela-llm.md) | Pasarela de LLM: puerto propio + AI SDK sobre OpenRouter, GPT-5.6 Luna | aceptada; reemplazada en parte por 0029 | 2026-09-22 |
 | [0003](0003-postgres-fuente-de-verdad.md) | Postgres como fuente de verdad del estado de conversación | aceptada | 2026-09-22 |
 | [0004](0004-inbox-outbox.md) | Inbox de eventos entrantes y outbox de efectos externos | aceptada | 2026-09-22 |
 | [0005](0005-chatwoot-plataforma-de-canales.md) | Chatwoot como plataforma de canales, historial y bandeja | aceptada | 2026-09-22 |
@@ -24,7 +24,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0016](0016-composicion-agente-conversaciones.md) | El agente implementa el puerto de conversaciones; AppModule compone los dos módulos | aceptada | 2026-09-29 |
 | [0017](0017-historial-agente-redis-por-sesion.md) | Historial corto del agente en Redis, por sesión bot | aceptada | 2026-09-29 |
 | [0018](0018-presupuesto-de-tiempo-del-turno.md) | Presupuesto de tiempo del turno del agente: plazo compartido y tope de vueltas | aceptada | 2026-09-29 |
-| [0019](0019-proveedores-llm-configurables.md) | Proveedores de LLM configurables: conexión directa (primero OpenAI) además de OpenRouter (matiza 0002 y 0014) | aceptada | 2026-09-30 |
+| [0019](0019-proveedores-llm-configurables.md) | Proveedores de LLM configurables: conexión directa (primero OpenAI) además de OpenRouter (matiza 0002 y 0014) | aceptada; reemplazada en parte por 0029 | 2026-09-30 |
 | [0020](0020-estilo-del-agente-editable-desde-la-base-de-datos.md) | El estilo del agente se edita desde la base de datos, con el archivo como respaldo | aceptada | 2026-10-01 |
 | [0021](0021-sesion-cookie-redis.md) | Sesión en cookie httpOnly guardada en Redis, no JWT | propuesta | 2026-10-03 |
 | [0022](0022-cliente-angular-en-el-repo.md) | Cliente de back office en Angular, dentro de este repo (`cliente/`) (enmienda el doc 06) | propuesta | 2026-10-03 |

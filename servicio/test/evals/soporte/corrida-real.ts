@@ -5,6 +5,7 @@ import { LLM_PORT, LlmModule, type LlmPort } from '../../../src/modulos/llm/inde
 import { CONFIGURACION, ConfiguracionModule, type Configuracion } from '../../../src/plataforma/config/index.js';
 import { PrismaService } from '../../../src/plataforma/prisma/index.js';
 import { ClockSistema, RelojModule } from '../../../src/plataforma/reloj/index.js';
+import { ADAPTADOR_LLM, adaptadorLlmContraSimuladorOpenAi } from '../../soporte/adaptador-llm-simulado.js';
 import { CONFIGURACION_LLM_DE_PRUEBA } from '../../soporte/configuracion-llm-de-prueba.js';
 import type { ResultadoAsercion } from './aserciones.js';
 import { componerAgente, configuracionEvals } from './componer-agente.js';
@@ -20,8 +21,6 @@ export interface OpcionesCorridaReal {
   /** Ruta de un archivo de estilo para publicar en la base de la corrida antes de los casos (`EVALS_ESTILO`). */
   readonly estiloCandidato?: string;
   readonly casos: readonly CasoEval[];
-  /** Clave de OpenRouter; obligatoria solo si algún modelo va por OpenRouter (sin prefijo). */
-  readonly apiKey: string;
   /** Clave de OpenAI para los modelos `openai:` (ADR-0019). */
   readonly openaiApiKey?: string;
   /** Clave de Anthropic para los modelos `anthropic:` (ADR-0029). */
@@ -29,8 +28,8 @@ export interface OpcionesCorridaReal {
   /** Modelos del perfil `evals` (LLM_EVALS_MODELOS); el primero es el principal. */
   readonly modelos: readonly string[];
   readonly precios: Configuracion['LLM_PRECIOS_USD_JSON'];
-  /** Solo para probar el cableado contra un simulador; en la corrida real es la URL de OpenRouter. */
-  readonly urlOpenRouter?: string;
+  /** Solo para probar el cableado contra un `SimuladorOpenAi`; en la corrida real es la URL oficial. */
+  readonly urlOpenAi?: string;
   readonly repeticiones?: number;
 }
 
@@ -85,10 +84,8 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
   const base = configuracionEvals({});
   const configuracion: Configuracion = {
     ...base,
-    OPENROUTER_API_KEY: opciones.apiKey,
     OPENAI_API_KEY: opciones.openaiApiKey ?? '',
     ANTHROPIC_API_KEY: opciones.anthropicApiKey ?? '',
-    ...(opciones.urlOpenRouter === undefined ? {} : { OPENROUTER_BASE_URL: opciones.urlOpenRouter }),
     LOCK_TURNO_TTL_S: 60,
     LLM_PRECIOS_USD_JSON: opciones.precios,
     LLM_EVALS_MODELOS: [...opciones.modelos],
@@ -98,10 +95,13 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
     LLM_CONVERSACION_MAX_REINTENTOS: base.LLM_EVALS_MAX_REINTENTOS,
   };
 
-  const moduloLlm = await Test.createTestingModule({ imports: [ConfiguracionModule, RelojModule, LlmModule] })
+  const constructorLlm = Test.createTestingModule({ imports: [ConfiguracionModule, RelojModule, LlmModule] })
     .overrideProvider(CONFIGURACION)
-    .useValue(configuracion)
-    .compile();
+    .useValue(configuracion);
+  if (opciones.urlOpenAi !== undefined) {
+    constructorLlm.overrideProvider(ADAPTADOR_LLM).useFactory(adaptadorLlmContraSimuladorOpenAi(opciones.urlOpenAi));
+  }
+  const moduloLlm = await constructorLlm.compile();
   const gateway = moduloLlm.get<LlmPort>(LLM_PORT);
   const grabador = new GrabadorLlm(gateway);
   const app = await componerAgente({ llm: grabador, sobrescribir: configuracion });

@@ -62,7 +62,7 @@ describe('modulos/llm/puertos — LlmPort', () => {
       leerFuente('../dominio/error-pasarela-llm.ts'),
     ];
     for (const fuente of fuentes) {
-      expect(fuente).not.toMatch(/from\s+['"](ai|@openrouter\/[^'"]+)['"]/);
+      expect(fuente).not.toMatch(/from\s+['"](ai|@ai-sdk\/[^'"]+)['"]/);
     }
   });
 

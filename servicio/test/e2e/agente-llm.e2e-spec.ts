@@ -2,7 +2,7 @@
  * E2E de la Fase 07b (T9): el agente con LLM y las nueve herramientas de punta a punta, con la app
  * real (`AppModule`), BullMQ consumiendo de verdad y Postgres + Redis reales. Cada escenario entra por
  * un webhook firmado de Chatwoot → inbox → turno (debounce + lock) → `ContenidoLlm` → bucle de
- * herramientas con un `FakePuertoLlm` programado sobre `LLM_PORT` (nunca OpenRouter) → herramientas
+ * herramientas con un `FakePuertoLlm` programado sobre `LLM_PORT` (nunca un proveedor real) → herramientas
  * reales sobre Postgres → outbox → `ChatwootFalso` por HTTP. Confirma lo que los dobles de los
  * unitarios no ven: el cableado de `AgenteModule` con `CatalogoModule`, `LlmModule` y `canales`.
  */

@@ -5,7 +5,8 @@
 La pasarela de LLM es el único camino entre el agente y los proveedores de modelos (`SPEC.md` §3
 principio 5; `docs/adr/0002-pasarela-llm.md`): tipos propios en `LlmPort` → `LlmGateway` (timeout,
 reintento, circuit breaker, fallback, registro de uso y costo, techo de gasto, trazas) → un
-adaptador sobre el AI SDK con `@openrouter/ai-sdk-provider`. Implementa la parte de costo de
+adaptador sobre el AI SDK con un provider por proveedor directo (`@ai-sdk/openai`, `@ai-sdk/anthropic`;
+ADR-0029). Implementa la parte de costo de
 **R13** (`openspec/specs/conversaciones/spec.md`: cada llamada deja su fila en `uso_llm` y el techo
 mensual se hace cumplir desde el código) y deja la base de **R1/R2**
 (`openspec/specs/agente/spec.md`) que la Fase 07 usará: el gateway transporta definiciones y
@@ -145,9 +146,9 @@ El gateway MUST probar los modelos del perfil en orden de prioridad (nivel 1): s
 el siguiente responde sin intervención del llamador. Cuando un modelo supera el umbral configurado
 de fallos, el circuit breaker MUST dejar de llamarlo durante la ventana configurada
 (`circuito-abierto` para ese tramo). El nivel 2 directo queda **pospuesto** (Q4): el gateway MUST
-exponer el punto de extensión del último recurso sin implementar ningún proveedor directo, y ante
-caída total de OpenRouter MUST devolver el error tipado `proveedor-caido` para que la Fase 07 lo
-derive a humano (degradación visible, nunca silencio).
+exponer el punto de extensión del último recurso sin implementarlo, y ante la caída de todos los
+modelos del perfil MUST devolver el error tipado `proveedor-caido` para que la Fase 07 lo derive a
+humano (degradación visible, nunca silencio).
 
 Fase que lo implementa: 06
 
@@ -166,12 +167,12 @@ Fase que lo implementa: 06
   `circuito-abierto` (o la respuesta del siguiente modelo del perfil, según la cadena), y pasada la
   ventana permite una llamada de prueba.
 
-#### Scenario: LLM5 — Caída total de OpenRouter devuelve error tipado sin proveedor directo
+#### Scenario: LLM5 — Caída de todos los modelos del perfil devuelve error tipado sin último recurso
 
-- Dado que OpenRouter en su conjunto no responde y el nivel 2 directo sigue pospuesto (Q4),
+- Dado que ningún modelo del perfil responde y el nivel 2 sigue pospuesto (Q4),
 - Cuando se pide una generación,
-- Entonces el gateway devuelve el error tipado `proveedor-caido` sin llamar a ningún proveedor
-  directo, y la llamada queda registrada en `uso_llm` como fallida.
+- Entonces el gateway devuelve el error tipado `proveedor-caido` sin llamar a ningún último
+  recurso, y cada intento queda registrado en `uso_llm` como fallido.
 
 ### Requirement: LLM6 — Cada llamada deja su fila en uso_llm (R13)
 
@@ -291,10 +292,10 @@ Fase que lo implementa: 06
 - Entonces la fila contiene solo proveedor, modelo, conteos de tokens, costo estimado, latencia y
   resultado — ningún texto de mensajes, prompts ni datos personales.
 
-### Requirement: LLM11 — Adaptador OpenRouter sin reintentos propios (ADR-0002)
+### Requirement: LLM11 — Adaptador del AI SDK sin reintentos propios (ADR-0002)
 
-El adaptador AI SDK sobre OpenRouter MUST vivir solo en `modulos/llm/infraestructura`, MUST ser el
-único lugar donde aparecen `ai` y `@openrouter/ai-sdk-provider`, y MUST NOT reintentar por su
+El adaptador sobre el AI SDK MUST vivir solo en `modulos/llm/infraestructura`, MUST ser el único
+lugar donde aparecen `ai` y los providers `@ai-sdk/*` (ADR-0029), y MUST NOT reintentar por su
 cuenta: ante un fallo hace exactamente un intento contra el proveedor y propaga el error al gateway,
 que es el único que decide reintentos, fallback y circuito (restricción de ADR-0002, no una opción).
 
@@ -311,13 +312,13 @@ Fase que lo implementa: 06
 
 - Dado el árbol de `src/`,
 - Cuando corre `npm run fronteras`,
-- Entonces ningún import de `ai`, `@openrouter/ai-sdk-provider` ni de otro SDK de proveedor fuera
+- Entonces ningún import de `ai`, de `@ai-sdk/*` ni de otro SDK de proveedor fuera
   de `modulos/llm/infraestructura` pasa la verificación.
 
 ### Requirement: LLM12 — Configuración por perfil validada con Zod (R15)
 
 La configuración del LLM MUST organizarse por perfil de uso (`conversacion`, `evals`): lista de
-modelos en orden de prioridad (principal `openai/gpt-5.6-luna`, ADR-0002; los respaldos concretos
+modelos en orden de prioridad (principal `openai:gpt-6-luna`, ADR-0002 y ADR-0029; los respaldos concretos
 los elige la Fase 07 con las evals), timeout, `max_tokens` y reintentos — más
 `LLM_TECHO_MENSUAL_USD` y `LLM_UMBRAL_AVISO_PCT` — validada con Zod en `plataforma/config` y
 documentada en `.env.example` sin secretos (**R15**: cambiar de modelo es cambiar datos + correr
@@ -419,3 +420,30 @@ Fase que lo implementa: fuera de fase (`odd/tasks/proveedores-directos-llm.md`, 
 - Cuando `ANTHROPIC_API_KEY` está vacía,
 - Entonces el arranque falla nombrando `ANTHROPIC_API_KEY` sin imprimir ningún valor; sin modelos `anthropic:`,
   la variable no se exige.
+
+### Requirement: LLM26 — Solo proveedores directos: un id sin prefijo registrado impide el arranque (ADR-0029)
+
+Los proveedores registrados MUST ser solo los directos, `openai` y `anthropic`; OpenRouter queda retirado. Cada id
+de modelo de un perfil MUST tener la forma `proveedor:modelo` con un proveedor registrado. No hay proveedor por
+defecto: un id sin ese prefijo (sin `:`, con el estilo `marca/modelo` de OpenRouter o con un prefijo desconocido)
+MUST impedir el arranque nombrando la variable del perfil, y la resolución del proveedor MUST fallar con un error que
+nombra el id en lugar de llamar a un tercero. Los valores por defecto de `LLM_CONVERSACION_MODELOS`,
+`LLM_EVALS_MODELOS` MUST usar `openai:gpt-6-luna`, y `LLM_PRECIOS_USD_JSON` MUST declarar por defecto el precio de
+`openai:gpt-6-luna` y de `anthropic:claude-haiku-5-5`, los dos modelos que el proyecto usa por ahora
+(`gpt-6-luna`: 0,10 / 0,50 / 0,01 USD por millón; el `cache` de Haiku, 0,01, es una estimación pendiente de confirmar).
+La tabla de precios MUST NOT tener campo de escritura en caché: la escritura (0,125 en `gpt-6-luna`) no se cobra
+aparte en el cálculo, por lo que el costo queda levemente subestimado, igual que con Anthropic.
+
+Fase que lo implementa: fuera de fase (`odd/tasks/proveedores-directos-llm.md`, T3)
+
+#### Scenario: LLM26 — Un id sin prefijo impide el arranque aunque tenga precio
+
+- Dado `LLM_EVALS_MODELOS=openai/gpt-6-luna` con su precio en `LLM_PRECIOS_USD_JSON`,
+- Cuando arranca la aplicación,
+- Entonces la configuración se rechaza nombrando `LLM_EVALS_MODELOS` y no se construye ningún proveedor.
+
+#### Scenario: LLM26 — Sin configuración el modelo por defecto es openai:gpt-6-luna
+
+- Dado un entorno sin variables `LLM_*`,
+- Cuando se carga la configuración,
+- Entonces ambos perfiles usan `openai:gpt-6-luna` y los precios por defecto declaran ese id y `anthropic:claude-haiku-5-5`.

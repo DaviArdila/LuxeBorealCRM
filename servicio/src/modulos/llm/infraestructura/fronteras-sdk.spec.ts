@@ -35,7 +35,7 @@ describe('modulos/llm/infraestructura — SDK de cada proveedor en un solo archi
     const paquetes = new Set(
       archivosDeProduccion(RAIZ)
         .flatMap(paquetesImportados)
-        .filter((paquete) => /^(@ai-sdk|@openrouter)\//.test(paquete)),
+        .filter((paquete) => /^@ai-sdk\//.test(paquete)),
     );
 
     expect(paquetes.size).toBeGreaterThan(0);
