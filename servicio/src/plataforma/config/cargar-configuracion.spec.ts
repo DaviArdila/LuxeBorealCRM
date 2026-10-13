@@ -707,10 +707,10 @@ describe('cargarConfiguracion', () => {
       expect(configuracion.LLM_CB_VENTANA_S).toBe(60);
       expect(configuracion).not.toHaveProperty('OPENROUTER_API_KEY');
       expect(configuracion).not.toHaveProperty('OPENROUTER_BASE_URL');
-      // Solo se usan por ahora gpt-6-luna y claude-haiku-5-5 (ADR-0029); ambos precios están pendientes
-      // de confirmar por el dueño.
+      // Solo se usan por ahora gpt-6-luna y claude-haiku-5-5 (ADR-0029). El precio de gpt-6-luna es el
+      // del dueño; el cache de Haiku es una estimación.
       expect(configuracion.LLM_PRECIOS_USD_JSON).toEqual({
-        'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
       });
     });
@@ -722,7 +722,7 @@ describe('cargarConfiguracion', () => {
         LLM_PRECIOS_USD_JSON: JSON.stringify({
           'openai:modelo-a': { entrada: 1, salida: 2, cache: 0 },
           'anthropic:modelo-b': { entrada: 3, salida: 4, cache: 0 },
-          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         }),
       });
 
@@ -801,7 +801,7 @@ describe('cargarConfiguracion', () => {
 
     it('acepta dos perfiles que solo difieren en la lista de modelos (LLM12, R15)', () => {
       const precios = JSON.stringify({
-        'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+        'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         'anthropic:otra-marca': { entrada: 0.5, salida: 2, cache: 0.05 },
       });
 
@@ -893,7 +893,7 @@ describe('cargarConfiguracion', () => {
         ...fuenteValida,
         LLM_EVALS_MODELOS: id,
         LLM_PRECIOS_USD_JSON: JSON.stringify({
-          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
           [id]: { entrada: 0, salida: 0, cache: 0 },
         }),
       });
@@ -935,7 +935,7 @@ describe('cargarConfiguracion', () => {
         LLM_PRECIOS_USD_JSON: JSON.stringify({
           'openai:gpt-modelo': { entrada: 1, salida: 2, cache: 0.1 },
           'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
-          'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+          'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         }),
       };
 

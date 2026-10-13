@@ -429,8 +429,10 @@ defecto: un id sin ese prefijo (sin `:`, con el estilo `marca/modelo` de OpenRou
 MUST impedir el arranque nombrando la variable del perfil, y la resolución del proveedor MUST fallar con un error que
 nombra el id en lugar de llamar a un tercero. Los valores por defecto de `LLM_CONVERSACION_MODELOS`,
 `LLM_EVALS_MODELOS` MUST usar `openai:gpt-6-luna`, y `LLM_PRECIOS_USD_JSON` MUST declarar por defecto el precio de
-`openai:gpt-6-luna` y de `anthropic:claude-haiku-5-5`, los dos modelos que el proyecto usa por ahora. Esos precios
-están pendientes de confirmar por el dueño.
+`openai:gpt-6-luna` y de `anthropic:claude-haiku-5-5`, los dos modelos que el proyecto usa por ahora
+(`gpt-6-luna`: 0,10 / 0,50 / 0,01 USD por millón; el `cache` de Haiku, 0,01, es una estimación pendiente de confirmar).
+La tabla de precios MUST NOT tener campo de escritura en caché: la escritura (0,125 en `gpt-6-luna`) no se cobra
+aparte en el cálculo, por lo que el costo queda levemente subestimado, igual que con Anthropic.
 
 Fase que lo implementa: fuera de fase (`odd/tasks/proveedores-directos-llm.md`, T3)
 

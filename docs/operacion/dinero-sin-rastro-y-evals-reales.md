@@ -59,9 +59,12 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
   prefijos hace que la corrida se niegue antes de llamar: OpenRouter se retiró ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
 - Modelos soportados por ahora: `openai:gpt-6-luna` (por defecto) y `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se
   retiró. Para correrlas con cada uno, `OPENAI_API_KEY` o `ANTHROPIC_API_KEY` y, si hace falta, `LLM_EVALS_MODELOS`.
-- **Precios pendientes de confirmar por el dueño.** Los por defecto de `LLM_PRECIOS_USD_JSON` son 0,20 / 1,20 / 0,02 USD
-  por millón para `gpt-6-luna` (heredados del modelo anterior; el precio real no está en el repo) y 0,10 / 0,50 / 0,01
-  para Haiku (el `cache` es una estimación). El costo impreso de la corrida depende de ellos.
+- Precios por defecto de `LLM_PRECIOS_USD_JSON` (USD por millón de tokens: entrada / salida / lectura de caché):
+  `gpt-6-luna` 0,10 / 0,50 / 0,01, dados por el dueño (contexto 1.050.000, salida máxima 128.000, razonamiento
+  none/low/medium por defecto/high/xhigh/max), y Haiku 0,10 / 0,50 / 0,01, donde el `cache` es una **estimación
+  pendiente de confirmar** (10 % de la entrada). El costo impreso de la corrida depende de ellos.
+- La tabla de precios **no tiene campo de escritura en caché**: la escritura (0,125 en `gpt-6-luna`; 1,25 veces la
+  entrada en Anthropic) no se cobra aparte en el cálculo, así que el costo queda levemente subestimado.
 - Cuesta cerca de **0,01 USD** por corrida con `openai:gpt-6-luna`. Tope autorizado: **2 USD por sesión de evals**.
 - Cada caso corre 3 veces. Las aserciones **críticas** (dinero con rastro, recargo sin porcentaje, herramienta prohibida,
   handoff no esperado) deben pasar el 100 %; el resto, al menos el 90 % (EVL3).

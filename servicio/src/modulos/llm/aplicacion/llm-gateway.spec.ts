@@ -112,7 +112,7 @@ describe('modulos/llm/aplicacion — LlmGateway v1: éxito y registro (LLM6 base
         tokensEntrada: 1000,
         tokensSalida: 500,
         tokensCache: 0,
-        costoEstimadoUsd: 0.0008,
+        costoEstimadoUsd: 0.00035,
         latenciaMs: 120,
         exito: true,
         conversacionId: 'conv-1',

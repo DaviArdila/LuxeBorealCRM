@@ -148,7 +148,7 @@ describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo dema
 describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del modo real contra un simulador (EVL4)', () => {
   it('EVL4 — La corrida real imprime su costo y el modelo de cada caso', async () => {
     const simulador = await SimuladorOpenAi.iniciar();
-    simulador.responderTexto('¡Hola! ¿En qué te ayudo?', { tokensEntrada: 1000, tokensSalida: 500 });
+    simulador.responderTexto('¡Hola! ¿En qué te ayudo?', { tokensEntrada: 2000, tokensSalida: 1000 });
     try {
       const caso = parsearCaso(
         {
@@ -177,14 +177,14 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del mod
         casos: [caso, soloGuionado],
         openaiApiKey: 'clave-de-prueba',
         modelos: ['openai:gpt-6-luna'],
-        precios: { 'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
+        precios: { 'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 } },
         urlOpenAi: simulador.url,
       });
 
       expect(corrida.veredicto.aprobada).toBe(true);
       expect(simulador.intentos).toBe(3);
-      expect(corrida.costoUsd).toBeCloseTo(3 * 0.0008, 6);
-      expect(corrida.texto).toContain('Costo estimado: 0.0024 USD');
+      expect(corrida.costoUsd).toBeCloseTo(3 * 0.0007, 6);
+      expect(corrida.texto).toContain('Costo estimado: 0.0021 USD');
       expect(corrida.texto).toContain('openai:gpt-6-luna');
       expect(corrida.omitidos).toEqual(['premisa-de-guion']);
       expect(corrida.texto).toContain('Casos omitidos: 1 (solo guionado');

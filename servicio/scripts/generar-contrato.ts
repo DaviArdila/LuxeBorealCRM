@@ -83,7 +83,7 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   LLM_EVALS_MAX_REINTENTOS: 2,
   LLM_TECHO_MENSUAL_USD: 10,
   LLM_UMBRAL_AVISO_PCT: 80,
-  LLM_PRECIOS_USD_JSON: { 'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 } },
+  LLM_PRECIOS_USD_JSON: { 'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 } },
   LLM_REINTENTO_BASE_MS: 500,
   LLM_REINTENTO_MAX_MS: 2000,
   LLM_CB_UMBRAL_FALLOS: 5,

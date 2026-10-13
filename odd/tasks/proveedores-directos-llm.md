@@ -49,7 +49,8 @@ Estrategia `auto-chain`, cadena `stacked-to-main`. Pronóstico: ~350 líneas el 
 
 - [x] **T4. Modelos vigentes.** El dueño pide quitar `gpt-5.6-luna`: por ahora solo `openai:gpt-6-luna` (por defecto)
   y `anthropic:claude-haiku-5-5`. Defaults de código, precios por defecto de los dos modelos, tests y documentos vivos.
-  Los precios quedan **pendientes de confirmar por el dueño**. Ruta: delegada (mismo escritor).
+  Precio de `gpt-6-luna` dado por el dueño: 0,10 / 0,50 / 0,01 USD por millón (escritura en caché 0,125, sin cobrar aparte).
+  El `cache` de Haiku (0,01) sigue **pendiente de confirmar**. Ruta: delegada (mismo escritor).
 
 ## Comprobaciones
 
@@ -94,7 +95,7 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 |---|---|---|
 | `servicio/.env.example` | `ANTHROPIC_API_KEY=` junto a `OPENAI_API_KEY=` | El permiso de la herramienta niega leer y editar el archivo |
 | `servicio/scripts/generar-contrato.ts` | `ANTHROPIC_API_KEY: '',` junto a `OPENAI_API_KEY` | Fuera de las superficies autorizadas del escritor |
-| `servicio/.env.example` (T3, T4) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; `openai:gpt-6-luna` (con dos puntos) en ambos perfiles y en las claves de `LLM_PRECIOS_USD_JSON`, más la entrada de `anthropic:claude-haiku-5-5` | El permiso de la herramienta niega leer y editar el archivo |
+| `servicio/.env.example` (T3, T4) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; `openai:gpt-6-luna` (con dos puntos) en ambos perfiles y en las claves de `LLM_PRECIOS_USD_JSON`, con los precios del dueño (ver el JSON exacto en el reporte de T4) | El permiso de la herramienta niega leer y editar el archivo |
 | `servicio/src/plataforma/config/env-example.spec.ts:41` (T3) | Hecho en T4: espera `['openai:gpt-6-luna']` | — |
 
 ## Siguiente paso

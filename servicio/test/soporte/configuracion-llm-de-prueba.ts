@@ -18,9 +18,9 @@ export const CONFIGURACION_LLM_DE_PRUEBA: Pick<Configuracion, CamposLlm> = {
   LLM_EVALS_MAX_REINTENTOS: 2,
   LLM_TECHO_MENSUAL_USD: 10,
   LLM_UMBRAL_AVISO_PCT: 80,
-  // Precios pendientes de confirmar por el dueño (ADR-0029).
+  // Precio de gpt-6-luna dado por el dueño; el cache de Haiku es una estimación (ADR-0029).
   LLM_PRECIOS_USD_JSON: {
-    'openai:gpt-6-luna': { entrada: 0.2, salida: 1.2, cache: 0.02 },
+    'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
     'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
   },
   LLM_REINTENTO_BASE_MS: 500,
