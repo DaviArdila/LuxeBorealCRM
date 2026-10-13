@@ -9,10 +9,11 @@
 export const PROVEEDOR_LLM_POR_DEFECTO = 'openrouter';
 
 /**
- * Proveedores de LLM con adaptador implementado. Anthropic, Google y compatible quedan pospuestos
- * (P37): sumarlos es añadir su nombre aquí junto a su archivo de proveedor.
+ * Proveedores de LLM con adaptador implementado. Anthropic se sumó el 2026-10-13 (P37, ADR-0029);
+ * Google y el compatible con OpenAI siguen pospuestos: sumarlos es añadir su nombre aquí junto a su
+ * archivo de proveedor.
  */
-export const PROVEEDORES_LLM_REGISTRADOS: readonly string[] = ['openrouter', 'openai'];
+export const PROVEEDORES_LLM_REGISTRADOS: readonly string[] = ['openrouter', 'openai', 'anthropic'];
 
 /** Resultado de {@link resolverModelo}: proveedor a llamar e id de modelo que se le envía. */
 export interface ModeloResuelto {

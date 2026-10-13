@@ -195,6 +195,8 @@ export const esquemaConfiguracion = z
     OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
     /** Proveedor `openai` directo (LLM17); obligatoria en production solo si un perfil usa `openai:`. */
     OPENAI_API_KEY: z.string().default(''),
+    /** Proveedor `anthropic` directo (LLM25); obligatoria en production solo si un perfil usa `anthropic:`. */
+    ANTHROPIC_API_KEY: z.string().default(''),
     /** Avisos a los asesores (Fase 08, D9/D11): vacíos por defecto; obligatorios en production. */
     TELEGRAM_BOT_TOKEN: z.string().default(''),
     TELEGRAM_CHAT_ID: z.string().default(''),
@@ -302,6 +304,7 @@ export const esquemaConfiguracion = z
       const claves: Readonly<Record<string, [string, string]>> = {
         openrouter: ['OPENROUTER_API_KEY', datos.OPENROUTER_API_KEY],
         openai: ['OPENAI_API_KEY', datos.OPENAI_API_KEY],
+        anthropic: ['ANTHROPIC_API_KEY', datos.ANTHROPIC_API_KEY],
       };
       for (const proveedor of proveedoresUsados) {
         const [variable, valor] = claves[proveedor] ?? [];

@@ -1,6 +1,7 @@
 import type { Configuracion } from '../../../plataforma/config/index.js';
 import { resolverModelo, PROVEEDORES_LLM_REGISTRADOS } from '../dominio/resolver-modelo.js';
 import type { ProveedorLlm } from './adaptador-ai-sdk.js';
+import { crearProveedorAnthropic } from './proveedores/anthropic.js';
 import { crearProveedorOpenAi } from './proveedores/openai.js';
 import { crearProveedorOpenRouter } from './proveedores/openrouter.js';
 
@@ -12,6 +13,7 @@ export type ConfigFabricaProveedores = Pick<
   | 'OPENROUTER_API_KEY'
   | 'OPENROUTER_BASE_URL'
   | 'OPENAI_API_KEY'
+  | 'ANTHROPIC_API_KEY'
 >;
 
 // Sumar un proveedor es añadir su nombre a `PROVEEDORES_LLM_REGISTRADOS` y su constructor aquí; el
@@ -19,6 +21,7 @@ export type ConfigFabricaProveedores = Pick<
 const CONSTRUCTORES: Readonly<Record<string, (config: ConfigFabricaProveedores) => ProveedorLlm>> = {
   openrouter: crearProveedorOpenRouter,
   openai: crearProveedorOpenAi,
+  anthropic: crearProveedorAnthropic,
 };
 
 /** Nombres de los proveedores que la fábrica sabe construir. */

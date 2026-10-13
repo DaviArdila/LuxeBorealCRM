@@ -34,6 +34,7 @@ reemplaza y el viejo se marca *reemplazado por NNNN*. Los ADR del prototipo
 | [0026](0026-estilo-del-bot-en-secciones.md) | Estilo del bot en secciones: un bloque compuesto, no una herramienta (matiza 0020 y 0024) | propuesta | 2026-10-07 |
 | [0027](0027-derivar-avisa-sin-silenciar-al-bot.md) | Derivar avisa al asesor sin silenciar al bot; consentimiento en lugar de aviso fijo (matiza R6 y R14) | aceptada | 2026-10-08 |
 | [0028](0028-consentimiento-previo-al-llm.md) | Consentimiento de datos como barrera previa al LLM (reabre la alternativa B del 0027) | propuesta | 2026-10-10 |
+| [0029](0029-proveedor-anthropic-y-retiro-de-openrouter.md) | Solo proveedores directos de LLM: se agrega Anthropic y se retira OpenRouter (matiza 0002 y 0019) | propuesta | 2026-10-13 |
 
 ## Plantilla
 

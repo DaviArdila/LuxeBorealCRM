@@ -947,6 +947,42 @@ describe('cargarConfiguracion', () => {
       );
     });
 
+    describe('proveedor anthropic (LLM25)', () => {
+      const fuenteSoloAnthropic = {
+        ...fuenteProduccion,
+        LLM_CONVERSACION_MODELOS: 'anthropic:claude-haiku-5-5',
+        LLM_EVALS_MODELOS: 'anthropic:claude-haiku-5-5',
+        LLM_PRECIOS_USD_JSON: JSON.stringify({
+          'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
+        }),
+      };
+
+      it('LLM25 — sin configuración ANTHROPIC_API_KEY queda vacía y no se exige', () => {
+        expect(cargarConfiguracion(fuenteValida).ANTHROPIC_API_KEY).toBe('');
+        expect(() =>
+          cargarConfiguracion({ ...fuenteProduccion, OPENROUTER_API_KEY: 'clave-openrouter' }),
+        ).not.toThrow();
+      });
+
+      it('LLM17 — Producción exige ANTHROPIC_API_KEY cuando un perfil usa anthropic:', () => {
+        const error = rechazo(fuenteSoloAnthropic);
+
+        expect(error.variables).toContainEqual({ nombre: 'ANTHROPIC_API_KEY', problema: 'valor' });
+        expect(error.variables).not.toContainEqual({ nombre: 'OPENROUTER_API_KEY', problema: 'valor' });
+        expect(
+          cargarConfiguracion({ ...fuenteSoloAnthropic, ANTHROPIC_API_KEY: 'clave-anthropic' })
+            .LLM_CONVERSACION_MODELOS,
+        ).toEqual(['anthropic:claude-haiku-5-5']);
+      });
+
+      it('LLM24 — El error de ANTHROPIC_API_KEY nunca imprime el valor de otra clave', () => {
+        const error = rechazo({ ...fuenteSoloAnthropic, OPENAI_API_KEY: 'sk-oa-valor-secreto-2' });
+
+        expect(error.message).toContain('ANTHROPIC_API_KEY');
+        expect(error.message).not.toContain('sk-oa-valor-secreto-2');
+      });
+    });
+
     it('LLM19 — Un perfil con un modelo sin precio impide el arranque', () => {
       const error = rechazo({
         ...fuenteValida,

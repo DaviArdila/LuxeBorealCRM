@@ -62,6 +62,27 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
   termina con `Casos omitidos: N (solo guionado: …)` y la lista. No cambian el umbral.
 - Para medir un estilo candidato sin publicarlo, ver [estilo del bot](estilo-del-bot.md).
 
+### Con Claude Haiku 5.5 (Anthropic directo)
+
+El proveedor `anthropic` habla directo con la API de Anthropic ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
+Para correr las evals reales con Claude Haiku 5.5, agrega a `servicio/.env` estas tres variables:
+
+```
+ANTHROPIC_API_KEY=<tu clave de Anthropic>
+LLM_EVALS_MODELOS=anthropic:claude-haiku-5-5
+LLM_PRECIOS_USD_JSON={"anthropic:claude-haiku-5-5":{"entrada":0.1,"salida":0.5,"cache":0.01}}
+```
+
+Después corre el mismo comando de arriba. Si falta `ANTHROPIC_API_KEY`, la corrida se niega antes de hacer una sola
+llamada y nombra la variable.
+
+| Dato | Valor |
+|---|---|
+| Precio de entrada, salida y lectura de caché | 0,10 / 0,50 / 0,01 USD por millón de tokens, para prompts de hasta 100 000 tokens. **Verifica** los valores en la página de precios de Anthropic antes de cargarlos: el precio es del dueño, no del código (R2) |
+| Escritura en caché | Anthropic la cobra a 1,25 veces la entrada; aquí se registra al precio de entrada, así que el costo queda un poco por debajo del real |
+| Razonamiento | Cada llamada pide esfuerzo `low`: Haiku 5.5 razona por defecto y ese razonamiento cuenta dentro de `max_tokens` (400 en el perfil de conversación) |
+| Caché | Se marca un punto de corte en el prompt de sistema. Si `tokensCache` sigue en cero tras varias llamadas, el prefijo cambió entre llamadas o es más corto que el mínimo que el modelo cachea |
+
 ## Resultado de la corrida real del 2026-10-02
 
 Modelo `openai:gpt-6-luna`, con el arnés corregido y las guardas de este change.

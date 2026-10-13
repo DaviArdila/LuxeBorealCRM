@@ -8,8 +8,15 @@ import {
 const registrados = PROVEEDORES_LLM_REGISTRADOS;
 
 describe('resolverModelo', () => {
-  it('registra hoy solo openrouter y openai (P37)', () => {
-    expect([...registrados].sort()).toEqual(['openai', 'openrouter']);
+  it('registra openrouter, openai y anthropic (P37)', () => {
+    expect([...registrados].sort()).toEqual(['anthropic', 'openai', 'openrouter']);
+  });
+
+  it('LLM25 — Un id con prefijo anthropic: se llama directo a Anthropic', () => {
+    expect(resolverModelo('anthropic:claude-haiku-5-5', registrados)).toEqual({
+      proveedor: 'anthropic',
+      modelo: 'claude-haiku-5-5',
+    });
   });
 
   it('LLM15 — Un id sin prefijo se llama a OpenRouter como hoy', () => {
