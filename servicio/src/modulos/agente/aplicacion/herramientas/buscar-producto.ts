@@ -27,7 +27,8 @@ export function crearBuscarProducto(buscar: BuscarProductos, ficha: ObtenerFicha
     'buscar_producto',
     'Busca productos del catálogo por palabras clave. Devuelve hasta 5 con id, nombre y descripción corta. ' +
       `Los primeros ${String(FICHAS_POR_BUSQUEDA)} incluyen su ficha completa en \`ficha\` (la misma de obtener_ficha, ` +
-      'con el precio ya formateado): no llames obtener_ficha para un resultado que ya trae su ficha.',
+      'con el precio ya formateado): no llames obtener_ficha para un resultado que ya trae su ficha. ' +
+      'La lista completa del catálogo ya está en el prompt: esta herramienta no hace falta para listarlo.',
     esquema,
     async ({ query }) => {
       const productos = await buscar.ejecutar(query);

@@ -606,8 +606,9 @@ casos de uso + catálogo) MUST ser idéntico entre turnos de conversaciones dist
 para aprovechar la caché de prompts (ADR-0002). Cada llamada del turno al LLM MUST llevar una clave de caché estable
 (`luxe-agente-<versión del prompt>-e<versión del estilo>`) que el proveedor recibe como `prompt_cache_key`; la clave MUST NOT
 contener nada del turno ni del cliente (R14). La versión del prompt y la del estilo MUST quedar en un log estructurado del
-turno (sin contenido). La plantilla del turno (`turno.v4.md`) MUST pedir
-que las herramientas que no dependen una de otra se pidan en el mismo paso, para ahorrar vueltas al LLM.
+turno (sin contenido). La plantilla del turno (`turno.v5.md`) MUST pedir
+que las herramientas que no dependen una de otra se pidan en el mismo paso, y que las preguntas generales sobre el catálogo
+se respondan con la sección «Catálogo» del prompt, sin buscar, para ahorrar vueltas al LLM.
 
 (Previously: el prompt empezaba con `reglas.v4.md`, que mezclaba las reglas de datos con reglas de negocio —una sola foto, el
 envío como rango aproximado, la contra entrega una vez, cobertura, ubicación, ofrecer asesor— y un manual de herramientas; el
@@ -615,7 +616,7 @@ respaldo `estilo.v3.md` prohibía emojis y fijaba conducta. Hasta `seguridad.v1.
 saliera de una herramienta y el prompt llevaba solo el índice de casos.)
 
 Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la base); 12d (`seguridad.v1.md` y `estilo.v4.md`);
-`odd/tasks/latencia-bot.md` (`seguridad.v2.md`, los textos de los casos en el prefijo y `turno.v4.md`)
+`odd/tasks/latencia-bot.md` (`seguridad.v2.md`, los textos de los casos en el prefijo, `turno.v4.md` y `turno.v5.md`)
 
 #### Scenario: Dos conversaciones distintas comparten el mismo prefijo
 
@@ -632,10 +633,17 @@ Fase que lo implementa: 07b; 08b (separación de `estilo`); 08c (estilo desde la
 
 #### Scenario: El prompt pide en un mismo paso las herramientas independientes
 
-- Dado el archivo `turno.v4.md`,
+- Dado el archivo `turno.v5.md`,
 - Cuando se arma el prompt de sistema,
 - Entonces el texto pide que varias herramientas que no dependen una de otra se pidan en el mismo paso, y la seguridad no
   cambia.
+
+#### Scenario: Las preguntas generales del catálogo se responden sin buscar
+
+- Dado el archivo `turno.v5.md`,
+- Cuando se arma el prompt de sistema,
+- Entonces el texto pide responder las preguntas generales sobre el catálogo con la sección «Catálogo» y usar
+  `buscar_producto` solo para un producto o tipo de producto concreto, y la seguridad no cambia.
 
 #### Scenario: El prompt no contiene precios
 
