@@ -32,6 +32,12 @@ Fuera de alcance: Google y el genérico compatible con OpenAI; precio propio de 
 
 Estrategia `auto-chain`, cadena `stacked-to-main`. Pronóstico: ~350 líneas el slice 1, ~400 el slice 2.
 
+**Excepción de tamaño (slice 2).** El slice 2 pasó de ~400 a ~1.700 líneas cambiadas (598 añadidas, 1.122 borradas,
+61 archivos). Casi todo es borrado: el proveedor y el simulador de OpenRouter, sus tests y la dependencia. No se
+parte porque un retiro a medias dejaría la rama sin compilar. La revisión nativa se hizo en tres tramos
+(`0e9bc28..c3a60af`, `..58df800`, `..d01f2ec`), porque el conjunto no cabía en el presupuesto de contexto de un solo
+revisor.
+
 | Slice | Rama | Tareas |
 |---|---|---|
 | 1 | `feat/proveedores-directos-llm` | T1, T2 |
