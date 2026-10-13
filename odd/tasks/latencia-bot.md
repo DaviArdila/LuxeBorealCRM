@@ -68,8 +68,20 @@ de `CLAUDE.md` en `servicio/`: lint, typecheck, fronteras, contrato:deriva, comm
 evals.
 
 ## Entrega
-Pronóstico: unas 400–600 líneas de autoría. Estrategia `auto-chain` con la cadena `stacked-to-main` si se
-pasa del presupuesto.
+Pronóstico inicial: unas 400–600 líneas de autoría; el total real fue de ~1.560 (código, tests, specs y docs).
+Estrategia `auto-chain` con la cadena `stacked-to-main`: cuatro PRs apilados, cada uno sobre el anterior y sin
+reescribir la historia, para conservar los hashes que cita este documento.
+
+| PR | Rama | Commits | Líneas |
+|---|---|---|---|
+| 1 | `perf/latencia-bot-p1-lecturas` | `2576d5f`, `c722dc6` (T1) | ~270 |
+| 2 | `perf/latencia-bot-p2-herramientas` | `d28ad67` (T2) | ~280 |
+| 3 | `perf/latencia-bot-p3-ficha-y-cache` | `6cf5ac4`, `2125b78`, `aa5220d`, `8f74014`, `60073d8` (T3, T4 y el log por vuelta) | ~400 |
+| 4 | `perf/latencia-bot-p4-prompt` | `73354fb`, `78cbf0b`, `707d376`, `0764e6f`, `6aaf27a`, `0bd6e56`, `479584d` (T7–T10) | ~615 |
+
+**Excepción de tamaño (PR 4).** Pasa de ~400 líneas porque `73354fb` rompe el e2e de CAS8 hasta que `6aaf27a` lo
+corrige: separarlos dejaría un PR con el CI en rojo. Del total, más de la mitad son tests, specs y docs, que no se
+recortan para entrar en el presupuesto.
 
 ## Progreso
 Rama creada desde `main` (3787889).
