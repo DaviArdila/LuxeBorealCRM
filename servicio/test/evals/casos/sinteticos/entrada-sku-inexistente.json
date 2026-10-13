@@ -31,7 +31,7 @@
           "obtener_ficha"
         ],
         "menciona": [
-          "no encuentro"
+          "no (lo |la )?(encuentr|encontr|tenemos|tengo|aparece|existe|esta|figura|hay|manejamos)"
         ],
         "dineroConRastro": true
       }

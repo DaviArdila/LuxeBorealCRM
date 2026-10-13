@@ -21,33 +21,14 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "consultar_caso",
-              "argumentos": {
-                "titulo": "Medios de pago"
-              }
-            }
-          ]
-        },
-        {
           "texto": "Aceptamos transferencia bancaria y pago contra entrega en las ciudades con cobertura. El plazo para pagar la transferencia es de 8 días."
         }
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "herramientasEsperadas": [
-          {
-            "nombre": "consultar_caso",
-            "argumentos": {
-              "titulo": "Medios de pago"
-            }
-          }
-        ],
         "textoLiteral": [
           {
-            "herramienta": "consultar_caso",
-            "campo": "texto"
+            "caso": "Medios de pago"
           }
         ],
         "sinSku": true

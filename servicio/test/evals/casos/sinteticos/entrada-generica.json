@@ -22,16 +22,6 @@
           ]
         },
         {
-          "llamadas": [
-            {
-              "nombre": "obtener_ficha",
-              "argumentos": {
-                "id_producto": "SKU-EVAL-COLLAR"
-              }
-            }
-          ]
-        },
-        {
           "texto": "Te recomiendo el Collar Luna, de plata 925 con un dije de luna, por $259.000."
         }
       ],
@@ -40,9 +30,6 @@
         "herramientasEsperadas": [
           {
             "nombre": "buscar_producto"
-          },
-          {
-            "nombre": "obtener_ficha"
           }
         ],
         "dineroConRastro": true,

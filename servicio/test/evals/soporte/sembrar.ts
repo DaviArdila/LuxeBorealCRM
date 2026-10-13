@@ -93,6 +93,27 @@ export async function sembrarBase(prisma: PrismaService): Promise<void> {
   }
 }
 
+/** Texto de cada caso de relleno: lo bastante largo para que un índice lleno no quepa en el prompt (CAS8). */
+const TEXTO_RELLENO = 'Texto de relleno para probar un índice grande: no responde ninguna pregunta del cliente y solo ocupa espacio en el índice de casos de uso.';
+
+/**
+ * Casos de relleno para probar un índice grande (CAS8). Sus textos suman más que `MAX_CARACTERES_TEXTOS_EN_PROMPT`, así
+ * el prompt lleva solo el índice y el modelo tiene que consultar el caso con `consultar_caso`: es el único camino que
+ * ejercita esa herramienta, porque con pocos casos los textos ya viajan en el prompt.
+ */
+export function casosDeRelleno(cantidad: number): readonly CasoSemilla[] {
+  return Array.from({ length: cantidad }, (_, i) => ({
+    titulo: `Relleno ${String(i + 1).padStart(3, '0')}`,
+    cuandoAplica: 'Cuando el cliente pregunta por un tema de relleno.',
+    texto: TEXTO_RELLENO,
+  }));
+}
+
+/** Los textos de los casos activos que un caso de eval encuentra sembrados, por título: fuente de `textoLiteral`. */
+export function textosDeCasosSembrados(semilla: { readonly casos?: readonly CasoSemilla[] } = {}): ReadonlyMap<string, string> {
+  return new Map([...CASOS_SEMILLA_BASE, ...(semilla.casos ?? [])].filter((caso) => caso.activo !== false).map((caso) => [caso.titulo, caso.texto]));
+}
+
 /**
  * Deja los casos del asistente como los espera cada caso de eval (D5): borra los que dejó el anterior, siembra los casos base, suma los del caso (y `relleno` casos de relleno para probar un índice grande) y sube la versión compartida
  * para que la copia en memoria de la aplicación los lea. Determinista: dos corridas dejan lo mismo.
@@ -108,12 +129,7 @@ export async function restablecerCasos(
   const categoria = await prisma.categoriaCaso.create({
     data: { nombre: 'Políticas', nombreNormalizado: normalizarNombre('Políticas'), orden: 0, creado: ahora, actualizado: ahora },
   });
-  const relleno: CasoSemilla[] = Array.from({ length: semilla.relleno ?? 0 }, (_, i) => ({
-    titulo: `Relleno ${String(i + 1).padStart(3, '0')}`,
-    cuandoAplica: 'Cuando el cliente pregunta por un tema de relleno.',
-    texto: 'Texto de relleno.',
-  }));
-  for (const caso of [...CASOS_SEMILLA_BASE, ...(semilla.casos ?? []), ...relleno]) {
+  for (const caso of [...CASOS_SEMILLA_BASE, ...(semilla.casos ?? []), ...casosDeRelleno(semilla.relleno ?? 0)]) {
     await prisma.casoAsistente.create({
       data: {
         categoriaId: categoria.id,

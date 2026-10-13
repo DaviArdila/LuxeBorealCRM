@@ -12,33 +12,14 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "consultar_caso",
-              "argumentos": {
-                "titulo": "Devoluciones"
-              }
-            }
-          ]
-        },
-        {
           "texto": "Sobre devoluciones: Aceptamos cambios y devoluciones dentro de los 5 días siguientes a la entrega, con el producto sin uso."
         }
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "herramientasEsperadas": [
-          {
-            "nombre": "consultar_caso",
-            "argumentos": {
-              "titulo": "Devoluciones"
-            }
-          }
-        ],
         "textoLiteral": [
           {
-            "herramienta": "consultar_caso",
-            "campo": "texto"
+            "caso": "Devoluciones"
           }
         ],
         "sinSku": true

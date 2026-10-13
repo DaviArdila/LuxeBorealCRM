@@ -7,7 +7,7 @@ import { evaluarAserciones, type ResultadoAsercion } from './aserciones.js';
 import type { CasoEval } from './esquema-caso.js';
 import { encolarGuion } from './guion.js';
 import type { GrabadorLlm } from './grabador-llm.js';
-import { restablecerCasos } from './sembrar.js';
+import { restablecerCasos, textosDeCasosSembrados } from './sembrar.js';
 
 export interface EntradaEjecucion {
   readonly caso: CasoEval;
@@ -46,6 +46,7 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma, versionC
   });
   alCrearConversacion?.(conversacion.id);
   await restablecerCasos(prisma, versionCasos, caso.semilla ?? {});
+  const contextoAserciones = { textosDeCasos: textosDeCasosSembrados(caso.semilla ?? {}) };
 
   const resultados: ResultadoAsercion[] = [];
   for (const [indice, turno] of caso.turnos.entries()) {
@@ -80,7 +81,7 @@ export async function ejecutarCaso({ caso, generador, grabador, prisma, versionC
       })
       .join('\n');
     const grabacion = grabador.grabacion(texto, respuesta.handoff?.motivo ?? null, respuesta.aviso?.motivo ?? null);
-    resultados.push(...evaluarAserciones(grabacion, turno.aserciones));
+    resultados.push(...evaluarAserciones(grabacion, turno.aserciones, contextoAserciones));
   }
   return resultados;
 }

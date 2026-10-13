@@ -50,10 +50,12 @@ Las evals guionadas (`npm run evals`) corren en CI y no cuestan nada. Las **real
 dinero y **nunca** corren en CI.
 
 ```
-EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --project evals --testTimeout=1200000
+EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --project evals
 ```
 
 - Vitest no carga el `.env` solo: por eso `--env-file=.env`. No imprimas ni pegues el `.env`.
+- Ya no hace falta `--testTimeout`: cada caso es una prueba propia con su plazo, `repeticiones × turnos × 2 × 60 s + 30 s`
+  (`plazoCasoRealMs`). Un caso lento o colgado falla solo, y el resto sigue.
 - La clave que hace falta es la del proveedor de los modelos de `LLM_EVALS_MODELOS`: `OPENAI_API_KEY` para `openai:`
   (el valor por defecto es `openai:gpt-6-luna`) y `ANTHROPIC_API_KEY` para `anthropic:`. Un id sin uno de esos
   prefijos hace que la corrida se niegue antes de llamar: OpenRouter se retiró ([ADR-0029](../adr/0029-proveedor-anthropic-y-retiro-de-openrouter.md)).
@@ -66,11 +68,6 @@ EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --projec
 - La tabla de precios **no tiene campo de escritura en caché**: la escritura (0,125 en `gpt-6-luna`; 1,25 veces la
   entrada en Anthropic) no se cobra aparte en el cálculo, así que el costo queda levemente subestimado.
 - Cuesta cerca de **0,01 USD** por corrida con `openai:gpt-6-luna`. Tope autorizado: **2 USD por sesión de evals**.
-- Cada caso corre 3 veces. Las aserciones **críticas** (dinero con rastro, recargo sin porcentaje, herramienta prohibida,
-  handoff no esperado) deben pasar el 100 %; el resto, al menos el 90 % (EVL3).
-- Los casos marcados `soloGuionado: true` (hoy `r1-monto-sin-rastro-corregido` y `r1-monto-sin-rastro-persiste`) se
-  **omiten** en modo real: su premisa es que el «modelo» invente un monto, y un modelo real no lo hace. El resumen
-  termina con `Casos omitidos: N (solo guionado: …)` y la lista. No cambian el umbral.
 - Para medir un estilo candidato sin publicarlo, ver [estilo del bot](estilo-del-bot.md).
 
 ### Con Claude Haiku 5.5 (Anthropic directo)
@@ -93,6 +90,63 @@ llamada y nombra la variable.
 | Escritura en caché | Anthropic la cobra a 1,25 veces la entrada; aquí se registra al precio de entrada, así que el costo queda un poco por debajo del real |
 | Razonamiento | Cada llamada pide esfuerzo `low`: Haiku 5.5 razona por defecto y ese razonamiento cuenta dentro de `max_tokens` (400 en el perfil de conversación) |
 | Caché | Se marca un punto de corte en el prompt de sistema. Si `tokensCache` sigue en cero tras varias llamadas, el prefijo cambió entre llamadas o es más corto que el mínimo que el modelo cachea |
+
+### Cómo leer el resultado
+
+| Lo que ves | Qué significa |
+|---|---|
+| Un caso en rojo | Ese caso tuvo una aserción **crítica** fallida en alguna repetición (dinero sin rastro, recargo con porcentaje, herramienta prohibida, handoff no esperado). La corrida queda reprobada |
+| `EVL3 — veredicto de la corrida real` en rojo | Hubo críticas fallidas, las no críticas pasan menos del **90 %**, o algún caso no terminó sus 3 repeticiones (EVL3) |
+| `repeticiones sin fallas: 1/3` | De las 3 repeticiones del caso, solo una pasó todo |
+| `✗ menciona: … — en 2 de 3 repeticiones` | La misma falla en 2 repeticiones: si sale en 3 de 3 es sistemática; en 1 de 3, ocasional |
+| `Casos sin terminar: N` | Esos casos se cortaron por plazo o fallaron antes de evaluar; la corrida queda reprobada |
+| `Casos omitidos: N (solo guionado: …)` | Casos cuya premisa es el guion; no corren en modo real y no cuentan para el umbral |
+
+El resumen se imprime siempre, al final, aunque haya casos en rojo. Nunca trae texto del cliente ni de la respuesta (R14).
+
+## Qué exigen los casos
+
+Los casos miden al bot contra el prompt y las herramientas **vigentes**. Si un caso pide algo que el prompt prohíbe, el
+caso está mal, no el modelo.
+
+| Regla del contrato | Cómo la respeta el caso |
+|---|---|
+| Con pocos casos de uso, su texto ya viaja en el prompt y el modelo **no** llama `consultar_caso` (CAS8) | Ningún caso exige `consultar_caso` salvo `caso-indice-grande`, cuyo relleno no cabe en el prompt |
+| `buscar_producto` trae la ficha de sus 3 primeros resultados; no se llama `obtener_ficha` para ellos (AGT8) | Los casos de precio aceptan `obtener_ficha` **o** `buscar_producto` (`algunaDe`) |
+| Si no hay caso para lo que se pregunta, se dice y se ofrece un asesor (regla 4 de seguridad) | Los casos «inexistentes» no exigen herramienta: piden no inventar y ofrecer el asesor |
+
+Dos aserciones cambiaron de forma:
+
+- **`textoLiteral`** acepta como fuente el texto de un caso sembrado (`{ "caso": "Devoluciones" }`), venga del prompt o de
+  `consultar_caso`, y alternativas (`algunaDe`). Si la herramienta de la fuente no se llamó, **no cuenta**: esa ausencia
+  ya la vigila `herramientasEsperadas`. Un salto de línea no cuenta como cambio; una palabra sí.
+- **`herramientasEsperadas`** acepta alternativas: `{ "algunaDe": [{ "nombre": "obtener_ficha" }, { "nombre": "buscar_producto" }] }`.
+
+## Qué casos corren en modo real
+
+El modo real ignora el guion: un caso cuya premisa es lo que «dice» el guion no se puede reproducir con un modelo de verdad.
+
+| Caso | En modo real | Por qué |
+|---|---|---|
+| `r1-monto-sin-rastro-corregido`, `r1-monto-sin-rastro-persiste` | Omitido (`soloGuionado`) | Su premisa es que el modelo invente un monto |
+| `lead-escala-no-confirmada` | Omitido (`soloGuionado`) | Su premisa es que el modelo proponga «caliente» con una señal débil; la escala que lo frena se prueba con el guion |
+| `consentimiento-con-si-se-registra-y-guarda`, `tratamiento-datos-acepta-y-guarda` | Corre | El cliente ahora da su teléfono en el mensaje; antes solo estaba en el guion y lo correcto era pedirlo |
+| `entrada-sku-inexistente` | Corre | `menciona` acepta «no encuentro», «no tenemos», «no aparece», «no está»… en vez de la frase exacta del guion |
+| `r2-cotizacion-con-cobertura` | Corre | Se retiró `menciona: aproximad, transportadora`: ninguna instrucción del prompt ni caso sembrado se lo pide al modelo (ver abajo) |
+
+> **R2 sin instrucción.** La spec de R2 pide citar el envío «como un rango aproximado» que «confirma la transportadora», pero
+> desde ADR-0027 esa conducta vive en un caso de uso del dueño, y las evals no siembran ninguno. Mientras el dueño no lo cree,
+> ningún modelo tiene de dónde sacarlo.
+
+**Set dorado.** La carpeta `test/evals/casos/dorado` no existe todavía: ninguna corrida real ha medido conversaciones reales
+anonimizadas, solo casos sintéticos (P30).
+
+## Corridas reales del 2026-10-13
+
+`openai:gpt-5.6-luna` (modelo ya retirado; 5 críticas fallidas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %)
+reprobaron con resultados idénticos en 24 de 32 casos. La causa principal fue el diseño de los casos, no los modelos: se
+corrigió en `odd/tasks/rediseno-evals-reales.md`. Hace falta **una corrida nueva** para saber cómo queda. Una crítica
+sigue abierta como decisión del dueño: `agt28-asesor-confirma-apartado` prohíbe marcar el lead caliente (P77).
 
 ## Resultado de la corrida real del 2026-10-02
 

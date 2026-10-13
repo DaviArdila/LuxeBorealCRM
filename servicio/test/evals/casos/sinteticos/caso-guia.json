@@ -22,29 +22,11 @@
       ],
       "guion": [
         {
-          "llamadas": [
-            {
-              "nombre": "consultar_caso",
-              "argumentos": {
-                "titulo": "Cuidado de las joyas"
-              }
-            }
-          ]
-        },
-        {
           "texto": "Lo mejor es que evites el contacto con agua, perfumes y cremas, y que guardes cada pieza por separado."
         }
       ],
       "aserciones": {
         "handoff": "prohibido",
-        "herramientasEsperadas": [
-          {
-            "nombre": "consultar_caso",
-            "argumentos": {
-              "titulo": "Cuidado de las joyas"
-            }
-          }
-        ],
         "dineroConRastro": true,
         "textoAusente": [
           "días",

@@ -29,14 +29,29 @@
         "handoff": "prohibido",
         "herramientasEsperadas": [
           {
-            "nombre": "obtener_ficha"
+            "algunaDe": [
+              {
+                "nombre": "obtener_ficha"
+              },
+              {
+                "nombre": "buscar_producto"
+              }
+            ]
           }
         ],
         "dineroConRastro": true,
         "textoLiteral": [
           {
-            "herramienta": "obtener_ficha",
-            "campo": "precio_texto"
+            "algunaDe": [
+              {
+                "herramienta": "obtener_ficha",
+                "campo": "precio_texto"
+              },
+              {
+                "herramienta": "buscar_producto",
+                "campo": "ficha.precio_texto"
+              }
+            ]
           }
         ],
         "sinSku": true

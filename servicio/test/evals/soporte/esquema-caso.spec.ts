@@ -94,4 +94,19 @@ describe('test/evals — soloGuionado (casos cuya premisa es un guion)', () => {
     expect(ejecutables.map((caso) => caso.id)).toEqual(['a', 'c']);
     expect(omitidos.map((caso) => caso.id)).toEqual(['b']);
   });
+
+  it('textoLiteral acepta un caso sembrado y alternativas; herramientasEsperadas, alternativas', () => {
+    const aserciones = {
+      textoLiteral: [{ caso: 'Devoluciones' }, { algunaDe: [{ herramienta: 'obtener_ficha', campo: 'precio_texto' }, { caso: 'Fotos' }] }],
+      herramientasEsperadas: [{ algunaDe: [{ nombre: 'obtener_ficha' }, { nombre: 'buscar_producto' }] }],
+    };
+
+    expect(() => parsearCaso({ ...CASO_VALIDO, turnos: [{ ...CASO_VALIDO.turnos[0], aserciones }] }, 'saludo.json')).not.toThrow();
+  });
+
+  it('una lista algunaDe vacía se rechaza', () => {
+    const aserciones = { herramientasEsperadas: [{ algunaDe: [] }] };
+
+    expect(() => parsearCaso({ ...CASO_VALIDO, turnos: [{ ...CASO_VALIDO.turnos[0], aserciones }] }, 'saludo.json')).toThrow(/algunaDe/);
+  });
 });

@@ -54,3 +54,28 @@ describe('test/evals — armarResumen (EVL1 determinismo)', () => {
     expect(resumen).not.toContain('Casos omitidos');
   });
 });
+
+describe('test/evals — armarResumen con repeticiones (modo real)', () => {
+  const FALLA: ResultadoAsercion = { nombre: 'menciona', ok: false, critica: false, detalle: 'no menciona: asesor' };
+  const veredicto = { aprobada: false, criticasFallidas: 0, porcentajeNoCriticas: 0.5 };
+
+  it('EVL3 — Una falla repetida se imprime una vez con en cuántas repeticiones ocurrió', () => {
+    const porRepeticion = [[FALLA, OK('handoff')], [OK('menciona'), OK('handoff')], [FALLA, OK('handoff')]];
+    const resumen = armarResumen(
+      [{ id: 'a', titulo: 'Caso A', resultados: porRepeticion.flat(), porRepeticion }],
+      veredicto,
+      'real',
+      { costoUsd: 0, modelosPorCaso: {} },
+    );
+
+    expect(resumen).toContain('a — Caso A: 4/6 aserciones, repeticiones sin fallas: 1/3');
+    expect(resumen.match(/no menciona: asesor/g)).toHaveLength(1);
+    expect(resumen).toContain('✗ menciona: no menciona: asesor — en 2 de 3 repeticiones');
+  });
+
+  it('EVL3 — Un caso que no terminó se nombra en el resumen', () => {
+    const resumen = armarResumen([], veredicto, 'real', { costoUsd: 0, modelosPorCaso: {}, incompletos: ['b', 'a'] });
+
+    expect(resumen).toContain('Casos sin terminar: 2 (se cortaron o fallaron antes de evaluar): a, b');
+  });
+});

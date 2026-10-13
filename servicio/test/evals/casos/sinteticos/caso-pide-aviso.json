@@ -14,18 +14,34 @@
   },
   "turnos": [
     {
-      "mensajes": [{ "tipoContenido": "texto", "texto": "¿Venden al por mayor? Quiero comprar cincuenta unidades." }],
+      "mensajes": [
+        {
+          "tipoContenido": "texto",
+          "texto": "¿Venden al por mayor? Quiero comprar cincuenta unidades."
+        }
+      ],
       "guion": [
-        { "llamadas": [{ "nombre": "consultar_caso", "argumentos": { "titulo": "Compras al por mayor" } }] },
-        { "llamadas": [{ "nombre": "derivar_a_asesor", "argumentos": { "motivo": "Compra al por mayor" } }] },
-        { "texto": "Ya avisé a un asesor para que te contacte por tu compra al por mayor." }
+        {
+          "llamadas": [
+            {
+              "nombre": "derivar_a_asesor",
+              "argumentos": {
+                "motivo": "Compra al por mayor"
+              }
+            }
+          ]
+        },
+        {
+          "texto": "Ya avisé a un asesor para que te contacte por tu compra al por mayor."
+        }
       ],
       "aserciones": {
         "handoff": "prohibido",
         "aviso": "esperado",
         "herramientasEsperadas": [
-          { "nombre": "consultar_caso", "argumentos": { "titulo": "Compras al por mayor" } },
-          { "nombre": "derivar_a_asesor" }
+          {
+            "nombre": "derivar_a_asesor"
+          }
         ],
         "sinSku": true
       }

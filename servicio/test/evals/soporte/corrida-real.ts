@@ -15,6 +15,7 @@ import { GrabadorLlm } from './grabador-llm.js';
 import { armarResumen, type CasoResumen } from './resumen.js';
 import { aplicarEstiloCandidato } from './estilo-candidato.js';
 import { sembrarBase } from './sembrar.js';
+import { PLAZO_TURNO_REAL_S } from './plazo-real.js';
 import { calcularVeredicto, REPETICIONES_REAL, type Veredicto } from './umbral.js';
 
 export interface OpcionesCorridaReal {
@@ -40,6 +41,8 @@ export interface CorridaReal {
   readonly modelosPorCaso: Readonly<Record<string, readonly string[]>>;
   /** `id` de los casos `soloGuionado` omitidos en esta corrida. */
   readonly omitidos: readonly string[];
+  /** `id` de los casos que no terminaron todas sus repeticiones; con alguno, la corrida queda reprobada. */
+  readonly incompletos: readonly string[];
   readonly texto: string;
 }
 
@@ -70,14 +73,28 @@ export function leerLlmRealDeEntorno(entorno: Readonly<Record<string, string | u
   };
 }
 
+/** Una corrida real abierta: compone la aplicación una vez y ejecuta los casos de a uno (un `it` por caso). */
+export interface SesionCorridaReal {
+  /** Los casos que esta corrida ejecuta (sin los `soloGuionado`). */
+  readonly ejecutables: readonly CasoEval[];
+  /** Corre las repeticiones de un caso, en serie con cualquier otro caso de la sesión, y guarda sus resultados. */
+  ejecutar(caso: CasoEval): Promise<readonly (readonly ResultadoAsercion[])[]>;
+  /** Veredicto, costo y resumen con lo que terminó hasta ahora; un caso sin resultados reprueba la corrida. */
+  resumir(): Promise<CorridaReal>;
+  cerrar(): Promise<void>;
+}
+
 /**
  * Corrida contra el LLM real (D6 de la Fase 07c, EVL3/EVL4): el gateway de verdad con los modelos y el
  * timeout del perfil `evals` —el perfil de conversación de esta configuración de prueba se iguala al de
- * evals y `LOCK_TURNO_TTL_S` sube a 60 para que el plazo del turno no recorte ese timeout— y cada caso
+ * evals y `LOCK_TURNO_TTL_S` sube a {@link PLAZO_TURNO_REAL_S} para que el plazo del turno no recorte ese timeout— y cada caso
  * `repeticiones` veces (3 por defecto), cada una en una conversación nueva. Suma el costo desde `uso_llm`
  * de la base de prueba de la corrida; ese gasto no cuenta para el techo mensual de producción.
+ *
+ * Los casos corren en serie aunque su `it` se corte por plazo: el siguiente espera al anterior, así dos casos nunca
+ * comparten el grabador del LLM a la vez.
  */
-export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promise<CorridaReal> {
+export async function iniciarCorridaReal(opciones: OpcionesCorridaReal): Promise<SesionCorridaReal> {
   const repeticiones = opciones.repeticiones ?? REPETICIONES_REAL;
   const { ejecutables, omitidos: casosOmitidos } = separarPorModoReal(opciones.casos);
   const omitidos = casosOmitidos.map((caso) => caso.id);
@@ -86,7 +103,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
     ...base,
     OPENAI_API_KEY: opciones.openaiApiKey ?? '',
     ANTHROPIC_API_KEY: opciones.anthropicApiKey ?? '',
-    LOCK_TURNO_TTL_S: 60,
+    LOCK_TURNO_TTL_S: PLAZO_TURNO_REAL_S,
     LLM_PRECIOS_USD_JSON: opciones.precios,
     LLM_EVALS_MODELOS: [...opciones.modelos],
     LLM_CONVERSACION_MODELOS: [...opciones.modelos],
@@ -105,53 +122,90 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
   const gateway = moduloLlm.get<LlmPort>(LLM_PORT);
   const grabador = new GrabadorLlm(gateway);
   const app = await componerAgente({ llm: grabador, sobrescribir: configuracion });
+  const generador = app.get<GeneradorRespuesta>(GENERADOR_RESPUESTA);
+  const prisma = app.get(PrismaService);
   try {
-    const generador = app.get<GeneradorRespuesta>(GENERADOR_RESPUESTA);
-    const prisma = app.get(PrismaService);
     await sembrarBase(prisma);
     // EVL3: un estilo candidato (`EVALS_ESTILO`) se mide aquí, en la base de la corrida, antes de publicarlo.
     await aplicarEstiloCandidato(app, opciones.estiloCandidato);
-    const inicio = new ClockSistema().ahora();
-
-    const acumulado = new Map<string, ResultadoAsercion[]>();
-    const conversacionesPorCaso = new Map<string, string[]>();
-    for (const caso of ejecutables) {
-      for (let repeticion = 0; repeticion < repeticiones; repeticion += 1) {
-        const resultados = await ejecutarCaso({
-          caso,
-          generador,
-          grabador,
-          prisma,
-          versionCasos: app.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }),
-          llmReal: gateway,
-          alCrearConversacion: (id) => conversacionesPorCaso.set(caso.id, [...(conversacionesPorCaso.get(caso.id) ?? []), id]),
-        });
-        acumulado.set(caso.id, [...(acumulado.get(caso.id) ?? []), ...resultados]);
-      }
-    }
-
-    const resumenes = ejecutables.map((caso) => ({
-      id: caso.id,
-      titulo: caso.titulo,
-      resultados: acumulado.get(caso.id) ?? [],
-    }));
-    const veredicto = calcularVeredicto(resumenes.flatMap((r) => r.resultados), 'real');
-    const usos = await prisma.usoLlm.findMany({ where: { creado: { gte: inicio } }, select: { conversacionId: true, modelo: true, costoEstimadoUsd: true } });
-    const costoUsd = usos.reduce((suma, uso) => suma + Number(uso.costoEstimadoUsd), 0);
-    const modelosPorCaso: Record<string, readonly string[]> = {};
-    for (const [casoId, conversaciones] of conversacionesPorCaso) {
-      modelosPorCaso[casoId] = [...new Set(usos.filter((u) => u.conversacionId !== null && conversaciones.includes(u.conversacionId)).map((u) => u.modelo))].sort();
-    }
-    return {
-      veredicto,
-      resumenes,
-      costoUsd,
-      modelosPorCaso,
-      omitidos,
-      texto: armarResumen(resumenes, veredicto, 'real', { costoUsd, modelosPorCaso, omitidos }),
-    };
-  } finally {
+  } catch (error) {
     await app.close();
     await moduloLlm.close();
+    throw error;
+  }
+  const inicio = new ClockSistema().ahora();
+
+  const porCaso = new Map<string, ResultadoAsercion[][]>();
+  const conversacionesPorCaso = new Map<string, string[]>();
+  let enCurso: Promise<unknown> = Promise.resolve();
+
+  const correrCaso = async (caso: CasoEval): Promise<readonly (readonly ResultadoAsercion[])[]> => {
+    const repeticionesDelCaso: ResultadoAsercion[][] = [];
+    for (let repeticion = 0; repeticion < repeticiones; repeticion += 1) {
+      const resultados = await ejecutarCaso({
+        caso,
+        generador,
+        grabador,
+        prisma,
+        versionCasos: app.get<VersionAsistente>(VERSION_ASISTENTE, { strict: false }),
+        llmReal: gateway,
+        alCrearConversacion: (id) => conversacionesPorCaso.set(caso.id, [...(conversacionesPorCaso.get(caso.id) ?? []), id]),
+      });
+      repeticionesDelCaso.push([...resultados]);
+      porCaso.set(caso.id, repeticionesDelCaso);
+    }
+    return repeticionesDelCaso;
+  };
+
+  return {
+    ejecutables,
+    ejecutar(caso) {
+      const turno = enCurso.then(() => correrCaso(caso));
+      enCurso = turno.catch(() => undefined);
+      return turno;
+    },
+    async resumir() {
+      await enCurso;
+      const resumenes = ejecutables.map((caso) => {
+        const porRepeticion = porCaso.get(caso.id) ?? [];
+        return { id: caso.id, titulo: caso.titulo, resultados: porRepeticion.flat(), porRepeticion };
+      });
+      const incompletos = resumenes.filter((r) => r.porRepeticion.length < repeticiones).map((r) => r.id);
+      const calculado = calcularVeredicto(resumenes.flatMap((r) => r.resultados), 'real');
+      const veredicto = { ...calculado, aprobada: calculado.aprobada && incompletos.length === 0 };
+      const usos = await prisma.usoLlm.findMany({ where: { creado: { gte: inicio } }, select: { conversacionId: true, modelo: true, costoEstimadoUsd: true } });
+      const costoUsd = usos.reduce((suma, uso) => suma + Number(uso.costoEstimadoUsd), 0);
+      const modelosPorCaso: Record<string, readonly string[]> = {};
+      for (const [casoId, conversaciones] of conversacionesPorCaso) {
+        modelosPorCaso[casoId] = [...new Set(usos.filter((u) => u.conversacionId !== null && conversaciones.includes(u.conversacionId)).map((u) => u.modelo))].sort();
+      }
+      return {
+        veredicto,
+        resumenes,
+        costoUsd,
+        modelosPorCaso,
+        omitidos,
+        incompletos,
+        texto: armarResumen(resumenes, veredicto, 'real', { costoUsd, modelosPorCaso, omitidos, incompletos }),
+      };
+    },
+    async cerrar() {
+      await enCurso;
+      await app.close();
+      await moduloLlm.close();
+    },
+  };
+}
+
+/** La corrida real completa de una vez (la usa la prueba del cableado contra el simulador, EVL4). */
+export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promise<CorridaReal> {
+  const sesion = await iniciarCorridaReal(opciones);
+  try {
+    for (const caso of sesion.ejecutables) {
+      await sesion.ejecutar(caso);
+    }
+    return await sesion.resumir();
+  } finally {
+    await sesion.cerrar();
   }
 }

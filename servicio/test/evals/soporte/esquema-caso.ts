@@ -40,11 +40,26 @@ const pasoGuion = z.union([
 ]);
 export type PasoGuion = z.infer<typeof pasoGuion>;
 
+const herramientaEsperada = z.object({ nombre: z.string().min(1), argumentos: z.record(z.string(), z.unknown()).optional() }).strict();
+export type HerramientaEsperada = z.infer<typeof herramientaEsperada>;
+
+/**
+ * De dónde sale un texto que la respuesta MUST citar sin cambios: un campo que devolvió una herramienta en el turno
+ * (`campo` admite una ruta con puntos, p. ej. `ficha.precio_texto`, y recorre listas) o el texto de un caso de uso
+ * sembrado, que el modelo recibe en el prompt o con `consultar_caso` según quepa (CAS8).
+ */
+const fuenteLiteral = z.union([
+  z.object({ herramienta: z.string().min(1), campo: z.string().min(1) }).strict(),
+  z.object({ caso: z.string().min(1) }).strict(),
+]);
+export type FuenteLiteral = z.infer<typeof fuenteLiteral>;
+
+/** Una expectativa o cualquiera de sus alternativas (`algunaDe`), para cuando el contrato admite más de un camino. */
+const unaOAlguna = <T extends z.ZodType>(esquema: T) => z.union([esquema, z.object({ algunaDe: z.array(esquema).min(1) }).strict()]);
+
 const aserciones = z
   .object({
-    herramientasEsperadas: z
-      .array(z.object({ nombre: z.string().min(1), argumentos: z.record(z.string(), z.unknown()).optional() }).strict())
-      .optional(),
+    herramientasEsperadas: z.array(unaOAlguna(herramientaEsperada)).optional(),
     herramientasProhibidas: z.array(z.string().min(1)).optional(),
     /** Campos que la herramienta devolvió al modelo (coincidencia parcial), p. ej. `requiereConsentimiento` (AGT26). */
     resultadosEsperados: z
@@ -55,7 +70,7 @@ const aserciones = z
     handoff: z.enum(['esperado', 'prohibido']).optional(),
     /** El turno trae (o no) un aviso al asesor sin traspaso (AGT24). */
     aviso: z.enum(['esperado', 'prohibido']).optional(),
-    textoLiteral: z.array(z.object({ herramienta: z.string().min(1), campo: z.string().min(1) }).strict()).optional(),
+    textoLiteral: z.array(unaOAlguna(fuenteLiteral)).optional(),
     textoAusente: z.array(z.string().min(1)).optional(),
     menciona: z.array(z.string().min(1)).optional(),
     sinSku: z.boolean().optional(),
