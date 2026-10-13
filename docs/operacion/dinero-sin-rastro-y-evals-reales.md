@@ -50,17 +50,27 @@ Las evals guionadas (`npm run evals`) corren en CI y no cuestan nada. Las **real
 dinero y **nunca** corren en CI.
 
 ```
-EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --project evals --testTimeout=1200000
+EVALS_MODO=real node --env-file=.env node_modules/vitest/vitest.mjs run --project evals
 ```
 
 - Vitest no carga el `.env` solo: por eso `--env-file=.env`. No imprimas ni pegues el `.env`.
+- Ya no hace falta `--testTimeout`: cada caso es una prueba propia con su plazo, `repeticiones × turnos × 2 × 60 s + 30 s`
+  (`plazoCasoRealMs`). Un caso lento o colgado falla solo, y el resto sigue.
 - Cuesta cerca de **0,01 USD** por corrida con `openai:gpt-6-luna`. Tope autorizado: **2 USD por sesión de evals**.
-- Cada caso corre 3 veces. Las aserciones **críticas** (dinero con rastro, recargo sin porcentaje, herramienta prohibida,
-  handoff no esperado) deben pasar el 100 %; el resto, al menos el 90 % (EVL3).
-- Los casos marcados `soloGuionado: true` (hoy `r1-monto-sin-rastro-corregido` y `r1-monto-sin-rastro-persiste`) se
-  **omiten** en modo real: su premisa es que el «modelo» invente un monto, y un modelo real no lo hace. El resumen
-  termina con `Casos omitidos: N (solo guionado: …)` y la lista. No cambian el umbral.
 - Para medir un estilo candidato sin publicarlo, ver [estilo del bot](estilo-del-bot.md).
+
+### Cómo leer el resultado
+
+| Lo que ves | Qué significa |
+|---|---|
+| Un caso en rojo | Ese caso tuvo una aserción **crítica** fallida en alguna repetición (dinero sin rastro, recargo con porcentaje, herramienta prohibida, handoff no esperado). La corrida queda reprobada |
+| `EVL3 — veredicto de la corrida real` en rojo | Hubo críticas fallidas, las no críticas pasan menos del **90 %**, o algún caso no terminó sus 3 repeticiones (EVL3) |
+| `repeticiones sin fallas: 1/3` | De las 3 repeticiones del caso, solo una pasó todo |
+| `✗ menciona: … — en 2 de 3 repeticiones` | La misma falla en 2 repeticiones: si sale en 3 de 3 es sistemática; en 1 de 3, ocasional |
+| `Casos sin terminar: N` | Esos casos se cortaron por plazo o fallaron antes de evaluar; la corrida queda reprobada |
+| `Casos omitidos: N (solo guionado: …)` | Casos cuya premisa es el guion; no corren en modo real y no cuentan para el umbral |
+
+El resumen se imprime siempre, al final, aunque haya casos en rojo. Nunca trae texto del cliente ni de la respuesta (R14).
 
 ## Resultado de la corrida real del 2026-10-02
 

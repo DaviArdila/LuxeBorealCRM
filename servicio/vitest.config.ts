@@ -104,7 +104,8 @@ export default defineConfig({
           globalSetup: ['test/soporte/contenedores.global-setup.ts'],
           setupFiles: ['test/soporte/base-por-worker.setup.ts'],
           hookTimeout: 60_000,
-          // El modo real llama a un LLM de verdad (perfil `evals`, 30 s por intento, 3 repeticiones).
+          // Plazo de las pruebas guionadas. El modo real no lo usa: cada caso trae el suyo, calculado con
+          // `plazoCasoRealMs` (repeticiones × turnos × plazo del turno), porque la corrida entera no cabe aquí.
           testTimeout: 180_000,
           // Mismo hallazgo que integración y e2e: un archivo a la vez por worker.
           maxConcurrency: 1,

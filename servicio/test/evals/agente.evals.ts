@@ -17,16 +17,17 @@ import { PrismaService } from '../../src/plataforma/prisma/index.js';
 import { REDIS_CLIENTE, type ClienteRedis } from '../../src/plataforma/redis/index.js';
 import { FakePuertoLlm } from '../fakes/puerto-llm-falso.js';
 import { SimuladorOpenRouter } from '../soporte/simulador-openrouter.js';
-import { ejecutarCorridaReal, leerLlmRealDeEntorno } from './soporte/corrida-real.js';
+import { ejecutarCorridaReal, iniciarCorridaReal, leerLlmRealDeEntorno, type SesionCorridaReal } from './soporte/corrida-real.js';
 import { componerAgente } from './soporte/componer-agente.js';
-import { cargarCasos, parsearCaso } from './soporte/esquema-caso.js';
+import { cargarCasos, parsearCaso, separarPorModoReal } from './soporte/esquema-caso.js';
 import { GrabadorLlm } from './soporte/grabador-llm.js';
 import { leerModoEvals } from './soporte/modo-evals.js';
 import { ejecutarCaso } from './soporte/ejecutar-caso.js';
 import { armarResumen, type CasoResumen } from './soporte/resumen.js';
 import { aplicarEstiloCandidato, leerEstiloCandidato } from './soporte/estilo-candidato.js';
 import { sembrarBase } from './soporte/sembrar.js';
-import { calcularVeredicto } from './soporte/umbral.js';
+import { plazoCasoRealMs } from './soporte/plazo-real.js';
+import { calcularVeredicto, REPETICIONES_REAL } from './soporte/umbral.js';
 
 // Falla aquí, antes de componer nada, si se pidió el modo real sin clave o en CI (EVL4).
 const modo = leerModoEvals(process.env);
@@ -131,17 +132,47 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — casos sintético
 });
 
 describe.skipIf(modo.modo !== 'real')('Evals del agente — modo real (bajo demanda, EVL3/EVL4)', () => {
-  it('EVL3 — veredicto de la corrida real contra el umbral', async () => {
+  const casosReales = [...sinteticos, ...dorado];
+  let sesion: SesionCorridaReal | undefined;
+  const abierta = (): SesionCorridaReal => {
+    if (sesion === undefined) throw new Error('la corrida real no arrancó');
+    return sesion;
+  };
+
+  beforeAll(async () => {
     const llmReal = leerLlmRealDeEntorno(process.env);
-    const corrida = await ejecutarCorridaReal({
-      casos: [...sinteticos, ...dorado],
+    sesion = await iniciarCorridaReal({
+      casos: casosReales,
       apiKey: process.env['OPENROUTER_API_KEY'] ?? '',
       openaiApiKey: process.env['OPENAI_API_KEY'] ?? '',
       estiloCandidato: leerEstiloCandidato(process.env),
       ...llmReal,
     });
-    // EVL4: el resumen incluye el costo estimado y el modelo de cada caso.
-    process.stdout.write(`${corrida.texto}\n`);
+  });
+
+  afterAll(async () => {
+    await sesion?.cerrar();
+  });
+
+  // Un `it` por caso con su propio plazo: un caso lento ya no corta la corrida entera ni se traga el resumen.
+  for (const caso of separarPorModoReal(casosReales).ejecutables) {
+    it(
+      caso.titulo,
+      async () => {
+        const repeticiones = await abierta().ejecutar(caso);
+        // EVL3: una crítica fallida en cualquier repetición reprueba la corrida; aquí se nombra el caso que la tuvo.
+        const criticas = repeticiones.flat().filter((r) => r.critica && !r.ok);
+        expect(criticas.map((r) => `${r.nombre}: ${r.detalle}`), `${caso.id}: críticas fallidas`).toEqual([]);
+      },
+      plazoCasoRealMs({ repeticiones: REPETICIONES_REAL, turnos: caso.turnos.length }),
+    );
+  }
+
+  it('EVL3 — veredicto de la corrida real contra el umbral', async () => {
+    const corrida = await abierta().resumir();
+    // EVL4: el resumen incluye el costo estimado y el modelo de cada caso; sale aunque algún caso haya fallado.
+    process.stdout.write(`${corrida.texto}
+`);
     expect(corrida.veredicto.aprobada).toBe(true);
   });
 });
@@ -188,6 +219,7 @@ describe.skipIf(modo.modo !== 'guionado')('Evals del agente — cableado del mod
       expect(corrida.texto).toContain('Costo estimado: 0.0024 USD');
       expect(corrida.texto).toContain('openai/gpt-5.6-luna');
       expect(corrida.omitidos).toEqual(['premisa-de-guion']);
+      expect(corrida.incompletos).toEqual([]);
       expect(corrida.texto).toContain('Casos omitidos: 1 (solo guionado');
     } finally {
       await simulador.cerrar();
