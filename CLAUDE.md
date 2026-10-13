@@ -123,8 +123,12 @@ secretos o configuración del repo).
   raíz (log del job); «flake» no es causa y no se reintenta a ciegas. Ante un CI rojo se corrige y se vuelve a empujar
   hasta que quede en verde, y solo se detiene si no se encuentra la causa. Una rama de la cadena que cambia bajo
   otra se rebasa con `--force-with-lease` solo si es propia.
-- **Fusionar** con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes; el borrado de ramas
-  remotas lo hace el usuario en la web.
+- **Fusionar** con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes.
+- **Higiene de ramas.** GitHub borra la rama remota al fusionar (`delete_branch_on_merge` activo). Tras
+  fusionar, el agente actualiza `main`, borra la rama local y su worktree con `git branch -d` (se niega si no está
+  fusionada) y, de vez en cuando, repasa `git branch --merged origin/main`. Funciona porque se fusiona con merge
+  commit; si se pasara a squash habría que mirar el upstream `gone`. Nunca se borra una rama no fusionada sin
+  preguntar.
 - **Encadenar fases.** Al cerrar una fase con éxito (verify-report, deltas fusionados, archivada, README de
   fases actualizado), se empieza la siguiente en su orden con su propia spec para aprobación. Se **detiene**
   y se avisa cuando la siguiente depende de algo que solo el usuario puede dar (VPS o dominio, tokens de
