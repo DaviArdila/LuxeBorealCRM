@@ -101,6 +101,27 @@ describe('modulos/agente/aplicacion — BucleHerramientas (AGT4)', () => {
     expect(paraElModelo).toEqual({ enviadas: 1 });
   });
 
+  it('registra por vuelta qué herramientas pidió el modelo y cuántos resultados trajeron, sin su contenido', async () => {
+    const info = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const { llm, bucle } = crear([
+      herramienta('buscar', () =>
+        Promise.resolve({ paraElModelo: [{ id: 'p1', nombre: 'Collar', ficha: { precio: '$1' } }], efectos: [] }),
+      ),
+      herramienta('caso', () => Promise.resolve({ paraElModelo: { texto: 'secreto' }, efectos: [] })),
+    ]);
+    llm.encolar(pideHerramientas(llamada('c1', 'buscar'), llamada('c2', 'caso')), texto('Aquí va'));
+
+    await bucle.ejecutar(ENTRADA);
+
+    expect(info).toHaveBeenCalledWith({
+      evento: 'agente.vuelta',
+      vuelta: 1,
+      herramientas: [{ nombre: 'buscar', resultados: 1, conFicha: true }, { nombre: 'caso' }],
+    });
+    expect(info).toHaveBeenCalledWith({ evento: 'agente.vueltas', vueltas: 2, final: 'texto' });
+    expect(JSON.stringify(info.mock.calls)).not.toMatch(/Collar|secreto|\$1/);
+  });
+
   it('las herramientas ven los efectos que dejaron las anteriores del mismo turno', async () => {
     const vistos: (readonly EfectoTurno[])[] = [];
     const { llm, bucle } = crear([
@@ -524,3 +545,24 @@ describe('modulos/agente/aplicacion — BucleHerramientas: herramientas concurre
     await expect(bucle.ejecutar(ENTRADA)).resolves.toMatchObject({ tipo: 'texto', texto: 'Cuesta $389.000' });
   });
 });
+
+describe('modulos/agente/aplicacion — BucleHerramientas: clave de caché (latencia)', () => {
+  it('cada llamada al LLM del turno lleva la clave de caché del prompt', async () => {
+    const { llm, bucle } = crear([herramienta('buscar')]);
+    llm.encolar(pideHerramientas(llamada('c1', 'buscar')), texto('listo'));
+
+    await bucle.ejecutar({ ...ENTRADA, claveCache: 'luxe-agente-v1-e3' });
+
+    expect(llm.solicitudes.map((s) => s.claveCache)).toEqual(['luxe-agente-v1-e3', 'luxe-agente-v1-e3']);
+  });
+
+  it('sin clave la solicitud no la lleva', async () => {
+    const { llm, bucle } = crear([]);
+    llm.encolar(texto('listo'));
+
+    await bucle.ejecutar(ENTRADA);
+
+    expect(llm.solicitudes[0]).not.toHaveProperty('claveCache');
+  });
+});
+

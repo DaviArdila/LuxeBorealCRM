@@ -100,7 +100,7 @@ const TOTAL_HERRAMIENTAS = 9;
       ): readonly Herramienta[] =>
         protegerEscrituras(
           [
-            crearBuscarProducto(buscar),
+            crearBuscarProducto(buscar, ficha),
             crearObtenerFicha(ficha),
             crearCotizarEnvio(cotizar),
             crearConsultarCaso(casos),

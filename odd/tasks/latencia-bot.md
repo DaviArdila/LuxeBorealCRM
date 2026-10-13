@@ -43,11 +43,11 @@ Medido desde el código, sin telemetría de producción:
   (SUM y parámetro) en paralelo. Ruta: delegada (varios archivos no triviales).
 - [x] T2 — Herramientas de solo lectura en paralelo dentro de un paso, conservando el orden de los resultados.
   Ruta: delegada.
-- [ ] T3 — `buscar_producto` con coincidencia única devuelve la ficha; spec del agente o del catálogo en el mismo
+- [x] T3 — `buscar_producto` con coincidencia única devuelve la ficha; spec del agente o del catálogo en el mismo
   commit. Ruta: delegada.
-- [ ] T4 — `prompt_cache_key` por proveedor y desempate del catálogo por `id`. Ruta: delegada.
-- [ ] T5 — Indicador de «escribiendo…» vía Chatwoot (solo si Chatwoot lo reenvía a WhatsApp Cloud; si no, se
-  documenta el motivo y se omite). Ruta: delegada.
+- [x] T4 — `prompt_cache_key` por proveedor y desempate del catálogo por `id`. Ruta: delegada.
+- [x] T5 — Indicador de «escribiendo…» vía Chatwoot (solo si Chatwoot lo reenvía a WhatsApp Cloud; si no, se
+  documenta el motivo y se omite). Ruta: delegada. **Omitida**: Chatwoot no lo reenvía (ver Progreso).
 - [ ] T6 `[manual]` — El dueño prueba desde WhatsApp y compara los tiempos.
 
 ## Criterios de aceptación
@@ -67,5 +67,30 @@ pasa del presupuesto.
 ## Progreso
 Rama creada desde `main` (3787889).
 
+| Tarea | Ruta | Commit | Qué quedó |
+|---|---|---|---|
+| T1 | delegada | `c722dc6` | Contexto inicial, prompt e historial en paralelo; el techo pide la suma del mes y el parámetro a la vez; la barrera deja el consentimiento en el estado del turno y lo reutilizan la petición de persona y el contexto. La puerta de las herramientas que escriben sigue leyendo de nuevo. |
+| T2 | delegada | `d28ad67` | Las cuatro de consulta son concurrentes; las seguidas de un paso corren con `Promise.all`; las que escriben van de a una; resultados y efectos en el orden de las llamadas (AGT4). |
+| T3 | delegada | `6cf5ac4` | Coincidencia clara = la búsqueda devuelve un único producto: ese resultado trae en `ficha` lo mismo que `obtener_ficha` (AGT8). El rastro de dinero ya serializa todo resultado de herramienta, así que la reconoce sin cambios. |
+| T4 | delegada | `2125b78` | `claveCache` = `luxe-agente-<prompt>-e<estilo>` en cada llamada; OpenAI la recibe como `promptCacheKey` y OpenRouter como `prompt_cache_key` en el cuerpo; catálogo desempatado por id (AGT13, CAT4). |
+| T5 | delegada | — | Omitida, ver abajo. |
+
+**T5, por qué se omite.** En el código de Chatwoot (`develop`, 2026-10-12), `toggle_typing_status` solo despacha
+`CONVERSATION_TYPING_ON/OFF` (`app/services/conversations/typing_status_manager.rb`), y los únicos que escuchan esos eventos
+son `ActionCableListener` (el panel y el widget) y `WebhookListener`. Ningún servicio del canal WhatsApp los atiende, así que
+el cliente de WhatsApp nunca vería los puntos. Mostrarlos exigiría llamar a la API de Meta directamente, fuera de Chatwoot
+(ADR-0005).
+
+**Riesgos a mirar en T6.** Con un solo resultado de búsqueda, el modelo ya tiene el precio antes de que el cliente lo pida
+(puede mencionarlo antes). OpenRouter usa `prompt_cache_key` como llave de enrutamiento fijo, no como orden de caché: el
+ahorro se ve en `uso_llm.tokens_cache`.
+
+**Revisión nativa.** Corrió sobre el rango `3787889..aa5220d`. Riesgo medio; consentimiento otorgado.
+Resultado: aprobada con una lente (confiabilidad), y la autoridad quedó consumida (`review-8aec9180fa1d70dd`).
+Dejó tres observaciones no bloqueantes para trabajo posterior:
+- el armado del contexto en `contenido-llm.ts:111-123` no tiene test;
+- la instantánea del consentimiento en `politica-consentimiento.ts:70-71`;
+- la promesa del techo en `llm-gateway.ts:164-165`, que no rechaza nunca por diseño.
+
 ## Siguiente paso
-T1 a T5 con un escritor delegado; después, T6 por parte del dueño.
+T6 por parte del dueño: probar desde WhatsApp y comparar los tiempos y `tokens_cache` en `uso_llm`.

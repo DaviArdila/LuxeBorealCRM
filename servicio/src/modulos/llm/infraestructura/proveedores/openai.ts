@@ -33,6 +33,8 @@ export function crearProveedorOpenAi(
   return {
     nombre: 'openai',
     crearModelo: (modelo) => openai(modelo),
+    // `prompt_cache_key` de la API Responses: agrupa las solicitudes con el mismo prefijo en el mismo servidor.
+    opcionesDeCache: (claveCache) => ({ openai: { promptCacheKey: claveCache } }),
     normalizarUso(usoSdk: UsoSdk): UsoReportado {
       const tokensCache = usoSdk.inputTokenDetails.cacheReadTokens ?? 0;
       return {

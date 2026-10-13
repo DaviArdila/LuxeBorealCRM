@@ -77,6 +77,7 @@ export class ContenidoLlm implements PoliticaTurno {
       sesion,
       contactoId,
       systemPrompt: prompt.texto,
+      claveCache: prompt.claveCache,
       textosDelCliente: [textoCliente],
       mensajes: [
         ...previos.map((turno) => ({ rol: turno.rol, texto: turno.texto })),

@@ -15,6 +15,11 @@ export interface PromptEnsamblado {
   readonly version: string;
   /** Versión del estilo publicado (`0` = el archivo de respaldo): al log del turno, nunca su texto (AGT13). */
   readonly versionEstilo: number;
+  /**
+   * Clave estable para la caché de prompts del proveedor: solo versiones (del prompt y del estilo), nunca nada del
+   * turno ni del cliente (R14). Cambia cuando cambia el prefijo por una nueva versión.
+   */
+  readonly claveCache: string;
 }
 
 /**
@@ -61,6 +66,11 @@ export class EnsamblarPrompt {
               `Casos disponibles:\n\n${indice.map(lineaDeIndice).join('\n')}`,
           ];
     const texto = [this.cargador.seguridad.trim(), estilo.texto.trim(), ...casos, `# Catálogo\n\n${catalogo}`, variable].join('\n\n');
-    return { texto, version: this.cargador.version, versionEstilo: estilo.version };
+    return {
+      texto,
+      version: this.cargador.version,
+      versionEstilo: estilo.version,
+      claveCache: `luxe-agente-${this.cargador.version}-e${String(estilo.version)}`,
+    };
   }
 }

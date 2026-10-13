@@ -94,13 +94,14 @@ export function armarFicha(producto: Producto, angulosFotos: readonly AnguloFoto
 }
 
 /**
- * Texto compacto id + nombre + descripción corta, una línea por producto, ordenado por nombre y
+ * Texto compacto id + nombre + descripción corta, una línea por producto, ordenado por nombre (y por id en los
+ * empates, para que el texto sea idéntico byte a byte y la caché de prompts del proveedor lo reconozca) y
  * sin ningún valor de dinero (CAT4). El SKU es referencia interna y nunca entra (AGT16, Fase 08b). Recibe únicamente resúmenes ya filtrados a productos activos:
  * excluir los inactivos es responsabilidad del repositorio/aplicación (CAT1), no de esta función.
  */
 export function armarCatalogoCompacto(productos: readonly ProductoResumen[]): string {
   return [...productos]
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es') || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .map((p) => `- ${p.id}: ${p.nombre} — ${p.descripcionCorta}`)
     .join('\n');
 }

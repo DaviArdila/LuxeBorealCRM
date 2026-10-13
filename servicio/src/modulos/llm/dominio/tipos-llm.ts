@@ -57,6 +57,9 @@ export interface SolicitudGeneracion {
   readonly conversacionId?: string;
   // Milisegundos que le quedan al turno de quien llama (LLM14, ADR-0018): acota el presupuesto total.
   readonly plazoMs?: number;
+  // Clave estable del prefijo del prompt para la caché del proveedor (`prompt_cache_key`). Nunca lleva datos
+  // del cliente ni de la conversación (R14); el proveedor que no la admite la ignora.
+  readonly claveCache?: string;
 }
 
 export interface UsoReportado {

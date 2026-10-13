@@ -246,3 +246,23 @@ describe('modulos/agente/aplicacion — EnsamblarPrompt: lecturas en paralelo (l
   });
 });
 
+describe('modulos/agente/aplicacion — EnsamblarPrompt: clave de caché del proveedor (latencia)', () => {
+  it('AGT13 — La clave de caché es la misma entre conversaciones y no lleva nada del turno', async () => {
+    const { ensamblar } = crear(CATALOGO, true, { texto: 'estilo', version: 7, origen: 'base' });
+
+    const a = await ensamblar.ensamblar({ instruccionesTurno: ['El cliente se llama Laura.'] });
+    const b = await ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(a.claveCache).toBe(b.claveCache);
+    expect(a.claveCache).toMatch(/^luxe-agente-[\w.-]+-e7$/);
+    expect(a.claveCache).not.toContain('Laura');
+  });
+
+  it('cambiar la versión del estilo cambia la clave', async () => {
+    const v1 = await crear(CATALOGO, true, { texto: 'estilo', version: 1, origen: 'base' }).ensamblar.ensamblar({ instruccionesTurno: [] });
+    const v2 = await crear(CATALOGO, true, { texto: 'estilo', version: 2, origen: 'base' }).ensamblar.ensamblar({ instruccionesTurno: [] });
+
+    expect(v1.claveCache).not.toBe(v2.claveCache);
+  });
+});
+

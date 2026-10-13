@@ -68,6 +68,20 @@ describe('llm — AdaptadorAiSdk con el proveedor OpenRouter contra el simulador
     await simulador.cerrar();
   });
 
+  describe('caché del prompt (latencia)', () => {
+    it('la clave de caché de la solicitud viaja como prompt_cache_key y sin clave no se envía', async () => {
+      simulador.responderTexto('ok', { tokensEntrada: 1, tokensSalida: 1 });
+
+      await adaptador.generarConModelo(MODELO, { ...SOLICITUD, claveCache: 'luxe-agente-v1-e3' }, limite());
+      const conClave = simulador.ultimoCuerpo();
+      await adaptador.generarConModelo(MODELO, SOLICITUD, limite());
+      const sinClave = simulador.ultimoCuerpo();
+
+      expect(conClave['prompt_cache_key']).toBe('luxe-agente-v1-e3');
+      expect(sinClave['prompt_cache_key']).toBeUndefined();
+    });
+  });
+
   describe('errores: un solo intento y propagación (LLM11)', () => {
     it('LLM11 — Adaptador fallido hace un solo intento y propaga el error', async () => {
       simulador.responderError(429);

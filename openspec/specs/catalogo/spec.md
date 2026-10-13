@@ -94,11 +94,12 @@ sin precios y **sin SKU**, AGT16) detrás de un puerto propio del módulo `catal
 *provider* inyectable de NestJS — nunca un `let` de módulo abierto al importarse (corrige A1) ni una
 dependencia directa del módulo de colas (corrige A3). Mientras la clave de versión no cambie, una
 lectura MUST devolver la misma copia sin reflejar escrituras hechas fuera de la operación de
-invalidación de esta fase.
+invalidación de esta fase. El texto MUST ordenarse por nombre y, a igual nombre, por id, para que el mismo
+catálogo dé siempre el mismo texto byte a byte (caché de prompts del proveedor, AGT13).
 
-(Previously: el texto compacto era «sku + nombre + descripción corta».)
+(Previously: el texto compacto era «sku + nombre + descripción corta» y dos nombres iguales no tenían desempate.)
 
-Fase que lo implementa: 02; 08b (id en lugar de SKU)
+Fase que lo implementa: 02; 08b (id en lugar de SKU); `odd/tasks/latencia-bot.md` (desempate por id)
 
 #### Scenario: Una escritura directa en producto sin pasar por la invalidación no se refleja de inmediato
 
@@ -114,6 +115,12 @@ Fase que lo implementa: 02; 08b (id en lugar de SKU)
 - Cuando se obtiene el catálogo compacto,
 - Entonces el texto devuelto lista solo los productos activos, ordenados por nombre, y no contiene
   ningún valor de dinero.
+
+#### Scenario: Dos productos con el mismo nombre salen siempre en el mismo orden
+
+- Dado dos productos activos con el mismo nombre,
+- Cuando se arma el catálogo compacto en cualquier orden de entrada,
+- Entonces el texto es el mismo, con los dos desempatados por id.
 
 #### Scenario: Cada línea del catálogo compacto lleva el id del producto y no su SKU
 

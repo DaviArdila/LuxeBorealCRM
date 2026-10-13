@@ -79,6 +79,18 @@ describe('llm — AdaptadorAiSdk con el proveedor OpenAI contra un servidor loca
   });
 
   describe('envío directo y uso con caché (LLM15, LLM18)', () => {
+    it('la clave de caché de la solicitud viaja como prompt_cache_key y sin clave no se envía', async () => {
+      simulador.responderTexto('ok', { tokensEntrada: 1, tokensSalida: 1 });
+
+      await adaptador.generarConModelo(MODELO, { ...SOLICITUD, claveCache: 'luxe-agente-v1-e3' }, limite());
+      const conClave = simulador.ultima().cuerpo;
+      await adaptador.generarConModelo(MODELO, SOLICITUD, limite());
+      const sinClave = simulador.ultima().cuerpo;
+
+      expect(conClave['prompt_cache_key']).toBe('luxe-agente-v1-e3');
+      expect(sinClave['prompt_cache_key']).toBeUndefined();
+    });
+
     it('LLM18 — Un proveedor que incluye la caché en la entrada se separa', async () => {
       simulador.responderTexto('Te muestro el reloj', {
         tokensEntrada: 1000,
