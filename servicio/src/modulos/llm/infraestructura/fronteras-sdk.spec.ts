@@ -44,6 +44,10 @@ describe('modulos/llm/infraestructura — SDK de cada proveedor en un solo archi
     }
   });
 
+  it('LLM20 — `@ai-sdk/anthropic` solo aparece en el proveedor Anthropic', () => {
+    expect(archivosQueImportan(/^@ai-sdk\/anthropic$/)).toEqual(['proveedores/anthropic.ts']);
+  });
+
   it('LLM20 — `ai` solo aparece en el adaptador genérico', () => {
     expect(archivosQueImportan(/^ai$/)).toEqual(['adaptador-ai-sdk.ts']);
   });

@@ -386,3 +386,36 @@ Fase que lo implementa: 07b
 - Dado una solicitud con `plazoMs` igual a 0,
 - Cuando se pide la generación,
 - Entonces el gateway devuelve el error tipado `timeout` sin ninguna llamada al proveedor.
+
+### Requirement: LLM25 — Proveedor Anthropic directo (ADR-0029)
+
+El sistema MUST registrar el proveedor `anthropic`: un id `anthropic:<modelo>` MUST llamar directo a la API de
+Anthropic con `ANTHROPIC_API_KEY`, que en production MUST ser obligatoria solo si algún perfil usa ese prefijo
+(LLM17). Cada llamada a Anthropic MUST pedir esfuerzo de razonamiento `low` y MUST NOT enviar presupuesto de
+razonamiento ni `temperature`. Con `claveCache`, el prompt de sistema MUST llevar un punto de corte de caché
+`ephemeral`, y la clave MUST NOT viajar al proveedor. El uso MUST normalizarse según LLM18: la lectura de caché va a
+`tokensCache` y la escritura en caché se cuenta en `tokensEntrada`. El precio MUST salir de `LLM_PRECIOS_USD_JSON`
+con el id completo (LLM19); el código MUST NOT fijar precios de Anthropic.
+
+Fase que lo implementa: fuera de fase (`odd/tasks/proveedores-directos-llm.md`, T1)
+
+#### Scenario: LLM25 — Un id con prefijo anthropic: se llama directo a Anthropic
+
+- Dado un perfil con `anthropic:claude-haiku-5-5`,
+- Cuando el gateway genera una respuesta,
+- Entonces la llamada va a `POST /v1/messages` de Anthropic con el modelo `claude-haiku-5-5`, la clave propia,
+  `output_config.effort` igual a `low` y sin `thinking` ni `temperature`.
+
+#### Scenario: LLM25 — La caché se pide con un punto de corte en el prompt de sistema
+
+- Dada una solicitud con `claveCache`,
+- Cuando se llama a Anthropic,
+- Entonces el bloque del prompt de sistema lleva `cache_control: { type: 'ephemeral' }` y el cuerpo no contiene la
+  clave; sin `claveCache`, el sistema viaja sin `cache_control`.
+
+#### Scenario: LLM25 — Producción exige ANTHROPIC_API_KEY solo si un perfil usa anthropic:
+
+- Dado `NODE_ENV=production` y un perfil con `anthropic:claude-haiku-5-5`,
+- Cuando `ANTHROPIC_API_KEY` está vacía,
+- Entonces el arranque falla nombrando `ANTHROPIC_API_KEY` sin imprimir ningún valor; sin modelos `anthropic:`,
+  la variable no se exige.

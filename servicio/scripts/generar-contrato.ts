@@ -91,6 +91,7 @@ const CONFIGURACION_DE_GENERACION: Configuracion = {
   OPENROUTER_API_KEY: '',
   OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
   OPENAI_API_KEY: '',
+  ANTHROPIC_API_KEY: '',
   // Fase 07a, T4: el agente entra en `AppModule`; los valores solo cumplen `esquemaConfiguracion`.
   AGENTE_TOPE_TURNOS: 20,
   AGENTE_SESION_TTL_H: 168,

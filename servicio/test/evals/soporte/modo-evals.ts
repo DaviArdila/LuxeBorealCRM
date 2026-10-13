@@ -16,6 +16,7 @@ export class ErrorModoEvals extends Error {
 const VARIABLE_DE_CLAVE: Readonly<Record<string, string>> = {
   openrouter: 'OPENROUTER_API_KEY',
   openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
 };
 
 export type ModoEvals = { readonly modo: 'guionado' } | { readonly modo: 'real' };
@@ -24,6 +25,7 @@ const esquemaEntorno = z.object({
   EVALS_MODO: z.enum(['guionado', 'real']).default('guionado'),
   OPENROUTER_API_KEY: z.string().default(''),
   OPENAI_API_KEY: z.string().default(''),
+  ANTHROPIC_API_KEY: z.string().default(''),
   LLM_EVALS_MODELOS: z.string().default('openai/gpt-5.6-luna'),
   CI: z.string().optional(),
 });
@@ -32,7 +34,7 @@ const esquemaEntorno = z.object({
  * Modo del arnés (D6 de la Fase 07c, EVL1/EVL4). Guionado por defecto: sin red ni costo. El modo real
  * solo arranca si se pidió con `EVALS_MODO=real`, no se está en CI y hay clave de cada proveedor que
  * usan los modelos de `LLM_EVALS_MODELOS` (LLM17, ADR-0019: un id sin prefijo es OpenRouter, `openai:`
- * pide `OPENAI_API_KEY`); si no, falla aquí, antes de componer la aplicación, así que nunca hay una
+ * pide `OPENAI_API_KEY` y `anthropic:` pide `ANTHROPIC_API_KEY`); si no, falla aquí, antes de componer la aplicación, así que nunca hay una
  * llamada. Los mensajes nombran la variable, nunca su valor.
  */
 export function leerModoEvals(entorno: Readonly<Record<string, string | undefined>>): ModoEvals {
@@ -55,7 +57,7 @@ export function leerModoEvals(entorno: Readonly<Record<string, string | undefine
   );
   for (const proveedor of proveedores) {
     const variable = VARIABLE_DE_CLAVE[proveedor];
-    const clave = variable === undefined ? undefined : leido.data[variable as 'OPENROUTER_API_KEY' | 'OPENAI_API_KEY'];
+    const clave = variable === undefined ? undefined : leido.data[variable as 'OPENROUTER_API_KEY' | 'OPENAI_API_KEY' | 'ANTHROPIC_API_KEY'];
     if (variable !== undefined && (clave ?? '').trim().length === 0) {
       throw new ErrorModoEvals(`El modo real necesita ${variable} con la clave del usuario; no se hizo ninguna llamada.`);
     }

@@ -8,6 +8,7 @@ function config(conversacion: string[], evals: string[] = conversacion) {
     OPENROUTER_API_KEY: 'clave-openrouter',
     OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
     OPENAI_API_KEY: '',
+    ANTHROPIC_API_KEY: '',
   };
 }
 
@@ -29,6 +30,11 @@ describe('modulos/llm/infraestructura — fábrica de proveedores usados (LLM17)
   it('un perfil con prefijo construye ese proveedor y solo los que algún perfil usa', () => {
     expect(nombres(['openai:gpt-6-luna'])).toEqual(['openai']);
     expect(nombres(['openai:gpt-6-luna', 'openai/gpt-5.6-luna'])).toEqual(['openrouter', 'openai']);
+  });
+
+  it('un perfil con prefijo anthropic: construye el proveedor Anthropic', () => {
+    expect(nombres(['anthropic:claude-haiku-5-5'])).toEqual(['anthropic']);
+    expect(nombres(['openai:gpt-6-luna'], ['anthropic:claude-haiku-5-5'])).toEqual(['openai', 'anthropic']);
   });
 
   it('cuenta también los modelos del perfil de evals', () => {

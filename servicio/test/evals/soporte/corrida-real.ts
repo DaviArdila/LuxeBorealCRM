@@ -24,6 +24,8 @@ export interface OpcionesCorridaReal {
   readonly apiKey: string;
   /** Clave de OpenAI para los modelos `openai:` (ADR-0019). */
   readonly openaiApiKey?: string;
+  /** Clave de Anthropic para los modelos `anthropic:` (ADR-0029). */
+  readonly anthropicApiKey?: string;
   /** Modelos del perfil `evals` (LLM_EVALS_MODELOS); el primero es el principal. */
   readonly modelos: readonly string[];
   readonly precios: Configuracion['LLM_PRECIOS_USD_JSON'];
@@ -45,11 +47,12 @@ export interface CorridaReal {
 /**
  * Lee de un entorno los modelos y precios del perfil `evals` (mismas variables que la aplicación):
  * `LLM_EVALS_MODELOS` separados por coma y `LLM_PRECIOS_USD_JSON`. Sin ellos, los de la configuración
- * de prueba (Luna).
+ * de prueba (Luna). También lee `ANTHROPIC_API_KEY`, vacía si no está.
  */
 export function leerLlmRealDeEntorno(entorno: Readonly<Record<string, string | undefined>>): {
   readonly modelos: readonly string[];
   readonly precios: Configuracion['LLM_PRECIOS_USD_JSON'];
+  readonly anthropicApiKey: string;
 } {
   const modelos = (entorno['LLM_EVALS_MODELOS'] ?? '')
     .split(',')
@@ -62,6 +65,9 @@ export function leerLlmRealDeEntorno(entorno: Readonly<Record<string, string | u
       preciosCrudos === undefined || preciosCrudos.trim() === ''
         ? CONFIGURACION_LLM_DE_PRUEBA.LLM_PRECIOS_USD_JSON
         : (JSON.parse(preciosCrudos) as Configuracion['LLM_PRECIOS_USD_JSON']),
+    // La clave de Anthropic viaja aquí y no como argumento propio: quien arma la corrida esparce este
+    // resultado, así un modelo `anthropic:` recibe su clave sin otro cambio en el arnés (ADR-0029).
+    anthropicApiKey: entorno['ANTHROPIC_API_KEY'] ?? '',
   };
 }
 
@@ -81,6 +87,7 @@ export async function ejecutarCorridaReal(opciones: OpcionesCorridaReal): Promis
     ...base,
     OPENROUTER_API_KEY: opciones.apiKey,
     OPENAI_API_KEY: opciones.openaiApiKey ?? '',
+    ANTHROPIC_API_KEY: opciones.anthropicApiKey ?? '',
     ...(opciones.urlOpenRouter === undefined ? {} : { OPENROUTER_BASE_URL: opciones.urlOpenRouter }),
     LOCK_TURNO_TTL_S: 60,
     LLM_PRECIOS_USD_JSON: opciones.precios,

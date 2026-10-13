@@ -42,6 +42,13 @@ export interface ProveedorLlm {
   normalizarUso(usoSdk: UsoSdk, metadatos: unknown): UsoReportado;
   /** Cómo pide este proveedor la caché de prompts con una clave estable; sin él, la clave no se envía. */
   opcionesDeCache?(claveCache: string): ProviderOptions;
+  /** Opciones que este proveedor envía en cada llamada, haya o no clave de caché (LLM25). */
+  readonly opcionesFijas?: ProviderOptions;
+  /**
+   * Opciones del prompt de sistema cuando la solicitud trae `claveCache`: el proveedor que cachea por
+   * punto de corte (Anthropic) lo marca ahí (LLM25). Sin ellas, el sistema viaja como texto.
+   */
+  readonly opcionesDelSistemaConCache?: ProviderOptions;
 }
 
 const ERROR_ABORTO = 'AbortError';
@@ -55,6 +62,18 @@ export function esRegistro(valor: unknown): valor is Record<string, unknown> {
 // proveedor en el turno siguiente (B7); el adaptador no lee su contenido.
 function opcionesDeProveedor(metadatos: unknown): ProviderOptions | undefined {
   return esRegistro(metadatos) ? (metadatos as ProviderOptions) : undefined;
+}
+
+// Une las opciones de varias fuentes por proveedor: `{ anthropic: a }` y `{ anthropic: b }` dan
+// `{ anthropic: { ...a, ...b } }`. Sin ninguna, `undefined`, para no enviar `providerOptions` vacío.
+function combinarOpciones(...fuentes: (ProviderOptions | undefined)[]): ProviderOptions | undefined {
+  const combinadas: Record<string, Record<string, unknown>> = {};
+  for (const fuente of fuentes) {
+    for (const [nombre, valores] of Object.entries(fuente ?? {})) {
+      combinadas[nombre] = { ...combinadas[nombre], ...valores };
+    }
+  }
+  return Object.keys(combinadas).length === 0 ? undefined : (combinadas as ProviderOptions);
 }
 
 function aMensajesSdk(mensajes: readonly MensajeLlm[]): ModelMessage[] {
@@ -124,13 +143,21 @@ export class AdaptadorAiSdk {
     solicitud: SolicitudGeneracion,
     limite: LimiteIntento,
   ): Promise<ResultadoAdaptador> {
-    const opcionesDeCache =
-      solicitud.claveCache === undefined ? undefined : proveedor.opcionesDeCache?.(solicitud.claveCache);
+    const conCache = solicitud.claveCache !== undefined;
+    const opciones = combinarOpciones(
+      proveedor.opcionesFijas,
+      solicitud.claveCache === undefined ? undefined : proveedor.opcionesDeCache?.(solicitud.claveCache),
+    );
+    const opcionesDelSistema = conCache ? proveedor.opcionesDelSistemaConCache : undefined;
+    const system =
+      opcionesDelSistema === undefined || solicitud.systemPrompt === undefined
+        ? solicitud.systemPrompt
+        : { role: 'system' as const, content: solicitud.systemPrompt, providerOptions: opcionesDelSistema };
     try {
       const resultado = await generateText({
         model: proveedor.crearModelo(modelo),
-        ...(opcionesDeCache === undefined ? {} : { providerOptions: opcionesDeCache }),
-        system: solicitud.systemPrompt,
+        ...(opciones === undefined ? {} : { providerOptions: opciones }),
+        system,
         messages: aMensajesSdk(solicitud.mensajes),
         tools: aHerramientasSdk(solicitud),
         maxOutputTokens: limite.maxTokens,

@@ -44,6 +44,13 @@ describe('test/evals — la clave exigida es la del proveedor del modelo elegido
     expect(leerModoEvals({ ...perfil, OPENAI_API_KEY: 'sk-oa' })).toEqual({ modo: 'real' });
   });
 
+  it('LLM17 — El modo real con un modelo anthropic: exige ANTHROPIC_API_KEY', () => {
+    const perfil = { ...REAL, LLM_EVALS_MODELOS: 'anthropic:claude-haiku-5-5' };
+
+    expect(() => leerModoEvals({ ...perfil, OPENROUTER_API_KEY: 'sk-or' })).toThrow(/ANTHROPIC_API_KEY/);
+    expect(leerModoEvals({ ...perfil, ANTHROPIC_API_KEY: 'sk-ant' })).toEqual({ modo: 'real' });
+  });
+
   it('un perfil mixto exige la clave de cada proveedor que usa', () => {
     const perfil = { ...REAL, LLM_EVALS_MODELOS: 'openai:gpt-6-luna, openai/gpt-5.6-luna' };
 
