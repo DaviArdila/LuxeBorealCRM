@@ -1570,7 +1570,9 @@ Cuando `conversaciones` informa que el asesor ya fue avisado por cualquier motiv
 al modelo que
 puede seguir informando (productos, precios, envíos y políticas) pero que MUST NOT confirmar pagos, apartados ni descuentos:
 debe decir que el asesor lo confirma. Sin el aviso, esa instrucción MUST NOT aparecer. Esta regla es de conducta del
-modelo, no una puerta de código: se comprueba con evals guionadas y con la corrida real (EVL3).
+modelo, no una puerta de código: se comprueba con evals guionadas y con la corrida real (EVL3). Marcar el lead caliente
+(AGT11) es independiente de este aviso: con el asesor ya avisado el modelo MAY llamar `marcar_lead_caliente`, porque
+registra al lead para el negocio y no es un segundo aviso (P77).
 
 Fase que lo implementa: 12d
 
