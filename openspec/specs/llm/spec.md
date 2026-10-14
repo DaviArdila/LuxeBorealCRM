@@ -430,7 +430,7 @@ MUST impedir el arranque nombrando la variable del perfil, y la resolución del 
 nombra el id en lugar de llamar a un tercero. Los valores por defecto de `LLM_CONVERSACION_MODELOS`,
 `LLM_EVALS_MODELOS` MUST usar `openai:gpt-6-luna`, y `LLM_PRECIOS_USD_JSON` MUST declarar por defecto el precio de
 `openai:gpt-6-luna` y de `anthropic:claude-haiku-5-5`, los dos modelos que el proyecto usa por ahora
-(`gpt-6-luna`: 0,10 / 0,50 / 0,01 USD por millón; el `cache` de Haiku, 0,01, es una estimación pendiente de confirmar).
+(`gpt-6-luna`: 0,10 / 0,50 / 0,01 USD por millón; Haiku: 0,10 / 0,50 / 0,01, confirmado por el dueño el 2026-10-14).
 La tabla de precios MUST NOT tener campo de escritura en caché: la escritura (0,125 en `gpt-6-luna`) no se cobra
 aparte en el cálculo, por lo que el costo queda levemente subestimado, igual que con Anthropic.
 

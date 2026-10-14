@@ -7,9 +7,9 @@ import {
 
 /**
  * Precios por millón de tokens de los dos modelos que el proyecto usa por ahora (ADR-0029); se
- * refrescan al desplegar. El precio de `openai:gpt-6-luna` es el que dio el dueño. PENDIENTE DE
- * CONFIRMAR: el `cache` de Haiku es una estimación (10 % de la entrada). La tabla no tiene campo de
- * escritura en caché: esa escritura (0,125 en gpt-6-luna) no se cobra aparte y el costo queda levemente
+ * refrescan al desplegar. El precio de `openai:gpt-6-luna` es el que dio el dueño y el de Haiku lo
+ * confirmó el dueño el 2026-10-14 (caché: lectura 0,01 y escritura 0,125). La tabla no tiene campo de
+ * escritura en caché: esa escritura (0,125 en ambos modelos) no se cobra aparte y el costo queda levemente
  * subestimado.
  */
 const PRECIOS_LLM_POR_DEFECTO = JSON.stringify({
