@@ -19,14 +19,11 @@
         "handoff": "prohibido",
         "aviso": "esperado",
         "menciona": [
-          "asesor te confirma el apartado"
+          "asesor.*confirm.*apart|apart.*asesor.*confirm"
         ],
         "textoAusente": [
           "quedó apartado",
           "ya está apartado"
-        ],
-        "herramientasProhibidas": [
-          "marcar_lead_caliente"
         ],
         "sinSku": true
       }

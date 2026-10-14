@@ -145,8 +145,9 @@ anonimizadas, solo casos sintéticos (P30).
 
 `openai:gpt-5.6-luna` (modelo ya retirado; 5 críticas fallidas, 74,6 % no críticas) y `anthropic:claude-haiku-5-5` (3 críticas, 72,3 %)
 reprobaron con resultados idénticos en 24 de 32 casos. La causa principal fue el diseño de los casos, no los modelos: se
-corrigió en `odd/tasks/rediseno-evals-reales.md`. Hace falta **una corrida nueva** para saber cómo queda. Una crítica
-sigue abierta como decisión del dueño: `agt28-asesor-confirma-apartado` prohíbe marcar el lead caliente (P77).
+corrigió en `odd/tasks/rediseno-evals-reales.md`. La crítica restante, `agt28-asesor-confirma-apartado`, se resolvió con
+la P77 (2026-10-14): con el asesor ya avisado el bot puede marcar el lead caliente y el caso ya no lo prohíbe. Hace falta
+**una corrida nueva** para saber cómo queda.
 
 ## Resultado de la corrida real del 2026-10-02
 
