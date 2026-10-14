@@ -1,6 +1,6 @@
 # 0029. Solo proveedores directos de LLM: se agrega Anthropic y se retira OpenRouter (matiza 0002 y 0019)
 
-- Estado: propuesta
+- Estado: aceptada (2026-10-14, el dueño)
 - Fecha: 2026-10-13
 
 ## Resumen
@@ -50,8 +50,9 @@ Se elige **A**:
 7. **Modelos vigentes (dueño, 2026-10-13):** por ahora el proyecto usa solo `openai:gpt-6-luna` y
    `anthropic:claude-haiku-5-5`; `gpt-5.6-luna` se retira. `openai:gpt-6-luna` es el valor por defecto de ambos
    perfiles y `LLM_PRECIOS_USD_JSON` lleva por defecto el precio de los dos. El precio de `gpt-6-luna` lo dio el dueño
-   (0,10 / 0,50 / 0,01 USD por millón; la escritura en caché, 0,125, no se cobra aparte). **Pendiente de confirmar por
-   el dueño:** el `cache` de Haiku (0,01 USD, estimado como el 10 % de la entrada).
+   (0,10 / 0,50 / 0,01 USD por millón; la escritura en caché, 0,125, no se cobra aparte). **El dueño confirmó el
+   2026-10-14** el precio de caché de Haiku: lectura 0,01 USD y escritura 0,125 (1,25 veces la entrada), esta última
+   sin modelar en la tabla de precios.
 
 ## Consecuencias
 

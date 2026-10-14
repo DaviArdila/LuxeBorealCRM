@@ -17,7 +17,7 @@ Claude Haiku 5.5 (`anthropic:claude-haiku-5-5`) y se retira OpenRouter.
 - Agregar el proveedor `anthropic` con `ANTHROPIC_API_KEY`.
 - Retirar OpenRouter por completo: proveedor, dependencia, variables y tests.
 - Un id de modelo sin prefijo de proveedor registrado pasa a ser error de arranque.
-- ADR-0029 en estado `propuesta`; P37 actualizada.
+- ADR-0029 (aceptado por el dueño el 2026-10-14); P37 actualizada.
 
 Fuera de alcance: Google y el genérico compatible con OpenAI; precio propio de escritura de caché.
 
@@ -58,7 +58,7 @@ revisor.
 - [x] **T4. Modelos vigentes.** El dueño pide quitar `gpt-5.6-luna`: por ahora solo `openai:gpt-6-luna` (por defecto)
   y `anthropic:claude-haiku-5-5`. Defaults de código, precios por defecto de los dos modelos, tests y documentos vivos.
   Precio de `gpt-6-luna` dado por el dueño: 0,10 / 0,50 / 0,01 USD por millón (escritura en caché 0,125, sin cobrar aparte).
-  El `cache` de Haiku (0,01) sigue **pendiente de confirmar**. Ruta: delegada (mismo escritor).
+  El `cache` de Haiku (0,01) lo confirmó el dueño el 2026-10-14. Ruta: delegada (mismo escritor).
 
 ## Comprobaciones
 
@@ -96,6 +96,8 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
   - Comprobaciones: lint, typecheck, fronteras, `contrato:deriva` y commits en verde; integración 496/496; e2e
     122/122; evals guionadas 49 + 1 omitido; unitarios 1819/1821 (fallan los 2 de `env-example.spec.ts`, ver
     «Bloqueos»). `npm uninstall` solo quitó `@openrouter/ai-sdk-provider` del lockfile (15 líneas).
+- 2026-10-14, precio de caché de Haiku: el dueño confirmó lectura 0,01 y escritura 0,125 USD por millón; solo
+  documentación y comentarios, sin cambio de valores ni de comportamiento (rama `docs/precio-cache-haiku`).
 
 ## Bloqueos
 
@@ -109,7 +111,6 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 ## Estado final
 
 **Cerrada (2026-10-14).** Slice 1 en PR #143 (`2df84c6`) y slice 2 en PR #145 (`fd421e5`), ambos fusionados en `main`;
-T1 a T4 hechas. Pendientes del dueño, que no bloquean el cierre:
+T1 a T4 hechas. Pendiente del dueño, que no bloquea el cierre:
 
-- Aceptar el ADR-0029 (sigue en estado `propuesta`).
-- Confirmar la estimación del precio de caché de Haiku (0,01 USD por millón).
+- Nada pendiente del dueño: el ADR-0029 quedó aceptado el 2026-10-14.

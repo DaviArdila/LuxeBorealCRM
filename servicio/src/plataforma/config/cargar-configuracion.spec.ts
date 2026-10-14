@@ -708,7 +708,7 @@ describe('cargarConfiguracion', () => {
       expect(configuracion).not.toHaveProperty('OPENROUTER_API_KEY');
       expect(configuracion).not.toHaveProperty('OPENROUTER_BASE_URL');
       // Solo se usan por ahora gpt-6-luna y claude-haiku-5-5 (ADR-0029). El precio de gpt-6-luna es el
-      // del dueño; el cache de Haiku es una estimación.
+      // del dueño y el de Haiku lo confirmó el dueño el 2026-10-14.
       expect(configuracion.LLM_PRECIOS_USD_JSON).toEqual({
         'openai:gpt-6-luna': { entrada: 0.1, salida: 0.5, cache: 0.01 },
         'anthropic:claude-haiku-5-5': { entrada: 0.1, salida: 0.5, cache: 0.01 },
