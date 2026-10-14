@@ -45,13 +45,15 @@ revisor.
 
 ## Tareas
 
-- [ ] **T1. Proveedor `anthropic`.** Archivo `proveedores/anthropic.ts`, registro en la lista y en la fábrica,
+- [x] **T1. Proveedor `anthropic`.** Archivo `proveedores/anthropic.ts`, registro en la lista y en la fábrica,
   `ANTHROPIC_API_KEY` en la configuración y en las evals, regla de fronteras, caché por punto de corte en el prompt
   de sistema, normalización del uso y esfuerzo `low`. Ruta: delegada (escritor único, 2+ archivos no triviales).
-- [ ] **T2. Documentación del slice 1.** ADR-0029, P37, spec de dominio `llm`, guía de evals reales.
-  Ruta: dentro del mismo escritor de T1.
+  Evidencia: PR #143 (slice 1), fusionado en `2df84c6`.
+- [x] **T2. Documentación del slice 1.** ADR-0029, P37, spec de dominio `llm`, guía de evals reales.
+  Ruta: dentro del mismo escritor de T1. Evidencia: PR #143 (`2df84c6`).
 - [x] **T3. Retiro de OpenRouter.** Proveedor, dependencia, variables, tests, ids sin prefijo como error, valores
   por defecto `openai:gpt-5.6-luna`, ADR-0002/0019 reemplazados en parte, SPEC.md y CLAUDE.md. Ruta: delegada.
+  Evidencia: PR #145 (slice 2), fusionado en `fd421e5`.
 
 - [x] **T4. Modelos vigentes.** El dueño pide quitar `gpt-5.6-luna`: por ahora solo `openai:gpt-6-luna` (por defecto)
   y `anthropic:claude-haiku-5-5`. Defaults de código, precios por defecto de los dos modelos, tests y documentos vivos.
@@ -104,7 +106,10 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 | `servicio/.env.example` (T3, T4) | Quitar `OPENROUTER_API_KEY` y `OPENROUTER_BASE_URL` con sus comentarios; `openai:gpt-6-luna` (con dos puntos) en ambos perfiles y en las claves de `LLM_PRECIOS_USD_JSON`, con los precios del dueño (ver el JSON exacto en el reporte de T4) | El permiso de la herramienta niega leer y editar el archivo |
 | `servicio/src/plataforma/config/env-example.spec.ts:41` (T3) | Hecho en T4: espera `['openai:gpt-6-luna']` | — |
 
-## Siguiente paso
+## Estado final
 
-Agregar las dos líneas de «Bloqueos», repetir `typecheck` y `npm test`, y hacer los dos commits del slice 1
-(`feat(llm): proveedor anthropic directo` y `docs(adr): ADR-0029 proveedores directos de LLM`). Después, T3.
+**Cerrada (2026-10-14).** Slice 1 en PR #143 (`2df84c6`) y slice 2 en PR #145 (`fd421e5`), ambos fusionados en `main`;
+T1 a T4 hechas. Pendientes del dueño, que no bloquean el cierre:
+
+- Aceptar el ADR-0029 (sigue en estado `propuesta`).
+- Confirmar la estimación del precio de caché de Haiku (0,01 USD por millón).

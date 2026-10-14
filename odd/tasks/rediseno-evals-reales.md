@@ -77,6 +77,12 @@ y `docs/PREGUNTAS_ABIERTAS.md`.
   `npm run test:integracion`: 71 archivos, 499 pasan. El modo real no se corrió (sin clave en esta máquina).
 - Revisión nativa: no corrida por el writer; la decide el orquestador.
 
+## Resultado de la P77
+
+- 2026-10-14: el dueño respondió **sí** (opción a): con el asesor ya avisado el bot puede marcar el lead caliente.
+  `agt28-asesor-confirma-apartado` dejó de prohibir `marcar_lead_caliente` y su `menciona` acepta paráfrasis.
+  Rama `fix/evals-agt28-lead-caliente`. La rama de rediseño se fusionó en PR #144 (`5b29a17`).
+
 ## Siguiente paso
 
-Que el dueño corra la corrida real con su clave (comando en la guía) y responda la P77.
+Que el dueño corra la corrida real con su clave (comando en la guía) para medir el resultado tras el cambio de `agt28`.
