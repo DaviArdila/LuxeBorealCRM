@@ -17,7 +17,7 @@ Claude Haiku 5.5 (`anthropic:claude-haiku-5-5`) y se retira OpenRouter.
 - Agregar el proveedor `anthropic` con `ANTHROPIC_API_KEY`.
 - Retirar OpenRouter por completo: proveedor, dependencia, variables y tests.
 - Un id de modelo sin prefijo de proveedor registrado pasa a ser error de arranque.
-- ADR-0029 en estado `propuesta`; P37 actualizada.
+- ADR-0029 (aceptado por el dueño el 2026-10-14); P37 actualizada.
 
 Fuera de alcance: Google y el genérico compatible con OpenAI; precio propio de escritura de caché.
 
@@ -113,4 +113,4 @@ Manual con clave real (el dueño): `EVALS_MODO=real LLM_EVALS_MODELOS=anthropic:
 **Cerrada (2026-10-14).** Slice 1 en PR #143 (`2df84c6`) y slice 2 en PR #145 (`fd421e5`), ambos fusionados en `main`;
 T1 a T4 hechas. Pendiente del dueño, que no bloquea el cierre:
 
-- Aceptar el ADR-0029 (sigue en estado `propuesta`).
+- Nada pendiente del dueño: el ADR-0029 quedó aceptado el 2026-10-14.

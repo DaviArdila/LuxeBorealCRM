@@ -1,6 +1,6 @@
 # 0029. Solo proveedores directos de LLM: se agrega Anthropic y se retira OpenRouter (matiza 0002 y 0019)
 
-- Estado: propuesta
+- Estado: aceptada (2026-10-14, el dueño)
 - Fecha: 2026-10-13
 
 ## Resumen
