@@ -105,7 +105,10 @@ describe('scripts/auditar-dependencias — auditarDependencias (integración rea
       // cubiertos por auditoria-excepciones.json: el paso MUST quedar en verde con la fecha de este test.
       expect(resultado.limpio).toBe(true);
     },
-    30_000,
+    // Llama al registro real de npm: ante un error transitorio, npm reintenta esperando de 10 a 60 s
+    // (`fetch-retry-mintimeout`/`maxtimeout` por defecto). Con 30 s una sola caída del registro tumbaba
+    // el CI aunque la auditoría estuviera limpia; 120 s cubre los reintentos por defecto.
+    120_000,
   );
 });
 
