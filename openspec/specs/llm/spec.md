@@ -388,6 +388,204 @@ Fase que lo implementa: 07b
 - Cuando se pide la generación,
 - Entonces el gateway devuelve el error tipado `timeout` sin ninguna llamada al proveedor.
 
+### Requirement: LLM15 — El proveedor se elige por el prefijo del modelo
+
+Un id de modelo de `LLM_*_MODELOS` MUST escribirse como `<proveedor>:<modelo>`; el gateway MUST llamar al
+proveedor indicado con el id de modelo que sigue al prefijo. La fila de `uso_llm` MUST llevar el proveedor real de
+cada intento. Un id sin prefijo registrado no tiene proveedor por defecto (LLM26, ADR-0029).
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM15 — Un id con prefijo se llama directo al proveedor indicado
+
+- Dado un perfil cuyo modelo es `openai:<modelo>` y la clave de ese proveedor configurada,
+- Cuando se pide una generación,
+- Entonces la llamada va al proveedor `openai` con el id `<modelo>` (sin el prefijo) y la fila de
+  `uso_llm` lleva el proveedor `openai`.
+
+### Requirement: LLM16 — La resolución del proveedor no es ambigua
+
+El prefijo MUST contar como proveedor solo si es un proveedor registrado (`openai`, `anthropic`) y no contiene `/`;
+el separador es la primera `:` y el resto del id queda intacto. Un prefijo con forma de proveedor pero no registrado
+MUST impedir el arranque nombrando la variable, sin imprimir claves.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM16 — Un prefijo de proveedor desconocido impide el arranque
+
+- Dada una variable `LLM_*_MODELOS` con un id `desconocido:modelo`,
+- Cuando se intenta arrancar la aplicación,
+- Entonces el proceso no acepta tráfico y el error nombra la variable y el prefijo, sin imprimir
+  ningún valor secreto.
+
+### Requirement: LLM17 — Claves por proveedor, exigidas solo al proveedor usado
+
+Cada proveedor MUST tener su propia variable de clave. En producción (`NODE_ENV=production`) MUST exigirse
+la clave únicamente de los proveedores que algún perfil usa; la clave de un proveedor que ningún perfil
+usa MUST NOT ser obligatoria. Los tests y el desarrollo MUST arrancar sin claves reales (**R15**,
+PLT1).
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM17 — Producción exige la clave de cada proveedor usado
+
+- Dado `NODE_ENV=production` y un perfil con un modelo `openai:<modelo>` sin la clave de `openai`,
+- Cuando se intenta arrancar la aplicación,
+- Entonces el proceso no acepta tráfico y el error nombra la variable de clave que falta.
+
+#### Scenario: LLM17 — Un proveedor sin uso no exige clave
+
+- Dado `NODE_ENV=production` con todos los modelos de los perfiles en `openai:` y su clave presente,
+- Cuando se intenta arrancar sin `ANTHROPIC_API_KEY`,
+- Entonces la aplicación arranca y la clave de Anthropic queda vacía.
+
+### Requirement: LLM18 — Uso y caché normalizados por adaptador hacia UsoReportado
+
+Cada adaptador MUST convertir lo que su proveedor reporta a `UsoReportado` con la misma semántica:
+`tokensEntrada` **sin** los tokens servidos desde caché, `tokensSalida` y `tokensCache`. El gateway MUST
+recibir siempre `UsoReportado` y MUST NOT leer metadatos propios de un proveedor. Si el proveedor no
+reporta la caché, `tokensCache` MUST ser 0.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM18 — Un proveedor que incluye la caché en la entrada se separa
+
+- Dado un proveedor que reporta 1 000 tokens de entrada de los que 400 vienen de caché,
+- Cuando el adaptador arma el uso,
+- Entonces `tokensEntrada` es 600 y `tokensCache` es 400.
+
+#### Scenario: LLM18 — Un proveedor sin dato de caché reporta cero
+
+- Dado un proveedor que no informa tokens de caché,
+- Cuando el adaptador arma el uso,
+- Entonces `tokensCache` es 0 y `tokensEntrada` es el total reportado.
+
+### Requirement: LLM19 — El costo sale de LLM_PRECIOS_USD_JSON con el id completo (R13, R15)
+
+El costo estimado de cada intento MUST calcularse con el precio de `LLM_PRECIOS_USD_JSON` cuya clave
+es el id de modelo **tal como se configuró** (con prefijo si lo tiene), sin depender de ningún costo
+que devuelva el proveedor. Los modelos de perfil MUST tener precio (D6 de la Fase 06). Un modelo sin
+precio MUST seguir dejando `0` y un `warn` sin contenido, como hoy.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM19 — El costo se calcula con el precio del id configurado
+
+- Dado un modelo `openai:<modelo>` con precio en `LLM_PRECIOS_USD_JSON` y un uso reportado,
+- Cuando el gateway registra el intento,
+- Entonces `costoEstimadoUsd` sale de ese precio y de `UsoReportado`, aunque el proveedor devolviera
+  otro valor de costo.
+
+#### Scenario: LLM19 — Un perfil con un modelo sin precio impide el arranque
+
+- Dado un perfil con `openai:<modelo>` que no está en `LLM_PRECIOS_USD_JSON`,
+- Cuando se intenta arrancar la aplicación,
+- Entonces el proceso no acepta tráfico y el error nombra la variable del perfil.
+
+### Requirement: LLM20 — Un archivo por SDK de proveedor y fronteras
+
+Cada SDK de proveedor MUST importarse en un único archivo de `modulos/llm/infraestructura`; el mapeo de
+mensajes, herramientas y la clasificación de errores MUST vivir una sola vez, en el adaptador genérico.
+La regla de fronteras MUST cubrir `@ai-sdk/`.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM20 — Cada SDK de proveedor aparece en un solo archivo
+
+- Dado el árbol de `src/modulos/llm/infraestructura`,
+- Cuando se buscan los imports de cada paquete `@ai-sdk/*`,
+- Entonces cada paquete aparece en exactamente un archivo, y `ai` solo en el adaptador genérico.
+
+#### Scenario: LLM20 — La regla de fronteras rechaza un SDK de proveedor fuera de infraestructura
+
+- Dado un archivo fuera de `modulos/llm/infraestructura` que importa un paquete `@ai-sdk/*`,
+- Cuando corre `npm run fronteras`,
+- Entonces la verificación falla nombrando la regla `ai-solo-en-infraestructura-llm`.
+
+### Requirement: LLM21 — El fallback puede cruzar proveedores (nivel 1); el nivel 2 sigue pospuesto
+
+Un perfil MUST poder mezclar ids de distintos proveedores; el gateway MUST recorrerlos en orden como
+en LLM5, una llamada por modelo, con su fila en `uso_llm` y su circuito por id completo. El nivel 2
+(`ULTIMO_RECURSO_LLM`) MUST seguir sin implementación. Si fallan todos los modelos del perfil, el error
+tipado MUST ser `proveedor-caido`, como hoy.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM21 — La caída de un proveedor deriva al modelo de otro proveedor
+
+- Dado un perfil con `openai:<modelo>` seguido de `anthropic:<modelo>` y el primer proveedor caído,
+- Cuando se pide una generación,
+- Entonces el llamador recibe la respuesta del segundo proveedor y `uso_llm` registra el intento
+  fallido con proveedor `openai` y el exitoso con proveedor `anthropic`.
+
+#### Scenario: LLM21 — Con todos los modelos caídos el error sigue siendo proveedor-caido
+
+- Dado un perfil cuyos modelos, de proveedores distintos, fallan todos,
+- Cuando se pide una generación,
+- Entonces el gateway devuelve el error tipado `proveedor-caido` sin llamar a ningún último recurso.
+
+### Requirement: LLM22 — Los errores se clasifican igual con cualquier proveedor
+
+Cada adaptador MUST clasificar sus fallos con la misma regla de hoy: aborto o timeout, 408, 429 y 5xx
+como `reintentable`; cualquier otro 4xx como `no-reintentable`; un error sin respuesta como
+`reintentable`. La clasificación MUST vivir una sola vez (LLM20).
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM22 — Un 429 y un 5xx de un proveedor directo son reintentables
+
+- Dado un proveedor directo que responde 429 o 503,
+- Cuando el adaptador clasifica el fallo,
+- Entonces lo propaga como `reintentable` con su estado HTTP.
+
+#### Scenario: LLM22 — Una clave rechazada por un proveedor directo no se reintenta
+
+- Dado un proveedor directo que responde 401 o 403,
+- Cuando el adaptador clasifica el fallo,
+- Entonces lo propaga como `no-reintentable` y el gateway no repite el intento contra ese modelo.
+
+### Requirement: LLM23 — R1, R2 y R14 no cambian con ningún proveedor
+
+Ningún adaptador MUST interpretar definiciones ni llamadas de herramientas, ni calcular dinero (R1,
+R2); los metadatos del proveedor de una llamada de herramienta MUST volver idénticos en el turno
+siguiente (B7). Ningún adaptador MUST emitir prompts, respuestas ni datos personales a logs o trazas
+(R14, LLM10).
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM23 — Los metadatos de una llamada de herramienta vuelven idénticos con un proveedor directo
+
+- Dado que un proveedor directo devuelve una llamada de herramienta con metadatos propios,
+- Cuando el turno siguiente reenvía esa llamada al mismo proveedor,
+- Entonces los metadatos viajan idénticos y sin interpretar.
+
+#### Scenario: LLM23 — Los logs del adaptador directo no contienen contenido ni PII
+
+- Dada una generación con prompt, herramientas y respuesta cualesquiera contra un proveedor directo,
+- Cuando se inspeccionan los logs emitidos,
+- Entonces ninguno contiene el texto del prompt ni de la respuesta, ni números completos, cédula,
+  correo o tokens.
+
+### Requirement: LLM24 — Las claves nunca se registran
+
+Ninguna clave de proveedor MUST aparecer en logs, trazas, errores tipados, filas de `uso_llm` ni en
+mensajes de error de validación de la configuración. Los errores de configuración MUST nombrar la
+variable sin imprimir su valor.
+
+Change que lo implementa: `proveedores-llm-configurables` (archivado); ajustado por ADR-0029
+
+#### Scenario: LLM24 — Un error de proveedor no filtra la clave
+
+- Dado un proveedor directo que responde 401 y una clave conocida en la configuración,
+- Cuando se inspecciona el error propagado y todos los logs emitidos,
+- Entonces la clave no aparece en ninguno.
+
+#### Scenario: LLM24 — Un error de configuración nombra la variable sin su valor
+
+- Dada una variable de clave con un valor inválido,
+- Cuando falla la validación de arranque,
+- Entonces el mensaje nombra la variable y no contiene el valor.
+
 ### Requirement: LLM25 — Proveedor Anthropic directo (ADR-0029)
 
 El sistema MUST registrar el proveedor `anthropic`: un id `anthropic:<modelo>` MUST llamar directo a la API de
