@@ -1,21 +1,18 @@
 # Hoja de ruta por fases
 
 Este archivo es el **único lugar** donde vive el estado del proyecto y su tabla de fases. Cada fase
-es un **change de OpenSpec** en `openspec/changes/fase-NN-<nombre>/`, producido por el ciclo
-`sdd-new`/`sdd-propose → sdd-spec → sdd-design → sdd-tasks → sdd-apply → sdd-verify → sdd-archive`
-(skill `luxeboreal-fases`), creado **cuando le toca**, no antes: el change de una fase se escribe con
-lo que se aprendió en la anterior (su `verify-report.md` archivado).
-
-El ciclo de estados histórico de este archivo (`idea → spec en revisión → aprobada → en curso →
-cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así sobre el ciclo SDD:
+es un **change de OpenSpec** en `openspec/changes/fase-NN-<nombre>/`, redactado a mano (desde Gentle AI 4 no existen
+los agentes `sdd-*` ni el CLI `openspec`) e implementado con el flujo ODD (skill `luxeboreal-fases`). Se crea **cuando
+le toca**, no antes: el change de una fase se escribe con lo que se aprendió en la anterior (su `verify-report.md`
+archivado). El trabajo fuera de fase va en `odd/tasks/<nombre>.md`.
 
 | Estado | Equivale a |
 |---|---|
 | `idea` | el change aún no existe |
-| `spec en revisión` | `proposal.md` + `specs/` (delta) + `design.md` + `tasks.md` redactados (sdd-propose → sdd-spec → sdd-design → sdd-tasks) |
+| `spec en revisión` | `proposal.md` + `specs/` (delta) + `design.md` + `tasks.md` redactados |
 | `aprobada` | el usuario aprobó proposal + specs + design + tasks |
-| `en curso` | `sdd-apply` en marcha; cada tarea de `tasks.md` cierra con su commit de unidad de trabajo |
-| `cerrada` | `sdd-verify` + `sdd-archive` completos: el `verify-report.md` queda archivado y los delta specs se fusionaron en `openspec/specs/` |
+| `en curso` | implementación en marcha; cada tarea de `tasks.md` cierra con su commit de unidad de trabajo |
+| `cerrada` | `verify-report.md` lleno, delta specs fusionados en `openspec/specs/` y change movido a `archive/` |
 
 ## Reglas de las fases
 
@@ -51,20 +48,21 @@ cerrada`) se mantiene como el vocabulario de la tabla de abajo y se mapea así s
                                                        11 Usuarios/Auth ─▶ 12 Inventario ─▶ 13 Ventas y envíos ─▶ 14 API del back office
 ```
 
-Orden vigente desde el 2026-10-03 (decisión del dueño): la 11 se adelanta antes de 09 y 10, partida en 11a, 11b y
-11c, para probar y ajustar el bot desde una pantalla; las 12-14 siguen después del corte (P8 enmendada). El mapa de
-arriba queda como historia del plan original.
+Orden vigente desde el 2026-11-01 (decisión del dueño, P78): primero el producto (catálogo, inventario y ventas en
+el back office) y **el despliegue al final**, para dimensionar el VPS con el producto completo. Los mapas de arriba
+quedan como historia del plan original.
 
 ```
-Cerradas: 00a 00b 01 02 03 04 05 06 07a 07b 07c 08 08b 08c 08d
+Cerradas: 00a 00b 01 02 03 04 05 06 07a 07b 07c 08 08b 08c 08d 11a 11b 12 12d
 
-11a Autenticación ─▶ 11b Cliente Angular ─▶ 11c Bot configurable ─▶ 09a Operación sin VPS
-                                          09b VPS ─▶ 10 Corte ─▶ 12 Inventario ─▶ 13 Ventas ─▶ 14 API v1
+Producto:    13a Catálogo en el back office ─▶ 13b Inventario ─▶ 14 Ventas ─▶ 15 Tarifas y cobertura ─▶ 16 Disponibilidad en el bot
+Despliegue:  09a Operación sin VPS ─▶ 09b VPS ─▶ 10 Corte                      (al final, con el producto completo)
+Pospuestas:  11c Escenarios del bot · 17 API v1 estable · multiempresa (P64)
 ```
 
-La 09a puede correr en paralelo si el dueño lo pide; la 09b sigue bloqueada hasta que exista el VPS. Hasta la 09b el
-cliente solo corre en local. Riesgo aceptado: el kill switch R16 y los backups (09a) siguen sin existir, lo cual es
-aceptable mientras el bot no atiende clientes reales.
+Hasta la 09b todo corre en local. Riesgo aceptado: el kill switch R16 y los backups (09a) siguen sin existir, lo cual
+es aceptable mientras el bot no atiende clientes reales. Los ajustes del bot siguen en paralelo como trabajo fuera de
+fase (`odd/tasks/`), en ramas propias: las fases 13a-15 no tocan el módulo `agente`.
 
 ## Fases
 
@@ -77,7 +75,7 @@ aceptable mientras el bot no atiende clientes reales.
 | 03 | Importador y medios | Importar catálogo desde Google Sheets + fotos a almacenamiento de objetos + collage | `npm run catalogo:importar -- --dir <fixtures>` deja el catálogo y las fotos listos; todo-o-nada | cerrada |
 | 04 | Canal Chatwoot | Entrada por inbox de eventos (firma, dedupe, 200 rápido), salida idempotente por un puerto de canal, perfil de capacidades por canal, y verificar los puntos "?" del doc 04 | Evento firmado → registro en inbox → procesado una vez; envío con reintento → cero duplicados; fixtures de contrato = payloads reales de Chatwoot grabados del prototipo (anonimizados) | cerrada |
 | 05 | Conversaciones | Máquina de estados bot/humano en Postgres, debounce, lock, eco humano, vencimientos, rate limit | Tests 6-9 y 15 del SPEC del prototipo §9 reescritos y en verde (con un "agente eco" como respuesta) | cerrada |
-| 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | cerrada |
+| 06 | Pasarela LLM | Puerto `LlmPort`, gateway con timeout/reintento/circuit breaker/costo y adaptador AI SDK sobre OpenRouter (GPT-5.6 Luna + modelos de respaldo; hoy proveedores directos OpenAI y Anthropic, ADR-0029) | Misma conversación contra 2 modelos cambiando solo configuración; fallback probado; registro en `uso_llm` | cerrada |
 | 07a | Agente: turno y políticas deterministas (`openspec/changes/archive/2026-09-29-fase-07a-turno-y-politicas/`) | Contrato ampliado del turno (tipo de contenido, contexto, handoff), espejo del estado en Chatwoot, relectura por paso (R5), módulo `agente` con pipeline de políticas: mensajes no textuales (R12), tope de turnos por sesión (R13), aviso de asistente automatizado (R14). Sin LLM: el contenido sigue siendo un eco | E2E por webhook firmado: audio → pide texto; segundo audio → `handoff_pendiente` y Chatwoot `open`; imagen → pide descripción; sticker → nada; primer texto → eco con aviso de datos; tope de turnos → asesor | cerrada (verify y e2e en verde, 2026-09-29): `src/modulos/agente/` (pipeline, R12 en `politica-no-textuales.ts`, R13 en `politica-tope-turnos.ts`, aviso en `dominio/aviso-datos.ts`), E2E en `test/e2e/agente-politicas.e2e-spec.ts`; el e2e destapó y corrigió tres fallos de cableado de la 05 (ver `design.md`, D3/T7) |
 | 07b | Agente: LLM y las 7 herramientas (`openspec/changes/archive/2026-09-30-fase-07b-agente-llm-herramientas/`) | Bucle de herramientas con efectos tipados y plazo del turno, las 7 herramientas sobre los casos de uso existentes (más búsqueda y fotos en `catalogo`), historial corto por sesión, prompt versionado, salida de imagen por Chatwoot, fallos del LLM → asesor. Depende de 07a cerrada | E2E por webhook con LLM falso: ficha en un mensaje, cotización con política de contra entrega, collage como imagen, datos guardados; fallo o techo del LLM → asesor con el texto correcto | cerrada (verify y e2e en verde, 2026-09-30): `src/modulos/agente/` (bucle en `aplicacion/bucle-herramientas.ts`, siete herramientas en `aplicacion/herramientas/`, `ContenidoLlm` como última política del pipeline, historial en Redis, prompts en `prompts/`), `BuscarProductos` y `ObtenerFotosProducto` en `catalogo`, salida de imagen por el outbox (T1) y `plazoMs` en el gateway (LLM14); E2E en `test/e2e/agente-llm.e2e-spec.ts` |
 | 07c | Agente: evals (`openspec/changes/archive/2026-09-30-fase-07c-evals/`) | `npm run evals` con LLM guionado en CI y modo real bajo demanda, aserciones deterministas con umbral explícito, set dorado anonimizado y elección de modelos de respaldo. Depende de 07b cerrada | `npm run evals` en verde con LLM guionado (3 casos de entrada, R1, R2, R12, políticas, sin traspaso sin señal fuerte) dentro de `npm run ci`; corrida manual con LLM real que alcanza el umbral; set dorado de conversaciones reales anonimizadas | cerrada con pendientes `[manual]` (2026-09-30): arnés (`test/evals/`), ocho aserciones con negativos, umbral por modo, 14 casos guionados y `npm run evals` dentro de `npm run ci`; modo real y anonimizador (`npm run evals:anonimizar`) listos y probados contra el simulador. **Pendiente del usuario**: corrida real con LLM real (P32), set dorado (P30) y elección del modelo de respaldo (T5), que sigue sin fijarse |
@@ -85,9 +83,9 @@ aceptable mientras el bot no atiende clientes reales.
 | 08b | Comportamiento del agente y fotos (`openspec/changes/archive/2026-10-01-fase-08b-comportamiento-agente/`) | Prompt separado en `reglas` (no negociable) y `estilo` (editable) sin emojis y con mejor formato, SKU solo interno, fotos con ángulo (`foto.angulo`): una por defecto y otra por ángulo bajo demanda con pie de foto armado por el backend, collage del importador opcional y sin casillas vacías. Depende de 08 cerrada | Conversación de prueba sin emojis ni SKU, con una foto por defecto y otro ángulo con pie; corrida real de evals sobre el umbral (EVL3) | cerrada con pendientes `[manual]` (2026-10-01): `reglas.v2.md` + `estilo.v2.md`, SKU fuera del catálogo compacto y de las herramientas, `foto.angulo` y `fotos_angulos`, `CATALOGO_GENERAR_COLLAGE` (apagado), grilla de collage sin huecos, `enviar_fotos` con portada o ángulo y pie de foto; evals guionadas con `sinEmojis`/`sinSku` y e2e del ángulo. **Pendiente del dueño**: corrida real de evals con el prompt nuevo (EVL3) y prueba por WhatsApp; hasta entonces el agente no se expone a clientes |
 | 08c | Estilo del agente editable desde la base de datos (`openspec/changes/archive/2026-10-01-fase-08c-prompts-en-base-de-datos/`; ADR-0020 aceptada) | El `estilo` se lee de `parametro` con el `.md` de respaldo, copia en memoria con versión en Redis, validación, historial de 10 versiones, `restaurar` y comando `npm run prompt:estilo`; las reglas no negociables siguen en código. Depende de 08b cerrada | Un estilo publicado con el comando cambia la respuesta del bot en el siguiente mensaje, sin reiniciar; sin estilo publicado rige el archivo; `restaurar` vuelve atrás | cerrada con pendiente `[manual]` (2026-10-01): `ProveedorEstilo`, `PublicarEstilo`/`RestaurarEstilo`/`ListarHistorialEstilo`, `EstiloModule`, `npm run prompt:estilo`, `EVALS_ESTILO` y la guía `docs/operacion/estilo-del-bot.md`. **Pendiente del dueño**: corrida real de evals con un estilo candidato y prueba por WhatsApp |
 | 08d | Avisos al asesor con enlace (`openspec/changes/archive/2026-10-01-fase-08d-avisos-con-enlace/`) | Todo traspaso a una persona avisa por Telegram con su motivo, el producto y un enlace que abre la conversación en Chatwoot; un cliente que escribe en `humano` y no recibe respuesta provoca un aviso. El bot no escribe primero (descartado). Depende de 08c cerrada | Un traspaso por tope de turnos deja un aviso con enlace tocable; un cliente sin respuesta tras `ESPERA_CLIENTE_MIN` minutos provoca un aviso; prueba real con el enlace abierto desde el celular | cerrada con pendiente `[manual]` (2026-10-01): `construirEnlaceConversacion`, avisos de lead con producto y enlace, `AvisoTraspaso` para los seis motivos sin lead, marca de «cliente esperando» en Redis, `BarridoEsperas` y `AvisoEsperaCliente`, `CHATWOOT_URL_PUBLICA` y la guía `docs/operacion/avisos-al-asesor.md`. **Pendiente del dueño**: un aviso real en Telegram y el enlace abierto desde el celular con un Chatwoot accesible (P49, P50) |
-| 09 | Operación | Kill switch, observabilidad mínima (logs JSON con rotación, Sentry, Uptime Kuma), backups, imagen Docker de producción, despliegue en Dokploy | Stack de producción arriba en el VPS; restore de backup probado | idea |
-| 09a | Operación sin VPS (**propuesta pendiente de aprobación del usuario**: parte la 09) | Kill switch R16 con endpoint de admin protegido por token (hoy solo existe la lectura CNV4 de `bot:activo`), Dockerfile de producción, Sentry y logs JSON con rotación, scripts de backup y restore probados en local | Endpoint que apaga y enciende el bot con test; imagen Docker que arranca en local; restore de un backup probado | idea |
-| 09b | Despliegue en VPS (**propuesta pendiente de aprobación del usuario**; bloqueada hasta que el dueño compre el VPS) | Despliegue en Dokploy, dominio o túnel fijo, Uptime Kuma y stack de producción en el VPS | Stack de producción arriba en el VPS; restore de backup probado allí | idea |
+| 09 | Operación (partida en 09a y 09b) | Kill switch, observabilidad mínima (logs JSON con rotación, Sentry, Uptime Kuma), backups, imagen Docker de producción, despliegue en Dokploy | Stack de producción arriba en el VPS; restore de backup probado | idea |
+| 09a | Operación sin VPS (al final del producto, P78) | Kill switch R16 con endpoint de admin protegido por token (hoy solo existe la lectura CNV4 de `bot:activo`), Dockerfile de producción, Sentry y logs JSON con rotación, scripts de backup y restore probados en local | Endpoint que apaga y enciende el bot con test; imagen Docker que arranca en local; restore de un backup probado | idea |
+| 09b | Despliegue en VPS (al final; bloqueada hasta que el dueño compre el VPS) | Despliegue en Dokploy, dominio o túnel fijo, Uptime Kuma y stack de producción en el VPS | Stack de producción arriba en el VPS; restore de backup probado allí | idea |
 | 10 | Corte | Modo sombra (~1 semana) antes del corte: el servicio nuevo recibe los mismos eventos por un segundo Agent Bot/webhook, genera respuestas sin enviarlas y compara decisiones (tools, traspasos, leads) con el prototipo; luego apuntar el Agent Bot real al servicio nuevo, período de observación, apagar el prototipo | 1 semana con tráfico real sin incidentes; plan de reversa probado | idea |
 | 11 | Usuarios y autenticación (**partida en 11a, 11b y 11c** y adelantada antes de 09/10 por decisión del dueño, 2026-10-03) | Usuarios, roles (admin/asesor), login para el back office | Ver 11a, 11b y 11c | — |
 | 11a | Usuarios y autenticación (`openspec/changes/archive/2026-10-04-fase-11a-autenticacion/`; ADR-0021 `propuesta`) | Módulo `usuarios`: inicio y cierre de sesión con cookie httpOnly y sesión en Redis, guardia global, `@Roles('admin')`, CSRF por `SameSite=Strict` + encabezado propio, límite de intentos y `npm run usuario:crear`. Depende de 08d cerrada | Con un usuario creado por comando, `POST /api/v1/auth/sesion` deja la cookie, `GET /api/v1/auth/yo` responde, un asesor recibe `403` en una ruta de admin y cerrar sesión invalida la cookie al instante; contrato con `cookieAuth` y deriva en verde | cerrada (2026-10-04; PRs #65-#69 y el de p6; pendiente la prueba `[manual]` del dueño, ver `verify-report.md`) |
@@ -95,9 +93,12 @@ aceptable mientras el bot no atiende clientes reales.
 | 11c | Bot configurable | Perfil del bot, escenarios con pasos ordenados, ejemplos y categorías del menú, editables desde el cliente. Necesita su propio ADR de esquema. Depende de 11b cerrada | Por definir al escribir su spec | idea (su parte de estilo y casos la absorbe la 12 nueva; los escenarios con pasos ordenados quedan pospuestos) |
 | 12 | Casos de uso del asistente, estilo desacoplado y configuración del negocio (`openspec/changes/archive/2026-10-06-fase-12-casos-del-asistente/`; ADR-0024 `propuesta`) | Módulo `asistente`: categorías y casos de uso editables con buscador (reemplazan a los mensajes fijos y a las políticas), `consultar_caso` con índice, estilo en su propia tabla (`version_estilo`, con «quién publicó»), configuración del negocio tipada (horario, recargo, factor volumétrico, techo de gasto), menú lateral con submódulos y edición siempre en ventana emergente. Partida en 12a (T1-T3), 12b (T4-T8) y 12c (T9-T12). Depende de 11b cerrada | El dueño crea el caso «Medios de pago» y el bot lo usa por WhatsApp; edita el caso de audio y rige; cambia el recargo y la siguiente cotización lo refleja; publica un estilo desde la ventana emergente y ve quién lo publicó; no queda nada del sistema viejo | cerrada (2026-10-06; 12 tareas, PRs #89 y #93-#102 más el de cierre; 33 requisitos y 142 escenarios con prueba; pendientes `[manual]` del dueño: evals reales, prueba por WhatsApp, recorrido real y comprobación de CHECK e índice, ver `verify-report.md`; ADR-0024 sigue `propuesta`; el recargo no entra aún en ninguna cotización, decisión del dueño) |
 | 12d | Derivar avisa sin silenciar al bot, consentimiento de datos y casos del sistema mínimos (`openspec/changes/archive/2026-10-09-fase-12d-derivar-sin-silencio/`; ADR-0027 `aceptada`) | Pedir una persona, el audio repetido y el lead caliente avisan al asesor por Telegram (un aviso por motivo, también fuera de horario) y el bot sigue atendiendo hasta que el asesor entra; herramienta `derivar_a_asesor`; el aviso fijo del primer mensaje se reemplaza por consentimiento de datos (`registrar_consentimiento` y puerta en código); los casos del sistema bajan de 11 a 5 con título editable y cuatro pasan a casos de uso. Depende de 12 cerrada | Pedir un asesor genera un solo aviso y el bot responde en el mismo turno; el eco humano lo silencia; sin consentimiento no se guarda ningún dato ni lead; el back office muestra cinco casos del sistema | cerrada (2026-10-09; 10 tareas, PRs #117, #119-#123, #125, #126, #128 más el de cierre, y #124/#127 de apoyo; 48 requisitos y 243 escenarios con prueba; deltas fusionados en `openspec/specs/`; pendientes `[manual]` del dueño: `AGENTE_TOPE_TURNOS=20` en `.env.example`, aviso real en Telegram, tomar el control desde Chatwoot, evals reales, prueba por WhatsApp del consentimiento, verificar las migraciones de datos contra su base y crear los casos de ejemplo que quiera, ver `verify-report.md`) |
-| 12 (plan anterior) | Inventario | Ledger de movimientos con `stock` como caché en la misma transacción | Conciliación ledger = stock en tests | idea |
-| 13 | Ventas y envíos | Ciclos de estado de venta y envío con sus efectos sobre el inventario (MODELO_DATOS §6) | Cada transición genera los movimientos correctos | idea |
-| 14 | API del back office | Estabilizar la API v1 y probar un cliente generado | Un cliente generado desde `openapi.json` compila y consume la API; ningún cambio incompatible sale sin pasar a `/api/v2` | idea |
+| 13a | Catálogo en el back office (P79, P80; ADR-0015 enmendada) | Módulo `catalogo` con endpoints de admin para crear, editar y desactivar productos y categorías (SKU inmutable, nunca se borra) y subir, ordenar y marcar las fotos (portada y ángulo); alta masiva única desde una plantilla `.xlsx` que solo crea productos, con vista previa, errores por fila y todo o nada; retiro de Google Sheets y del comando `catalogo:importar`; área **Catálogo** en el cliente. Depende de 12d cerrada | El dueño sube una plantilla con productos nuevos, ve la vista previa y la aplica; edita uno en la pantalla y el bot lo usa en el siguiente mensaje; dos ediciones a la vez del mismo producto: la segunda se rechaza; un asesor no puede editar | idea |
+| 13b | Inventario (P80) | Módulo `inventario`: entradas, ajustes y devoluciones en `movimiento_inventario` con `producto.stock` como caché en la misma transacción, sin saldo negativo; stock inicial de la plantilla como movimiento «Carga inicial»; historial por producto y alertas de stock bajo en el cliente. Depende de 13a cerrada | Conciliación movimientos = stock en tests; un ajuste que dejaría el saldo negativo se rechaza; el asesor ve el stock pero no registra entradas | idea |
+| 14 | Ventas (P80) | Módulo `ventas`: venta con sus ítems (precio congelado) para un contacto o desde un lead; al confirmar descuenta el stock con movimientos de salida, al cancelar una confirmada los devuelve; envío opcional (transportadora, guía, estado); pantallas de lista, detalle y venta nueva. Depende de 13b cerrada | Cada transición genera los movimientos correctos (MODELO_DATOS §6); sin stock suficiente no se confirma; el asesor registra y confirma ventas | idea |
+| 15 | Tarifas y cobertura (P79, opción A) | Pantallas y endpoints para `tarifa_estimada` y `zona_sin_cobertura`, que tras retirar el comando no tienen otra forma de carga. Depende de 14 cerrada | El dueño cambia una tarifa y la siguiente cotización del bot la refleja | idea |
+| 16 | Disponibilidad en el bot (P81) | El agente sabe si un producto está disponible o agotado y nunca dice la cantidad; con evals. Depende de 13b cerrada | Un producto agotado se informa como tal en la conversación de prueba; evals guionadas en verde | idea |
+| 17 | API v1 estable (antes «14 API del back office») | Estabilizar la API v1 y probar un cliente generado | Un cliente generado desde `openapi.json` compila y consume la API; ningún cambio incompatible sale sin pasar a `/api/v2` | idea |
 | — | Posterior | Canales adicionales, RAG, analítica, campañas | Se priorizan después del corte | — |
 
 > **Decidido (P8, 2026-09-22):** las fases 11-14 van **después del corte**. Mientras tanto el
@@ -108,21 +109,13 @@ aceptable mientras el bot no atiende clientes reales.
 > las 12-14 siguen después del corte. La primera pantalla es un cliente propio en Angular dentro de `cliente/`
 > (ADR-0022), que más adelante podría embeberse como Dashboard App de Chatwoot.
 >
-> **Reordenamiento propuesto (2026-10-05, sin aprobar):** como ninguno de los proyectos está en producción, el dueño
-> adelanta el producto (asistente, inventario, ventas) y deja el despliegue para el final. La **Fase 12** de arriba es la
-> primera pieza: casos de uso del asistente, estilo desacoplado y configuración del negocio. Los números 12-14 del plan
-> anterior (Inventario, Ventas, API) y las fases 09, 10 y 11c se renumeran y reordenan en el siguiente replanteo de esta
-> hoja de ruta; mientras tanto «Fase 12» en el repositorio es la nueva.
-
-> **Propuesta (2026-10-01, sin aprobar):** añadir la Fase 08b y partir la 09 en 09a (sin VPS) y 09b
-> (con VPS). Tras la 08 quedarían 08b, 09a, 09b, 10 (corte, exige `judgment-day`), 11, 12, 13 y 14 (las
-> 11-14 van después del corte, P8). Antes de la 08b conviene, en este orden: fusionar los PRs abiertos,
-> verificar el flujo real por WhatsApp y decidir el modelo con los evals. Solo el usuario las pasa a
-> `aprobada`.
+> **Reordenado (P78, 2026-11-01):** el reordenamiento propuesto el 2026-10-05 quedó decidido: el producto va primero
+> (Fase 12 nueva, luego 13a-16) y el despliegue (09a, 09b, 10) al final. La 08b y la partición de la 09 en 09a/09b
+> (propuestas del 2026-10-01) ya están en la tabla. Los números 12-14 del plan anterior quedaron así: Inventario → 13b,
+> Ventas → 14, API → 17.
 >
-> **Trabajo fuera de fase en curso** (proveedores LLM configurables, semilla de catálogo, arreglo de lectura
-> de mensajes de Chatwoot, infra local de Chatwoot): ramas y PRs en `git`/`gh`;
-> el comportamiento del bot, en `odd/tasks/comportamiento-del-bot.md`.
+> **Trabajo fuera de fase:** el comportamiento del bot se sigue en `odd/tasks/comportamiento-del-bot.md`; cada mejora
+> tiene su `odd/tasks/<nombre>.md` y su rama.
 
 > Las Fases 00a, 00b, 01, 02, 03 y 04 están cerradas y archivadas:
 > `openspec/changes/archive/2026-09-23-fase-00a-esqueleto/`,
@@ -275,10 +268,9 @@ aceptable mientras el bot no atiende clientes reales.
 > Fase 13) y el texto de respaldo de fuera de cobertura deja de prometer un contacto. La Fase 07 agrega la séptima
 > herramienta, `consultar_politica`, y la regla de cuándo citar cada política.
 >
-> **Requisitos para las Fases 11 y 14 (2026-09-29):** la carga y edición masiva pasa a archivo `.xlsx`/CSV con
-> exportación previa, control de versión por fila, vista previa e informe por pestaña, y Google Sheets se retira
-> cuando exista el reemplazo (ADR-0015, aceptada; detalle en `docs/analisis/06-cliente-back-office.md`). El
-> exportador por CLI es un cambio propio posterior a la Fase 07; la pantalla y sus endpoints, Fases 11 y 14.
+> **Requisitos para la carga masiva (2026-09-29, enmendados el 2026-11-01):** ADR-0015. La Fase 13a construye solo el
+> paso 1 (alta masiva que solo crea, con vista previa) y retira Google Sheets y el comando `catalogo:importar`; la
+> edición masiva con exportación y control de versión por fila queda para cuando el dueño la pida (P79).
 >
 > **2026-09-28**: primer push del repo a GitHub — primera vez que `npm run ci` corrió sobre un
 > runner Linux real (antes solo se había verificado en Windows + Docker Desktop). Salieron tres
@@ -296,23 +288,21 @@ aceptable mientras el bot no atiende clientes reales.
 
 ## Prerrequisitos externos
 
-Las fases 09 y 10 están bloqueadas por, fuera de este repo: VPS + Dokploy con dominio fijo, token
-de sistema-usuario permanente de Meta, Chatwoot movido al VPS, y catálogo/fotos/tarifas reales
-cargados. Detalle en `../ChatLuxeCRM/REQUISITOS_PENDIENTES.md`.
+Las fases 09b y 10 están bloqueadas por cosas fuera de este repo: VPS + Dokploy con dominio fijo, token de
+sistema-usuario permanente de Meta y Chatwoot movido al VPS. El catálogo y el inventario reales se cargan desde el
+back office (Fases 13a y 13b), y las tarifas desde la Fase 15.
 
 ## Cómo se trabaja una fase
 
-1. **Explorar y proponer** (`sdd-new`/`sdd-propose`): crea `openspec/changes/fase-NN-<nombre>/` y su
-   `proposal.md` — objetivo, alcance, qué migra del prototipo, plan de rollback, preguntas
-   bloqueantes. Se usa la skill `luxeboreal-fases`.
-2. **Especificar y diseñar** (`sdd-spec → sdd-design → sdd-tasks`): delta specs por dominio
-   (Dado/Cuando/Entonces), diseño de módulos/puertos/eventos, y el checklist de tareas (`tasks.md`,
-   ≤10, slices de PR ~400 líneas, "Review requerida").
-3. **Revisión del usuario** → estado `aprobada` (solo el usuario la marca). Si surge una decisión
-   con alternativas, ADR `propuesta`.
-4. **Implementar** (`sdd-apply`) tarea por tarea, en la rama `fase-NN-<nombre>`; cada tarea deja su
-   test (RED → GREEN → REFACTOR) y su commit de unidad de trabajo, registrado en `tasks.md`.
-5. **Cerrar** (`sdd-verify → sdd-archive`): checklist de la skill `luxeboreal-arquitectura`,
-   `judgment-day` si la fase es 04/05/06/10, `verify-report.md` con lo que aprendimos, archivar el
-   change (fusiona los delta specs en `openspec/specs/`) y actualizar esta tabla y
-   `docs/migracion/inventario.md`.
+1. **Explorar y proponer**: crea `openspec/changes/fase-NN-<nombre>/` y su `proposal.md` (objetivo, alcance, qué migra
+   del prototipo, plan de rollback, preguntas bloqueantes), con la skill `luxeboreal-fases`.
+2. **Especificar y diseñar**: delta specs por dominio (Dado/Cuando/Entonces), diseño de módulos, puertos y eventos, y
+   `tasks.md` (≤10 tareas, slices de PR de ~400 líneas).
+3. **Revisión del usuario** → estado `aprobada` (solo el usuario la marca). Si surge una decisión con alternativas, ADR
+   `propuesta`.
+4. **Implementar** tarea por tarea en la rama de la fase: cada tarea deja su test (RED → GREEN → REFACTOR) y su commit de
+   unidad de trabajo, registrado en `tasks.md`. Cada slice se sube y su CI debe quedar en verde; no se fusiona a `main`
+   sin la revisión del dueño (P82).
+5. **Cerrar**: checklist de la skill `luxeboreal-arquitectura`, `judgment-day` si la fase es 04/05/06/10,
+   `verify-report.md` con lo aprendido, delta specs fusionados a mano en `openspec/specs/`, change movido a `archive/` y
+   esta tabla y `docs/migracion/inventario.md` actualizadas.

@@ -4,7 +4,7 @@ Rama: `perf/latencia-bot`, desde `main` (trabajo fuera de fase, solo ODD). El du
 2026-10-12: los puntos 1, 3, 4 y 5 del análisis de latencia. Los puntos que tocan la calidad (esfuerzo de
 razonamiento y debounce) quedan fuera.
 
-**Estado: en curso.**
+**Estado: cerrada con pendiente `[manual]`** (T6: el dueño prueba desde WhatsApp y compara los tiempos). PRs #137-#140 fusionados el 2026-10-13; T5 omitida (ver abajo).
 
 ## Objetivo
 Bajar el tiempo de respuesta por WhatsApp, hoy de 10 a 16 s, sin cambiar lo que el bot responde.

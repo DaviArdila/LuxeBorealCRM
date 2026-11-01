@@ -97,6 +97,6 @@ Los proveedores y modelos concretos, si OpenRouter queda como respaldo y dónde 
 - [0002](0002-pasarela-llm.md), [0013](0013-cortacircuitos-en-memoria-pasarela-llm.md),
   [0014](0014-fallback-llm-iterado-en-gateway.md).
 - `src/modulos/llm/llm.module.ts`, `infraestructura/adaptador-openrouter.ts`, `puertos/adaptador-llm.ts`.
-- `openspec/changes/proveedores-llm-configurables/` (proposal, spec, design, tasks).
+- `openspec/changes/archive/2026-11-01-proveedores-llm-configurables/` (proposal, spec, design, tasks).
 - Documentación del AI SDK y de cada proveedor: **a verificar en T1** contra la versión instalada
   (`ai` 7.0.122).

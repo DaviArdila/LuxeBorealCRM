@@ -4,7 +4,7 @@ CRM con atención automatizada por WhatsApp (agente LLM + traspaso a asesor huma
 leads + inventario y ventas), construido como monolito modular en **NestJS**. Es la reescritura
 del prototipo funcional `../ChatLuxeCRM`.
 
-**Estado:** planeación. Ver `docs/fases/README.md`.
+**Estado:** en desarrollo, solo en local (sin producción). Qué está cerrado y qué sigue: `docs/fases/README.md`.
 
 ## Estructura
 

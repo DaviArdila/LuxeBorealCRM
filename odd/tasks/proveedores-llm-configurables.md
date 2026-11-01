@@ -5,14 +5,14 @@
 - Problema: OpenRouter cobra comisión (ADR-0002 la aceptó como costo) y `llm.module.ts` enlaza fijo
   `AdaptadorOpenRouter`; el usuario no quiere pagar ese intermediario.
 - Alcance autorizado (2026-09-30): documentación + implementación por tareas de
-  `openspec/changes/proveedores-llm-configurables/tasks.md` (T1-T4, T8, T9; T10 manual). ADR-0019
+  `openspec/changes/archive/2026-11-01-proveedores-llm-configurables/tasks.md` (T1-T4, T8, T9; T10 manual). ADR-0019
   aceptado. Push, PR y merge siguen siendo decisión del usuario.
 - Restricciones: R1/R2/R14 sin cambio; puerto y gateway sin cambio de contrato; OpenRouter sigue por
   defecto; nada de precios inventados (los pone el usuario); rama `docs/proveedores-llm-directos`.
 - TDD: no aplica a documentación. Para la implementación: **estricto**, fuente
   CLAUDE.md del proyecto, runner Vitest (`npm test`, `npm run test:integracion`).
 - Documentos: ADR `docs/adr/0019-proveedores-llm-configurables.md`; change
-  `openspec/changes/proveedores-llm-configurables/`; preguntas P37-P40 en `docs/PREGUNTAS_ABIERTAS.md` (P40 resuelta).
+  `openspec/changes/archive/2026-11-01-proveedores-llm-configurables/`; preguntas P37-P40 en `docs/PREGUNTAS_ABIERTAS.md` (P40 resuelta).
 
 ## Tareas de documentación
 
@@ -24,7 +24,7 @@
 
 ## Tareas de implementación (D5 hecha; T5-T7 pospuestas)
 
-Detalle, slices y RED de cada una en `openspec/changes/proveedores-llm-configurables/tasks.md`.
+Detalle, slices y RED de cada una en `openspec/changes/archive/2026-11-01-proveedores-llm-configurables/tasks.md`.
 
 - [x] T1 — Resolución de modelo (`resolver-modelo.ts`) y verificación de paquetes `@ai-sdk/*`. Ruta: inline
 - [x] T2 — Configuración por proveedor. Ruta: delegada

@@ -102,10 +102,10 @@ Límites de una sesión remota (no cambian entre PRs; el estado de ramas y fases
 
 ## Publicar y encadenar fases
 
-Autorización durable del usuario (2026-09-30): el agente publica su trabajo en GitHub, abre los PRs y los
-fusiona sin pedir permiso cada vez, **solo** con CI verde y sin conflictos. Se sigue pidiendo confirmación
-para lo que no sea el flujo normal de una fase (borrar ramas o historial, force-push a `main`, cambiar
-secretos o configuración del repo).
+Autorización vigente del usuario (2026-11-01, P82; reemplaza la del 2026-09-30): el agente trabaja en una rama
+desde `main`, publica su trabajo en GitHub y verifica que el CI de GitHub Actions quede en verde, pero **no fusiona a
+`main`** sin la revisión del dueño. Se sigue pidiendo confirmación para lo que no sea el flujo normal de una fase
+(borrar ramas o historial, force-push a `main`, cambiar secretos o configuración del repo).
 
 - **Ramas y PRs apilados.** Una rama por slice: `fase-NN-pK-<tema>` (K = 1, 2…), cada una sobre la
   anterior; el PR de cada rama apunta a la anterior y se reapunta a `main` cuando la anterior se fusiona
@@ -123,7 +123,7 @@ secretos o configuración del repo).
   raíz (log del job); «flake» no es causa y no se reintenta a ciegas. Ante un CI rojo se corrige y se vuelve a empujar
   hasta que quede en verde, y solo se detiene si no se encuentra la causa. Una rama de la cadena que cambia bajo
   otra se rebasa con `--force-with-lease` solo si es propia.
-- **Fusionar** con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes.
+- **Fusionar**, cuando el dueño lo apruebe, con la cabeza exacta (`expectedHeadSha`) y solo con checks verdes.
 - **Higiene de ramas.** GitHub borra la rama remota al fusionar (`delete_branch_on_merge` activo). Tras
   fusionar, el agente actualiza `main`, borra la rama local y su worktree con `git branch -d` (se niega si no está
   fusionada) y, de vez en cuando, repasa `git branch --merged origin/main`. Funciona porque se fusiona con merge

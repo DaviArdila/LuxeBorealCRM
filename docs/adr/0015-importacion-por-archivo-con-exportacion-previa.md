@@ -1,6 +1,6 @@
 # 0015. Carga y edición masiva por archivo (xlsx/CSV) con exportación previa y control de versión
 
-- Estado: aceptada (2026-09-29)
+- Estado: aceptada (2026-09-29); enmendada el 2026-11-01 (P79)
 - Fecha: 2026-09-29
 
 ## Contexto
@@ -66,3 +66,22 @@ reemplazo exista**; hasta entonces sigue funcionando sin cambios.
   personas exportan y editan a la vez, la segunda que importe verá conflictos y deberá re-exportar.
 - Cambiar de alternativa 3 a otra, o cambiar la regla de "ausente no desactiva", requiere un ADR
   nuevo que reemplace este.
+
+## Enmienda (2026-11-01, el dueño; P79)
+
+El reemplazo se construye en dos pasos, y Google Sheets se retira antes de que exista la edición masiva.
+
+- **Paso 1 (Fase 13): alta masiva que solo crea.** El back office permite crear, editar y desactivar productos uno a
+  uno, y subir una plantilla `.xlsx` que **solo da de alta productos nuevos**: un SKU que ya existe es un error de esa
+  fila. Antes de aplicar se muestra la vista previa (cuántos se crean y los errores por fila) y la carga es todo o
+  nada. Como nunca modifica un producto existente, no necesita la exportación previa ni la columna de versión. Las
+  fotos se suben desde la pantalla del producto, no desde el archivo.
+- **Paso 2 (cuando haga falta): edición masiva.** Es lo que describe la «Decisión» de arriba (exportar, editar, subir,
+  conflicto por versión de fila). No se construye hasta que el dueño la pida.
+- **Retiro inmediato.** El acceso a Google Sheets (`CATALOGO_SHEET_ID`) **y** el comando `catalogo:importar` se
+  retiran en la Fase 13, aunque el paso 2 no exista. Así ningún camino pisa lo que se edita en el back office.
+- **Tarifas y cobertura.** `tarifa_estimada` y `zona_sin_cobertura` solo se cargaban con el comando: hasta su propia
+  fase (pantallas de tarifas y cobertura) conservan lo que ya haya en la base. Los parámetros y las excepciones de
+  horario ya se editan en el back office (Fase 12).
+- **Al editar uno a uno** se protege la edición simultánea con la fecha de actualización del producto: si otra persona
+  guardó antes, se rechaza y se pide recargar, igual que los casos de uso (P61).
